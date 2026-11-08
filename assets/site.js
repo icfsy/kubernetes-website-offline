@@ -110,6 +110,8 @@
     contentWidth: storage.raw("content-width", "normal") || "normal",
     navWidth: parseInt(storage.raw("nav-width", "400"), 10) || 400,
     codeStyle: storage.raw("code-style", "auto") || "auto",
+    tocMode: storage.raw("toc-mode", "docked") || "docked",
+    tocLast: storage.raw("toc-last", "docked") || "docked",
   };
 
   function saveNavState() {
@@ -219,6 +221,30 @@
         code.classList.add("hljs");
       }
     });
+  }
+
+  function applyTocMode(mode, persist) {
+    state.tocMode = mode;
+    const root = document.documentElement;
+    if (mode === "floating" || mode === "hidden") root.setAttribute("data-toc", mode);
+    else root.removeAttribute("data-toc");
+
+    const toc = document.querySelector(".page-toc");
+    const restore = document.getElementById("k8s-toc-restore");
+    if (restore) restore.hidden = !(toc && mode === "hidden");
+
+    const modeButton = document.getElementById("k8s-toc-mode");
+    if (modeButton) {
+      const floating = mode === "floating";
+      const label = floating ? "Dock this outline" : "Float this outline";
+      modeButton.title = label;
+      modeButton.setAttribute("aria-label", label);
+      modeButton.textContent = floating ? "⤡" : "⤢";
+    }
+    if (persist) {
+      storage.setRaw("toc-mode", mode);
+      if (mode !== "hidden") storage.setRaw("toc-last", mode);
+    }
   }
 
   function applyContentWidth(mode) {
@@ -968,6 +994,7 @@
     if (sideVersion && SITE.version) sideVersion.textContent = "v" + SITE.version;
 
     applyCodeTheme(state.codeStyle, false);
+    applyTocMode(state.tocMode, false);
     highlightCodeBlocks();
     enhanceCodeBlocks();
     initScrollSpy();
@@ -1050,6 +1077,11 @@
     bind("font-down", () => applyFontScale(state.fontScale - 0.05));
     bind("code-prev", () => cycleCodeTheme(-1));
     bind("code-next", () => cycleCodeTheme(1));
+    bind("toc-mode", () =>
+      applyTocMode(state.tocMode === "floating" ? "docked" : "floating", true)
+    );
+    bind("toc-hide", () => applyTocMode("hidden", true));
+    bind("toc-restore", () => applyTocMode(state.tocLast || "docked", true));
     bind("width-toggle", () => {
       applyContentWidth(state.contentWidth === "wide" ? "normal" : "wide");
       toast(state.contentWidth === "wide" ? "Wide layout" : "Normal layout");
