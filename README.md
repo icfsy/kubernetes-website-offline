@@ -19,7 +19,7 @@ every concept, task, tutorial, setup page, the full API reference, and the whole
 
 | Light theme | Dark theme |
 |:---:|:---:|
-| ![Documentation home page, light theme](images/home-light-theme.png) | ![Documentation home page, dark theme](images/home-dark-theme.png) |
+| [![Documentation home page, light theme](images/home-light-theme.png)](https://github.com/icfsy/kubernetes-website-offline/raw/main/images/home-light-theme.png) | [![Documentation home page, dark theme](images/home-dark-theme.png)](https://github.com/icfsy/kubernetes-website-offline/raw/main/images/home-dark-theme.png) |
 
 ## Highlights
 
@@ -71,7 +71,7 @@ every concept, task, tutorial, setup page, the full API reference, and the whole
 - Highlighting is powered by [highlight.js](https://highlightjs.org/)
   (BSD-3-Clause, bundled locally under `assets/vendor/`).
 
-![A tutorial page with code blocks, the outline hidden, and the sidebar expanded to the current page](images/code-block.png)
+[![A tutorial page with code blocks, the outline hidden, and the sidebar expanded to the current page](images/code-block.png)](https://github.com/icfsy/kubernetes-website-offline/raw/main/images/code-block.png)
 
 ## Quick start
 
