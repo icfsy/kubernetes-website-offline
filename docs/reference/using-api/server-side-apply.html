@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -205,29 +220,28 @@ look like this:</p>
 when the output format is either <code>json</code> or
 <code>yaml</code>.</p>
 </div>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-cm</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">test-label</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">  </span><span class="fu">managedFields</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">manager</span><span class="kw">:</span><span class="at"> kubectl</span></span>
-<span class="at">    </span><span class="fu">operation</span><span class="kw">:</span><span class="at"> Apply</span><span class="co"> # note capitalization: &quot;Apply&quot; (or &quot;Update&quot;)</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">    </span><span class="fu">time</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2010-10-10T0:00:00Z&quot;</span></span>
-<span class="at">    </span><span class="fu">fieldsType</span><span class="kw">:</span><span class="at"> FieldsV1</span></span>
-<span class="at">    </span><span class="fu">fieldsV1</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">f:metadata</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">f:labels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">f:test-label</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">      </span><span class="fu">f:data</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">f:key</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">key</span><span class="kw">:</span><span class="at"> some value</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-cm
+  namespace: default
+  labels:
+    test-label: test
+  managedFields:
+  - manager: kubectl
+    operation: Apply # note capitalization: &quot;Apply&quot; (or &quot;Update&quot;)
+    apiVersion: v1
+    time: &quot;2010-10-10T0:00:00Z&quot;
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:labels:
+          f:test-label: {}
+      f:data:
+        f:key: {}
+data:
+  key: some value</code></pre>
 <p>That example ConfigMap object contains a single field management
 record in <code>.metadata.managedFields</code>. The field management
 record consists of basic information about the managing entity itself,
@@ -315,11 +329,10 @@ specification. Some JSON escapes may not be recognized.</p>
 exception that clients are not required to send a complete object.</p>
 <p>Here's an example of a Server-Side Apply message body (fully
 specified intent):</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;ConfigMap&quot;</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;v1&quot;,
+  &quot;kind&quot;: &quot;ConfigMap&quot;
+}</code></pre>
 <p>(this would make a no-change update, provided that it was sent as the
 body of a <strong>patch</strong> request to a valid
 <code>v1/configmaps</code> resource, and with the appropriate request
@@ -347,35 +360,34 @@ parameter, while the query parameter is optional for
 <code>managedFields</code> in the body of the request that you
 submit.</p>
 <p>An example object with multiple managers could look like this:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-cm</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">test-label</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">  </span><span class="fu">managedFields</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">manager</span><span class="kw">:</span><span class="at"> kubectl</span></span>
-<span class="at">    </span><span class="fu">operation</span><span class="kw">:</span><span class="at"> Apply</span></span>
-<span class="at">    </span><span class="fu">time</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;2019-03-30T15:00:00.000Z&#39;</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">    </span><span class="fu">fieldsType</span><span class="kw">:</span><span class="at"> FieldsV1</span></span>
-<span class="at">    </span><span class="fu">fieldsV1</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">f:metadata</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">f:labels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">f:test-label</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">manager</span><span class="kw">:</span><span class="at"> kube-controller-manager</span></span>
-<span class="at">    </span><span class="fu">operation</span><span class="kw">:</span><span class="at"> Update</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">    </span><span class="fu">time</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;2019-03-30T16:00:00.000Z&#39;</span></span>
-<span class="at">    </span><span class="fu">fieldsType</span><span class="kw">:</span><span class="at"> FieldsV1</span></span>
-<span class="at">    </span><span class="fu">fieldsV1</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">f:data</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">f:key</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">key</span><span class="kw">:</span><span class="at"> new value</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: test-cm
+  namespace: default
+  labels:
+    test-label: test
+  managedFields:
+  - manager: kubectl
+    operation: Apply
+    time: &#39;2019-03-30T15:00:00.000Z&#39;
+    apiVersion: v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:metadata:
+        f:labels:
+          f:test-label: {}
+  - manager: kube-controller-manager
+    operation: Update
+    apiVersion: v1
+    time: &#39;2019-03-30T16:00:00.000Z&#39;
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:data:
+        f:key: {}
+data:
+  key: new value</code></pre>
 <p>In this example, a second operation was run as an
 <strong>update</strong> by the manager called
 <code>kube-controller-manager</code>. The update request succeeded and
@@ -503,24 +515,23 @@ that reason, it is not recommended to change a type from
 <code>atomic</code> to
 <code>map</code>/<code>set</code>/<code>granular</code>.</p>
 <p>Take for example, the custom resource:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Foo</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo-sample</span></span>
-<span class="at">  </span><span class="fu">managedFields</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">manager</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;manager-one&quot;</span></span>
-<span class="at">    </span><span class="fu">operation</span><span class="kw">:</span><span class="at"> Apply</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> example.com/v1</span></span>
-<span class="at">    </span><span class="fu">fieldsType</span><span class="kw">:</span><span class="at"> FieldsV1</span></span>
-<span class="at">    </span><span class="fu">fieldsV1</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">f:spec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">f:data</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">key1</span><span class="kw">:</span><span class="at"> val1</span></span>
-<span class="at">    </span><span class="fu">key2</span><span class="kw">:</span><span class="at"> val2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: example.com/v1
+kind: Foo
+metadata:
+  name: foo-sample
+  managedFields:
+  - manager: &quot;manager-one&quot;
+    operation: Apply
+    apiVersion: example.com/v1
+    fieldsType: FieldsV1
+    fieldsV1:
+      f:spec:
+        f:data: {}
+spec:
+  data:
+    key1: val1
+    key2: val2</code></pre>
 <p>Before <code>spec.data</code> gets changed from <code>atomic</code>
 to <code>granular</code>, <code>manager-one</code> owns the field
 <code>spec.data</code>, and all the fields within it (<code>key1</code>
@@ -562,33 +573,32 @@ controller.</p>
 the desired value:</p>
 <div class="code-sample">
 <p><code>application/ssa/nginx-deployment.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2</code></pre>
 </div>
 <p>And the user has created the Deployment using Server-Side Apply, like
 so:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/ssa/nginx-deployment.yaml --server-side</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/ssa/nginx-deployment.yaml --server-side</code></pre>
 <p>Then later, automatic scaling is enabled for the Deployment; for
 example:</p>
-<pre class="shell"><code>kubectl autoscale deployment nginx-deployment --cpu=50% --min=1 --max=10</code></pre>
+<pre class="shell"><code class="language-shell">kubectl autoscale deployment nginx-deployment --cpu=50% --min=1 --max=10</code></pre>
 <p>Now, the user would like to remove <code>replicas</code> from their
 configuration, so they don't accidentally fight with the
 HorizontalPodAutoscaler (HPA) and its controller. However, there is a
@@ -612,14 +622,13 @@ remove <code>replicas</code> from their configuration:</p></li>
 </ul>
 <p>First, the user defines a new manifest containing only the
 <code>replicas</code> field:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Save this file as &#39;nginx-deployment-replicas-only.yaml&#39;.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># Save this file as &#39;nginx-deployment-replicas-only.yaml&#39;.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 3</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -631,7 +640,7 @@ using SSA.</p>
 </div>
 <p>The user applies that manifest using a private field manager name. In
 this example, the user picked <code>handover-to-hpa</code>:</p>
-<pre class="shell"><code>kubectl apply -f nginx-deployment-replicas-only.yaml \
+<pre class="shell"><code class="language-shell">kubectl apply -f nginx-deployment-replicas-only.yaml \
   --server-side --field-manager=handover-to-hpa \
   --validate=false</code></pre>
 <p>If the apply results in a conflict with the HPA controller, then do
@@ -641,25 +650,24 @@ earlier in the process than it sometimes does.</p>
 from their manifest:</p>
 <div class="code-sample">
 <p><code>application/ssa/nginx-deployment-no-replicas.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2</code></pre>
 </div>
 <p>Note that whenever the HPA controller sets the <code>replicas</code>
 field to a new value, the temporary field manager will no longer own any
@@ -705,7 +713,7 @@ from client-side apply to server-side apply</h3>
 <p>Client-side apply users who manage a resource with
 <code>kubectl apply</code> can start using server-side apply with the
 following flag.</p>
-<pre class="shell"><code>kubectl apply --server-side [--dry-run=server]</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side [--dry-run=server]</code></pre>
 <p>By default, field management of the object transfers from client-side
 apply to kubectl server-side apply, without encountering conflicts.</p>
 <div class="admonition caution">
@@ -725,7 +733,7 @@ client-side apply and creates conflicts on
 this behavior by specifying a different, non-default field manager, as
 seen in the following example. The default field manager for kubectl
 server-side apply is <code>kubectl</code>.</p>
-<pre class="shell"><code>kubectl apply --server-side --field-manager=my-manager [--dry-run=server]</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side --field-manager=my-manager [--dry-run=server]</code></pre>
 <h3
 id="downgrading-from-server-side-apply-to-client-side-apply">Downgrading
 from server-side apply to client-side apply</h3>
@@ -740,7 +748,7 @@ client-side apply directly with <code>kubectl apply</code>.</p>
 this behavior by specifying a different, non-default field manager, as
 seen in the following example. The default field manager for kubectl
 server-side apply is <code>kubectl</code>.</p>
-<pre class="shell"><code>kubectl apply --server-side --field-manager=my-manager [--dry-run=server]</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side --field-manager=my-manager [--dry-run=server]</code></pre>
 <h2 id="api-implementation">API implementation</h2>
 <p>The <code>PATCH</code> verb (for an object that supports Server-Side
 Apply) accepts the unofficial <code>application/apply-patch+yaml</code>
@@ -768,7 +776,7 @@ Strategic Merge Patch, JSON Patch), or through an
 every write operation other than <strong>apply</strong>. This can be
 done by overwriting the <code>managedFields</code> field with an empty
 entry. Two examples are:</p>
-<pre class="console"><code>PATCH /api/v1/namespaces/default/configmaps/example-cm
+<pre class="console"><code class="language-console">PATCH /api/v1/namespaces/default/configmaps/example-cm
 Accept: application/json
 Content-Type: application/merge-patch+json
 
@@ -779,7 +787,7 @@ Content-Type: application/merge-patch+json
     ]
   }
 }</code></pre>
-<pre class="console"><code>PATCH /api/v1/namespaces/default/configmaps/example-cm
+<pre class="console"><code class="language-console">PATCH /api/v1/namespaces/default/configmaps/example-cm
 Accept: application/json
 Content-Type: application/json-patch+json
 If-Match: 1234567890123456789
@@ -874,6 +882,7 @@ top level field.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -882,6 +891,8 @@ top level field.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

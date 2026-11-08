@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -241,15 +256,14 @@ storage snapshot will be deleted along with the
 underlying snapshot and <code>VolumeSnapshotContent</code> remain.</p>
 <h2 id="volumesnapshots">VolumeSnapshots</h2>
 <p>Each VolumeSnapshot contains a spec and a status.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshot</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">volumeSnapshotClassName</span><span class="kw">:</span><span class="at"> csi-hostpath-snapclass</span></span>
-<span class="at">  </span><span class="fu">source</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">persistentVolumeClaimName</span><span class="kw">:</span><span class="at"> pvc-test</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: new-snapshot-test
+spec:
+  volumeSnapshotClassName: csi-hostpath-snapclass
+  source:
+    persistentVolumeClaimName: pvc-test</code></pre>
 <p><code>persistentVolumeClaimName</code> is the name of the
 PersistentVolumeClaim data source for the snapshot. This field is
 required for dynamically provisioning a snapshot.</p>
@@ -263,34 +277,32 @@ set, then the default class is used if available.</p>
 shown in the following example. The
 <code>volumeSnapshotContentName</code> source field is required for
 pre-provisioned snapshots.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshot</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-snapshot</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">source</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">volumeSnapshotContentName</span><span class="kw">:</span><span class="at"> test-content</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshot
+metadata:
+  name: test-snapshot
+spec:
+  source:
+    volumeSnapshotContentName: test-content</code></pre>
 <h2 id="volume-snapshot-contents">Volume Snapshot Contents</h2>
 <p>Each VolumeSnapshotContent contains a spec and status. In dynamic
 provisioning, the snapshot common controller creates
 <code>VolumeSnapshotContent</code> objects. Here is an example:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshotContent</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> snapcontent-72d9a349-aacd-42d2-a240-d775650d2455</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">deletionPolicy</span><span class="kw">:</span><span class="at"> Delete</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> hostpath.csi.k8s.io</span></span>
-<span class="at">  </span><span class="fu">source</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">volumeHandle</span><span class="kw">:</span><span class="at"> ee0cfb94-f8d4-11e9-b2d8-0242ac110002</span></span>
-<span class="at">  </span><span class="fu">sourceVolumeMode</span><span class="kw">:</span><span class="at"> Filesystem</span></span>
-<span class="at">  </span><span class="fu">volumeSnapshotClassName</span><span class="kw">:</span><span class="at"> csi-hostpath-snapclass</span></span>
-<span class="at">  </span><span class="fu">volumeSnapshotRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-test</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 72d9a349-aacd-42d2-a240-d775650d2455</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+  name: snapcontent-72d9a349-aacd-42d2-a240-d775650d2455
+spec:
+  deletionPolicy: Delete
+  driver: hostpath.csi.k8s.io
+  source:
+    volumeHandle: ee0cfb94-f8d4-11e9-b2d8-0242ac110002
+  sourceVolumeMode: Filesystem
+  volumeSnapshotClassName: csi-hostpath-snapclass
+  volumeSnapshotRef:
+    name: new-snapshot-test
+    namespace: default
+    uid: 72d9a349-aacd-42d2-a240-d775650d2455</code></pre>
 <p><code>volumeHandle</code> is the unique identifier of the volume
 created on the storage backend and returned by the CSI driver during the
 volume creation. This field is required for dynamically provisioning a
@@ -298,20 +310,19 @@ snapshot. It specifies the volume source of the snapshot.</p>
 <p>For pre-provisioned snapshots, you (as cluster administrator) are
 responsible for creating the <code>VolumeSnapshotContent</code> object
 as follows.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshotContent</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-content-test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">deletionPolicy</span><span class="kw">:</span><span class="at"> Delete</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> hostpath.csi.k8s.io</span></span>
-<span class="at">  </span><span class="fu">source</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">snapshotHandle</span><span class="kw">:</span><span class="at"> 7bdd0de3-aaeb-11e8-9aae-0242ac110002</span></span>
-<span class="at">  </span><span class="fu">sourceVolumeMode</span><span class="kw">:</span><span class="at"> Filesystem</span></span>
-<span class="at">  </span><span class="fu">volumeSnapshotRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-test</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+  name: new-snapshot-content-test
+spec:
+  deletionPolicy: Delete
+  driver: hostpath.csi.k8s.io
+  source:
+    snapshotHandle: 7bdd0de3-aaeb-11e8-9aae-0242ac110002
+  sourceVolumeMode: Filesystem
+  volumeSnapshotRef:
+    name: new-snapshot-test
+    namespace: default</code></pre>
 <p><code>snapshotHandle</code> is the unique identifier of the volume
 snapshot created on the storage backend. This field is required for the
 pre-provisioned snapshots. It specifies the CSI snapshot id on the
@@ -335,8 +346,7 @@ capability to prevent unauthorized users from converting the mode of a
 volume.</p>
 <p>To check if your cluster has capability for this feature, run the
 following command:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">$ kubectl get crd volumesnapshotcontent -o yaml</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">$ kubectl get crd volumesnapshotcontent -o yaml</code></pre>
 <p>If you want to allow users to create a
 <code>PersistentVolumeClaim</code> from an existing
 <code>VolumeSnapshot</code>, but with a different volume mode than the
@@ -348,22 +358,21 @@ to the <code>VolumeSnapshot</code>.</p>
 needs to be populated by the cluster administrator.</p>
 <p>An example <code>VolumeSnapshotContent</code> resource with this
 feature enabled would look like:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshotContent</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-content-test</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">snapshot.storage.kubernetes.io/allow-volume-mode-change</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">deletionPolicy</span><span class="kw">:</span><span class="at"> Delete</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> hostpath.csi.k8s.io</span></span>
-<span class="at">  </span><span class="fu">source</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">snapshotHandle</span><span class="kw">:</span><span class="at"> 7bdd0de3-aaeb-11e8-9aae-0242ac110002</span></span>
-<span class="at">  </span><span class="fu">sourceVolumeMode</span><span class="kw">:</span><span class="at"> Filesystem</span></span>
-<span class="at">  </span><span class="fu">volumeSnapshotRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-test</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotContent
+metadata:
+  name: new-snapshot-content-test
+  annotations:
+    - snapshot.storage.kubernetes.io/allow-volume-mode-change: &quot;true&quot;
+spec:
+  deletionPolicy: Delete
+  driver: hostpath.csi.k8s.io
+  source:
+    snapshotHandle: 7bdd0de3-aaeb-11e8-9aae-0242ac110002
+  sourceVolumeMode: Filesystem
+  volumeSnapshotRef:
+    name: new-snapshot-test
+    namespace: default</code></pre>
 <h2 id="volume-snapshot-topology">Volume Snapshot Topology</h2>
 <p>In some clusters a snapshot is only usable from part of the cluster.
 For example, in a multi-zone cluster where storage is not shared across
@@ -461,6 +470,7 @@ Snapshot and Restore Volume from Snapshot</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -469,6 +479,8 @@ Snapshot and Restore Volume from Snapshot</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

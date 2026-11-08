@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -510,7 +525,7 @@ detail.</p>
 <p>For example:</p>
 <ol type="1">
 <li><p>List all of the pods in a given namespace.</p>
-<pre class="http"><code>GET /api/v1/namespaces/test/pods
+<pre class="http"><code class="language-http">GET /api/v1/namespaces/test/pods
 ---
 200 OK
 Content-Type: application/json
@@ -528,7 +543,7 @@ any API operations (such as <strong>create</strong>,
 namespace. Each change notification is a JSON document. The HTTP
 response body (served as <code>application/json</code>) consists a
 series of JSON documents.</p>
-<pre class="http"><code>GET /api/v1/namespaces/test/pods?watch=1&amp;resourceVersion=10245
+<pre class="http"><code class="language-http">GET /api/v1/namespaces/test/pods?watch=1&amp;resourceVersion=10245
 ---
 200 OK
 Transfer-Encoding: chunked
@@ -566,7 +581,7 @@ of event to mark that all changes up to a given
 sent. The document representing the <code>BOOKMARK</code> event is of
 the type requested by the request, but only includes a
 <code>.metadata.resourceVersion</code> field. For example:</p>
-<pre class="http"><code>GET /api/v1/namespaces/test/pods?watch=1&amp;resourceVersion=10245&amp;allowWatchBookmarks=true
+<pre class="http"><code class="language-http">GET /api/v1/namespaces/test/pods?watch=1&amp;resourceVersion=10245&amp;allowWatchBookmarks=true
 ---
 200 OK
 Transfer-Encoding: chunked
@@ -630,7 +645,7 @@ pods: <code>foo</code> and <code>bar</code>. Then sending the following
 request (explicitly requesting <em>consistent read</em> by setting empty
 resource version using <code>resourceVersion=</code>) could result in
 the following sequence of events:</p>
-<pre class="http"><code>GET /api/v1/namespaces/test/pods?watch=1&amp;sendInitialEvents=true&amp;allowWatchBookmarks=true&amp;resourceVersion=&amp;resourceVersionMatch=NotOlderThan
+<pre class="http"><code class="language-http">GET /api/v1/namespaces/test/pods?watch=1&amp;sendInitialEvents=true&amp;allowWatchBookmarks=true&amp;resourceVersion=&amp;resourceVersionMatch=NotOlderThan
 ---
 200 OK
 Transfer-Encoding: chunked
@@ -717,38 +732,35 @@ replica injects the <code>ShardSelector</code> field into the
 when constructing a shared informer factory. The tweak function runs
 before every list and watch call the informer makes, so the shard
 selector is applied consistently:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">import</span> <span class="op">(</span></span>
-    metav1 <span class="st">&quot;k8s.io/apimachinery/pkg/apis/meta/v1&quot;</span></span>
-    <span class="st">&quot;k8s.io/client-go/informers&quot;</span></span>
-<span class="op">)</span></span>
-</span>
-<span class="co">// shardSelector is determined by the replica&#39;s identity (e.g. from a</span></span>
-<span class="co">// StatefulSet ordinal or lease-based assignment). Each replica claims a</span></span>
-<span class="co">// non-overlapping range of the hash space.</span></span>
-shardSelector <span class="op">:=</span> <span class="st">&quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x8000000000000000&#39;)&quot;</span></span>
-</span>
-factory <span class="op">:=</span> informers<span class="op">.</span>NewSharedInformerFactoryWithOptions<span class="op">(</span>client<span class="op">,</span> resyncPeriod<span class="op">,</span></span>
-    informers<span class="op">.</span>WithTweakListOptions<span class="op">(</span><span class="kw">func</span><span class="op">(</span>opts <span class="op">*</span>metav1<span class="op">.</span>ListOptions<span class="op">)</span> <span class="op">{</span></span>
-        opts<span class="op">.</span>ShardSelector <span class="op">=</span> shardSelector</span>
-    <span class="op">}),</span></span>
-<span class="op">)</span></span></code></pre></div>
+<pre class="go"><code class="language-go">import (
+    metav1 &quot;k8s.io/apimachinery/pkg/apis/meta/v1&quot;
+    &quot;k8s.io/client-go/informers&quot;
+)
+
+// shardSelector is determined by the replica&#39;s identity (e.g. from a
+// StatefulSet ordinal or lease-based assignment). Each replica claims a
+// non-overlapping range of the hash space.
+shardSelector := &quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x8000000000000000&#39;)&quot;
+
+factory := informers.NewSharedInformerFactoryWithOptions(client, resyncPeriod,
+    informers.WithTweakListOptions(func(opts *metav1.ListOptions) {
+        opts.ShardSelector = shardSelector
+    }),
+)</code></pre>
 <p>With this configuration, every informer created from the factory only
 lists and watches objects whose hashed UID falls within the assigned
 range. Each replica receives a disjoint subset of the full collection,
 reducing per-replica network traffic and memory usage.</p>
 <p>For a 2-replica deployment, the selectors would be:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// Replica 0: lower half of the hash space</span></span>
-<span class="st">&quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x8000000000000000&#39;)&quot;</span></span>
-</span>
-<span class="co">// Replica 1: upper half of the hash space</span></span>
-<span class="st">&quot;shardRange(object.metadata.uid, &#39;0x8000000000000000&#39;, &#39;0x10000000000000000&#39;)&quot;</span></span></code></pre></div>
+<pre class="go"><code class="language-go">// Replica 0: lower half of the hash space
+&quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x8000000000000000&#39;)&quot;
+
+// Replica 1: upper half of the hash space
+&quot;shardRange(object.metadata.uid, &#39;0x8000000000000000&#39;, &#39;0x10000000000000000&#39;)&quot;</code></pre>
 <p>A single replica can also handle non-contiguous ranges using
 <code>||</code>:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="st">&quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x4000000000000000&#39;) || &quot;</span> <span class="op">+</span></span>
-    <span class="st">&quot;shardRange(object.metadata.uid, &#39;0x8000000000000000&#39;, &#39;0xc000000000000000&#39;)&quot;</span></span></code></pre></div>
+<pre class="go"><code class="language-go">&quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x4000000000000000&#39;) || &quot; +
+    &quot;shardRange(object.metadata.uid, &#39;0x8000000000000000&#39;, &#39;0xc000000000000000&#39;)&quot;</code></pre>
 <h3 id="shard-information-in-responses">Shard information in
 responses</h3>
 <p>When the API server honors a <code>ShardSelector</code>, the list
@@ -757,18 +769,17 @@ response includes a <code>shardInfo</code> field in the list
 verify which shard they received. For watch streams, the shard selector
 applies equally: the API server only sends events for objects whose hash
 falls within the requested range.</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;PodList&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;resourceVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;10245&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;shardInfo&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;selector&quot;</span><span class="fu">:</span> <span class="st">&quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x8000000000000000&#39;)&quot;</span></span>
-    <span class="fu">}</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;items&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="er">...</span><span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;PodList&quot;,
+  &quot;apiVersion&quot;: &quot;v1&quot;,
+  &quot;metadata&quot;: {
+    &quot;resourceVersion&quot;: &quot;10245&quot;,
+    &quot;shardInfo&quot;: {
+      &quot;selector&quot;: &quot;shardRange(object.metadata.uid, &#39;0x0000000000000000&#39;, &#39;0x8000000000000000&#39;)&quot;
+    }
+  },
+  &quot;items&quot;: [...]
+}</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -814,7 +825,7 @@ bandwidth can be saved and the latency can be reduced.</p>
 send a <strong>get</strong> or <strong>list</strong> request to the API
 server with an <code>Accept-Encoding</code> header, and check the
 response size and headers. For example:</p>
-<pre class="http"><code>GET /api/v1/pods
+<pre class="http"><code class="language-http">GET /api/v1/pods
 Accept-Encoding: gzip
 ---
 200 OK
@@ -871,7 +882,7 @@ follows:</p>
 <ol type="1">
 <li><p>List all of the pods on a cluster, retrieving up to 500 pods each
 time.</p>
-<pre class="http"><code>GET /api/v1/pods?limit=500
+<pre class="http"><code class="language-http">GET /api/v1/pods?limit=500
 ---
 200 OK
 Content-Type: application/json
@@ -889,7 +900,7 @@ Content-Type: application/json
 }</code></pre></li>
 <li><p>Continue the previous call, retrieving the next set of 500
 pods.</p>
-<pre class="http"><code>GET /api/v1/pods?limit=500&amp;continue=ENCODED_CONTINUE_TOKEN
+<pre class="http"><code class="language-http">GET /api/v1/pods?limit=500&amp;continue=ENCODED_CONTINUE_TOKEN
 ---
 200 OK
 Content-Type: application/json
@@ -906,7 +917,7 @@ Content-Type: application/json
   &quot;items&quot;: [...] // returns pods 501-1000
 }</code></pre></li>
 <li><p>Continue the previous call, retrieving the last 253 pods.</p>
-<pre class="http"><code>GET /api/v1/pods?limit=500&amp;continue=ENCODED_CONTINUE_TOKEN_2
+<pre class="http"><code class="language-http">GET /api/v1/pods?limit=500&amp;continue=ENCODED_CONTINUE_TOKEN_2
 ---
 200 OK
 Content-Type: application/json
@@ -954,24 +965,23 @@ Services, the collection response has <code>kind</code> set to <a
 href="https://kubernetes.io/docs/reference/kubernetes-api/service-resources/service-v1/#ServiceList"><code>ServiceList</code></a>;
 each item in that collection represents a single Service. For
 example:</p>
-<pre class="http"><code>GET /api/v1/services</code></pre>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;ServiceList&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;resourceVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;2947301&quot;</span></span>
-<span class="at">  </span><span class="kw">},</span></span>
-<span class="at">  </span><span class="fu">&quot;items&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">    </span><span class="kw">{</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">        </span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;kubernetes&quot;</span><span class="kw">,</span></span>
-<span class="at">        </span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;default&quot;</span><span class="kw">,</span></span>
-<span class="at">...</span></span>
-<span class="at">      &quot;metadata&quot;</span><span class="er">: </span><span class="kw">{</span></span>
-<span class="at">        </span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;kube-dns&quot;</span><span class="kw">,</span></span>
-<span class="at">        </span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;kube-system&quot;</span><span class="kw">,</span></span>
-<span class="at">...</span></span></code></pre></div>
+<pre class="http"><code class="language-http">GET /api/v1/services</code></pre>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;kind&quot;: &quot;ServiceList&quot;,
+  &quot;apiVersion&quot;: &quot;v1&quot;,
+  &quot;metadata&quot;: {
+    &quot;resourceVersion&quot;: &quot;2947301&quot;
+  },
+  &quot;items&quot;: [
+    {
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;kubernetes&quot;,
+        &quot;namespace&quot;: &quot;default&quot;,
+...
+      &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;kube-dns&quot;,
+        &quot;namespace&quot;: &quot;kube-system&quot;,
+...</code></pre>
 <p>There are dozens of collection types (such as <code>PodList</code>,
 <code>ServiceList</code>, and <code>NodeList</code>) defined in the
 Kubernetes API. You can get more information about each collection type
@@ -983,37 +993,36 @@ itself. Because the output of <code>kubectl</code> might include the
 response from multiple <strong>list</strong> operations at the API
 level, <code>kubectl</code> represents a list of items using
 <code>kind: List</code>. For example:</p>
-<pre class="shell"><code>kubectl get services -A -o yaml</code></pre>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> List</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">selfLink</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="fu">items</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2021-06-03T14:54:12Z&quot;</span></span>
-<span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">component</span><span class="kw">:</span><span class="at"> apiserver</span></span>
-<span class="at">      </span><span class="fu">provider</span><span class="kw">:</span><span class="at"> kubernetes</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubernetes</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="co">...</span></span>
-<span class="er">- apiVersion: v1</span></span>
-<span class="er">  kind: Service</span></span>
-<span class="er">  metadata:</span></span>
-<span class="er">    annotations:</span></span>
-<span class="er">      prometheus.io/port: &quot;</span><span class="st">9153&quot;</span></span>
-<span class="at">      </span><span class="fu">prometheus.io/scrape</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2021-06-03T14:54:14Z&quot;</span></span>
-<span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns</span></span>
-<span class="at">      </span><span class="fu">kubernetes.io/cluster-service</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">      </span><span class="fu">kubernetes.io/name</span><span class="kw">:</span><span class="at"> CoreDNS</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span></code></pre></div>
+<pre class="shell"><code class="language-shell">kubectl get services -A -o yaml</code></pre>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: List
+metadata:
+  resourceVersion: &quot;&quot;
+  selfLink: &quot;&quot;
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    creationTimestamp: &quot;2021-06-03T14:54:12Z&quot;
+    labels:
+      component: apiserver
+      provider: kubernetes
+    name: kubernetes
+    namespace: default
+...
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      prometheus.io/port: &quot;9153&quot;
+      prometheus.io/scrape: &quot;true&quot;
+    creationTimestamp: &quot;2021-06-03T14:54:14Z&quot;
+    labels:
+      k8s-app: kube-dns
+      kubernetes.io/cluster-service: &quot;true&quot;
+      kubernetes.io/name: CoreDNS
+    name: kube-dns
+    namespace: kube-system</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1045,7 +1054,7 @@ header containing a value of
 Table content type.</p>
 <p>For example, list all of the pods on a cluster in the Table
 format.</p>
-<pre class="http"><code>GET /api/v1/pods
+<pre class="http"><code class="language-http">GET /api/v1/pods
 Accept: application/json;as=Table;g=meta.k8s.io;v=v1
 ---
 200 OK
@@ -1063,7 +1072,7 @@ Content-Type: application/json
 known to the control plane, the API server returns a default Table
 response that consists of the resource's <code>name</code> and
 <code>creationTimestamp</code> fields.</p>
-<pre class="http"><code>GET /apis/crd.example.com/v1alpha1/namespaces/default/resources
+<pre class="http"><code class="language-http">GET /apis/crd.example.com/v1alpha1/namespaces/default/resources
 ---
 200 OK
 Content-Type: application/json
@@ -1103,7 +1112,7 @@ table responses will return a 406 error code.</p>
 add <code>,application/json</code> (or any other supported encoding) to
 their Accept header, and handle either table or full objects in the
 response:</p>
-<pre class="http"><code>Accept: application/json;as=Table;g=meta.k8s.io;v=v1,application/json`</code></pre>
+<pre class="http"><code class="language-http">Accept: application/json;as=Table;g=meta.k8s.io;v=v1,application/json`</code></pre>
 <p>For more information on content type negotiation, see the <a
 href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation">MDN
 Content Negotiation</a>.</p>
@@ -1128,7 +1137,7 @@ be used for lists.</p>
 </div>
 <p>For example, to list all of the pods in a cluster, across all
 namespaces, but returning only the metadata for each pod:</p>
-<pre class="http"><code>GET /api/v1/pods
+<pre class="http"><code class="language-http">GET /api/v1/pods
 Accept: application/json;as=PartialObjectMetadataList;g=meta.k8s.io;v=v1
 ---
 200 OK
@@ -1187,7 +1196,7 @@ their Accept header, and handle either PartialObjectMetadata or full
 objects in the response. It's a good idea to specify that a partial
 response is preferred, using the <code>q</code> (<em>quality</em>)
 parameter. For example:</p>
-<pre class="http"><code>Accept: application/json;as=PartialObjectMetadata;g=meta.k8s.io;v=v1, application/json;q=0.9</code></pre>
+<pre class="http"><code class="language-http">Accept: application/json;as=PartialObjectMetadata;g=meta.k8s.io;v=v1, application/json;q=0.9</code></pre>
 <p>For more information on content type negotiation, see the <a
 href="https://developer.mozilla.org/en-US/docs/Web/HTTP/Content_negotiation">MDN
 Content Negotiation</a>.</p>
@@ -1198,15 +1207,14 @@ phases.</p>
 <li><em>finalization</em></li>
 <li>removal</li>
 </ol>
-<div class="sourceCode" id="cb38"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;ConfigMap&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;finalizers&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;url.io/neat-finalization&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;other-url.io/my-finalizer&quot;</span><span class="kw">],</span></span>
-<span class="at">    </span><span class="fu">&quot;deletionTimestamp&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="at">nil</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;kind&quot;: &quot;ConfigMap&quot;,
+  &quot;apiVersion&quot;: &quot;v1&quot;,
+  &quot;metadata&quot;: {
+    &quot;finalizers&quot;: [&quot;url.io/neat-finalization&quot;, &quot;other-url.io/my-finalizer&quot;],
+    &quot;deletionTimestamp&quot;: nil,
+  }
+}</code></pre>
 <p>When a client first sends a <strong>delete</strong> to request the
 removal of a resource, the <code>.metadata.deletionTimestamp</code> is
 set to the current time. Once the
@@ -1472,7 +1480,7 @@ prevent side effects on any request marked as dry runs.</p>
 </div>
 <p>Here is an example dry-run request that uses
 <code>?dryRun=All</code>:</p>
-<pre class="http"><code>POST /api/v1/namespaces/test/pods?dryRun=All
+<pre class="http"><code class="language-http">POST /api/v1/namespaces/test/pods?dryRun=All
 Content-Type: application/json
 Accept: application/json</code></pre>
 <p>The response would look the same as for non-dry-run request, but the
@@ -1507,11 +1515,10 @@ Deployment, you must be authorized to perform that
 <strong>patch</strong>. Here is an example of a rule for Kubernetes
 <a class="glossary-term" href="../glossary.html#term-rbac" title="Glossary: rbac">RBAC</a> that allows
 patching Deployments:</p>
-<div class="sourceCode" id="cb40"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;patch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- apiGroups: [&quot;apps&quot;]
+  resources: [&quot;deployments&quot;]
+  verbs: [&quot;patch&quot;]</code></pre>
 <p>See <a
 href="../access-authn-authz/authorization.html">Authorization
 Overview</a>.</p>
@@ -2193,6 +2200,7 @@ implementing exponential backoff.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -2201,6 +2209,8 @@ implementing exponential backoff.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

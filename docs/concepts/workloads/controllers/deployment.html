@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -164,28 +179,27 @@ don't need anymore.</li>
 to bring up three <code>nginx</code> Pods:</p>
 <div class="code-sample">
 <p><code>controllers/nginx-deployment.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>In this example:</p>
 <ul>
@@ -231,7 +245,7 @@ running. Follow the steps given below to create the above
 Deployment:</p>
 <ol type="1">
 <li><p>Create the Deployment by running the following command:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/controllers/nginx-deployment.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/controllers/nginx-deployment.yaml</code></pre></li>
 <li><p>Run <code>kubectl get deployments</code> to check if the
 Deployment was created.</p>
 <p>If the Deployment is still being created, the output is similar to
@@ -340,9 +354,9 @@ rollout.</p>
 <ol type="1">
 <li><p>Let's update the nginx Pods to use the <code>nginx:1.16.1</code>
 image instead of the <code>nginx:1.14.2</code> image.</p>
-<pre class="shell"><code>kubectl set image deployment.v1.apps/nginx-deployment nginx=nginx:1.16.1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment.v1.apps/nginx-deployment nginx=nginx:1.16.1</code></pre>
 <p>or use the following command:</p>
-<pre class="shell"><code>kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1</code></pre>
 <p>where <code>deployment/nginx-deployment</code> indicates the
 Deployment, <code>nginx</code> indicates the Container the update will
 take place and <code>nginx:1.16.1</code> indicates the new image and its
@@ -352,11 +366,11 @@ tag.</p>
 <p>Alternatively, you can <code>edit</code> the Deployment and change
 <code>.spec.template.spec.containers[0].image</code> from
 <code>nginx:1.14.2</code> to <code>nginx:1.16.1</code>:</p>
-<pre class="shell"><code>kubectl edit deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit deployment/nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>deployment.apps/nginx-deployment edited</code></pre></li>
 <li><p>To see the rollout status, run:</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Waiting for rollout to finish: 2 out of 3 new replicas have been updated...</code></pre>
 <p>or</p>
@@ -372,14 +386,14 @@ nginx-deployment   3/3     3            3           36s</code></pre></li>
 <li><p>Run <code>kubectl get rs</code> to see that the Deployment
 updated the Pods by creating a new ReplicaSet and scaling it up to 3
 replicas, as well as scaling down the old ReplicaSet to 0 replicas.</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                          DESIRED   CURRENT   READY   AGE
 nginx-deployment-1564180365   3         3         3       6s
 nginx-deployment-2035384211   0         0         0       36s</code></pre></li>
 <li><p>Running <code>get pods</code> should now show only the new
 Pods:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                                READY     STATUS    RESTARTS   AGE
 nginx-deployment-1564180365-khku8   1/1       Running   0          14s
@@ -402,7 +416,7 @@ least 3 Pods are available and that at max 4 Pods in total are
 available. In case of a Deployment with 4 replicas, the number of Pods
 would be between 3 and 5.</p></li>
 <li><p>Get details of your Deployment:</p>
-<pre class="shell"><code>kubectl describe deployments</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe deployments</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Name:                   nginx-deployment
 Namespace:              default
@@ -543,12 +557,12 @@ only the Deployment's Pod template part is rolled back.</p>
 <li><p>Suppose that you made a typo while updating the Deployment, by
 putting the image name as <code>nginx:1.161</code> instead of
 <code>nginx:1.16.1</code>:</p>
-<pre class="shell"><code>kubectl set image deployment/nginx-deployment nginx=nginx:1.161</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment/nginx-deployment nginx=nginx:1.161</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment image updated</code></pre></li>
 <li><p>The rollout gets stuck. You can verify it by checking the rollout
 status:</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Waiting for rollout to finish: 1 out of 3 new replicas have been updated...</code></pre></li>
 <li><p>Press Ctrl-C to stop the above rollout status watch. For more
@@ -558,7 +572,7 @@ here</a>.</p></li>
 from <code>nginx-deployment-1564180365</code> and
 <code>nginx-deployment-2035384211</code>) is 3, and the number of new
 replicas (from <code>nginx-deployment-3066724191</code>) is 1.</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                          DESIRED   CURRENT   READY   AGE
 nginx-deployment-1564180365   3         3         3       25s
@@ -566,7 +580,7 @@ nginx-deployment-2035384211   0         0         0       36s
 nginx-deployment-3066724191   1         1         0       6s</code></pre></li>
 <li><p>Looking at the Pods created, you see that 1 Pod created by new
 ReplicaSet is stuck in an image pull loop.</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                                READY     STATUS             RESTARTS   AGE
 nginx-deployment-1564180365-70iae   1/1       Running            0          25s
@@ -583,7 +597,7 @@ parameters (<code>maxUnavailable</code> specifically) that you have
 specified. Kubernetes by default sets the value to 25%.</p>
 </div></li>
 <li><p>Get the description of the Deployment:</p>
-<pre class="shell"><code>kubectl describe deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Name:           nginx-deployment
 Namespace:      default
@@ -630,7 +644,7 @@ History of a Deployment</h3>
 <p>Follow the steps given below to check the rollout history:</p>
 <ol type="1">
 <li><p>First, check the revisions of this Deployment:</p>
-<pre class="shell"><code>kubectl rollout history deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout history deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployments &quot;nginx-deployment&quot;
 REVISION    CHANGE-CAUSE
@@ -656,7 +670,7 @@ populate the <code>CHANGE-CAUSE</code> field. This flag is deprecated
 and will be removed in a future release.</p>
 </div></li>
 <li><p>To see the details of each revision, run:</p>
-<pre class="shell"><code>kubectl rollout history deployment/nginx-deployment --revision=2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout history deployment/nginx-deployment --revision=2</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployments &quot;nginx-deployment&quot; revision 2
   Labels:       app=nginx
@@ -678,12 +692,12 @@ current version to the previous version, which is version 2.</p>
 <ol type="1">
 <li><p>Now you've decided to undo the current rollout and rollback to
 the previous revision:</p>
-<pre class="shell"><code>kubectl rollout undo deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout undo deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment rolled back</code></pre>
 <p>Alternatively, you can rollback to a specific revision by specifying
 it with <code>--to-revision</code>:</p>
-<pre class="shell"><code>kubectl rollout undo deployment/nginx-deployment --to-revision=2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout undo deployment/nginx-deployment --to-revision=2</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment rolled back</code></pre>
 <p>For more details about rollout related commands, read <a
@@ -693,12 +707,12 @@ you can see, a <code>DeploymentRollback</code> event for rolling back to
 revision 2 is generated from Deployment controller.</p></li>
 <li><p>Check if the rollback was successful and the Deployment is
 running as expected, run:</p>
-<pre class="shell"><code>kubectl get deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME               READY   UP-TO-DATE   AVAILABLE   AGE
 nginx-deployment   3/3     3            3           30m</code></pre></li>
 <li><p>Get the description of the Deployment:</p>
-<pre class="shell"><code>kubectl describe deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe deployment nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Name:                   nginx-deployment
 Namespace:              default
@@ -743,7 +757,7 @@ Events:
 </ol>
 <h2 id="scaling-a-deployment">Scaling a Deployment</h2>
 <p>You can scale a Deployment by using the following command:</p>
-<pre class="shell"><code>kubectl scale deployment/nginx-deployment --replicas=10</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployment/nginx-deployment --replicas=10</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment scaled</code></pre>
 <p>Assuming <a
@@ -752,7 +766,7 @@ Pod autoscaling</a> is enabled in your cluster, you can set up an
 autoscaler for your Deployment and choose the minimum and maximum number
 of Pods you want to run based on the CPU utilization of your existing
 Pods.</p>
-<pre class="shell"><code>kubectl autoscale deployment/nginx-deployment --min=10 --max=15 --cpu-percent=80%</code></pre>
+<pre class="shell"><code class="language-shell">kubectl autoscale deployment/nginx-deployment --min=10 --max=15 --cpu-percent=80%</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment scaled</code></pre>
 <h3 id="proportional-scaling">Proportional scaling</h3>
@@ -768,20 +782,20 @@ href="#max-surge">maxSurge</a>=3, and <a
 href="#max-unavailable">maxUnavailable</a>=2.</p>
 <ul>
 <li><p>Ensure that the 10 replicas in your Deployment are running.</p>
-<pre class="shell"><code>kubectl get deploy</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deploy</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                 DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 nginx-deployment     10        10        10           10          50s</code></pre></li>
 <li><p>You update to a new image which happens to be unresolvable from
 inside the cluster.</p>
-<pre class="shell"><code>kubectl set image deployment/nginx-deployment nginx=nginx:sometag</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment/nginx-deployment nginx=nginx:sometag</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment image updated</code></pre></li>
 <li><p>The image update starts a new rollout with ReplicaSet
 nginx-deployment-1989198191, but it's blocked due to the
 <code>maxUnavailable</code> requirement that you mentioned above. Check
 out the rollout status:</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                          DESIRED   CURRENT   READY     AGE
 nginx-deployment-1989198191   5         5         0         9s
@@ -801,13 +815,13 @@ not scaled up.</p></li>
 2 replicas are added to the new ReplicaSet. The rollout process should
 eventually move all replicas to the new ReplicaSet, assuming the new
 replicas become healthy. To confirm this, run:</p>
-<pre class="shell"><code>kubectl get deploy</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deploy</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                 DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 nginx-deployment     15        18        7            8           7m</code></pre>
 <p>The rollout status confirms how the replicas were added to each
 ReplicaSet.</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                          DESIRED   CURRENT   READY     AGE
 nginx-deployment-1989198191   7         7         0         7m
@@ -822,38 +836,38 @@ resuming without triggering unnecessary rollouts.</p>
 <ul>
 <li><p>For example, with a Deployment that was created:</p>
 <p>Get the Deployment details:</p>
-<pre class="shell"><code>kubectl get deploy</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deploy</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME      DESIRED   CURRENT   UP-TO-DATE   AVAILABLE   AGE
 nginx     3         3         3            3           1m</code></pre>
 <p>Get the rollout status:</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME               DESIRED   CURRENT   READY     AGE
 nginx-2142116321   3         3         3         1m</code></pre></li>
 <li><p>Pause by running the following command:</p>
-<pre class="shell"><code>kubectl rollout pause deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout pause deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment paused</code></pre></li>
 <li><p>Then update the image of the Deployment:</p>
-<pre class="shell"><code>kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment image updated</code></pre></li>
 <li><p>Notice that no new rollout started:</p>
-<pre class="shell"><code>kubectl rollout history deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout history deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployments &quot;nginx&quot;
 REVISION  CHANGE-CAUSE
 1   &lt;none&gt;</code></pre></li>
 <li><p>Get the rollout status to verify that the existing ReplicaSet has
 not changed:</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME               DESIRED   CURRENT   READY     AGE
 nginx-2142116321   3         3         3         2m</code></pre></li>
 <li><p>You can make as many updates as you wish, for example, update the
 resources that will be used:</p>
-<pre class="shell"><code>kubectl set resources deployment/nginx-deployment -c=nginx --limits=cpu=200m,memory=512Mi</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set resources deployment/nginx-deployment -c=nginx --limits=cpu=200m,memory=512Mi</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment resource requirements updated</code></pre>
 <p>The initial state of the Deployment prior to pausing its rollout will
@@ -861,12 +875,12 @@ continue its function, but new updates to the Deployment will not have
 any effect as long as the Deployment rollout is paused.</p></li>
 <li><p>Eventually, resume the Deployment rollout and observe a new
 ReplicaSet coming up with all the new updates:</p>
-<pre class="shell"><code>kubectl rollout resume deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout resume deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment resumed</code></pre></li>
 <li><p><a class="glossary-term" href="../../../reference/glossary.html#term-watch" title="Glossary: watch">Watch</a> the
 status of the rollout until it's done.</p>
-<pre class="shell"><code>kubectl get rs --watch</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs --watch</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME               DESIRED   CURRENT   READY     AGE
 nginx-2142116321   2         2         2         2m
@@ -884,7 +898,7 @@ nginx-2142116321   0         1         1         2m
 nginx-2142116321   0         0         0         2m
 nginx-3926361531   3         3         3         20s</code></pre></li>
 <li><p>Get the status of the latest rollout:</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME               DESIRED   CURRENT   READY     AGE
 nginx-2142116321   0         0         0         2m
@@ -950,13 +964,13 @@ affect the <code>Available</code> condition).</p>
 <code>kubectl rollout status</code>. If the rollout completed
 successfully, <code>kubectl rollout status</code> returns a zero exit
 code.</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Waiting for rollout to finish: 2 of 3 updated replicas are available...
 deployment &quot;nginx-deployment&quot; successfully rolled out</code></pre>
 <p>and the exit status from <code>kubectl rollout</code> is 0
 (success):</p>
-<pre class="shell"><code>echo $?</code></pre>
+<pre class="shell"><code class="language-shell">echo $?</code></pre>
 <pre><code>0</code></pre>
 <h3 id="failed-deployment">Failed Deployment</h3>
 <p>Your Deployment may get stuck trying to deploy its newest ReplicaSet
@@ -979,7 +993,7 @@ status) that the Deployment progress has stalled.</p>
 <p>The following <code>kubectl</code> command sets the spec with
 <code>progressDeadlineSeconds</code> to make the controller report lack
 of progress of a rollout for a Deployment after 10 minutes:</p>
-<pre class="shell"><code>kubectl patch deployment/nginx-deployment -p &#39;{&quot;spec&quot;:{&quot;progressDeadlineSeconds&quot;:600}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch deployment/nginx-deployment -p &#39;{&quot;spec&quot;:{&quot;progressDeadlineSeconds&quot;:600}}&#39;</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>deployment.apps/nginx-deployment patched</code></pre>
 <p>Once the deadline has been exceeded, the Deployment controller adds a
@@ -1021,7 +1035,7 @@ to a low timeout that you have set or due to any other kind of error
 that can be treated as transient. For example, let's suppose you have
 insufficient quota. If you describe the Deployment you will notice the
 following section:</p>
-<pre class="shell"><code>kubectl describe deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe deployment nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>&lt;...&gt;
 Conditions:
@@ -1094,13 +1108,13 @@ complete).</p>
 <code>kubectl rollout status</code>. <code>kubectl rollout status</code>
 returns a non-zero exit code if the Deployment has exceeded the
 progression deadline.</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Waiting for rollout to finish: 2 out of 3 new replicas have been updated...
 error: deployment &quot;nginx&quot; exceeded its progress deadline</code></pre>
 <p>and the exit status from <code>kubectl rollout</code> is 1
 (indicating an error):</p>
-<pre class="shell"><code>echo $?</code></pre>
+<pre class="shell"><code class="language-shell">echo $?</code></pre>
 <pre><code>1</code></pre>
 <h3 id="operating-on-a-failed-deployment">Operating on a failed
 deployment</h3>
@@ -1282,91 +1296,88 @@ during the update is at most 130% of desired Pods.</p>
 <div class="tab-label">
 <p>Max Unavailable</p>
 </div>
-<div class="sourceCode" id="cb94"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at"> </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at"> </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at"> </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">       </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">   </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">       </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">       </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">       </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at"> </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
-<span class="at">   </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: nginx-deployment
+ labels:
+   app: nginx
+spec:
+ replicas: 3
+ selector:
+   matchLabels:
+     app: nginx
+ template:
+   metadata:
+     labels:
+       app: nginx
+   spec:
+     containers:
+     - name: nginx
+       image: nginx:1.14.2
+       ports:
+       - containerPort: 80
+ strategy:
+   type: RollingUpdate
+   rollingUpdate:
+     maxUnavailable: 1</code></pre>
 <div class="tab-label">
 <p>Max Surge</p>
 </div>
-<div class="sourceCode" id="cb95"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at"> </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at"> </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at"> </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">       </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">   </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">       </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">       </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">       </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at"> </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
-<span class="at">   </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: nginx-deployment
+ labels:
+   app: nginx
+spec:
+ replicas: 3
+ selector:
+   matchLabels:
+     app: nginx
+ template:
+   metadata:
+     labels:
+       app: nginx
+   spec:
+     containers:
+     - name: nginx
+       image: nginx:1.14.2
+       ports:
+       - containerPort: 80
+ strategy:
+   type: RollingUpdate
+   rollingUpdate:
+     maxSurge: 1</code></pre>
 <div class="tab-label">
 <p>Hybrid</p>
 </div>
-<div class="sourceCode" id="cb96"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at"> </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at"> </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at"> </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">       </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">   </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">       </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">       </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">       </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at"> </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
-<span class="at">   </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">     </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+ name: nginx-deployment
+ labels:
+   app: nginx
+spec:
+ replicas: 3
+ selector:
+   matchLabels:
+     app: nginx
+ template:
+   metadata:
+     labels:
+       app: nginx
+   spec:
+     containers:
+     - name: nginx
+       image: nginx:1.14.2
+       ports:
+       - containerPort: 80
+ strategy:
+   type: RollingUpdate
+   rollingUpdate:
+     maxSurge: 1
+     maxUnavailable: 1</code></pre>
 </div>
 <h3 id="progress-deadline-seconds">Progress Deadline Seconds</h3>
 <p><code>.spec.progressDeadlineSeconds</code> is an optional field that
@@ -1514,6 +1525,7 @@ a Deployment</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1522,6 +1534,8 @@ a Deployment</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

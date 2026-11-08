@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -137,11 +152,10 @@ KubeSchedulerConfiguration <a
 href="../config-api/kube-scheduler-config.v1.html">v1</a>
 struct.</p>
 <p>A minimal configuration looks as follows:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">clientConnection</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeconfig</span><span class="kw">:</span><span class="at"> /etc/srv/kubernetes/kube-scheduler/kubeconfig</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+clientConnection:
+  kubeconfig: /etc/srv/kubernetes/kube-scheduler/kubeconfig</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -216,19 +230,18 @@ points simultaneously.</li>
 <p>For each extension point, you could disable specific <a
 href="#scheduling-plugins">default plugins</a> or enable your own. For
 example:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> PodTopologySpread</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyCustomPluginA</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyCustomPluginB</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - plugins:
+      score:
+        disabled:
+        - name: PodTopologySpread
+        enabled:
+        - name: MyCustomPluginA
+          weight: 2
+        - name: MyCustomPluginB
+          weight: 1</code></pre>
 <p>You can use <code>*</code> as name in the disabled array to disable
 all default plugins for that extension point. This can also be used to
 rearrange plugins order, if desired.</p>
@@ -340,19 +353,18 @@ href="#extension-points">extension points</a>.</p>
 <p>With the following sample configuration, the scheduler will run with
 two profiles: one with the default plugins and one with all scoring
 plugins disabled.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> default-scheduler</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> no-scoring-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">preScore</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;*&#39;</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;*&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: default-scheduler
+  - schedulerName: no-scoring-scheduler
+    plugins:
+      preScore:
+        disabled:
+        - name: &#39;*&#39;
+      score:
+        disabled:
+        - name: &#39;*&#39;</code></pre>
 <p>Pods that want to be scheduled according to a specific profile can
 include the corresponding scheduler name in its
 <code>.spec.schedulerName</code>.</p>
@@ -396,35 +408,33 @@ using custom profiles.</p>
 <code>filter</code> extension points. To enable <code>MyPlugin</code>
 for all its available extension points, the profile config looks
 like:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> multipoint-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">multiPoint</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyPlugin</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: multipoint-scheduler
+    plugins:
+      multiPoint:
+        enabled:
+        - name: MyPlugin</code></pre>
 <p>This would equate to manually enabling <code>MyPlugin</code> for all
 of its extension points, like so:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> non-multipoint-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">preScore</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyPlugin</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyPlugin</span></span>
-<span class="at">      </span><span class="fu">preFilter</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyPlugin</span></span>
-<span class="at">      </span><span class="fu">filter</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MyPlugin</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: non-multipoint-scheduler
+    plugins:
+      preScore:
+        enabled:
+        - name: MyPlugin
+      score:
+        enabled:
+        - name: MyPlugin
+      preFilter:
+        enabled:
+        - name: MyPlugin
+      filter:
+        enabled:
+        - name: MyPlugin</code></pre>
 <p>One benefit of using <code>multiPoint</code> here is that if
 <code>MyPlugin</code> implements another extension point in the future,
 the <code>multiPoint</code> config will automatically enable it for the
@@ -435,21 +445,20 @@ for that extension point. This works with disabling default plugins,
 non-default plugins, or with the wildcard (<code>'*'</code>) to disable
 all plugins. An example of this, disabling <code>Score</code> and
 <code>PreScore</code>, would be:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> non-multipoint-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">multiPoint</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;MyPlugin&#39;</span></span>
-<span class="at">      </span><span class="fu">preScore</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;*&#39;</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;*&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: non-multipoint-scheduler
+    plugins:
+      multiPoint:
+        enabled:
+        - name: &#39;MyPlugin&#39;
+      preScore:
+        disabled:
+        - name: &#39;*&#39;
+      score:
+        disabled:
+        - name: &#39;*&#39;</code></pre>
 <p>Starting from <code>kubescheduler.config.k8s.io/v1beta3</code>, all
 <a href="#scheduling-plugins">default plugins</a> are enabled internally
 through <code>MultiPoint</code>. However, individual extension points
@@ -458,16 +467,15 @@ values (such as ordering and Score weights). For example, consider two
 Score plugins <code>DefaultScore1</code> and <code>DefaultScore2</code>,
 each with a weight of <code>1</code>. They can be reordered with
 different weights like so:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> multipoint-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultScore2&#39;</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: multipoint-scheduler
+    plugins:
+      score:
+        enabled:
+        - name: &#39;DefaultScore2&#39;
+          weight: 5</code></pre>
 <p>In this example, it's unnecessary to specify the plugins in
 <code>MultiPoint</code> explicitly because they are default plugins. And
 the only plugin specified in <code>Score</code> is
@@ -494,26 +502,25 @@ these plugins: | Plugin | Extension Points | | ------------------ |
 <code>Score</code>, <code>Filter</code> | | <code>CustomPlugin2</code> |
 <code>Score</code>, <code>Filter</code> |</p>
 <p>A valid sample configuration for these plugins would be:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> multipoint-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">multiPoint</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomQueueSort&#39;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomPlugin1&#39;</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomPlugin2&#39;</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultQueueSort&#39;</span></span>
-<span class="at">      </span><span class="fu">filter</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultPlugin1&#39;</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultPlugin2&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: multipoint-scheduler
+    plugins:
+      multiPoint:
+        enabled:
+        - name: &#39;CustomQueueSort&#39;
+        - name: &#39;CustomPlugin1&#39;
+          weight: 3
+        - name: &#39;CustomPlugin2&#39;
+        disabled:
+        - name: &#39;DefaultQueueSort&#39;
+      filter:
+        disabled:
+        - name: &#39;DefaultPlugin1&#39;
+      score:
+        enabled:
+        - name: &#39;DefaultPlugin2&#39;</code></pre>
 <p>Note that there is no error for re-declaring a
 <code>MultiPoint</code> plugin in a specific extension point. The
 re-declaration is ignored (and logged), as specific extension points
@@ -532,39 +539,38 @@ which will run first for all of their extension points</li>
 </ul>
 <p>In versions of the config before <code>v1beta3</code>, without
 <code>multiPoint</code>, the above snippet would equate to this:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1beta2</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> multipoint-scheduler</span></span>
-<span class="at">    </span><span class="fu">plugins</span><span class="kw">:</span></span>
-</span>
-<span class="at">      </span><span class="co"># Disable the default QueueSort plugin</span></span>
-<span class="at">      </span><span class="fu">queueSort</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomQueueSort&#39;</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultQueueSort&#39;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Enable custom Filter plugins</span></span>
-<span class="at">      </span><span class="fu">filter</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomPlugin1&#39;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomPlugin2&#39;</span></span>
-<span class="at">        </span><span class="fu">disabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultPlugin1&#39;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Enable and reorder custom score plugins</span></span>
-<span class="at">      </span><span class="fu">score</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">enabled</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultPlugin2&#39;</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;DefaultPlugin1&#39;</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomPlugin1&#39;</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;CustomPlugin2&#39;</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1beta2
+kind: KubeSchedulerConfiguration
+profiles:
+  - schedulerName: multipoint-scheduler
+    plugins:
+
+      # Disable the default QueueSort plugin
+      queueSort:
+        enabled:
+        - name: &#39;CustomQueueSort&#39;
+        disabled:
+        - name: &#39;DefaultQueueSort&#39;
+
+      # Enable custom Filter plugins
+      filter:
+        enabled:
+        - name: &#39;CustomPlugin1&#39;
+        - name: &#39;CustomPlugin2&#39;
+        disabled:
+        - name: &#39;DefaultPlugin1&#39;
+
+      # Enable and reorder custom score plugins
+      score:
+        enabled:
+        - name: &#39;DefaultPlugin2&#39;
+          weight: 1
+        - name: &#39;DefaultPlugin1&#39;
+          weight: 1
+        - name: &#39;CustomPlugin1&#39;
+          weight: 3
+        - name: &#39;CustomPlugin2&#39;
+          weight: 1</code></pre>
 <p>While this is a complicated example, it demonstrates the flexibility
 of <code>MultiPoint</code> config as well as its seamless integration
 with the existing methods for configuring extension points.</p>
@@ -643,6 +649,7 @@ configuration (v1)</a> reference</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -651,6 +658,8 @@ configuration (v1)</a> reference</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

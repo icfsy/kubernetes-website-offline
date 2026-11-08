@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -148,7 +163,7 @@ installed and enabled. Several distributions enable the module by
 default, such as Ubuntu and SUSE, and many others provide optional
 support. To check whether the module is enabled, check the
 <code>/sys/module/apparmor/parameters/enabled</code> file:</p>
-<pre class="shell"><code>cat /sys/module/apparmor/parameters/enabled
+<pre class="shell"><code class="language-shell">cat /sys/module/apparmor/parameters/enabled
 Y</code></pre>
 <p>The kubelet verifies that AppArmor is enabled on the host before
 admitting a pod with AppArmor explicitly configured.</p></li>
@@ -163,7 +178,7 @@ the specified profiles are not loaded in the kernel, the kubelet will
 reject the Pod. You can view which profiles are loaded on a node by
 checking the <code>/sys/kernel/security/apparmor/profiles</code> file.
 For example:</p>
-<pre class="shell"><code>ssh gke-test-default-pool-239f5d02-gyn2 &quot;sudo cat /sys/kernel/security/apparmor/profiles | sort&quot;</code></pre>
+<pre class="shell"><code class="language-shell">ssh gke-test-default-pool-239f5d02-gyn2 &quot;sudo cat /sys/kernel/security/apparmor/profiles | sort&quot;</code></pre>
 <pre><code>apparmor-test-deny-write (enforce)
 apparmor-test-audit-write (enforce)
 docker-default (enforce)
@@ -184,10 +199,9 @@ documentation with this deprecated API.</p>
 <p>AppArmor profiles can be specified at the pod level or container
 level. The container AppArmor profile takes precedence over the pod
 profile.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">appArmorProfile</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> &lt;profile_type&gt;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">securityContext:
+  appArmorProfile:
+    type: &lt;profile_type&gt;</code></pre>
 <p>Where <code>&lt;profile_type&gt;</code> is one of:</p>
 <ul>
 <li><code>RuntimeDefault</code> to use the runtime's default
@@ -201,7 +215,7 @@ Confinement</a> for full details on the AppArmor profile API.</p>
 <p>To verify that the profile was applied, you can check that the
 container's root process is running with the correct profile by
 examining its proc attr:</p>
-<pre class="shell"><code>kubectl exec &lt;pod_name&gt; -- cat /proc/1/attr/current</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec &lt;pod_name&gt; -- cat /proc/1/attr/current</code></pre>
 <p>The output should look something like this:</p>
 <pre><code>cri-containerd.apparmor.d (enforce)</code></pre>
 <h2 id="example">Example</h2>
@@ -224,7 +238,7 @@ where the pod will be scheduled. For this example you can use SSH to
 install the profiles, but other approaches are discussed in <a
 href="#setting-up-nodes-with-profiles">Setting up nodes with
 profiles</a>.</p>
-<pre class="shell"><code># This example assumes that node names match host names, and are reachable via SSH.
+<pre class="shell"><code class="language-shell"># This example assumes that node names match host names, and are reachable via SSH.
 NODES=($( kubectl get node -o jsonpath=&#39;{.items[*].status.addresses[?(.type == &quot;Hostname&quot;)].address}&#39; ))
 
 for NODE in ${NODES[*]}; do ssh $NODE &#39;sudo apparmor_parser -q &lt;&lt;EOF
@@ -244,35 +258,34 @@ done</code></pre>
 profile:</p>
 <div class="code-sample">
 <p><code>pods/security/hello-apparmor.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello-apparmor</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">appArmorProfile</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Localhost</span></span>
-<span class="at">      </span><span class="fu">localhostProfile</span><span class="kw">:</span><span class="at"> k8s-apparmor-example-deny-write</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;echo &#39;Hello AppArmor!&#39; &amp;&amp; sleep 1h&quot;</span><span class="at"> </span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-apparmor
+spec:
+  securityContext:
+    appArmorProfile:
+      type: Localhost
+      localhostProfile: k8s-apparmor-example-deny-write
+  containers:
+  - name: hello
+    image: busybox:1.28
+    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;echo &#39;Hello AppArmor!&#39; &amp;&amp; sleep 1h&quot; ]</code></pre>
 </div>
-<pre class="shell"><code>kubectl create -f hello-apparmor.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f hello-apparmor.yaml</code></pre>
 <p>You can verify that the container is actually running with that
 profile by checking <code>/proc/1/attr/current</code>:</p>
-<pre class="shell"><code>kubectl exec hello-apparmor -- cat /proc/1/attr/current</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec hello-apparmor -- cat /proc/1/attr/current</code></pre>
 <p>The output should be:</p>
 <pre><code>k8s-apparmor-example-deny-write (enforce)</code></pre>
 <p>Finally, you can see what happens if you violate the profile by
 writing to a file:</p>
-<pre class="shell"><code>kubectl exec hello-apparmor -- touch /tmp/test</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec hello-apparmor -- touch /tmp/test</code></pre>
 <pre><code>touch: /tmp/test: Permission denied
 error: error executing remote command: command terminated with non-zero exit code: Error executing in Docker Container: 1</code></pre>
 <p>To wrap up, see what happens if you try to specify a profile that
 hasn't been loaded:</p>
-<pre class="shell"><code>kubectl create -f /dev/stdin &lt;&lt;EOF
+<pre class="shell"><code class="language-shell">kubectl create -f /dev/stdin &lt;&lt;EOF
 apiVersion: v1
 kind: Pod
 metadata:
@@ -290,7 +303,7 @@ EOF</code></pre>
 <pre><code>pod/hello-apparmor-2 created</code></pre>
 <p>Although the Pod was created successfully, further examination will
 show that it is stuck in pending:</p>
-<pre class="shell"><code>kubectl describe pod hello-apparmor-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod hello-apparmor-2</code></pre>
 <pre><code>Name:          hello-apparmor-2
 Namespace:     default
 Node:          gke-test-default-pool-239f5d02-x1kf/10.128.0.27
@@ -458,6 +471,7 @@ core policy reference</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -466,6 +480,8 @@ core policy reference</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

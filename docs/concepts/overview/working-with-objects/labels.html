@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -127,13 +142,12 @@ to select subsets of objects. Labels can be attached to objects at
 creation time and subsequently added and modified at any time. Each
 object can have a set of key/value labels defined. Each Key must be
 unique for a given object.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="st">&quot;metadata&quot;</span><span class="er">:</span> <span class="fu">{</span></span>
-  <span class="dt">&quot;labels&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;key1&quot;</span> <span class="fu">:</span> <span class="st">&quot;value1&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;key2&quot;</span> <span class="fu">:</span> <span class="st">&quot;value2&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">&quot;metadata&quot;: {
+  &quot;labels&quot;: {
+    &quot;key1&quot; : &quot;value1&quot;,
+    &quot;key2&quot; : &quot;value2&quot;
+  }
+}</code></pre>
 <p>Labels allow for efficient queries and watches and are ideal for use
 in UIs and CLIs. Non-identifying information should be recorded using <a
 href="annotations.html">annotations</a>.</p>
@@ -192,20 +206,19 @@ dots (<code>.</code>), and alphanumerics between.</li>
 </ul>
 <p>For example, here's a manifest for a Pod that has two labels
 <code>environment: production</code> and <code>app: nginx</code>:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> label-demo</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">environment</span><span class="kw">:</span><span class="at"> production</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: label-demo
+  labels:
+    environment: production
+    app: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    ports:
+    - containerPort: 80</code></pre>
 <h2 id="label-selectors">Label selectors</h2>
 <p>Unlike <a
 href="names.html">names and
@@ -262,20 +275,19 @@ operator: <code>environment=production,tier!=frontend</code></p>
 to specify node selection criteria. For example, the sample Pod below
 selects nodes where the <code>accelerator</code> label exists and is set
 to <code>nvidia-tesla-p100</code>.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cuda-test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cuda-test</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;registry.k8s.io/cuda-vector-add:v0.1&quot;</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">accelerator</span><span class="kw">:</span><span class="at"> nvidia-tesla-p100</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: cuda-test
+spec:
+  containers:
+    - name: cuda-test
+      image: &quot;registry.k8s.io/cuda-vector-add:v0.1&quot;
+      resources:
+        limits:
+          nvidia.com/gpu: 1
+  nodeSelector:
+    accelerator: nvidia-tesla-p100</code></pre>
 <h3 id="set-based-requirement"><em>Set-based</em> requirement</h3>
 <p><em>Set-based</em> label requirements allow filtering keys according
 to a set of values. Three kinds of operators are supported:
@@ -328,15 +340,15 @@ here as they would appear in a URL query string):</p>
 a REST client. For example, targeting <code>apiserver</code> with
 <code>kubectl</code> and using <em>equality-based</em> one may
 write:</p>
-<pre class="shell"><code>kubectl get pods -l environment=production,tier=frontend</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l environment=production,tier=frontend</code></pre>
 <p>or using <em>set-based</em> requirements:</p>
-<pre class="shell"><code>kubectl get pods -l &#39;environment in (production),tier in (frontend)&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l &#39;environment in (production),tier in (frontend)&#39;</code></pre>
 <p>As already mentioned <em>set-based</em> requirements are more
 expressive. For instance, they can implement the <em>OR</em> operator on
 values:</p>
-<pre class="shell"><code>kubectl get pods -l &#39;environment in (production, qa)&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l &#39;environment in (production, qa)&#39;</code></pre>
 <p>or restricting negative matching via <em>notin</em> operator:</p>
-<pre class="shell"><code>kubectl get pods -l &#39;environment,environment notin (frontend)&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l &#39;environment,environment notin (frontend)&#39;</code></pre>
 <h3 id="set-references-in-api-objects">Set references in API
 objects</h3>
 <p>Some Kubernetes objects, such as <a
@@ -354,14 +366,12 @@ label selector.</p>
 <p>Label selectors for both objects are defined in <code>json</code> or
 <code>yaml</code> files using maps, and only <em>equality-based</em>
 requirement selectors are supported:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="st">&quot;selector&quot;</span><span class="er">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;component&quot;</span> <span class="fu">:</span> <span class="st">&quot;redis&quot;</span><span class="fu">,</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">&quot;selector&quot;: {
+    &quot;component&quot; : &quot;redis&quot;,
+}</code></pre>
 <p>or</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">component</span><span class="kw">:</span><span class="at"> redis</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">selector:
+  component: redis</code></pre>
 <p>This selector (respectively in <code>json</code> or <code>yaml</code>
 format) is equivalent to <code>component=redis</code> or
 <code>component in (redis)</code>.</p>
@@ -376,13 +386,12 @@ href="../../workloads/controllers/replicaset.html"><code>ReplicaSet</code></a>,
 and <a
 href="../../workloads/controllers/daemonset.html"><code>DaemonSet</code></a>,
 support <em>set-based</em> requirements as well.</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">component</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">  </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- {</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="fu"> </span><span class="at">tier</span><span class="kw">,</span><span class="at"> </span><span class="fu">operator</span><span class="kw">:</span><span class="fu"> </span><span class="at">In</span><span class="kw">,</span><span class="at"> </span><span class="fu">values</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="at">cache</span><span class="kw">]</span><span class="at"> </span><span class="kw">}</span></span>
-<span class="at">    </span><span class="kw">- {</span><span class="at"> </span><span class="fu">key</span><span class="kw">:</span><span class="fu"> </span><span class="at">environment</span><span class="kw">,</span><span class="at"> </span><span class="fu">operator</span><span class="kw">:</span><span class="fu"> </span><span class="at">NotIn</span><span class="kw">,</span><span class="at"> </span><span class="fu">values</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="at">dev</span><span class="kw">]</span><span class="at"> </span><span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">selector:
+  matchLabels:
+    component: redis
+  matchExpressions:
+    - { key: tier, operator: In, values: [cache] }
+    - { key: environment, operator: NotIn, values: [dev] }</code></pre>
 <p><code>matchLabels</code> is a map of <code>{key,value}</code> pairs.
 A single <code>{key,value}</code> in the <code>matchLabels</code> map is
 equivalent to an element of <code>matchExpressions</code>, whose
@@ -413,32 +422,29 @@ convenience in manual queries and simple CLI usage. The
 Kubernetes labeling conventions and is better suited for tooling and
 automation.</p>
 <p>The frontend could carry the following labels:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">  </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">  </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">labels:
+  app: guestbook
+  app.kubernetes.io/name: guestbook
+  tier: frontend</code></pre>
 <p>while the Redis master and replica would have different
 <code>tier</code> labels, and perhaps even an additional
 <code>role</code> label:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">  </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">  </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="at">  </span><span class="fu">role</span><span class="kw">:</span><span class="at"> master</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">labels:
+  app: guestbook
+  app.kubernetes.io/name: guestbook
+  tier: backend
+  role: master</code></pre>
 <p>and</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">  </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">  </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="at">  </span><span class="fu">role</span><span class="kw">:</span><span class="at"> replica</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">labels:
+  app: guestbook
+  app.kubernetes.io/name: guestbook
+  tier: backend
+  role: replica</code></pre>
 <p>The labels allow for slicing and dicing the resources along any
 dimension specified by a label:</p>
-<pre class="shell"><code>kubectl apply -f examples/guestbook/all-in-one/guestbook-all-in-one.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f examples/guestbook/all-in-one/guestbook-all-in-one.yaml
 kubectl get pods -Lapp -Ltier -Lrole</code></pre>
-<pre class="none"><code>NAME                           READY  STATUS    RESTARTS   AGE   APP         TIER       ROLE
+<pre class="none"><code class="language-none">NAME                           READY  STATUS    RESTARTS   AGE   APP         TIER       ROLE
 guestbook-fe-4nlpb             1/1    Running   0          1m    guestbook   frontend   &lt;none&gt;
 guestbook-fe-ght6d             1/1    Running   0          1m    guestbook   frontend   &lt;none&gt;
 guestbook-fe-jpy62             1/1    Running   0          1m    guestbook   frontend   &lt;none&gt;
@@ -447,8 +453,8 @@ guestbook-redis-replica-2q2yf  1/1    Running   0          1m    guestbook   bac
 guestbook-redis-replica-qgazl  1/1    Running   0          1m    guestbook   backend    replica
 my-nginx-divi2                 1/1    Running   0          29m   nginx       &lt;none&gt;     &lt;none&gt;
 my-nginx-o0ef1                 1/1    Running   0          29m   nginx       &lt;none&gt;     &lt;none&gt;</code></pre>
-<pre class="shell"><code>kubectl get pods -lapp=guestbook,role=replica</code></pre>
-<pre class="none"><code>NAME                           READY  STATUS   RESTARTS  AGE
+<pre class="shell"><code class="language-shell">kubectl get pods -lapp=guestbook,role=replica</code></pre>
+<pre class="none"><code class="language-none">NAME                           READY  STATUS   RESTARTS  AGE
 guestbook-redis-replica-2q2yf  1/1    Running  0         3m
 guestbook-redis-replica-qgazl  1/1    Running  0         3m</code></pre>
 <h2 id="updating-labels">Updating labels</h2>
@@ -456,14 +462,14 @@ guestbook-redis-replica-qgazl  1/1    Running  0         3m</code></pre>
 before creating new resources. This can be done with
 <code>kubectl label</code>. For example, if you want to label all your
 NGINX Pods as frontend tier, run:</p>
-<pre class="shell"><code>kubectl label pods -l app=nginx tier=fe</code></pre>
-<pre class="none"><code>pod/my-nginx-2035384211-j5fhi labeled
+<pre class="shell"><code class="language-shell">kubectl label pods -l app=nginx tier=fe</code></pre>
+<pre class="none"><code class="language-none">pod/my-nginx-2035384211-j5fhi labeled
 pod/my-nginx-2035384211-u2c7e labeled
 pod/my-nginx-2035384211-u3t6x labeled</code></pre>
 <p>This first filters all pods with the label "app=nginx", and then
 labels them with the "tier=fe". To see the pods you labeled, run:</p>
-<pre class="shell"><code>kubectl get pods -l app=nginx -L tier</code></pre>
-<pre class="none"><code>NAME                        READY     STATUS    RESTARTS   AGE       TIER
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=nginx -L tier</code></pre>
+<pre class="none"><code class="language-none">NAME                        READY     STATUS    RESTARTS   AGE       TIER
 my-nginx-2035384211-j5fhi   1/1       Running   0          23m       fe
 my-nginx-2035384211-u2c7e   1/1       Running   0          23m       fe
 my-nginx-2035384211-u3t6x   1/1       Running   0          23m       fe</code></pre>
@@ -555,6 +561,7 @@ a Controller for Pod Labels</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -563,6 +570,8 @@ a Controller for Pod Labels</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

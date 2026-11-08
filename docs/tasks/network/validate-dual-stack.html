@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -147,14 +162,14 @@ IPv6 block allocated. Validate that IPv4/IPv6 Pod address ranges are
 configured by running the following command. Replace the sample node
 name with a valid dual-stack Node from your cluster. In this example,
 the Node's name is <code>k8s-linuxpool1-34450317-0</code>:</p>
-<pre class="shell"><code>kubectl get nodes k8s-linuxpool1-34450317-0 -o go-template --template=&#39;{{range .spec.podCIDRs}}{{printf &quot;%s\n&quot; .}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes k8s-linuxpool1-34450317-0 -o go-template --template=&#39;{{range .spec.podCIDRs}}{{printf &quot;%s\n&quot; .}}{{end}}&#39;</code></pre>
 <pre><code>10.244.1.0/24
 2001:db8::/64</code></pre>
 <p>There should be one IPv4 block and one IPv6 block allocated.</p>
 <p>Validate that the node has an IPv4 and IPv6 interface detected.
 Replace node name with a valid node from the cluster. In this example
 the node name is <code>k8s-linuxpool1-34450317-0</code>:</p>
-<pre class="shell"><code>kubectl get nodes k8s-linuxpool1-34450317-0 -o go-template --template=&#39;{{range .status.addresses}}{{printf &quot;%s: %s\n&quot; .type .address}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes k8s-linuxpool1-34450317-0 -o go-template --template=&#39;{{range .status.addresses}}{{printf &quot;%s: %s\n&quot; .type .address}}{{end}}&#39;</code></pre>
 <pre><code>Hostname: k8s-linuxpool1-34450317-0
 InternalIP: 10.0.0.5
 InternalIP: 2001:db8:10::5</code></pre>
@@ -162,30 +177,29 @@ InternalIP: 2001:db8:10::5</code></pre>
 <p>Validate that a Pod has an IPv4 and IPv6 address assigned. Replace
 the Pod name with a valid Pod in your cluster. In this example the Pod
 name is <code>pod01</code>:</p>
-<pre class="shell"><code>kubectl get pods pod01 -o go-template --template=&#39;{{range .status.podIPs}}{{printf &quot;%s\n&quot; .ip}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods pod01 -o go-template --template=&#39;{{range .status.podIPs}}{{printf &quot;%s\n&quot; .ip}}{{end}}&#39;</code></pre>
 <pre><code>10.244.1.4
 2001:db8::4</code></pre>
 <p>You can also validate Pod IPs using the Downward API via the
 <code>status.podIPs</code> fieldPath. The following snippet demonstrates
 how you can expose the Pod IPs via an environment variable called
 <code>MY_POD_IPS</code> within a container.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_POD_IPS</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> status.podIPs</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">        env:
+        - name: MY_POD_IPS
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIPs</code></pre>
 <p>The following command prints the value of the <code>MY_POD_IPS</code>
 environment variable from within a container. The value is a comma
 separated list that corresponds to the Pod's IPv4 and IPv6
 addresses.</p>
-<pre class="shell"><code>kubectl exec -it pod01 -- set | grep MY_POD_IPS</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it pod01 -- set | grep MY_POD_IPS</code></pre>
 <pre><code>MY_POD_IPS=10.244.1.4,2001:db8::4</code></pre>
 <p>The Pod's IP addresses will also be written to
 <code>/etc/hosts</code> within a container. The following command
 executes a cat on <code>/etc/hosts</code> on a dual stack Pod. From the
 output you can verify both the IPv4 and IPv6 IP address for the Pod.</p>
-<pre class="shell"><code>kubectl exec -it pod01 -- cat /etc/hosts</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it pod01 -- cat /etc/hosts</code></pre>
 <pre><code># Kubernetes-managed hosts file.
 127.0.0.1    localhost
 ::1    localhost ip6-localhost ip6-loopback
@@ -203,50 +217,48 @@ for the Service from the first configured
 <code>.spec.ipFamilyPolicy</code> to <code>SingleStack</code>.</p>
 <div class="code-sample">
 <p><code>service/networking/dual-stack-default-svc.yaml</code></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    app.kubernetes.io/name: MyApp
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80</code></pre>
 </div>
 <p>Use <code>kubectl</code> to view the YAML for the Service.</p>
-<pre class="shell"><code>kubectl get svc my-service -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc my-service -o yaml</code></pre>
 <p>The Service has <code>.spec.ipFamilyPolicy</code> set to
 <code>SingleStack</code> and <code>.spec.clusterIP</code> set to an IPv4
 address from the first configured range set via
 <code>--service-cluster-ip-range</code> flag on
 kube-controller-manager.</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> 10.0.217.164</span></span>
-<span class="at">  </span><span class="fu">clusterIPs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">10.0.217.164</span></span>
-<span class="at">  </span><span class="fu">ipFamilies</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">IPv4</span></span>
-<span class="at">  </span><span class="fu">ipFamilyPolicy</span><span class="kw">:</span><span class="at"> SingleStack</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">sessionAffinity</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ClusterIP</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">loadBalancer</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: default
+spec:
+  clusterIP: 10.0.217.164
+  clusterIPs:
+  - 10.0.217.164
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 9376
+  selector:
+    app.kubernetes.io/name: MyApp
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}</code></pre>
 <p>Create the following Service that explicitly defines
 <code>IPv6</code> as the first array element in
 <code>.spec.ipFamilies</code>. Kubernetes will assign a cluster IP for
@@ -255,53 +267,51 @@ the Service from the IPv6 range configured
 <code>.spec.ipFamilyPolicy</code> to <code>SingleStack</code>.</p>
 <div class="code-sample">
 <p><code>service/networking/dual-stack-ipfamilies-ipv6.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ipFamilies</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">IPv6</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    app.kubernetes.io/name: MyApp
+spec:
+  ipFamilies:
+  - IPv6
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80</code></pre>
 </div>
 <p>Use <code>kubectl</code> to view the YAML for the Service.</p>
-<pre class="shell"><code>kubectl get svc my-service -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc my-service -o yaml</code></pre>
 <p>The Service has <code>.spec.ipFamilyPolicy</code> set to
 <code>SingleStack</code> and <code>.spec.clusterIP</code> set to an IPv6
 address from the IPv6 range set via
 <code>--service-cluster-ip-range</code> flag on
 kube-controller-manager.</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> 2001:db8:fd00::5118</span></span>
-<span class="at">  </span><span class="fu">clusterIPs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">2001:db8:fd00::5118</span></span>
-<span class="at">  </span><span class="fu">ipFamilies</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">IPv6</span></span>
-<span class="at">  </span><span class="fu">ipFamilyPolicy</span><span class="kw">:</span><span class="at"> SingleStack</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">sessionAffinity</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ClusterIP</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">loadBalancer</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: MyApp
+  name: my-service
+spec:
+  clusterIP: 2001:db8:fd00::5118
+  clusterIPs:
+  - 2001:db8:fd00::5118
+  ipFamilies:
+  - IPv6
+  ipFamilyPolicy: SingleStack
+  ports:
+  - port: 80
+    protocol: TCP
+    targetPort: 80
+  selector:
+    app.kubernetes.io/name: MyApp
+  sessionAffinity: None
+  type: ClusterIP
+status:
+  loadBalancer: {}</code></pre>
 <p>Create the following Service that explicitly defines
 <code>PreferDualStack</code> in <code>.spec.ipFamilyPolicy</code>.
 Kubernetes will assign both IPv4 and IPv6 addresses (as this cluster has
@@ -310,20 +320,19 @@ list of <code>.spec.ClusterIPs</code> based on the address family of the
 first element in the <code>.spec.ipFamilies</code> array.</p>
 <div class="code-sample">
 <p><code>service/networking/dual-stack-preferred-svc.yaml</code></p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ipFamilyPolicy</span><span class="kw">:</span><span class="at"> PreferDualStack</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    app.kubernetes.io/name: MyApp
+spec:
+  ipFamilyPolicy: PreferDualStack
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -331,14 +340,14 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 </div>
 <p>The <code>kubectl get svc</code> command will only show the primary
 IP in the <code>CLUSTER-IP</code> field.</p>
-<pre class="shell"><code>kubectl get svc -l app.kubernetes.io/name=MyApp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc -l app.kubernetes.io/name=MyApp</code></pre>
 <pre><code>NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
 my-service   ClusterIP   10.0.216.242   &lt;none&gt;        80/TCP    5s</code></pre>
 </div>
 <p>Validate that the Service gets cluster IPs from the IPv4 and IPv6
 address blocks using <code>kubectl describe</code>. You may then
 validate access to the service via the IPs and ports.</p>
-<pre class="shell"><code>kubectl describe svc -l app.kubernetes.io/name=MyApp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe svc -l app.kubernetes.io/name=MyApp</code></pre>
 <pre><code>Name:              my-service
 Namespace:         default
 Labels:            app.kubernetes.io/name=MyApp
@@ -364,26 +373,25 @@ external load balancers, create the following Service with
 to <code>LoadBalancer</code>.</p>
 <div class="code-sample">
 <p><code>service/networking/dual-stack-prefer-ipv6-lb-svc.yaml</code></p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ipFamilyPolicy</span><span class="kw">:</span><span class="at"> PreferDualStack</span></span>
-<span class="at">  </span><span class="fu">ipFamilies</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">IPv6</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    app.kubernetes.io/name: MyApp
+spec:
+  ipFamilyPolicy: PreferDualStack
+  ipFamilies:
+  - IPv6
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80</code></pre>
 </div>
 <p>Check the Service:</p>
-<pre class="shell"><code>kubectl get svc -l app.kubernetes.io/name=MyApp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc -l app.kubernetes.io/name=MyApp</code></pre>
 <p>Validate that the Service receives a <code>CLUSTER-IP</code> address
 from the IPv6 address block along with an <code>EXTERNAL-IP</code>. You
 may then validate access to the service via the IP and port.</p>
@@ -453,6 +461,7 @@ my-service   LoadBalancer   2001:db8:fd00::7ebc   2603:1030:805::5   80:30790/TC
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -461,6 +470,8 @@ my-service   LoadBalancer   2001:db8:fd00::7ebc   2603:1030:805::5   80:30790/TC
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

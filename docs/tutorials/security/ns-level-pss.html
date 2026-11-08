@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -143,7 +158,7 @@ href="https://kind.sigs.k8s.io/docs/user/quick-start/#installation">kind</a></li
 <h2 id="create-cluster">Create cluster</h2>
 <ol type="1">
 <li><p>Create a <code>kind</code> cluster as follows:</p>
-<pre class="shell"><code>kind create cluster --name psa-ns-level</code></pre>
+<pre class="shell"><code class="language-shell">kind create cluster --name psa-ns-level</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Creating cluster &quot;psa-ns-level&quot; ...
  ✓ Ensuring node image (kindest/node:v1.37.1) 🖼 
@@ -159,7 +174,7 @@ kubectl cluster-info --context kind-psa-ns-level
 
 Not sure what to do next? 😅  Check out https://kind.sigs.k8s.io/docs/user/quick-start/</code></pre></li>
 <li><p>Set the kubectl context to the new cluster:</p>
-<pre class="shell"><code>kubectl cluster-info --context kind-psa-ns-level</code></pre>
+<pre class="shell"><code class="language-shell">kubectl cluster-info --context kind-psa-ns-level</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Kubernetes control plane is running at https://127.0.0.1:50996
 CoreDNS is running at https://127.0.0.1:50996/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
@@ -168,7 +183,7 @@ To further debug and diagnose cluster problems, use &#39;kubectl cluster-info du
 </ol>
 <h2 id="create-a-namespace">Create a namespace</h2>
 <p>Create a new namespace called <code>example</code>:</p>
-<pre class="shell"><code>kubectl create ns example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create ns example</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>namespace/example created</code></pre>
 <h2
@@ -179,7 +194,7 @@ Pod Security Standards checking for that namespace</h2>
 supported by built-in Pod Security Admission. In this step you will
 configure a check to warn on Pods that don't meet the latest version of
 the <em>baseline</em> pod security standard.</p>
-<pre class="shell"><code>kubectl label --overwrite ns example \
+<pre class="shell"><code class="language-shell">kubectl label --overwrite ns example \
    pod-security.kubernetes.io/warn=baseline \
    pod-security.kubernetes.io/warn-version=latest</code></pre></li>
 <li><p>You can configure multiple pod security standard checks on any
@@ -187,7 +202,7 @@ namespace, using labels. The following command will <code>enforce</code>
 the <code>baseline</code> Pod Security Standard, but <code>warn</code>
 and <code>audit</code> for <code>restricted</code> Pod Security
 Standards as per the latest version (default value)</p>
-<pre class="shell"><code>kubectl label --overwrite ns example \
+<pre class="shell"><code class="language-shell">kubectl label --overwrite ns example \
   pod-security.kubernetes.io/enforce=baseline \
   pod-security.kubernetes.io/enforce-version=latest \
   pod-security.kubernetes.io/warn=restricted \
@@ -199,13 +214,13 @@ Standards as per the latest version (default value)</p>
 Security Standard enforcement</h2>
 <ol type="1">
 <li><p>Create a baseline Pod in the <code>example</code> namespace:</p>
-<pre class="shell"><code>kubectl apply -n example -f https://k8s.io/examples/security/example-baseline-pod.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -n example -f https://k8s.io/examples/security/example-baseline-pod.yaml</code></pre>
 <p>The Pod does start OK; the output includes a warning. For
 example:</p>
 <pre><code>Warning: would violate PodSecurity &quot;restricted:latest&quot;: allowPrivilegeEscalation != false (container &quot;nginx&quot; must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container &quot;nginx&quot; must set securityContext.capabilities.drop=[&quot;ALL&quot;]), runAsNonRoot != true (pod or container &quot;nginx&quot; must set securityContext.runAsNonRoot=true), seccompProfile (pod or container &quot;nginx&quot; must set securityContext.seccompProfile.type to &quot;RuntimeDefault&quot; or &quot;Localhost&quot;)
 pod/nginx created</code></pre></li>
 <li><p>Create a baseline Pod in the <code>default</code> namespace:</p>
-<pre class="shell"><code>kubectl apply -n default -f https://k8s.io/examples/security/example-baseline-pod.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -n default -f https://k8s.io/examples/security/example-baseline-pod.yaml</code></pre>
 <p>Output is similar to this:</p>
 <pre><code>pod/nginx created</code></pre></li>
 </ol>
@@ -215,7 +230,7 @@ same Pod in the <code>default</code> namespace with no warnings.</p>
 <h2 id="clean-up">Clean up</h2>
 <p>Now delete the cluster which you created above by running the
 following command:</p>
-<pre class="shell"><code>kind delete cluster --name psa-ns-level</code></pre>
+<pre class="shell"><code class="language-shell">kind delete cluster --name psa-ns-level</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li><p>Run a <a
@@ -302,6 +317,7 @@ Security Standards at the cluster level</a></p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -310,6 +326,8 @@ Security Standards at the cluster level</a></p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

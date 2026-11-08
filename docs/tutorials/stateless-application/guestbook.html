@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -162,53 +177,52 @@ Deployment</h3>
 that runs a single replica Redis Pod.</p>
 <div class="code-sample">
 <p><code>application/guestbook/redis-leader-deployment.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-leader</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">role</span><span class="kw">:</span><span class="at"> leader</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">        </span><span class="fu">role</span><span class="kw">:</span><span class="at"> leader</span></span>
-<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> leader</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;registry.k8s.io/redis@sha256:cb111d1bd870a6a471385a4a69ad17469d326e9dd91e0e455350cacf36e1b3ee&quot;</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 100m</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-leader
+  labels:
+    app: redis
+    role: leader
+    tier: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: leader
+        tier: backend
+    spec:
+      containers:
+      - name: leader
+        image: &quot;registry.k8s.io/redis@sha256:cb111d1bd870a6a471385a4a69ad17469d326e9dd91e0e455350cacf36e1b3ee&quot;
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 6379</code></pre>
 </div>
 <ol type="1">
 <li><p>Launch a terminal window in the directory you downloaded the
 manifest files.</p></li>
 <li><p>Apply the Redis Deployment from the
 <code>redis-leader-deployment.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/guestbook/redis-leader-deployment.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/guestbook/redis-leader-deployment.yaml</code></pre></li>
 <li><p>Query the list of Pods to verify that the Redis Pod is
 running:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME                           READY   STATUS    RESTARTS   AGE
 redis-leader-fb76b4755-xjr2n   1/1     Running   0          13s</code></pre></li>
 <li><p>Run the following command to view the logs from the Redis leader
 Pod:</p>
-<pre class="shell"><code>kubectl logs -f deployment/redis-leader</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl logs -f deployment/redis-leader</code></pre></li>
 </ol>
 <h3 id="creating-the-redis-leader-service">Creating the Redis leader
 Service</h3>
@@ -219,32 +233,31 @@ the traffic to the Redis Pod. A Service defines a policy to access the
 Pods.</p>
 <div class="code-sample">
 <p><code>application/guestbook/redis-leader-service.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-leader</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">role</span><span class="kw">:</span><span class="at"> leader</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span>
-<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">role</span><span class="kw">:</span><span class="at"> leader</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-leader
+  labels:
+    app: redis
+    role: leader
+    tier: backend
+spec:
+  ports:
+  - port: 6379
+    targetPort: 6379
+  selector:
+    app: redis
+    role: leader
+    tier: backend</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the Redis Service from the following
 <code>redis-leader-service.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/guestbook/redis-leader-service.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/guestbook/redis-leader-service.yaml</code></pre></li>
 <li><p>Query the list of Services to verify that the Redis Service is
 running:</p>
-<pre class="shell"><code>kubectl get service</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get service</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME           TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
 kubernetes     ClusterIP   10.0.0.1     &lt;none&gt;        443/TCP    1m
@@ -264,45 +277,44 @@ available and meet traffic demands by adding a few Redis followers, or
 replicas.</p>
 <div class="code-sample">
 <p><code>application/guestbook/redis-follower-deployment.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-follower</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">role</span><span class="kw">:</span><span class="at"> follower</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">        </span><span class="fu">role</span><span class="kw">:</span><span class="at"> follower</span></span>
-<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> follower</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> us-docker.pkg.dev/google-samples/containers/gke/gb-redis-follower:v2</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 100m</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-follower
+  labels:
+    app: redis
+    role: follower
+    tier: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+        role: follower
+        tier: backend
+    spec:
+      containers:
+      - name: follower
+        image: us-docker.pkg.dev/google-samples/containers/gke/gb-redis-follower:v2
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 6379</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the Redis Deployment from the following
 <code>redis-follower-deployment.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/guestbook/redis-follower-deployment.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/guestbook/redis-follower-deployment.yaml</code></pre></li>
 <li><p>Verify that the two Redis follower replicas are running by
 querying the list of Pods:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME                             READY   STATUS    RESTARTS   AGE
 redis-follower-dddfbdcc9-82sfr   1/1     Running   0          37s
@@ -317,32 +329,31 @@ must set up another <a
 href="../../concepts/services-networking/service.html">Service</a>.</p>
 <div class="code-sample">
 <p><code>application/guestbook/redis-follower-service.yaml</code></p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-follower</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">role</span><span class="kw">:</span><span class="at"> follower</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># the port that this service should serve on</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">role</span><span class="kw">:</span><span class="at"> follower</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> backend</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-follower
+  labels:
+    app: redis
+    role: follower
+    tier: backend
+spec:
+  ports:
+    # the port that this service should serve on
+  - port: 6379
+  selector:
+    app: redis
+    role: follower
+    tier: backend</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the Redis Service from the following
 <code>redis-follower-service.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/guestbook/redis-follower-service.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/guestbook/redis-follower-service.yaml</code></pre></li>
 <li><p>Query the list of Services to verify that the Redis Service is
 running:</p>
-<pre class="shell"><code>kubectl get service</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get service</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
 kubernetes       ClusterIP   10.96.0.1       &lt;none&gt;        443/TCP    3d19h
@@ -371,44 +382,43 @@ interface, and serves a jQuery-Ajax-based UX.</p>
 Guestbook Frontend Deployment</h3>
 <div class="code-sample">
 <p><code>application/guestbook/frontend-deployment.yaml</code></p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-redis</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> us-docker.pkg.dev/google-samples/containers/gke/gb-frontend:v5</span></span>
-<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> GET_HOSTS_FROM</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;dns&quot;</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 100m</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+        app: guestbook
+        tier: frontend
+  template:
+    metadata:
+      labels:
+        app: guestbook
+        tier: frontend
+    spec:
+      containers:
+      - name: php-redis
+        image: us-docker.pkg.dev/google-samples/containers/gke/gb-frontend:v5
+        env:
+        - name: GET_HOSTS_FROM
+          value: &quot;dns&quot;
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the frontend Deployment from the
 <code>frontend-deployment.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/guestbook/frontend-deployment.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/guestbook/frontend-deployment.yaml</code></pre></li>
 <li><p>Query the list of Pods to verify that the three frontend replicas
 are running:</p>
-<pre class="shell"><code>kubectl get pods -l app=guestbook -l tier=frontend</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=guestbook -l tier=frontend</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME                        READY   STATUS    RESTARTS   AGE
 frontend-85595f5bf9-5tqhb   1/1     Running   0          47s
@@ -439,34 +449,33 @@ load balancers and you want to use it, uncomment
 </div>
 <div class="code-sample">
 <p><code>application/guestbook/frontend-service.yaml</code></p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># if your cluster supports it, uncomment the following to automatically create</span></span>
-<span class="at">  </span><span class="co"># an external load-balanced IP for the frontend service.</span></span>
-<span class="at">  </span><span class="co"># type: LoadBalancer</span></span>
-<span class="at">  </span><span class="co">#type: LoadBalancer</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># the port that this service should serve on</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># SOURCE: https://cloud.google.com/kubernetes-engine/docs/tutorials/guestbook
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  labels:
+    app: guestbook
+    tier: frontend
+spec:
+  # if your cluster supports it, uncomment the following to automatically create
+  # an external load-balanced IP for the frontend service.
+  # type: LoadBalancer
+  #type: LoadBalancer
+  ports:
+    # the port that this service should serve on
+  - port: 80
+  selector:
+    app: guestbook
+    tier: frontend</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the frontend Service from the
 <code>frontend-service.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/guestbook/frontend-service.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/guestbook/frontend-service.yaml</code></pre></li>
 <li><p>Query the list of Services to verify that the frontend Service is
 running:</p>
-<pre class="shell"><code>kubectl get services</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get services</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME             TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
 frontend         ClusterIP   10.97.28.230    &lt;none&gt;        80/TCP     19s
@@ -479,7 +488,7 @@ the Frontend Service via <code>kubectl port-forward</code></h3>
 <ol type="1">
 <li><p>Run the following command to forward port <code>8080</code> on
 your local machine to port <code>80</code> on the service.</p>
-<pre class="shell"><code>kubectl port-forward svc/frontend 8080:80</code></pre>
+<pre class="shell"><code class="language-shell">kubectl port-forward svc/frontend 8080:80</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>Forwarding from 127.0.0.1:8080 -&gt; 80
 Forwarding from [::1]:8080 -&gt; 80</code></pre></li>
@@ -495,7 +504,7 @@ your Guestbook.</p>
 <ol type="1">
 <li><p>Run the following command to get the IP address for the frontend
 Service.</p>
-<pre class="shell"><code>kubectl get service frontend</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get service frontend</code></pre>
 <p>The response should be similar to this:</p>
 <pre><code>NAME       TYPE           CLUSTER-IP      EXTERNAL-IP        PORT(S)        AGE
 frontend   LoadBalancer   10.51.242.136   109.197.92.229     80:32372/TCP   1m</code></pre></li>
@@ -517,10 +526,10 @@ as a Service that uses a Deployment controller.</p>
 <ol type="1">
 <li><p>Run the following command to scale up the number of frontend
 Pods:</p>
-<pre class="shell"><code>kubectl scale deployment frontend --replicas=5</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl scale deployment frontend --replicas=5</code></pre></li>
 <li><p>Query the list of Pods to verify the number of frontend Pods
 running:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The response should look similar to this:</p>
 <pre><code>NAME                             READY   STATUS    RESTARTS   AGE
 frontend-85595f5bf9-5df5m        1/1     Running   0          83s
@@ -533,10 +542,10 @@ redis-follower-dddfbdcc9-qrt5k   1/1     Running   0          97m
 redis-leader-fb76b4755-xjr2n     1/1     Running   0          108m</code></pre></li>
 <li><p>Run the following command to scale down the number of frontend
 Pods:</p>
-<pre class="shell"><code>kubectl scale deployment frontend --replicas=2</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl scale deployment frontend --replicas=2</code></pre></li>
 <li><p>Query the list of Pods to verify the number of frontend Pods
 running:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The response should look similar to this:</p>
 <pre><code>NAME                             READY   STATUS    RESTARTS   AGE
 frontend-85595f5bf9-cpskg        1/1     Running   0          16m
@@ -551,7 +560,7 @@ Use labels to delete multiple resources with one command.</p>
 <ol type="1">
 <li><p>Run the following commands to delete all Pods, Deployments, and
 Services.</p>
-<pre class="shell"><code>kubectl delete deployment -l app=redis
+<pre class="shell"><code class="language-shell">kubectl delete deployment -l app=redis
 kubectl delete service -l app=redis
 kubectl delete deployment frontend
 kubectl delete service frontend</code></pre>
@@ -561,7 +570,7 @@ deployment.apps &quot;redis-leader&quot; deleted
 deployment.apps &quot;frontend&quot; deleted
 service &quot;frontend&quot; deleted</code></pre></li>
 <li><p>Query the list of Pods to verify that no Pods are running:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The response should look similar to this:</p>
 <pre><code>No resources found in default namespace.</code></pre></li>
 </ol>
@@ -648,6 +657,7 @@ versions in production.</p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -656,6 +666,8 @@ versions in production.</p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

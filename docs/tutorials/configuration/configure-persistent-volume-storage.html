@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -152,12 +167,12 @@ Minikube, you can open a shell to your Node by entering
 <code>minikube ssh</code>.</p>
 <p>In your shell on that Node, create a <code>/mnt/data</code>
 directory:</p>
-<pre class="shell"><code># This assumes that your Node uses &quot;sudo&quot; to run commands
+<pre class="shell"><code class="language-shell"># This assumes that your Node uses &quot;sudo&quot; to run commands
 # as the superuser
 sudo mkdir /mnt/data</code></pre>
 <p>In the <code>/mnt/data</code> directory, create an
 <code>index.html</code> file:</p>
-<pre class="shell"><code># This again assumes that your Node uses &quot;sudo&quot; to run commands
+<pre class="shell"><code class="language-shell"># This again assumes that your Node uses &quot;sudo&quot; to run commands
 # as the superuser
 sudo sh -c &quot;echo &#39;Hello from Kubernetes storage&#39; &gt; /mnt/data/index.html&quot;</code></pre>
 <div class="admonition note">
@@ -169,7 +184,7 @@ sudo sh -c &quot;echo &#39;Hello from Kubernetes storage&#39; &gt; /mnt/data/ind
 <code>sudo</code> with the name of the other tool.</p>
 </div>
 <p>Test that the <code>index.html</code> file exists:</p>
-<pre class="shell"><code>cat /mnt/data/index.html</code></pre>
+<pre class="shell"><code class="language-shell">cat /mnt/data/index.html</code></pre>
 <p>The output should be:</p>
 <pre><code>Hello from Kubernetes storage</code></pre>
 <p>You can now close the shell to your Node.</p>
@@ -189,21 +204,20 @@ provisioning</a>.</p>
 <p>Here is the configuration file for the hostPath PersistentVolume:</p>
 <div class="code-sample">
 <p><code>pods/storage/pv-volume.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-volume</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> local</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> manual</span></span>
-<span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/mnt/data&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: task-pv-volume
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: &quot;/mnt/data&quot;</code></pre>
 </div>
 <p>The configuration file specifies that the volume is at
 <code>/mnt/data</code> on the cluster's Node. The configuration also
@@ -223,9 +237,9 @@ simplicity. For production use, the Kubernetes project recommends using
 the <code>ReadWriteOncePod</code> access mode instead.</p>
 </div>
 <p>Create the PersistentVolume:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/storage/pv-volume.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/storage/pv-volume.yaml</code></pre>
 <p>View information about the PersistentVolume:</p>
-<pre class="shell"><code>kubectl get pv task-pv-volume</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pv task-pv-volume</code></pre>
 <p>The output shows that the PersistentVolume has a <code>STATUS</code>
 of <code>Available</code>. This means it has not yet been bound to a
 PersistentVolumeClaim.</p>
@@ -241,32 +255,31 @@ at a time.</p>
 <p>Here is the configuration file for the PersistentVolumeClaim:</p>
 <div class="code-sample">
 <p><code>pods/storage/pv-claim.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-claim</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> manual</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 3Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: task-pv-claim
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi</code></pre>
 </div>
 <p>Create the PersistentVolumeClaim:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/storage/pv-claim.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/storage/pv-claim.yaml</code></pre>
 <p>After you create the PersistentVolumeClaim, the Kubernetes control
 plane looks for a PersistentVolume that satisfies the claim's
 requirements. If the control plane finds a suitable PersistentVolume
 with the same StorageClass, it binds the claim to the volume.</p>
 <p>Look again at the PersistentVolume:</p>
-<pre class="shell"><code>kubectl get pv task-pv-volume</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pv task-pv-volume</code></pre>
 <p>Now the output shows a <code>STATUS</code> of <code>Bound</code>.</p>
 <pre><code>NAME             CAPACITY   ACCESSMODES   RECLAIMPOLICY   STATUS    CLAIM                   STORAGECLASS   REASON    AGE
 task-pv-volume   10Gi       RWO           Retain          Bound     default/task-pv-claim   manual                   2m</code></pre>
 <p>Look at the PersistentVolumeClaim:</p>
-<pre class="shell"><code>kubectl get pvc task-pv-claim</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pvc task-pv-claim</code></pre>
 <p>The output shows that the PersistentVolumeClaim is bound to your
 PersistentVolume, <code>task-pv-volume</code>.</p>
 <pre><code>NAME            STATUS    VOLUME           CAPACITY   ACCESSMODES   STORAGECLASS   AGE
@@ -277,38 +290,37 @@ as a volume.</p>
 <p>Here is the configuration file for the Pod:</p>
 <div class="code-sample">
 <p><code>pods/storage/pv-pod.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-storage</span></span>
-<span class="at">      </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> task-pv-claim</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;http-server&quot;</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/usr/share/nginx/html&quot;</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-storage</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: task-pv-pod
+spec:
+  volumes:
+    - name: task-pv-storage
+      persistentVolumeClaim:
+        claimName: task-pv-claim
+  containers:
+    - name: task-pv-container
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: &quot;http-server&quot;
+      volumeMounts:
+        - mountPath: &quot;/usr/share/nginx/html&quot;
+          name: task-pv-storage</code></pre>
 </div>
 <p>Notice that the Pod's configuration file specifies a
 PersistentVolumeClaim, but it does not specify a PersistentVolume. From
 the Pod's point of view, the claim is a volume.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/storage/pv-pod.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/storage/pv-pod.yaml</code></pre>
 <p>Verify that the container in the Pod is running:</p>
-<pre class="shell"><code>kubectl get pod task-pv-pod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod task-pv-pod</code></pre>
 <p>Get a shell to the container running in your Pod:</p>
-<pre class="shell"><code>kubectl exec -it task-pv-pod -- /bin/bash</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it task-pv-pod -- /bin/bash</code></pre>
 <p>In your shell, verify that nginx is serving the
 <code>index.html</code> file from the hostPath volume:</p>
-<pre class="shell"><code># Be sure to run these 3 commands inside the root shell that comes from
+<pre class="shell"><code class="language-shell"># Be sure to run these 3 commands inside the root shell that comes from
 # running &quot;kubectl exec&quot; in the previous step
 apt update
 apt install curl
@@ -320,7 +332,7 @@ curl http://localhost/</code></pre>
 use storage from a PersistentVolumeClaim.</p>
 <h2 id="clean-up">Clean up</h2>
 <p>Delete the Pod:</p>
-<pre class="shell"><code>kubectl delete pod task-pv-pod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod task-pv-pod</code></pre>
 <h2 id="mounting-the-same-persistentvolume-in-two-places">Mounting the
 same PersistentVolume in two places</h2>
 <p>You have understood how to create a PersistentVolume &amp;
@@ -330,29 +342,28 @@ PersistentVolume at two different locations in a container. Below is an
 example:</p>
 <div class="code-sample">
 <p><code>pods/storage/pv-duplicate.yaml</code></p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># a mount for site-data</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
-<span class="at">          </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> html</span></span>
-<span class="at">        </span><span class="co"># another mount for nginx config</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/nginx/nginx.conf</span></span>
-<span class="at">          </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> nginx.conf</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">      </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> task-pv-claim</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+    - name: test
+      image: nginx
+      volumeMounts:
+        # a mount for site-data
+        - name: config
+          mountPath: /usr/share/nginx/html
+          subPath: html
+        # another mount for nginx config
+        - name: config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+  volumes:
+    - name: config
+      persistentVolumeClaim:
+        claimName: task-pv-claim</code></pre>
 </div>
 <p>Here:</p>
 <ul>
@@ -386,53 +397,52 @@ depends on how you set up your cluster. For example, if you are using
 Minikube, you can open a shell to your Node by entering
 <code>minikube ssh</code>.</p>
 <p>Create a <code>/mnt/data/html</code> directory:</p>
-<pre class="shell"><code># This assumes that your Node uses &quot;sudo&quot; to run commands
+<pre class="shell"><code class="language-shell"># This assumes that your Node uses &quot;sudo&quot; to run commands
 # as the superuser
 sudo mkdir /mnt/data/html</code></pre>
 <p>Move index.html into the directory:</p>
-<pre class="shell"><code># Move index.html from its current location to the html sub-directory
+<pre class="shell"><code class="language-shell"># Move index.html from its current location to the html sub-directory
 sudo mv /mnt/data/index.html /mnt/data/html/index.html</code></pre>
 <h3 id="create-a-new-nginx-conf-file">Create a new nginx.conf file</h3>
 <div class="code-sample">
 <p><code>pods/storage/nginx.conf</code></p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode conf"><code class="sourceCode toml"><span class="dt">user</span>  <span class="dt">nginx</span><span class="er">;</span></span>
-<span class="dt">worker_processes</span>  <span class="dt">auto</span><span class="er">;</span></span>
-</span>
-<span class="dt">error_log</span>  <span class="er">/</span><span class="dt">var</span><span class="er">/</span><span class="dt">log</span><span class="er">/</span><span class="dt">nginx</span><span class="er">/</span><span class="dt">error.log</span> <span class="dt">notice</span><span class="er">;</span></span>
-<span class="dt">pid</span>        <span class="er">/</span><span class="dt">var</span><span class="er">/</span><span class="dt">run</span><span class="er">/</span><span class="dt">nginx.pid</span><span class="er">;</span></span>
-</span>
-</span>
-<span class="dt">events</span> <span class="er">{</span></span>
-    <span class="dt">worker_connections</span>  <span class="dt">1024</span><span class="er">;</span></span>
-<span class="er">}</span></span>
-</span>
-</span>
-<span class="dt">http</span> <span class="er">{</span></span>
-    <span class="dt">include</span>       <span class="er">/</span><span class="dt">etc</span><span class="er">/</span><span class="dt">nginx</span><span class="er">/</span><span class="dt">mime.types</span><span class="er">;</span></span>
-    <span class="dt">default_type</span>  <span class="dt">application</span><span class="er">/</span><span class="dt">octet-stream</span><span class="er">;</span></span>
-</span>
-    <span class="dt">log_format</span>  <span class="dt">main</span>  <span class="dt">&#39;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#39;</span></span>
-                      <span class="dt">&#39;$status $body_bytes_sent &quot;$http_referer&quot; &#39;</span></span>
-                      <span class="dt">&#39;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#39;</span><span class="er">;</span></span>
-</span>
-    <span class="dt">access_log</span>  <span class="er">/</span><span class="dt">var</span><span class="er">/</span><span class="dt">log</span><span class="er">/</span><span class="dt">nginx</span><span class="er">/</span><span class="dt">access.log</span>  <span class="dt">main</span><span class="er">;</span></span>
-</span>
-    <span class="dt">sendfile</span>        <span class="dt">on</span><span class="er">;</span></span>
-    <span class="co">#tcp_nopush     on;</span></span>
-</span>
-    <span class="dt">keepalive_timeout</span>  <span class="dt">60</span><span class="er">;</span></span>
-</span>
-    <span class="co">#gzip  on;</span></span>
-</span>
-    <span class="dt">include</span> <span class="er">/</span><span class="dt">etc</span><span class="er">/</span><span class="dt">nginx</span><span class="er">/</span><span class="dt">conf.d</span><span class="er">/*</span><span class="dt">.conf</span><span class="er">;</span></span>
-<span class="er">}</span></span></code></pre></div>
+<pre class="conf"><code class="language-conf">user  nginx;
+worker_processes  auto;
+
+error_log  /var/log/nginx/error.log notice;
+pid        /var/run/nginx.pid;
+
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+    include       /etc/nginx/mime.types;
+    default_type  application/octet-stream;
+
+    log_format  main  &#39;$remote_addr - $remote_user [$time_local] &quot;$request&quot; &#39;
+                      &#39;$status $body_bytes_sent &quot;$http_referer&quot; &#39;
+                      &#39;&quot;$http_user_agent&quot; &quot;$http_x_forwarded_for&quot;&#39;;
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    keepalive_timeout  60;
+
+    #gzip  on;
+
+    include /etc/nginx/conf.d/*.conf;
+}</code></pre>
 </div>
 <p>This is a modified version of the default <code>nginx.conf</code>
 file. Here, the default <code>keepalive_timeout</code> has been modified
 to <code>60</code></p>
 <p>Create the nginx.conf file:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt; /mnt/data/nginx.conf
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt; /mnt/data/nginx.conf
 user  nginx;
 worker_processes  auto;
 error_log  /var/log/nginx/error.log notice;
@@ -468,14 +478,14 @@ persistentVolumeClaim. However, the pod mounts only a specific file,
 <code>nginx.conf</code>, and directory, <code>html</code>, to the
 container.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/storage/pv-duplicate.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/storage/pv-duplicate.yaml</code></pre>
 <p>Verify that the container in the Pod is running:</p>
-<pre class="shell"><code>kubectl get pod test</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod test</code></pre>
 <p>Get a shell to the container running in your Pod:</p>
-<pre class="shell"><code>kubectl exec -it test -- /bin/bash</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it test -- /bin/bash</code></pre>
 <p>In your shell, verify that nginx is serving the
 <code>index.html</code> file from the hostPath volume:</p>
-<pre class="shell"><code># Be sure to run these 3 commands inside the root shell that comes from
+<pre class="shell"><code class="language-shell"># Be sure to run these 3 commands inside the root shell that comes from
 # running &quot;kubectl exec&quot; in the previous step
 apt update
 apt install curl
@@ -485,7 +495,7 @@ curl http://localhost/</code></pre>
 <pre><code>Hello from Kubernetes storage</code></pre>
 <p>In your shell, also verify that nginx is serving the
 <code>nginx.conf</code> file from the hostPath volume:</p>
-<pre class="shell"><code># Be sure to run these commands inside the root shell that comes from
+<pre class="shell"><code class="language-shell"># Be sure to run these commands inside the root shell that comes from
 # running &quot;kubectl exec&quot; in the previous step
 cat /etc/nginx/nginx.conf | grep keepalive_timeout</code></pre>
 <p>The output shows the modified text that you wrote to the
@@ -496,14 +506,14 @@ use a specific file and directory in a storage from a
 PersistentVolumeClaim.</p>
 <h2 id="clean-up-1">Clean up</h2>
 <p>Delete the Pod:</p>
-<pre class="shell"><code>kubectl delete pod test
+<pre class="shell"><code class="language-shell">kubectl delete pod test
 kubectl delete pvc task-pv-claim
 kubectl delete pv task-pv-volume</code></pre>
 <p>If you don't already have a shell open to the Node in your cluster,
 open a new shell the same way that you did earlier.</p>
 <p>In the shell on your Node, remove the file and directory that you
 created:</p>
-<pre class="shell"><code># This assumes that your Node uses &quot;sudo&quot; to run commands
+<pre class="shell"><code class="language-shell"># This assumes that your Node uses &quot;sudo&quot; to run commands
 # as the superuser
 sudo rm /mnt/data/html/index.html
 sudo rm /mnt/data/nginx.conf
@@ -518,13 +528,12 @@ can annotate a PersistentVolume with a GID. Then the GID is
 automatically added to any Pod that uses the PersistentVolume.</p>
 <p>Use the <code>pv.beta.kubernetes.io/gid</code> annotation as
 follows:</p>
-<div class="sourceCode" id="cb36"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pv1</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">pv.beta.kubernetes.io/gid</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1234&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv1
+  annotations:
+    pv.beta.kubernetes.io/gid: &quot;1234&quot;</code></pre>
 <p>When a Pod consumes a PersistentVolume that has a GID annotation, the
 annotated GID is applied to all containers in the Pod in the same way
 that GIDs specified in the Pod's security context are. Every GID,
@@ -621,6 +630,7 @@ href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#persi
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -629,6 +639,8 @@ href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#persi
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

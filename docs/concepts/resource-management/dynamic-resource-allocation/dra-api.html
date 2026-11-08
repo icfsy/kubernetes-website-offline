@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -236,32 +251,31 @@ requests two devices with the color white and size small. The large
 black device will be allocated if it is available. If it is not, but two
 small white devices are available, the pod will still be able to
 run.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaimTemplate</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> prioritized-list-claim-template</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> req-0</span></span>
-<span class="at">        </span><span class="fu">firstAvailable</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> large-black</span></span>
-<span class="at">          </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> resource.example.com</span></span>
-<span class="at">          </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">                device.attributes[&quot;resource-driver.example.com&quot;].color == &quot;black&quot; &amp;&amp;</span></span>
-<span class="at">                device.attributes[&quot;resource-driver.example.com&quot;].size == &quot;large&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> small-white</span></span>
-<span class="at">          </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> resource.example.com</span></span>
-<span class="at">          </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">                device.attributes[&quot;resource-driver.example.com&quot;].color == &quot;white&quot; &amp;&amp;</span></span>
-<span class="at">                device.attributes[&quot;resource-driver.example.com&quot;].size == &quot;small&quot;</span></span>
-<span class="at">          </span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: prioritized-list-claim-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: req-0
+        firstAvailable:
+        - name: large-black
+          deviceClassName: resource.example.com
+          selectors:
+          - cel:
+              expression: |-
+                device.attributes[&quot;resource-driver.example.com&quot;].color == &quot;black&quot; &amp;&amp;
+                device.attributes[&quot;resource-driver.example.com&quot;].size == &quot;large&quot;
+        - name: small-white
+          deviceClassName: resource.example.com
+          selectors:
+          - cel:
+              expression: |-
+                device.attributes[&quot;resource-driver.example.com&quot;].color == &quot;white&quot; &amp;&amp;
+                device.attributes[&quot;resource-driver.example.com&quot;].size == &quot;small&quot;
+          count: 2</code></pre>
 <p>If the pod is eligible for multiple nodes in the cluster, the
 scheduler will use the index of chosen subrequests from any prioritized
 lists as one of the inputs when it scores each node. So nodes that can
@@ -305,19 +319,18 @@ PodGroup.</li>
 <p>The PodGroup API defines a <code>spec.resourceClaims</code> field
 with the same structure and similar meaning as the
 <code>spec.resourceClaims</code> field in the Pod API:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PodGroup</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> training-group</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> some-ns</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pg-claim</span></span>
-<span class="at">    </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> my-pg-claim</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pg-claim-template</span></span>
-<span class="at">    </span><span class="fu">resourceClaimTemplateName</span><span class="kw">:</span><span class="at"> my-pg-template</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1beta1
+kind: PodGroup
+metadata:
+  name: training-group
+  namespace: some-ns
+spec:
+  ...
+  resourceClaims:
+  - name: pg-claim
+    resourceClaimName: my-pg-claim
+  - name: pg-claim-template
+    resourceClaimTemplateName: my-pg-template</code></pre>
 <p>Like claims made by Pods, claims for PodGroups defining a
 <code>resourceClaimName</code> refer to a ResourceClaim by name. Claims
 defining a <code>resourceClaimTemplateName</code> refer to a
@@ -356,38 +369,37 @@ when both the PodGroup and its ResourceClaimTemplate exist. The
 ResourceClaim is deleted after the PodGroup has been deleted and the
 ResourceClaim is no longer reserved.</p>
 <p>Consider the following example:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PodGroup</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> training-group</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> some-ns</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pg-claim</span></span>
-<span class="at">    </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> my-pg-claim</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pg-claim-template</span></span>
-<span class="at">    </span><span class="fu">resourceClaimTemplateName</span><span class="kw">:</span><span class="at"> my-pg-template</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> training-group-pod-1</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> some-ns</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">schedulingGroup</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">podGroupName</span><span class="kw">:</span><span class="at"> training-group</span></span>
-<span class="at">  </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-claim</span></span>
-<span class="at">    </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> my-pod-claim</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-claim-template</span></span>
-<span class="at">    </span><span class="fu">resourceClaimTemplateName</span><span class="kw">:</span><span class="at"> my-pod-template</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pg-claim</span></span>
-<span class="at">    </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> my-pg-claim</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pg-claim-template</span></span>
-<span class="at">    </span><span class="fu">resourceClaimTemplateName</span><span class="kw">:</span><span class="at"> my-pg-template</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1beta1
+kind: PodGroup
+metadata:
+  name: training-group
+  namespace: some-ns
+spec:
+  ...
+  resourceClaims:
+  - name: pg-claim
+    resourceClaimName: my-pg-claim
+  - name: pg-claim-template
+    resourceClaimTemplateName: my-pg-template
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: training-group-pod-1
+  namespace: some-ns
+spec:
+  ...
+  schedulingGroup:
+    podGroupName: training-group
+  resourceClaims:
+  - name: pod-claim
+    resourceClaimName: my-pod-claim
+  - name: pod-claim-template
+    resourceClaimTemplateName: my-pod-template
+  - name: pg-claim
+    resourceClaimName: my-pg-claim
+  - name: pg-claim-template
+    resourceClaimTemplateName: my-pg-template</code></pre>
 <p>In this example, the <code>training-group</code> PodGroup has one Pod
 named <code>training-group-pod-1</code>. The Pod's
 <code>pod-claim</code> and <code>pod-claim-template</code> claims do not
@@ -437,28 +449,27 @@ the cluster with the information that the driver has to publish. This
 controller overwrites any manual changes, such as cluster users creating
 or modifying ResourceSlices.</p>
 <p>Consider the following example ResourceSlice:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cat-slice</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;resource-driver.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">pool</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;black-cat-pool&quot;</span></span>
-<span class="at">    </span><span class="fu">resourceSliceCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="co"># The allNodes field defines whether any node in the cluster can access the device.</span></span>
-<span class="at">  </span><span class="fu">allNodes</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;large-black-cat&quot;</span></span>
-<span class="at">    </span><span class="fu">attributes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">color</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">string</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;black&quot;</span></span>
-<span class="at">      </span><span class="fu">size</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">string</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;large&quot;</span></span>
-<span class="at">      </span><span class="fu">cat</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">bool</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+metadata:
+  name: cat-slice
+spec:
+  driver: &quot;resource-driver.example.com&quot;
+  pool:
+    generation: 1
+    name: &quot;black-cat-pool&quot;
+    resourceSliceCount: 1
+  # The allNodes field defines whether any node in the cluster can access the device.
+  allNodes: true
+  devices:
+  - name: &quot;large-black-cat&quot;
+    attributes:
+      color:
+        string: &quot;black&quot;
+      size:
+        string: &quot;large&quot;
+      cat:
+        bool: true</code></pre>
 <p>This ResourceSlice is managed by the
 <code>resource-driver.example.com</code> driver in the
 <code>black-cat-pool</code> pool. The <code>allNodes: true</code> field
@@ -504,20 +515,19 @@ having privileged features for maintenance and troubleshooting tasks. A
 request with admin access grants access to in-use devices and may enable
 additional permissions when making the device available in a
 container:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaimTemplate</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> large-black-cat-claim-template</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> req-0</span></span>
-<span class="at">        </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> resource.example.com</span></span>
-<span class="at">          </span><span class="fu">allocationMode</span><span class="kw">:</span><span class="at"> All</span></span>
-<span class="at">          </span><span class="fu">adminAccess</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: large-black-cat-claim-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: req-0
+        exactly:
+          deviceClassName: resource.example.com
+          allocationMode: All
+          adminAccess: true</code></pre>
 <p>Admin access is a privileged mode and should not be granted to
 regular users in multi-tenant clusters. Only users authorized to create
 ResourceClaim or ResourceClaimTemplate objects in namespaces labeled
@@ -590,25 +600,24 @@ will be limited to at most <strong>64</strong> devices. use list-type
 attributes or other advanced features such as taints.</p>
 <p>Here is an example of a device advertising multiple supported models
 using a list-type string attribute:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-resourceslice</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">nodeName</span><span class="kw">:</span><span class="at"> worker-1</span></span>
-<span class="at">  </span><span class="fu">pool</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pool</span></span>
-<span class="at">    </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">resourceSliceCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> dra.example.com</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-0</span></span>
-<span class="at">    </span><span class="fu">attributes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">dra.example.com/supported-models</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">strings</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">model-a</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">model-b</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: ResourceSlice
+apiVersion: resource.k8s.io/v1
+metadata:
+  name: example-resourceslice
+spec:
+  nodeName: worker-1
+  pool:
+    name: pool
+    generation: 1
+    resourceSliceCount: 1
+  driver: dra.example.com
+  devices:
+  - name: gpu-0
+    attributes:
+      dra.example.com/supported-models:
+        strings:
+        - model-a
+        - model-b</code></pre>
 <p>List type attributes is controlled by the <a
 href="../../../reference/command-line-tools-reference/feature-gates.html#DRAListTypeAttributes"><code>DRAListTypeAttributes</code>
 feature gate</a> in the <code>kube-apiserver</code> and
@@ -639,31 +648,30 @@ candidate device for that request. The result becomes a virtual
 attribute that can be referenced from a <code>matchAttribute</code> or
 <code>distinctAttribute</code> constraint exactly like a driver-provided
 device attribute.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-nic-numa-alignment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">      </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="at">        </span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="fu">derivedAttributes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> derived/numa</span></span>
-<span class="at">          </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> device.attributes[&quot;gpu.example.com&quot;].numa</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nic</span></span>
-<span class="at">      </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> nic.example.com</span></span>
-<span class="at">        </span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="fu">derivedAttributes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> derived/numa</span></span>
-<span class="at">          </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> device.attributes[&quot;nic.example.com&quot;].numaNode</span></span>
-<span class="at">    </span><span class="fu">constraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">requests</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;gpu&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;nic&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">matchAttribute</span><span class="kw">:</span><span class="at"> derived/numa</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: gpu-nic-numa-alignment
+spec:
+  devices:
+    requests:
+    - name: gpu
+      exactly:
+        deviceClassName: gpu.example.com
+        count: 1
+        derivedAttributes:
+        - name: derived/numa
+          expression: device.attributes[&quot;gpu.example.com&quot;].numa
+    - name: nic
+      exactly:
+        deviceClassName: nic.example.com
+        count: 1
+        derivedAttributes:
+        - name: derived/numa
+          expression: device.attributes[&quot;nic.example.com&quot;].numaNode
+    constraints:
+    - requests: [&quot;gpu&quot;, &quot;nic&quot;]
+      matchAttribute: derived/numa</code></pre>
 <p>In this example, the <code>gpu</code> and <code>nic</code> drivers
 publish topology information under different attribute names
 (<code>numa</code> and <code>numaNode</code>). Each request computes a
@@ -740,17 +748,16 @@ extendedResourceName <code>example.com/gpu</code>. If a pod requested
 for the extended resource <code>example.com/gpu: 2</code>, it can be
 scheduled to a node with two or more devices matching the
 DeviceClass.</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> DeviceClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> device.driver == &#39;gpu.example.com&#39; &amp;&amp; device.attributes[&#39;gpu.example.com&#39;].type</span></span>
-<span class="at">        == &#39;gpu&#39;</span></span>
-<span class="at">  </span><span class="fu">extendedResourceName</span><span class="kw">:</span><span class="at"> example.com/gpu</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: gpu.example.com
+spec:
+  selectors:
+  - cel:
+      expression: device.driver == &#39;gpu.example.com&#39; &amp;&amp; device.attributes[&#39;gpu.example.com&#39;].type
+        == &#39;gpu&#39;
+  extendedResourceName: example.com/gpu</code></pre>
 <p>In addition, users can use a special extended resource to allocate
 devices without having to explicitly create a ResourceClaim. Using the
 extended resource name prefix
@@ -831,6 +838,7 @@ Extended Resources to a Container</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -839,6 +847,8 @@ Extended Resources to a Container</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

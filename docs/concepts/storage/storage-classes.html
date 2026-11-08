@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -145,21 +160,20 @@ concept</a>.</p>
 <p>Here's an example of a StorageClass:</p>
 <div class="code-sample">
 <p><code>storage/storageclass-low-latency.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> low-latency</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">storageclass.kubernetes.io/is-default-class</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;false&quot;</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> csi-driver.example-vendor.example</span></span>
-<span class="fu">reclaimPolicy</span><span class="kw">:</span><span class="at"> Retain</span><span class="co"> # default value is Delete</span></span>
-<span class="fu">allowVolumeExpansion</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="fu">mountOptions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">discard</span><span class="co"> # this might enable UNMAP / TRIM at the block storage layer</span></span>
-<span class="fu">volumeBindingMode</span><span class="kw">:</span><span class="at"> WaitForFirstConsumer</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">guaranteedReadWriteLatency</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span><span class="at"> </span><span class="co"># provider-specific</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: low-latency
+  annotations:
+    storageclass.kubernetes.io/is-default-class: &quot;false&quot;
+provisioner: csi-driver.example-vendor.example
+reclaimPolicy: Retain # default value is Delete
+allowVolumeExpansion: true
+mountOptions:
+  - discard # this might enable UNMAP / TRIM at the block storage layer
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  guaranteedReadWriteLatency: &quot;true&quot; # provider-specific</code></pre>
 </div>
 <h2 id="default-storageclass">Default StorageClass</h2>
 <p>You can mark a StorageClass as the default for your cluster. For
@@ -411,27 +425,26 @@ bypassed and PVC will remain in <code>pending</code> state.</p>
 </div>
 <div class="code-sample">
 <p><code>storage/storageclass/pod-volume-binding.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/hostname</span><span class="kw">:</span><span class="at"> kube-01</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-storage</span></span>
-<span class="at">      </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> task-pv-claim</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;http-server&quot;</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/usr/share/nginx/html&quot;</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> task-pv-storage</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: task-pv-pod
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: kube-01
+  volumes:
+    - name: task-pv-storage
+      persistentVolumeClaim:
+        claimName: task-pv-claim
+  containers:
+    - name: task-pv-container
+      image: nginx
+      ports:
+        - containerPort: 80
+          name: &quot;http-server&quot;
+      volumeMounts:
+        - mountPath: &quot;/usr/share/nginx/html&quot;
+          name: task-pv-storage</code></pre>
 </div>
 <h2 id="allowed-topologies">Allowed topologies</h2>
 <p>When a cluster operator specifies the
@@ -445,21 +458,20 @@ volumes to specific zones and should be used as a replacement for the
 plugins.</p>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-topology.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> standard</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at">  example.com/example</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> pd-standard</span></span>
-<span class="fu">volumeBindingMode</span><span class="kw">:</span><span class="at"> WaitForFirstConsumer</span></span>
-<span class="fu">allowedTopologies</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">matchLabelExpressions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">    </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">us-central-1a</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">us-central-1b</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: standard
+provisioner:  example.com/example
+parameters:
+  type: pd-standard
+volumeBindingMode: WaitForFirstConsumer
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topology.kubernetes.io/zone
+    values:
+    - us-central-1a
+    - us-central-1b</code></pre>
 </div>
 <h2 id="parameters">Parameters</h2>
 <p>StorageClasses have parameters that describe volumes belonging to the
@@ -481,25 +493,24 @@ out-of-tree storage driver instead.</p>
 <p>Here is an example StorageClass for the AWS EBS CSI driver:</p>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-aws-ebs.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ebs-sc</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> ebs.csi.aws.com</span></span>
-<span class="fu">volumeBindingMode</span><span class="kw">:</span><span class="at"> WaitForFirstConsumer</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">csi.storage.k8s.io/fstype</span><span class="kw">:</span><span class="at"> xfs</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> io1</span></span>
-<span class="at">  </span><span class="fu">iopsPerGB</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;50&quot;</span></span>
-<span class="at">  </span><span class="fu">encrypted</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">  </span><span class="fu">tagSpecification_1</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key1=value1&quot;</span></span>
-<span class="at">  </span><span class="fu">tagSpecification_2</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key2=value2&quot;</span></span>
-<span class="fu">allowedTopologies</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">matchLabelExpressions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> topology.ebs.csi.aws.com/zone</span></span>
-<span class="at">    </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">us-east-2c</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-sc
+provisioner: ebs.csi.aws.com
+volumeBindingMode: WaitForFirstConsumer
+parameters:
+  csi.storage.k8s.io/fstype: xfs
+  type: io1
+  iopsPerGB: &quot;50&quot;
+  encrypted: &quot;true&quot;
+  tagSpecification_1: &quot;key1=value1&quot;
+  tagSpecification_2: &quot;key2=value2&quot;
+allowedTopologies:
+- matchLabelExpressions:
+  - key: topology.ebs.csi.aws.com/zone
+    values:
+    - us-east-2c</code></pre>
 </div>
 <p><code>tagSpecification</code>: Tags with this prefix are applied to
 dynamically provisioned EBS volumes.</p>
@@ -508,16 +519,15 @@ dynamically provisioned EBS volumes.</p>
 href="https://github.com/kubernetes-sigs/aws-efs-csi-driver">AWS_EFS_CSI_DRIVER</a>.</p>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-aws-efs.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> efs-sc</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> efs.csi.aws.com</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">provisioningMode</span><span class="kw">:</span><span class="at"> efs-ap</span></span>
-<span class="at">  </span><span class="fu">fileSystemId</span><span class="kw">:</span><span class="at"> fs-92107410</span></span>
-<span class="at">  </span><span class="fu">directoryPerms</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;700&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: efs-sc
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-92107410
+  directoryPerms: &quot;700&quot;</code></pre>
 </div>
 <ul>
 <li><code>provisioningMode</code>: The type of volume to be provisioned
@@ -537,16 +547,15 @@ href="https://github.com/kubernetes-csi/csi-driver-nfs#readme">NFS CSI
 driver for Kubernetes</a> (recommended).</p>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-nfs.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-nfs</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> example.com/external-nfs</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">server</span><span class="kw">:</span><span class="at"> nfs-server.example.com</span></span>
-<span class="at">  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /share</span></span>
-<span class="at">  </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;false&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: example-nfs
+provisioner: example.com/external-nfs
+parameters:
+  server: nfs-server.example.com
+  path: /share
+  readOnly: &quot;false&quot;</code></pre>
 </div>
 <ul>
 <li><code>server</code>: Server is the hostname or IP address of the NFS
@@ -591,28 +600,26 @@ CSI repository</a>.</p>
 StorageClass provisioner.</p>
 <ol type="1">
 <li><p>Create a StorageClass with a user specified disk format.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fast</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/vsphere-volume</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">diskformat</span><span class="kw">:</span><span class="at"> zeroedthick</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+provisioner: kubernetes.io/vsphere-volume
+parameters:
+  diskformat: zeroedthick</code></pre>
 <p><code>diskformat</code>: <code>thin</code>, <code>zeroedthick</code>
 and <code>eagerzeroedthick</code>. Default:
 <code>"thin"</code>.</p></li>
 <li><p>Create a StorageClass with a disk format on a user specified
 datastore.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fast</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/vsphere-volume</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">diskformat</span><span class="kw">:</span><span class="at"> zeroedthick</span></span>
-<span class="at">  </span><span class="fu">datastore</span><span class="kw">:</span><span class="at"> VSANDatastore</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+provisioner: kubernetes.io/vsphere-volume
+parameters:
+  diskformat: zeroedthick
+  datastore: VSANDatastore</code></pre>
 <p><code>datastore</code>: The user can also specify the datastore in
 the StorageClass. The volume will be created on the datastore specified
 in the StorageClass, which in this case is <code>VSANDatastore</code>.
@@ -664,24 +671,23 @@ href="https://github.com/ceph/ceph-csi">CephFS RBD CSI driver</a>.</p>
 </div>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-ceph-rbd.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fast</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/rbd</span><span class="co"> # This provisioner is deprecated</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">monitors</span><span class="kw">:</span><span class="at"> 198.19.254.105:6789</span></span>
-<span class="at">  </span><span class="fu">adminId</span><span class="kw">:</span><span class="at"> kube</span></span>
-<span class="at">  </span><span class="fu">adminSecretName</span><span class="kw">:</span><span class="at"> ceph-secret</span></span>
-<span class="at">  </span><span class="fu">adminSecretNamespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">  </span><span class="fu">pool</span><span class="kw">:</span><span class="at"> kube</span></span>
-<span class="at">  </span><span class="fu">userId</span><span class="kw">:</span><span class="at"> kube</span></span>
-<span class="at">  </span><span class="fu">userSecretName</span><span class="kw">:</span><span class="at"> ceph-secret-user</span></span>
-<span class="at">  </span><span class="fu">userSecretNamespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">fsType</span><span class="kw">:</span><span class="at"> ext4</span></span>
-<span class="at">  </span><span class="fu">imageFormat</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">  </span><span class="fu">imageFeatures</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;layering&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+provisioner: kubernetes.io/rbd # This provisioner is deprecated
+parameters:
+  monitors: 198.19.254.105:6789
+  adminId: kube
+  adminSecretName: ceph-secret
+  adminSecretNamespace: kube-system
+  pool: kube
+  userId: kube
+  userSecretName: ceph-secret-user
+  userSecretNamespace: default
+  fsType: ext4
+  imageFormat: &quot;2&quot;
+  imageFeatures: &quot;layering&quot;</code></pre>
 </div>
 <ul>
 <li><p><code>monitors</code>: Ceph monitors, comma delimited. This
@@ -700,7 +706,7 @@ image. Default is the same as <code>adminId</code>.</p></li>
 <code>userId</code> to map RBD image. It must exist in the same
 namespace as PVCs. This parameter is required. The provided secret must
 have type "kubernetes.io/rbd", for example created in this way:</p>
-<pre class="shell"><code>kubectl create secret generic ceph-secret --type=&quot;kubernetes.io/rbd&quot; \
+<pre class="shell"><code class="language-shell">kubectl create secret generic ceph-secret --type=&quot;kubernetes.io/rbd&quot; \
   --from-literal=key=&#39;QVFEQ1pMdFhPUnQrSmhBQUFYaERWNHJsZ3BsMmNjcDR6RFZST0E9PQ==&#39; \
   --namespace=kube-system</code></pre></li>
 <li><p><code>userSecretNamespace</code>: The namespace for
@@ -726,16 +732,15 @@ Disk</a> third party storage driver instead.</p>
 <h3 id="azure-file">Azure File (deprecated)</h3>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-azure-file.yaml</code></p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> azurefile</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/azure-file</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">skuName</span><span class="kw">:</span><span class="at"> Standard_LRS</span></span>
-<span class="at">  </span><span class="fu">location</span><span class="kw">:</span><span class="at"> eastus</span></span>
-<span class="at">  </span><span class="fu">storageAccount</span><span class="kw">:</span><span class="at"> azure_storage_account_name</span><span class="co"> # example value</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: azurefile
+provisioner: kubernetes.io/azure-file
+parameters:
+  skuName: Standard_LRS
+  location: eastus
+  storageAccount: azure_storage_account_name # example value</code></pre>
 </div>
 <ul>
 <li><code>skuName</code>: Azure storage account SKU tier. Default is
@@ -773,16 +778,15 @@ account credentials may be read by other users.</p>
 <h3 id="portworx-volume">Portworx volume (deprecated)</h3>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-portworx-volume.yaml</code></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> portworx-io-priority-high</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/portworx-volume</span><span class="co"> # This provisioner is deprecated</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">repl</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">  </span><span class="fu">snap_interval</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;70&quot;</span></span>
-<span class="at">  </span><span class="fu">priority_io</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;high&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: portworx-io-priority-high
+provisioner: kubernetes.io/portworx-volume # This provisioner is deprecated
+parameters:
+  repl: &quot;1&quot;
+  snap_interval: &quot;70&quot;
+  priority_io: &quot;high&quot;</code></pre>
 </div>
 <ul>
 <li><code>fs</code>: filesystem to be laid out:
@@ -814,13 +818,12 @@ expected here i.e. <code>"true"</code> and not <code>true</code>.</li>
 <h3 id="local">Local</h3>
 <div class="code-sample">
 <p><code>storage/storageclass/storageclass-local.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> local-storage</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/no-provisioner</span><span class="co"> # indicates that this StorageClass does not support automatic provisioning</span></span>
-<span class="fu">volumeBindingMode</span><span class="kw">:</span><span class="at"> WaitForFirstConsumer</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+provisioner: kubernetes.io/no-provisioner # indicates that this StorageClass does not support automatic provisioning
+volumeBindingMode: WaitForFirstConsumer</code></pre>
 </div>
 <p>Local volumes do not support dynamic provisioning in Kubernetes 1.37;
 however a StorageClass should still be created to delay volume binding
@@ -894,6 +897,7 @@ PersistentVolume for a PersistentVolumeClaim.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -902,6 +906,8 @@ PersistentVolume for a PersistentVolumeClaim.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

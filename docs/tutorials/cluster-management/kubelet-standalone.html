@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -185,11 +200,11 @@ management</a> on Linux nodes.</p>
 <p>If you have swap memory enabled, either disable it or add
 <code>failSwapOn: false</code> to the kubelet configuration file.</p>
 <p>To check if swap is enabled:</p>
-<pre class="shell"><code>sudo swapon --show</code></pre>
+<pre class="shell"><code class="language-shell">sudo swapon --show</code></pre>
 <p>If there is no output from the command, then swap memory is already
 disabled.</p>
 <p>To disable swap temporarily:</p>
-<pre class="shell"><code>sudo swapoff -a</code></pre>
+<pre class="shell"><code class="language-shell">sudo swapoff -a</code></pre>
 <p>To make this change persistent across reboots:</p>
 <p>Make sure swap is disabled in either <code>/etc/fstab</code> or
 <code>systemd.swap</code>, depending on how it was configured on your
@@ -197,17 +212,17 @@ system.</p>
 <h3 id="enable-ipv4-packet-forwarding">Enable IPv4 packet
 forwarding</h3>
 <p>To check if IPv4 packet forwarding is enabled:</p>
-<pre class="shell"><code>cat /proc/sys/net/ipv4/ip_forward</code></pre>
+<pre class="shell"><code class="language-shell">cat /proc/sys/net/ipv4/ip_forward</code></pre>
 <p>If the output is <code>1</code>, it is already enabled. If the output
 is <code>0</code>, then follow next steps.</p>
 <p>To enable IPv4 packet forwarding, create a configuration file that
 sets the <code>net.ipv4.ip_forward</code> parameter to
 <code>1</code>:</p>
-<pre class="shell"><code>sudo tee /etc/sysctl.d/k8s.conf &lt;&lt;EOF
+<pre class="shell"><code class="language-shell">sudo tee /etc/sysctl.d/k8s.conf &lt;&lt;EOF
 net.ipv4.ip_forward = 1
 EOF</code></pre>
 <p>Apply the changes to the system:</p>
-<pre class="shell"><code>sudo sysctl --system</code></pre>
+<pre class="shell"><code class="language-shell">sudo sysctl --system</code></pre>
 <p>The output is similar to:</p>
 <pre><code>...
 * Applying /etc/sysctl.d/k8s.conf ...
@@ -258,52 +273,51 @@ install the latest versions of the software packages.</p>
 href="https://github.com/cri-o/cri-o/releases">releases</a> page
 (external link).</p>
 <p>Download the static binary bundle script:</p>
-<pre class="shell"><code>curl https://raw.githubusercontent.com/cri-o/packaging/main/get &gt; crio-install</code></pre>
+<pre class="shell"><code class="language-shell">curl https://raw.githubusercontent.com/cri-o/packaging/main/get &gt; crio-install</code></pre>
 <p>Run the installer script:</p>
-<pre class="shell"><code>sudo bash crio-install</code></pre>
+<pre class="shell"><code class="language-shell">sudo bash crio-install</code></pre>
 <p>Enable and start the <code>crio</code> service:</p>
-<pre class="shell"><code>sudo systemctl daemon-reload
+<pre class="shell"><code class="language-shell">sudo systemctl daemon-reload
 sudo systemctl enable --now crio.service</code></pre>
 <p>Quick test:</p>
-<pre class="shell"><code>sudo systemctl is-active crio.service</code></pre>
+<pre class="shell"><code class="language-shell">sudo systemctl is-active crio.service</code></pre>
 <p>The output is similar to:</p>
 <pre><code>active</code></pre>
 <p>Detailed service check:</p>
-<pre class="shell"><code>sudo journalctl -f -u crio.service</code></pre>
+<pre class="shell"><code class="language-shell">sudo journalctl -f -u crio.service</code></pre>
 <h3 id="install-network-plugins">Install network plugins</h3>
 <p>The <code>cri-o</code> installer installs and configures the
 <code>cni-plugins</code> package. You can verify the installation
 running the following command:</p>
-<pre class="shell"><code>/opt/cni/bin/bridge --version</code></pre>
+<pre class="shell"><code class="language-shell">/opt/cni/bin/bridge --version</code></pre>
 <p>The output is similar to:</p>
 <pre><code>CNI bridge plugin v1.5.1
 CNI protocol versions supported: 0.1.0, 0.2.0, 0.3.0, 0.3.1, 0.4.0, 1.0.0</code></pre>
 <p>To check the default configuration:</p>
-<pre class="shell"><code>cat /etc/cni/net.d/11-crio-ipv4-bridge.conflist</code></pre>
+<pre class="shell"><code class="language-shell">cat /etc/cni/net.d/11-crio-ipv4-bridge.conflist</code></pre>
 <p>The output is similar to:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;cniVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;1.0.0&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;crio&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;plugins&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;bridge&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;bridge&quot;</span><span class="fu">:</span> <span class="st">&quot;cni0&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;isGateway&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-      <span class="dt">&quot;ipMasq&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-      <span class="dt">&quot;hairpinMode&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-      <span class="dt">&quot;ipam&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;host-local&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;routes&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-            <span class="fu">{</span> <span class="dt">&quot;dst&quot;</span><span class="fu">:</span> <span class="st">&quot;0.0.0.0/0&quot;</span> <span class="fu">}</span></span>
-        <span class="ot">]</span><span class="fu">,</span></span>
-        <span class="dt">&quot;ranges&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-            <span class="ot">[</span><span class="fu">{</span> <span class="dt">&quot;subnet&quot;</span><span class="fu">:</span> <span class="st">&quot;10.85.0.0/16&quot;</span> <span class="fu">}</span><span class="ot">]</span></span>
-        <span class="ot">]</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;cniVersion&quot;: &quot;1.0.0&quot;,
+  &quot;name&quot;: &quot;crio&quot;,
+  &quot;plugins&quot;: [
+    {
+      &quot;type&quot;: &quot;bridge&quot;,
+      &quot;bridge&quot;: &quot;cni0&quot;,
+      &quot;isGateway&quot;: true,
+      &quot;ipMasq&quot;: true,
+      &quot;hairpinMode&quot;: true,
+      &quot;ipam&quot;: {
+        &quot;type&quot;: &quot;host-local&quot;,
+        &quot;routes&quot;: [
+            { &quot;dst&quot;: &quot;0.0.0.0/0&quot; }
+        ],
+        &quot;ranges&quot;: [
+            [{ &quot;subnet&quot;: &quot;10.85.0.0/16&quot; }]
+        ]
+      }
+    }
+  ]
+}</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note</p>
@@ -322,17 +336,15 @@ release</a> of the kubelet.</p>
 <div class="tab-label">
 <p>x86-64</p>
 </div>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> <span class="at">-LO</span> <span class="st">&quot;https://dl.k8s.io/release/</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-L</span> <span class="at">-s</span> https://dl.k8s.io/release/stable.txt<span class="va">)</span><span class="st">/bin/linux/amd64/kubelet&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">curl -LO &quot;https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubelet&quot;</code></pre>
 <div class="tab-label">
 <p>ARM64</p>
 </div>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> <span class="at">-LO</span> <span class="st">&quot;https://dl.k8s.io/release/</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-L</span> <span class="at">-s</span> https://dl.k8s.io/release/stable.txt<span class="va">)</span><span class="st">/bin/linux/arm64/kubelet&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">curl -LO &quot;https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/arm64/kubelet&quot;</code></pre>
 </div>
 <p>Configure:</p>
-<pre class="shell"><code>sudo mkdir -p /etc/kubernetes/manifests</code></pre>
-<pre class="shell"><code>sudo tee /etc/kubernetes/kubelet.yaml &lt;&lt;EOF
+<pre class="shell"><code class="language-shell">sudo mkdir -p /etc/kubernetes/manifests</code></pre>
+<pre class="shell"><code class="language-shell">sudo tee /etc/kubernetes/kubelet.yaml &lt;&lt;EOF
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 authentication:
@@ -368,10 +380,10 @@ and Protocols</a> to understand which ports Kubernetes components
 use.</p>
 </div>
 <p>Install:</p>
-<pre class="shell"><code>chmod +x kubelet
+<pre class="shell"><code class="language-shell">chmod +x kubelet
 sudo cp kubelet /usr/bin/</code></pre>
 <p>Create a <code>systemd</code> service unit file:</p>
-<pre class="shell"><code>sudo tee /etc/systemd/system/kubelet.service &lt;&lt;EOF
+<pre class="shell"><code class="language-shell">sudo tee /etc/systemd/system/kubelet.service &lt;&lt;EOF
 [Unit]
 Description=Kubelet
 
@@ -390,37 +402,36 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file that specifies how to connect to the API server, enabling API
 server mode. Omitting it, enables standalone mode.</p>
 <p>Enable and start the <code>kubelet</code> service:</p>
-<pre class="shell"><code>sudo systemctl daemon-reload
+<pre class="shell"><code class="language-shell">sudo systemctl daemon-reload
 sudo systemctl enable --now kubelet.service</code></pre>
 <p>Quick test:</p>
-<pre class="shell"><code>sudo systemctl is-active kubelet.service</code></pre>
+<pre class="shell"><code class="language-shell">sudo systemctl is-active kubelet.service</code></pre>
 <p>The output is similar to:</p>
 <pre><code>active</code></pre>
 <p>Detailed service check:</p>
-<pre class="shell"><code>sudo journalctl -u kubelet.service</code></pre>
+<pre class="shell"><code class="language-shell">sudo journalctl -u kubelet.service</code></pre>
 <p>Check the kubelet's API <code>/healthz</code> endpoint:</p>
-<pre class="shell"><code>curl http://localhost:10255/healthz?verbose</code></pre>
+<pre class="shell"><code class="language-shell">curl http://localhost:10255/healthz?verbose</code></pre>
 <p>The output is similar to:</p>
 <pre><code>[+]ping ok
 [+]log ok
 [+]syncloop ok
 healthz check passed</code></pre>
 <p>Query the kubelet's API <code>/pods</code> endpoint:</p>
-<pre class="shell"><code>curl http://localhost:10255/pods | jq &#39;.&#39;</code></pre>
+<pre class="shell"><code class="language-shell">curl http://localhost:10255/pods | jq &#39;.&#39;</code></pre>
 <p>The output is similar to:</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;PodList&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{},</span></span>
-  <span class="dt">&quot;items&quot;</span><span class="fu">:</span> <span class="kw">null</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;PodList&quot;,
+  &quot;apiVersion&quot;: &quot;v1&quot;,
+  &quot;metadata&quot;: {},
+  &quot;items&quot;: null
+}</code></pre>
 <h2 id="run-a-pod-in-the-kubelet">Run a Pod in the kubelet</h2>
 <p>In standalone mode, you can run Pods using Pod manifests. The
 manifests can either be on the local filesystem, or fetched via HTTP
 from a configuration source.</p>
 <p>Create a manifest for a Pod:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt; static-web.yaml
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt; static-web.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -436,7 +447,7 @@ spec:
 EOF</code></pre>
 <p>Copy the <code>static-web.yaml</code> manifest file to the
 <code>/etc/kubernetes/manifests</code> directory.</p>
-<pre class="shell"><code>sudo cp static-web.yaml /etc/kubernetes/manifests/</code></pre>
+<pre class="shell"><code class="language-shell">sudo cp static-web.yaml /etc/kubernetes/manifests/</code></pre>
 <h3 id="find-out-information">Find out information about the kubelet and
 the Pod</h3>
 <p>The Pod networking plugin creates a network bridge
@@ -445,22 +456,21 @@ Pod (one of the pair is inside the newly made Pod, and the other is at
 the host level).</p>
 <p>Query the kubelet's API endpoint at
 <code>http://localhost:10255/pods</code>:</p>
-<pre class="shell"><code>curl http://localhost:10255/pods | jq &#39;.&#39;</code></pre>
+<pre class="shell"><code class="language-shell">curl http://localhost:10255/pods | jq &#39;.&#39;</code></pre>
 <p>To obtain the IP address of the <code>static-web</code> Pod:</p>
-<pre class="shell"><code>curl http://localhost:10255/pods | jq &#39;.items[].status.podIP&#39;</code></pre>
+<pre class="shell"><code class="language-shell">curl http://localhost:10255/pods | jq &#39;.items[].status.podIP&#39;</code></pre>
 <p>The output is similar to:</p>
 <pre><code>&quot;10.85.0.4&quot;</code></pre>
 <p>Connect to the <code>nginx</code> server Pod on
 <code>http://&lt;IP&gt;:&lt;Port&gt;</code> (port 80 is
 the default), in this case:</p>
-<pre class="shell"><code>curl http://10.85.0.4</code></pre>
+<pre class="shell"><code class="language-shell">curl http://10.85.0.4</code></pre>
 <p>The output is similar to:</p>
-<div class="sourceCode" id="cb37"><pre
-class="sourceCode html"><code class="sourceCode html"><span class="dt">&lt;!DOCTYPE</span> html<span class="dt">&gt;</span></span>
-<span class="dt">&lt;</span><span class="kw">html</span><span class="dt">&gt;</span></span>
-<span class="dt">&lt;</span><span class="kw">head</span><span class="dt">&gt;</span></span>
-<span class="dt">&lt;</span><span class="kw">title</span><span class="dt">&gt;</span>Welcome to nginx!<span class="dt">&lt;/</span><span class="kw">title</span><span class="dt">&gt;</span></span>
-...</span></code></pre></div>
+<pre class="html"><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+&lt;title&gt;Welcome to nginx!&lt;/title&gt;
+...</code></pre>
 <h2 id="where-to-look-for-more-details">Where to look for more
 details</h2>
 <p>If you need to diagnose a problem getting this tutorial to work, you
@@ -474,7 +484,7 @@ troubleshooting:</p>
 /var/log/pods</code></pre>
 <h2 id="clean-up">Clean up</h2>
 <h3 id="kubelet">kubelet</h3>
-<pre class="shell"><code>sudo systemctl disable --now kubelet.service
+<pre class="shell"><code class="language-shell">sudo systemctl disable --now kubelet.service
 sudo systemctl daemon-reload
 sudo rm /etc/systemd/system/kubelet.service
 sudo rm /usr/bin/kubelet
@@ -483,7 +493,7 @@ sudo rm -rf /var/lib/kubelet
 sudo rm -rf /var/log/containers
 sudo rm -rf /var/log/pods</code></pre>
 <h3 id="container-runtime-1">Container Runtime</h3>
-<pre class="shell"><code>sudo systemctl disable --now crio.service
+<pre class="shell"><code class="language-shell">sudo systemctl disable --now crio.service
 sudo systemctl daemon-reload
 sudo rm -rf /usr/local/bin
 sudo rm -rf /usr/local/lib
@@ -492,7 +502,7 @@ sudo rm -rf /usr/libexec/crio
 sudo rm -rf /etc/crio
 sudo rm -rf /etc/containers</code></pre>
 <h3 id="network-plugins">Network Plugins</h3>
-<pre class="shell"><code>sudo rm -rf /opt/cni
+<pre class="shell"><code class="language-shell">sudo rm -rf /opt/cni
 sudo rm -rf /etc/cni
 sudo rm -rf /var/lib/cni</code></pre>
 <h2 id="conclusion">Conclusion</h2>
@@ -587,6 +597,7 @@ href="../../tasks/configure-pod-container/static-pod.html">static Pods</a>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -595,6 +606,8 @@ href="../../tasks/configure-pod-container/static-pod.html">static Pods</a>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

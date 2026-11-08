@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../../" href="../../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -179,94 +194,92 @@ support with kubeadm</a>.</p>
 <p>Since etcd was created first, you must override the service priority
 by creating a new unit file that has higher precedence than the
 kubeadm-provided kubelet unit file.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">cat</span> <span class="op">&lt;&lt; EOF</span> <span class="op">&gt;</span> /etc/systemd/system/kubelet.service.d/kubelet.conf</span>
-<span class="st"># Replace &quot;systemd&quot; with the cgroup driver of your container runtime. The default value in the kubelet is &quot;cgroupfs&quot;.</span></span>
-<span class="st"># Replace the value of &quot;containerRuntimeEndpoint&quot; for a different container runtime if needed.</span></span>
-<span class="st">#</span></span>
-<span class="st">apiVersion: kubelet.config.k8s.io/v1beta1</span></span>
-<span class="st">kind: KubeletConfiguration</span></span>
-<span class="st">authentication:</span></span>
-<span class="st">  anonymous:</span></span>
-<span class="st">    enabled: false</span></span>
-<span class="st">  webhook:</span></span>
-<span class="st">    enabled: false</span></span>
-<span class="st">authorization:</span></span>
-<span class="st">  mode: AlwaysAllow</span></span>
-<span class="st">cgroupDriver: systemd</span></span>
-<span class="st">address: 127.0.0.1</span></span>
-<span class="st">containerRuntimeEndpoint: unix:///var/run/containerd/containerd.sock</span></span>
-<span class="st">staticPodPath: /etc/kubernetes/manifests</span></span>
-<span class="op">EOF</span></span>
-</span>
-<span class="fu">cat</span> <span class="op">&lt;&lt; EOF</span> <span class="op">&gt;</span> /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf</span>
-<span class="st">[Service]</span></span>
-<span class="st">ExecStart=</span></span>
-<span class="st">ExecStart=/usr/bin/kubelet --config=/etc/systemd/system/kubelet.service.d/kubelet.conf</span></span>
-<span class="st">Restart=always</span></span>
-<span class="op">EOF</span></span>
-</span>
-<span class="ex">systemctl</span> daemon-reload</span>
-<span class="ex">systemctl</span> restart kubelet</span></code></pre></div>
+<pre class="sh"><code class="language-sh">cat &lt;&lt; EOF &gt; /etc/systemd/system/kubelet.service.d/kubelet.conf
+# Replace &quot;systemd&quot; with the cgroup driver of your container runtime. The default value in the kubelet is &quot;cgroupfs&quot;.
+# Replace the value of &quot;containerRuntimeEndpoint&quot; for a different container runtime if needed.
+#
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authentication:
+  anonymous:
+    enabled: false
+  webhook:
+    enabled: false
+authorization:
+  mode: AlwaysAllow
+cgroupDriver: systemd
+address: 127.0.0.1
+containerRuntimeEndpoint: unix:///var/run/containerd/containerd.sock
+staticPodPath: /etc/kubernetes/manifests
+EOF
+
+cat &lt;&lt; EOF &gt; /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf
+[Service]
+ExecStart=
+ExecStart=/usr/bin/kubelet --config=/etc/systemd/system/kubelet.service.d/kubelet.conf
+Restart=always
+EOF
+
+systemctl daemon-reload
+systemctl restart kubelet</code></pre>
 <p>Check the kubelet status to ensure it is running.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">systemctl</span> status kubelet</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">systemctl status kubelet</code></pre></li>
 <li><p>Create configuration files for kubeadm.</p>
 <p>Generate one kubeadm configuration file for each host that will have
 an etcd member running on it using the following script.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="co"># Update HOST0, HOST1 and HOST2 with the IPs of your hosts</span></span>
-<span class="bu">export</span> <span class="va">HOST0</span><span class="op">=</span>10.0.0.6</span>
-<span class="bu">export</span> <span class="va">HOST1</span><span class="op">=</span>10.0.0.7</span>
-<span class="bu">export</span> <span class="va">HOST2</span><span class="op">=</span>10.0.0.8</span>
-</span>
-<span class="co"># Update NAME0, NAME1 and NAME2 with the hostnames of your hosts</span></span>
-<span class="bu">export</span> <span class="va">NAME0</span><span class="op">=</span><span class="st">&quot;infra0&quot;</span></span>
-<span class="bu">export</span> <span class="va">NAME1</span><span class="op">=</span><span class="st">&quot;infra1&quot;</span></span>
-<span class="bu">export</span> <span class="va">NAME2</span><span class="op">=</span><span class="st">&quot;infra2&quot;</span></span>
-</span>
-<span class="co"># Create temp directories to store files that will end up on other hosts</span></span>
-<span class="fu">mkdir</span> <span class="at">-p</span> /tmp/<span class="va">${HOST0}</span>/ /tmp/<span class="va">${HOST1}</span>/ /tmp/<span class="va">${HOST2}</span>/</span>
-</span>
-<span class="va">HOSTS</span><span class="op">=</span><span class="va">(${HOST0}</span> <span class="va">${HOST1}</span> <span class="va">${HOST2})</span></span>
-<span class="va">NAMES</span><span class="op">=</span><span class="va">(${NAME0}</span> <span class="va">${NAME1}</span> <span class="va">${NAME2})</span></span>
-</span>
-<span class="cf">for</span> i <span class="kw">in</span> <span class="st">&quot;</span><span class="va">${</span><span class="op">!</span><span class="va">HOSTS</span><span class="op">[@]</span><span class="va">}</span><span class="st">&quot;</span><span class="kw">;</span> <span class="cf">do</span></span>
-<span class="va">HOST</span><span class="op">=</span><span class="va">${HOSTS</span><span class="op">[</span><span class="va">$i</span><span class="op">]</span><span class="va">}</span></span>
-<span class="va">NAME</span><span class="op">=</span><span class="va">${NAMES</span><span class="op">[</span><span class="va">$i</span><span class="op">]</span><span class="va">}</span></span>
-<span class="fu">cat</span> <span class="op">&lt;&lt; EOF</span> <span class="op">&gt;</span> /tmp/<span class="va">${HOST}</span>/kubeadmcfg.yaml</span>
-<span class="st">---</span></span>
-<span class="st">apiVersion: &quot;kubeadm.k8s.io/v1beta4&quot;</span></span>
-<span class="st">kind: InitConfiguration</span></span>
-<span class="st">nodeRegistration:</span></span>
-<span class="st">    name: </span><span class="va">${NAME}</span></span>
-<span class="st">localAPIEndpoint:</span></span>
-<span class="st">    advertiseAddress: </span><span class="va">${HOST}</span></span>
-<span class="st">---</span></span>
-<span class="st">apiVersion: &quot;kubeadm.k8s.io/v1beta4&quot;</span></span>
-<span class="st">kind: ClusterConfiguration</span></span>
-<span class="st">etcd:</span></span>
-<span class="st">    local:</span></span>
-<span class="st">        serverCertSANs:</span></span>
-<span class="st">        - &quot;</span><span class="va">${HOST}</span><span class="st">&quot;</span></span>
-<span class="st">        peerCertSANs:</span></span>
-<span class="st">        - &quot;</span><span class="va">${HOST}</span><span class="st">&quot;</span></span>
-<span class="st">        extraArgs:</span></span>
-<span class="st">        - name: initial-cluster</span></span>
-<span class="st">          value: </span><span class="va">${NAMES</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">=https://</span><span class="va">${HOSTS</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">:2380,</span><span class="va">${NAMES</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span><span class="va">}</span><span class="st">=https://</span><span class="va">${HOSTS</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span><span class="va">}</span><span class="st">:2380,</span><span class="va">${NAMES</span><span class="op">[</span><span class="dv">2</span><span class="op">]</span><span class="va">}</span><span class="st">=https://</span><span class="va">${HOSTS</span><span class="op">[</span><span class="dv">2</span><span class="op">]</span><span class="va">}</span><span class="st">:2380</span></span>
-<span class="st">        - name: initial-cluster-state</span></span>
-<span class="st">          value: new</span></span>
-<span class="st">        - name: name</span></span>
-<span class="st">          value: </span><span class="va">${NAME}</span></span>
-<span class="st">        - name: listen-peer-urls</span></span>
-<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2380</span></span>
-<span class="st">        - name: listen-client-urls</span></span>
-<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2379</span></span>
-<span class="st">        - name: advertise-client-urls</span></span>
-<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2379</span></span>
-<span class="st">        - name: initial-advertise-peer-urls</span></span>
-<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2380</span></span>
-<span class="op">EOF</span></span>
-<span class="cf">done</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh"># Update HOST0, HOST1 and HOST2 with the IPs of your hosts
+export HOST0=10.0.0.6
+export HOST1=10.0.0.7
+export HOST2=10.0.0.8
+
+# Update NAME0, NAME1 and NAME2 with the hostnames of your hosts
+export NAME0=&quot;infra0&quot;
+export NAME1=&quot;infra1&quot;
+export NAME2=&quot;infra2&quot;
+
+# Create temp directories to store files that will end up on other hosts
+mkdir -p /tmp/${HOST0}/ /tmp/${HOST1}/ /tmp/${HOST2}/
+
+HOSTS=(${HOST0} ${HOST1} ${HOST2})
+NAMES=(${NAME0} ${NAME1} ${NAME2})
+
+for i in &quot;${!HOSTS[@]}&quot;; do
+HOST=${HOSTS[$i]}
+NAME=${NAMES[$i]}
+cat &lt;&lt; EOF &gt; /tmp/${HOST}/kubeadmcfg.yaml
+---
+apiVersion: &quot;kubeadm.k8s.io/v1beta4&quot;
+kind: InitConfiguration
+nodeRegistration:
+    name: ${NAME}
+localAPIEndpoint:
+    advertiseAddress: ${HOST}
+---
+apiVersion: &quot;kubeadm.k8s.io/v1beta4&quot;
+kind: ClusterConfiguration
+etcd:
+    local:
+        serverCertSANs:
+        - &quot;${HOST}&quot;
+        peerCertSANs:
+        - &quot;${HOST}&quot;
+        extraArgs:
+        - name: initial-cluster
+          value: ${NAMES[0]}=https://${HOSTS[0]}:2380,${NAMES[1]}=https://${HOSTS[1]}:2380,${NAMES[2]}=https://${HOSTS[2]}:2380
+        - name: initial-cluster-state
+          value: new
+        - name: name
+          value: ${NAME}
+        - name: listen-peer-urls
+          value: https://${HOST}:2380
+        - name: listen-client-urls
+          value: https://${HOST}:2379
+        - name: advertise-client-urls
+          value: https://${HOST}:2379
+        - name: initial-advertise-peer-urls
+          value: https://${HOST}:2380
+EOF
+done</code></pre></li>
 <li><p>Generate the certificate authority.</p>
 <p>If you already have a CA then the only action that is copying the
 CA's <code>crt</code> and <code>key</code> file to
@@ -284,42 +297,40 @@ kubeadm).</p>
 <li><code>/etc/kubernetes/pki/etcd/ca.key</code></li>
 </ul></li>
 <li><p>Create certificates for each member.</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubeadm</span> init phase certs etcd-server <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs etcd-peer <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs etcd-healthcheck-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs apiserver-etcd-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
-<span class="fu">cp</span> <span class="at">-R</span> /etc/kubernetes/pki /tmp/<span class="va">${HOST2}</span>/</span>
-<span class="co"># cleanup non-reusable certificates</span></span>
-<span class="fu">find</span> /etc/kubernetes/pki <span class="at">-not</span> <span class="at">-name</span> ca.crt <span class="at">-not</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span>
-</span>
-<span class="ex">kubeadm</span> init phase certs etcd-server <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs etcd-peer <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs etcd-healthcheck-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs apiserver-etcd-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
-<span class="fu">cp</span> <span class="at">-R</span> /etc/kubernetes/pki /tmp/<span class="va">${HOST1}</span>/</span>
-<span class="fu">find</span> /etc/kubernetes/pki <span class="at">-not</span> <span class="at">-name</span> ca.crt <span class="at">-not</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span>
-</span>
-<span class="ex">kubeadm</span> init phase certs etcd-server <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs etcd-peer <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs etcd-healthcheck-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
-<span class="ex">kubeadm</span> init phase certs apiserver-etcd-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
-<span class="co"># No need to move the certs because they are for HOST0</span></span>
-</span>
-<span class="co"># clean up certs that should not be copied off this host</span></span>
-<span class="fu">find</span> /tmp/<span class="va">${HOST2}</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span>
-<span class="fu">find</span> /tmp/<span class="va">${HOST1}</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubeadm init phase certs etcd-server --config=/tmp/${HOST2}/kubeadmcfg.yaml
+kubeadm init phase certs etcd-peer --config=/tmp/${HOST2}/kubeadmcfg.yaml
+kubeadm init phase certs etcd-healthcheck-client --config=/tmp/${HOST2}/kubeadmcfg.yaml
+kubeadm init phase certs apiserver-etcd-client --config=/tmp/${HOST2}/kubeadmcfg.yaml
+cp -R /etc/kubernetes/pki /tmp/${HOST2}/
+# cleanup non-reusable certificates
+find /etc/kubernetes/pki -not -name ca.crt -not -name ca.key -type f -delete
+
+kubeadm init phase certs etcd-server --config=/tmp/${HOST1}/kubeadmcfg.yaml
+kubeadm init phase certs etcd-peer --config=/tmp/${HOST1}/kubeadmcfg.yaml
+kubeadm init phase certs etcd-healthcheck-client --config=/tmp/${HOST1}/kubeadmcfg.yaml
+kubeadm init phase certs apiserver-etcd-client --config=/tmp/${HOST1}/kubeadmcfg.yaml
+cp -R /etc/kubernetes/pki /tmp/${HOST1}/
+find /etc/kubernetes/pki -not -name ca.crt -not -name ca.key -type f -delete
+
+kubeadm init phase certs etcd-server --config=/tmp/${HOST0}/kubeadmcfg.yaml
+kubeadm init phase certs etcd-peer --config=/tmp/${HOST0}/kubeadmcfg.yaml
+kubeadm init phase certs etcd-healthcheck-client --config=/tmp/${HOST0}/kubeadmcfg.yaml
+kubeadm init phase certs apiserver-etcd-client --config=/tmp/${HOST0}/kubeadmcfg.yaml
+# No need to move the certs because they are for HOST0
+
+# clean up certs that should not be copied off this host
+find /tmp/${HOST2} -name ca.key -type f -delete
+find /tmp/${HOST1} -name ca.key -type f -delete</code></pre></li>
 <li><p>Copy certificates and kubeadm configs.</p>
 <p>The certificates have been generated and now they must be moved to
 their respective hosts.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span><span class="op">=</span>ubuntu</span>
-<span class="va">HOST</span><span class="op">=</span><span class="va">${HOST1}</span></span>
-<span class="fu">scp</span> <span class="at">-r</span> /tmp/<span class="va">${HOST}</span>/<span class="pp">*</span> <span class="va">${USER}</span>@<span class="va">${HOST}</span>:</span>
-<span class="fu">ssh</span> <span class="va">${USER}</span>@<span class="va">${HOST}</span></span>
-<span class="ex">USER@HOST</span> $ sudo <span class="at">-Es</span></span>
-<span class="ex">root@HOST</span> $ chown <span class="at">-R</span> root:root pki</span>
-<span class="ex">root@HOST</span> $ mv pki /etc/kubernetes/</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">USER=ubuntu
+HOST=${HOST1}
+scp -r /tmp/${HOST}/* ${USER}@${HOST}:
+ssh ${USER}@${HOST}
+USER@HOST $ sudo -Es
+root@HOST $ chown -R root:root pki
+root@HOST $ mv pki /etc/kubernetes/</code></pre></li>
 <li><p>Ensure all expected files exist.</p>
 <p>The complete list of required files on <code>$HOST0</code> is:</p>
 <pre><code>/tmp/${HOST0}
@@ -371,25 +382,23 @@ class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span>
 <p>Now that the certificates and configs are in place it's time to
 create the manifests. On each host run the <code>kubeadm</code> command
 to generate a static manifest for etcd.</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">root@HOST0</span> $ kubeadm init phase etcd local <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
-<span class="ex">root@HOST1</span> $ kubeadm init phase etcd local <span class="at">--config</span><span class="op">=</span><span class="va">$HOME</span>/kubeadmcfg.yaml</span>
-<span class="ex">root@HOST2</span> $ kubeadm init phase etcd local <span class="at">--config</span><span class="op">=</span><span class="va">$HOME</span>/kubeadmcfg.yaml</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">root@HOST0 $ kubeadm init phase etcd local --config=/tmp/${HOST0}/kubeadmcfg.yaml
+root@HOST1 $ kubeadm init phase etcd local --config=$HOME/kubeadmcfg.yaml
+root@HOST2 $ kubeadm init phase etcd local --config=$HOME/kubeadmcfg.yaml</code></pre></li>
 <li><p>Optional: Check the cluster health.</p>
 <p>If <code>etcdctl</code> isn't available, you can run this tool inside
 a container image. You would do that directly with your container
 runtime using a tool such as <code>crictl run</code> and not through
 Kubernetes</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="va">ETCDCTL_API</span><span class="op">=</span>3 <span class="ex">etcdctl</span> <span class="dt">\</span></span>
---cert /etc/kubernetes/pki/etcd/peer.crt <span class="dt">\</span></span>
---key /etc/kubernetes/pki/etcd/peer.key <span class="dt">\</span></span>
---cacert /etc/kubernetes/pki/etcd/ca.crt <span class="dt">\</span></span>
---endpoints https://<span class="va">${HOST0}</span>:2379 endpoint health</span>
-<span class="ex">...</span></span>
-<span class="ex">https://[HOST0</span> IP]:2379 is healthy: successfully committed proposal: took = 16.283339ms</span>
-<span class="ex">https://[HOST1</span> IP]:2379 is healthy: successfully committed proposal: took = 19.44402ms</span>
-<span class="ex">https://[HOST2</span> IP]:2379 is healthy: successfully committed proposal: took = 35.926451ms</span></code></pre></div>
+<pre class="sh"><code class="language-sh">ETCDCTL_API=3 etcdctl \
+--cert /etc/kubernetes/pki/etcd/peer.crt \
+--key /etc/kubernetes/pki/etcd/peer.key \
+--cacert /etc/kubernetes/pki/etcd/ca.crt \
+--endpoints https://${HOST0}:2379 endpoint health
+...
+https://[HOST0 IP]:2379 is healthy: successfully committed proposal: took = 16.283339ms
+https://[HOST1 IP]:2379 is healthy: successfully committed proposal: took = 19.44402ms
+https://[HOST2 IP]:2379 is healthy: successfully committed proposal: took = 35.926451ms</code></pre>
 <ul>
 <li>Set <code>${HOST0}</code>to the IP address of the host you are
 testing.</li>
@@ -464,6 +473,7 @@ etcd method with kubeadm</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -472,6 +482,8 @@ etcd method with kubeadm</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../../assets/nav.js"></script>
 <script src="../../../../../assets/site.js"></script>
 </body>

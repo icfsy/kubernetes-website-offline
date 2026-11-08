@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -146,19 +161,19 @@ service in your cluster. If you have the metrics-server running, you can
 skip those steps.</p>
 <p>If you are running Minikube, run the following command to enable the
 metrics-server:</p>
-<pre class="shell"><code>minikube addons enable metrics-server</code></pre>
+<pre class="shell"><code class="language-shell">minikube addons enable metrics-server</code></pre>
 <p>To see whether the metrics-server is running, or another provider of
 the resource metrics API (<code>metrics.k8s.io</code>), run the
 following command:</p>
-<pre class="shell"><code>kubectl get apiservices</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get apiservices</code></pre>
 <p>If the resource metrics API is available, the output includes a
 reference to <code>metrics.k8s.io</code>.</p>
-<pre class="shell"><code>NAME
+<pre class="shell"><code class="language-shell">NAME
 v1beta1.metrics.k8s.io</code></pre>
 <h2 id="create-a-namespace">Create a namespace</h2>
 <p>Create a namespace so that the resources you create in this exercise
 are isolated from the rest of your cluster.</p>
-<pre class="shell"><code>kubectl create namespace mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create namespace mem-example</code></pre>
 <h2 id="specify-a-memory-request-and-a-memory-limit">Specify a memory
 request and a memory limit</h2>
 <p>To specify a memory request for a container, include the
@@ -170,53 +185,51 @@ Container has a memory request of 100 MiB and a memory limit of 200 MiB.
 Here's the configuration file for the Pod:</p>
 <div class="code-sample">
 <p><code>pods/resource/memory-request-limit.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> mem-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo-ctr</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> polinux/stress</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;stress&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;--vm&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-bytes&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;150M&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-hang&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-demo
+  namespace: mem-example
+spec:
+  containers:
+  - name: memory-demo-ctr
+    image: polinux/stress
+    resources:
+      requests:
+        memory: &quot;100Mi&quot;
+      limits:
+        memory: &quot;200Mi&quot;
+    command: [&quot;stress&quot;]
+    args: [&quot;--vm&quot;, &quot;1&quot;, &quot;--vm-bytes&quot;, &quot;150M&quot;, &quot;--vm-hang&quot;, &quot;1&quot;]</code></pre>
 </div>
 <p>The <code>args</code> section in the configuration file provides
 arguments for the Container when it starts. The
 <code>"--vm-bytes", "150M"</code> arguments tell the Container to
 attempt to allocate 150 MiB of memory.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/resource/memory-request-limit.yaml --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/resource/memory-request-limit.yaml --namespace=mem-example</code></pre>
 <p>Verify that the Pod Container is running:</p>
-<pre class="shell"><code>kubectl get pod memory-demo --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod memory-demo --namespace=mem-example</code></pre>
 <p>View detailed information about the Pod:</p>
-<pre class="shell"><code>kubectl get pod memory-demo --output=yaml --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod memory-demo --output=yaml --namespace=mem-example</code></pre>
 <p>The output shows that the one Container in the Pod has a memory
 request of 100 MiB and a memory limit of 200 MiB.</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">resources:</span></span>
-<span class="er">  requests:</span></span>
-<span class="er">    memory: 100Mi</span></span>
-<span class="er">  limits:</span></span>
-<span class="er">    memory: 200Mi</span></span>
-<span class="er">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+resources:
+  requests:
+    memory: 100Mi
+  limits:
+    memory: 200Mi
+...</code></pre>
 <p>Run <code>kubectl top</code> to fetch the metrics for the pod:</p>
-<pre class="shell"><code>kubectl top pod memory-demo --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl top pod memory-demo --namespace=mem-example</code></pre>
 <p>The output shows that the Pod is using about 162,900,000 bytes of
 memory, which is about 150 MiB. This is greater than the Pod's 100 MiB
 request, but within the Pod's 200 MiB limit.</p>
 <pre><code>NAME                        CPU(cores)   MEMORY(bytes)
 memory-demo                 &lt;something&gt;  162856960</code></pre>
 <p>Delete your Pod:</p>
-<pre class="shell"><code>kubectl delete pod memory-demo --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod memory-demo --namespace=mem-example</code></pre>
 <h2 id="exceed-a-container-s-memory-limit">Exceed a Container's memory
 limit</h2>
 <p>A Container can exceed its memory request if the Node has memory
@@ -232,51 +245,49 @@ one Container with a memory request of 50 MiB and a memory limit of 100
 MiB:</p>
 <div class="code-sample">
 <p><code>pods/resource/memory-request-limit-2.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo-2</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> mem-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo-2-ctr</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> polinux/stress</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;50Mi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;stress&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;--vm&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-bytes&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;250M&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-hang&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-demo-2
+  namespace: mem-example
+spec:
+  containers:
+  - name: memory-demo-2-ctr
+    image: polinux/stress
+    resources:
+      requests:
+        memory: &quot;50Mi&quot;
+      limits:
+        memory: &quot;100Mi&quot;
+    command: [&quot;stress&quot;]
+    args: [&quot;--vm&quot;, &quot;1&quot;, &quot;--vm-bytes&quot;, &quot;250M&quot;, &quot;--vm-hang&quot;, &quot;1&quot;]</code></pre>
 </div>
 <p>In the <code>args</code> section of the configuration file, you can
 see that the Container will attempt to allocate 250 MiB of memory, which
 is well above the 100 MiB limit.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/resource/memory-request-limit-2.yaml --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/resource/memory-request-limit-2.yaml --namespace=mem-example</code></pre>
 <p>View detailed information about the Pod:</p>
-<pre class="shell"><code>kubectl get pod memory-demo-2 --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod memory-demo-2 --namespace=mem-example</code></pre>
 <p>At this point, the Container might be running or killed. Repeat the
 preceding command until the Container is killed:</p>
-<pre class="shell"><code>NAME            READY     STATUS      RESTARTS   AGE
+<pre class="shell"><code class="language-shell">NAME            READY     STATUS      RESTARTS   AGE
 memory-demo-2   0/1       OOMKilled   1          24s</code></pre>
 <p>Get a more detailed view of the Container status:</p>
-<pre class="shell"><code>kubectl get pod memory-demo-2 --output=yaml --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod memory-demo-2 --output=yaml --namespace=mem-example</code></pre>
 <p>The output shows that the Container was killed because it is out of
 memory (OOM):</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">lastState</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">terminated</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">containerID</span><span class="kw">:</span><span class="at"> 65183c1877aaec2e8427bc95609cc52677a454b56fcb24340dbd22917c23b10f</span></span>
-<span class="at">     </span><span class="fu">exitCode</span><span class="kw">:</span><span class="at"> </span><span class="dv">137</span></span>
-<span class="at">     </span><span class="fu">finishedAt</span><span class="kw">:</span><span class="at"> </span><span class="bn">2017-06-20T20:52:19Z</span></span>
-<span class="at">     </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> OOMKilled</span></span>
-<span class="at">     </span><span class="fu">startedAt</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">lastState:
+   terminated:
+     containerID: 65183c1877aaec2e8427bc95609cc52677a454b56fcb24340dbd22917c23b10f
+     exitCode: 137
+     finishedAt: 2017-06-20T20:52:19Z
+     reason: OOMKilled
+     startedAt: null</code></pre>
 <p>The Container in this exercise can be restarted, so the kubelet
 restarts it. Repeat this command several times to see that the Container
 is repeatedly killed and restarted:</p>
-<pre class="shell"><code>kubectl get pod memory-demo-2 --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod memory-demo-2 --namespace=mem-example</code></pre>
 <p>The output shows that the Container is killed, restarted, killed
 again, restarted again, and so on:</p>
 <pre><code>kubectl get pod memory-demo-2 --namespace=mem-example
@@ -297,7 +308,7 @@ memory-demo-2   1/1       Running   2          40s</code></pre>
 an out-of-memory condition:</p>
 <pre><code>Warning OOMKilling Memory cgroup out of memory: Kill process 4481 (stress) score 1994 or sacrifice child</code></pre>
 <p>Delete your Pod:</p>
-<pre class="shell"><code>kubectl delete pod memory-demo-2 --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod memory-demo-2 --namespace=mem-example</code></pre>
 <h2 id="specify-a-memory-request-that-is-too-big-for-your-nodes">Specify
 a memory request that is too big for your Nodes</h2>
 <p>Memory requests and limits are associated with Containers, but it is
@@ -315,28 +326,27 @@ configuration file for a Pod that has one Container with a request for
 your cluster.</p>
 <div class="code-sample">
 <p><code>pods/resource/memory-request-limit-3.yaml</code></p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo-3</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> mem-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo-3-ctr</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> polinux/stress</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1000Gi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1000Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;stress&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;--vm&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-bytes&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;150M&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-hang&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-demo-3
+  namespace: mem-example
+spec:
+  containers:
+  - name: memory-demo-3-ctr
+    image: polinux/stress
+    resources:
+      requests:
+        memory: &quot;1000Gi&quot;
+      limits:
+        memory: &quot;1000Gi&quot;
+    command: [&quot;stress&quot;]
+    args: [&quot;--vm&quot;, &quot;1&quot;, &quot;--vm-bytes&quot;, &quot;150M&quot;, &quot;--vm-hang&quot;, &quot;1&quot;]</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/resource/memory-request-limit-3.yaml --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/resource/memory-request-limit-3.yaml --namespace=mem-example</code></pre>
 <p>View the Pod status:</p>
-<pre class="shell"><code>kubectl get pod memory-demo-3 --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod memory-demo-3 --namespace=mem-example</code></pre>
 <p>The output shows that the Pod status is PENDING. That is, the Pod is
 not scheduled to run on any Node, and it will remain in the PENDING
 state indefinitely:</p>
@@ -344,7 +354,7 @@ state indefinitely:</p>
 NAME            READY     STATUS    RESTARTS   AGE
 memory-demo-3   0/1       Pending   0          25s</code></pre>
 <p>View detailed information about the Pod, including events:</p>
-<pre class="shell"><code>kubectl describe pod memory-demo-3 --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod memory-demo-3 --namespace=mem-example</code></pre>
 <p>The output shows that the Container cannot be scheduled because of
 insufficient memory on the Nodes:</p>
 <pre><code>Events:
@@ -358,7 +368,7 @@ T, G, M, K, Ei, Pi, Ti, Gi, Mi, Ki. For example, the following represent
 approximately the same value:</p>
 <pre><code>128974848, 129e6, 129M, 123Mi</code></pre>
 <p>Delete your Pod:</p>
-<pre class="shell"><code>kubectl delete pod memory-demo-3 --namespace=mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod memory-demo-3 --namespace=mem-example</code></pre>
 <h2 id="if-you-do-not-specify-a-memory-limit">If you do not specify a
 memory limit</h2>
 <p>If you do not specify a memory limit for a Container, one of the
@@ -392,7 +402,7 @@ reasonable amount.</li>
 <h2 id="clean-up">Clean up</h2>
 <p>Delete your namespace. This deletes all the Pods that you created for
 this task:</p>
-<pre class="shell"><code>kubectl delete namespace mem-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete namespace mem-example</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <h3 id="for-app-developers">For app developers</h3>
 <ul>
@@ -500,6 +510,7 @@ CPU and Memory Resources assigned to Containers</a></p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -508,6 +519,8 @@ CPU and Memory Resources assigned to Containers</a></p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

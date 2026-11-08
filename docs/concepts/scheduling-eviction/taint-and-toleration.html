@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -137,28 +152,26 @@ tolerate the taints.</p>
 <p>You add a taint to a node using <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands#taint">kubectl
 taint</a>. For example,</p>
-<pre class="shell"><code>kubectl taint nodes node1 key1=value1:NoSchedule</code></pre>
+<pre class="shell"><code class="language-shell">kubectl taint nodes node1 key1=value1:NoSchedule</code></pre>
 <p>places a taint on node <code>node1</code>. The taint has key
 <code>key1</code>, value <code>value1</code>, and taint effect
 <code>NoSchedule</code>. This means that no pod will be able to schedule
 onto <code>node1</code> unless it has a matching toleration.</p>
 <p>To remove the taint added by the command above, you can run:</p>
-<pre class="shell"><code>kubectl taint nodes node1 key1=value1:NoSchedule-</code></pre>
+<pre class="shell"><code class="language-shell">kubectl taint nodes node1 key1=value1:NoSchedule-</code></pre>
 <p>You specify a toleration for a pod in the PodSpec. Both of the
 following tolerations "match" the taint created by the
 <code>kubectl taint</code> line above, and thus a pod with either
 toleration would be able to schedule onto <code>node1</code>:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key1&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
-<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value1&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key1&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">tolerations:
+- key: &quot;key1&quot;
+  operator: &quot;Equal&quot;
+  value: &quot;value1&quot;
+  effect: &quot;NoSchedule&quot;</code></pre>
+<pre class="yaml"><code class="language-yaml">tolerations:
+- key: &quot;key1&quot;
+  operator: &quot;Exists&quot;
+  effect: &quot;NoSchedule&quot;</code></pre>
 <p>The default Kubernetes scheduler takes taints and tolerations into
 account when selecting a node to run a particular Pod. However, if you
 manually specify the <code>.spec.nodeName</code> for a Pod, that action
@@ -170,22 +183,21 @@ there is an appropriate tolerance set.</p>
 <p>Here's an example of a pod that has some tolerations defined:</p>
 <div class="code-sample">
 <p><code>pods/pod-with-toleration.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">env</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="at">  </span><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-key&quot;</span></span>
-<span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
-<span class="at">    </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  tolerations:
+  - key: &quot;example-key&quot;
+    operator: &quot;Exists&quot;
+    effect: &quot;NoSchedule&quot;</code></pre>
 </div>
 <p>The default value for <code>operator</code> is
 <code>Equal</code>.</p>
@@ -261,20 +273,19 @@ is already running on the node), and will not be scheduled onto the node
 (if it is not yet running on the node).</li>
 </ul>
 <p>For example, imagine you taint a node like this</p>
-<pre class="shell"><code>kubectl taint nodes node1 key1=value1:NoSchedule
+<pre class="shell"><code class="language-shell">kubectl taint nodes node1 key1=value1:NoSchedule
 kubectl taint nodes node1 key1=value1:NoExecute
 kubectl taint nodes node1 key2=value2:NoSchedule</code></pre>
 <p>And a pod has two tolerations:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key1&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
-<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value1&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key1&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
-<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value1&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoExecute&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">tolerations:
+- key: &quot;key1&quot;
+  operator: &quot;Equal&quot;
+  value: &quot;value1&quot;
+  effect: &quot;NoSchedule&quot;
+- key: &quot;key1&quot;
+  operator: &quot;Equal&quot;
+  value: &quot;value1&quot;
+  effect: &quot;NoExecute&quot;</code></pre>
 <p>In this case, the pod will not be able to schedule onto the node,
 because there is no toleration matching the third taint. But it will be
 able to continue running if it is already running on the node when the
@@ -287,13 +298,12 @@ However, a toleration with <code>NoExecute</code> effect can specify an
 optional <code>tolerationSeconds</code> field that dictates how long the
 pod will stay bound to the node after the taint is added. For
 example,</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key1&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
-<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value1&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoExecute&quot;</span></span>
-<span class="at">  </span><span class="fu">tolerationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">3600</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">tolerations:
+- key: &quot;key1&quot;
+  operator: &quot;Equal&quot;
+  value: &quot;value1&quot;
+  effect: &quot;NoExecute&quot;
+  tolerationSeconds: 3600</code></pre>
 <p>means that if this pod is running and a matching taint is added to
 the node, then the pod will stay bound to the node for 3600 seconds, and
 then be evicted. If the taint is removed before that time, the pod will
@@ -334,27 +344,26 @@ cannot schedule on that node.</p>
 </div>
 <p>For example, if nodes are tainted with a value representing a service
 level agreement (SLA):</p>
-<pre class="shell"><code>kubectl taint nodes node1 servicelevel.organization.example/agreed-service-level=950:NoSchedule</code></pre>
+<pre class="shell"><code class="language-shell">kubectl taint nodes node1 servicelevel.organization.example/agreed-service-level=950:NoSchedule</code></pre>
 <p>A pod can tolerate nodes with SLA greater than 900:</p>
 <div class="code-sample">
 <p><code>pods/pod-with-numeric-toleration.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-numeric-toleration</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">env</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="at">  </span><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;servicelevel.organization.example/agreed-service-level&quot;</span></span>
-<span class="at">      </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Gt&quot;</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;900&quot;</span></span>
-<span class="at">      </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-numeric-toleration
+  labels:
+    env: test
+spec:
+  containers:
+    - name: nginx
+      image: nginx
+      imagePullPolicy: IfNotPresent
+  tolerations:
+    - key: &quot;servicelevel.organization.example/agreed-service-level&quot;
+      operator: &quot;Gt&quot;
+      value: &quot;900&quot;
+      effect: &quot;NoSchedule&quot;</code></pre>
 </div>
 <p>This toleration matches the taint on <code>node1</code> because
 <code>950 &gt; 900</code> (the taint value<br />
@@ -363,12 +372,11 @@ operator).<br />
 Similarly, you can use the <code>Lt</code> operator to match taints
 where the taint value is<br />
 less than the toleration value:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;servicelevel.organization.example/agreed-service-level&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Lt&quot;</span></span>
-<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1000&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">tolerations:
+- key: &quot;servicelevel.organization.example/agreed-service-level&quot;
+  operator: &quot;Lt&quot;
+  value: &quot;1000&quot;
+  effect: &quot;NoSchedule&quot;</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -515,12 +523,11 @@ local state bound to node for a long time in the event of network
 partition, hoping that the partition will recover and thus the pod
 eviction can be avoided. The toleration you set for that Pod might look
 like:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;node.kubernetes.io/unreachable&quot;</span></span>
-<span class="at">  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
-<span class="at">  </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoExecute&quot;</span></span>
-<span class="at">  </span><span class="fu">tolerationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">6000</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">tolerations:
+- key: &quot;node.kubernetes.io/unreachable&quot;
+  operator: &quot;Exists&quot;
+  effect: &quot;NoExecute&quot;
+  tolerationSeconds: 6000</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -678,6 +685,7 @@ taints and tolerations</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -686,6 +694,8 @@ taints and tolerations</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

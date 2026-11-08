@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -193,25 +208,24 @@ affect each component's behavior.</p>
 initialization</h3>
 <p>Create a configuration file to enable feature gates across relevant
 components:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">apiServer</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">extraArgs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">feature-gates</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;FeatureName=true&quot;</span></span>
-<span class="fu">controllerManager</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">extraArgs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">feature-gates</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;FeatureName=true&quot;</span></span>
-<span class="fu">scheduler</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">extraArgs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">feature-gates</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;FeatureName=true&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">featureGates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FeatureName</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+apiServer:
+  extraArgs:
+    feature-gates: &quot;FeatureName=true&quot;
+controllerManager:
+  extraArgs:
+    feature-gates: &quot;FeatureName=true&quot;
+scheduler:
+  extraArgs:
+    feature-gates: &quot;FeatureName=true&quot;
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+featureGates:
+  FeatureName: true</code></pre>
 <p>Initialize the cluster:</p>
-<pre class="shell"><code>kubeadm init --config kubeadm-config.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm init --config kubeadm-config.yaml</code></pre>
 <h3 id="on-an-existing-cluster">On an existing cluster</h3>
 <p>For kubeadm clusters, feature gate configuration can be set in
 several locations including manifest files, configuration files, and
@@ -221,42 +235,38 @@ kubeadm configuration.</p>
 <ol type="1">
 <li><p>For kube-apiserver, kube-controller-manager, or kube-scheduler,
 add the flag to the command:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">kube-apiserver</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">--feature-gates=FeatureName=true</span></span>
-<span class="at">    </span><span class="co"># ... other flags</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  containers:
+  - command:
+    - kube-apiserver
+    - --feature-gates=FeatureName=true
+    # ... other flags</code></pre>
 <p>Save the file. The pod restarts automatically.</p></li>
 <li><p>For kubelet, edit <code>/var/lib/kubelet/config.yaml</code>:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">featureGates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FeatureName</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+featureGates:
+  FeatureName: true</code></pre>
 <p>Restart kubelet:</p>
-<pre class="shell"><code>sudo systemctl restart kubelet</code></pre></li>
+<pre class="shell"><code class="language-shell">sudo systemctl restart kubelet</code></pre></li>
 <li><p>For kube-proxy, edit the ConfigMap:</p>
-<pre class="shell"><code>kubectl -n kube-system edit configmap kube-proxy</code></pre>
+<pre class="shell"><code class="language-shell">kubectl -n kube-system edit configmap kube-proxy</code></pre>
 <p>Add feature gates to the configuration:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">featureGates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FeatureName</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">featureGates:
+  FeatureName: true</code></pre>
 <p>Restart the DaemonSet:</p>
-<pre class="shell"><code>kubectl -n kube-system rollout restart daemonset kube-proxy</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl -n kube-system rollout restart daemonset kube-proxy</code></pre></li>
 </ol>
 <h2 id="configure-multiple-feature-gates">Configure multiple feature
 gates</h2>
 <p>Use comma-separated lists for command-line flags:</p>
-<pre class="shell"><code>--feature-gates=FeatureA=true,FeatureB=false,FeatureC=true</code></pre>
+<pre class="shell"><code class="language-shell">--feature-gates=FeatureA=true,FeatureB=false,FeatureC=true</code></pre>
 <p>For components that support configuration files (kubelet,
 kube-proxy):</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">featureGates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FeatureA</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">FeatureB</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">  </span><span class="fu">FeatureC</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">featureGates:
+  FeatureA: true
+  FeatureB: false
+  FeatureC: true</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -276,20 +286,20 @@ static pods.</p>
 <h3 id="check-control-plane-component-manifests">Check control plane
 component manifests</h3>
 <p>View the feature gates configured in the static pod manifest:</p>
-<pre class="shell"><code>kubectl -n kube-system get pod kube-apiserver-&lt;node-name&gt; -o yaml | grep feature-gates</code></pre>
+<pre class="shell"><code class="language-shell">kubectl -n kube-system get pod kube-apiserver-&lt;node-name&gt; -o yaml | grep feature-gates</code></pre>
 <h3 id="check-kubelet-configuration">Check kubelet configuration</h3>
 <p>Use the kubelet's configz endpoint:</p>
-<pre class="shell"><code>kubectl proxy --port=8001 &amp;
+<pre class="shell"><code class="language-shell">kubectl proxy --port=8001 &amp;
 curl -sSL &quot;http://localhost:8001/api/v1/nodes/&lt;node-name&gt;/proxy/configz&quot; | grep featureGates -A 5</code></pre>
 <p>Or check the configuration file directly on the node:</p>
-<pre class="shell"><code>cat /var/lib/kubelet/config.yaml | grep -A 10 featureGates</code></pre>
+<pre class="shell"><code class="language-shell">cat /var/lib/kubelet/config.yaml | grep -A 10 featureGates</code></pre>
 <h3 id="check-via-metrics-endpoint">Check via metrics endpoint</h3>
 <p>Feature gate status is exposed in Prometheus-style metrics by
 Kubernetes components (available in Kubernetes 1.26+). Query the metrics
 endpoint to verify which feature gates are enabled:</p>
-<pre class="shell"><code>kubectl get --raw /metrics | grep kubernetes_feature_enabled</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get --raw /metrics | grep kubernetes_feature_enabled</code></pre>
 <p>To check a specific feature gate:</p>
-<pre class="shell"><code>kubectl get --raw /metrics | grep kubernetes_feature_enabled | grep FeatureName</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get --raw /metrics | grep kubernetes_feature_enabled | grep FeatureName</code></pre>
 <p>The metric shows <code>1</code> for enabled gates and <code>0</code>
 for disabled gates.</p>
 <div class="admonition note">
@@ -410,6 +420,7 @@ configuration</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -418,6 +429,8 @@ configuration</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

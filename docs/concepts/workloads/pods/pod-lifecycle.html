@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -517,49 +532,46 @@ have their own container-level <code>restartPolicy: Always</code></li>
 behaviors:</p>
 <p><strong>Example 1: Web server with <code>restartPolicy: Always</code>
 (typical for Deployments)</strong></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-server</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always  # Container restarts regardless of exit code</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">    </span><span class="co"># If this container crashes or exits for any reason, it will be restarted</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: web-server
+spec:
+  restartPolicy: Always  # Container restarts regardless of exit code
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    # If this container crashes or exits for any reason, it will be restarted</code></pre>
 <p><strong>Example 2: Batch job with
 <code>restartPolicy: OnFailure</code></strong></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data-processor</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure  # Only restart on non-zero exit codes</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> processor</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Processing data...&quot;; exit 0&#39;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="co"># Exit code 0: Job completes successfully, no restart</span></span>
-<span class="at">        </span><span class="co"># Exit code 1+: Container restarts to retry the task</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: data-processor
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure  # Only restart on non-zero exit codes
+      containers:
+      - name: processor
+        image: busybox:1.28
+        command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Processing data...&quot;; exit 0&#39;]
+        # Exit code 0: Job completes successfully, no restart
+        # Exit code 1+: Container restarts to retry the task</code></pre>
 <p><strong>Example 3: One-time task with
 <code>restartPolicy: Never</code></strong></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> migration-task</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never  # Never restart, regardless of exit code</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> migrate</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Running migration...&quot;; exit 1&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="co"># Even with exit code 1 (failure), the container will not restart</span></span>
-<span class="at">    </span><span class="co"># The Pod will remain in Failed state</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: migration-task
+spec:
+  restartPolicy: Never  # Never restart, regardless of exit code
+  containers:
+  - name: migrate
+    image: busybox:1.28
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Running migration...&quot;; exit 1&#39;]
+    # Even with exit code 1 (failure), the container will not restart
+    # The Pod will remain in Failed state</code></pre>
 <h5 id="sidecar-containers-and-restart-policies">Sidecar containers and
 restart policies</h5>
 <p><a href="sidecar-containers.html">Sidecar
@@ -577,22 +589,21 @@ running throughout the Pod's lifetime to provide supporting
 services</li>
 </ul>
 <p><strong>Example: Pod with sidecar container</strong></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app-with-sidecar</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure  # Applies to main container only</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> logging-sidecar    # This is a sidecar container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> fluent/fluent-bit:1.8</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always    # Sidecar always restarts regardless of exit code</span></span>
-<span class="at">    </span><span class="co"># Provides logging services throughout Pod lifetime</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-app          # This follows Pod-level restartPolicy</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">    </span><span class="co"># Will only restart on failure (non-zero exit) due to Pod&#39;s OnFailure policy</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-sidecar
+spec:
+  restartPolicy: OnFailure  # Applies to main container only
+  initContainers:
+  - name: logging-sidecar    # This is a sidecar container
+    image: fluent/fluent-bit:1.8
+    restartPolicy: Always    # Sidecar always restarts regardless of exit code
+    # Provides logging services throughout Pod lifetime
+  containers:
+  - name: main-app          # This follows Pod-level restartPolicy
+    image: nginx:1.14.2
+    # Will only restart on failure (non-zero exit) due to Pod&#39;s OnFailure policy</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -662,61 +673,58 @@ fallback to container’s configured <code>restartPolicy</code>.</p>
 <p>For example, a Pod with OnFailure restart policy that have a
 <code>try-once</code> container. This allows Pod to only restart certain
 containers:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> on-failure-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> try-once-container    # This container will run only once because the restartPolicy is Never.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Only running once&quot; &amp;&amp; sleep 10 &amp;&amp; exit 1&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never     </span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> on-failure-container  # This container will be restarted on failure.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Keep restarting&quot; &amp;&amp; sleep 1800 &amp;&amp; exit 1&#39;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: on-failure-pod
+spec:
+  restartPolicy: OnFailure
+  containers:
+  - name: try-once-container    # This container will run only once because the restartPolicy is Never.
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Only running once&quot; &amp;&amp; sleep 10 &amp;&amp; exit 1&#39;]
+    restartPolicy: Never     
+  - name: on-failure-container  # This container will be restarted on failure.
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Keep restarting&quot; &amp;&amp; sleep 1800 &amp;&amp; exit 1&#39;]</code></pre>
 <p>A Pod with <code>Always</code> restart policy with an init container
 that only execute once. If the init container fails, the Pod fails. This
 allows the Pod to fail if the initialization failed, but also keep
 running once the initialization succeeds:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fail-pod-if-init-fails</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> init-once      # This init container will only try once. If it fails, the pod will fail.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Failing initialization&quot; &amp;&amp; sleep 10 &amp;&amp; exit 1&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-container</span><span class="co"> # This container will always be restarted once initialization succeeds.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;sleep 1800 &amp;&amp; exit 0&#39;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: fail-pod-if-init-fails
+spec:
+  restartPolicy: Always
+  initContainers:
+  - name: init-once      # This init container will only try once. If it fails, the pod will fail.
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Failing initialization&quot; &amp;&amp; sleep 10 &amp;&amp; exit 1&#39;]
+    restartPolicy: Never
+  containers:
+  - name: main-container # This container will always be restarted once initialization succeeds.
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;sleep 1800 &amp;&amp; exit 0&#39;]</code></pre>
 <p>A Pod with Never restart policy with a container that ignores and
 restarts on specific exit codes. This is useful to differentiate between
 restartable errors and non-restartable errors:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> restart-on-exit-codes</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> restart-on-exit-codes</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;sleep 60 &amp;&amp; exit 0&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never     # Container restart policy must be specified if rules are specified</span></span>
-<span class="at">    </span><span class="fu">restartPolicyRules</span><span class="kw">:</span><span class="at">      </span><span class="co"># Only restart the container if it exits with code 42</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> Restart</span></span>
-<span class="at">      </span><span class="fu">exitCodes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">42</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: restart-on-exit-codes
+spec:
+  restartPolicy: Never
+  containers:
+  - name: restart-on-exit-codes
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;sleep 60 &amp;&amp; exit 0&#39;]
+    restartPolicy: Never     # Container restart policy must be specified if rules are specified
+    restartPolicyRules:      # Only restart the container if it exits with code 42
+    - action: Restart
+      exitCodes:
+        operator: In
+        values: [42]</code></pre>
 <p>Restart rules can be used for many more advanced lifecycle management
 scenarios. Note, restart rules are affected by the same inconsistencies
 as the regular restart policy. The kubelet restarts, container runtime
@@ -790,35 +798,34 @@ an error. The watcher can exit with a specific code to trigger a full,
 in-place restart of the worker Pod.</p>
 <div class="code-sample">
 <p><code>pods/restart-policy/restart-all-containers.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ml-worker</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span><span class="co"> # The pod itself should not restart unless explicitly told to.</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> setup-environment</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Setting up environment&quot;&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="co"># This init container runs once to prepare the environment.</span></span>
-<span class="at">    </span><span class="co"># It will run again after a RestartAllContainers action.</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> watcher-sidecar</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="co"># In a real-world scenario, this would be a dedicated watcher image.</span></span>
-<span class="at">    </span><span class="co"># This command simulates the watcher exiting with a special code.</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;sleep 60; exit 88&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">    </span><span class="fu">restartPolicyRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> RestartAllContainers</span></span>
-<span class="at">      </span><span class="fu">exitCodes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># Exit code 88 triggers a full pod restart.</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">88</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-application</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;Application is running&quot;; sleep 3600&#39;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: ml-worker
+spec:
+  restartPolicy: Never # The pod itself should not restart unless explicitly told to.
+  initContainers:
+  - name: setup-environment
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Setting up environment&quot;&#39;]
+    # This init container runs once to prepare the environment.
+    # It will run again after a RestartAllContainers action.
+  - name: watcher-sidecar
+    image: registry.k8s.io/busybox:1.27.2
+    # In a real-world scenario, this would be a dedicated watcher image.
+    # This command simulates the watcher exiting with a special code.
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;sleep 60; exit 88&#39;]
+    restartPolicy: Always
+    restartPolicyRules:
+    - action: RestartAllContainers
+      exitCodes:
+        # Exit code 88 triggers a full pod restart.
+        operator: In
+        values: [88]
+  containers:
+  - name: main-application
+    image: registry.k8s.io/busybox:1.27.2
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;Application is running&quot;; sleep 3600&#39;]</code></pre>
 </div>
 <p>In this example:</p>
 <ul>
@@ -874,17 +881,15 @@ but will now be capped at your configured maximum. If the
 default initial value of 10s, the initial delay will instead be set to
 the configured maximum.</p>
 <p>See the following kubelet configuration examples:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># container restart delays will start at 10s, increasing</span></span>
-<span class="co"># 2x each time they are restarted, to a maximum of 100s</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">crashLoopBackOff</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">maxContainerRestartPeriod</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100s&quot;</span></span></code></pre></div>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># delays between container restarts will always be 2s</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">crashLoopBackOff</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">maxContainerRestartPeriod</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2s&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># container restart delays will start at 10s, increasing
+# 2x each time they are restarted, to a maximum of 100s
+kind: KubeletConfiguration
+crashLoopBackOff:
+    maxContainerRestartPeriod: &quot;100s&quot;</code></pre>
+<pre class="yaml"><code class="language-yaml"># delays between container restarts will always be 2s
+kind: KubeletConfiguration
+crashLoopBackOff:
+    maxContainerRestartPeriod: &quot;2s&quot;</code></pre>
 <p>If you use this feature along with the alpha feature
 <code>ReduceDefaultCrashLoopBackOffDecay</code> (described above), your
 cluster defaults for initial backoff and maximum backoff will no longer
@@ -984,26 +989,25 @@ find such a condition in the <code>status.conditions</code> field of a
 Pod, the status of the condition is defaulted to
 "<code>False</code>".</p>
 <p>Here is an example:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="co">...</span></span>
-<span class="er">spec:</span></span>
-<span class="er">  readinessGates:</span></span>
-<span class="er">    - conditionType: &quot;</span><span class="st">www.example.com/feature-1&quot;</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Ready                              # a built-in PodCondition</span></span>
-<span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;False&quot;</span></span>
-<span class="at">      </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="at">      </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="bn">2018-01-01T00:00:00Z</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;www.example.com/feature-1&quot;</span><span class="at">        </span><span class="co"># an extra PodCondition</span></span>
-<span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;False&quot;</span></span>
-<span class="at">      </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="at">      </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="bn">2018-01-01T00:00:00Z</span></span>
-<span class="at">  </span><span class="fu">containerStatuses</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerID</span><span class="kw">:</span><span class="at"> docker://abcd...</span></span>
-<span class="at">      </span><span class="fu">ready</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="co">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: Pod
+...
+spec:
+  readinessGates:
+    - conditionType: &quot;www.example.com/feature-1&quot;
+status:
+  conditions:
+    - type: Ready                              # a built-in PodCondition
+      status: &quot;False&quot;
+      lastProbeTime: null
+      lastTransitionTime: 2018-01-01T00:00:00Z
+    - type: &quot;www.example.com/feature-1&quot;        # an extra PodCondition
+      status: &quot;False&quot;
+      lastProbeTime: null
+      lastTransitionTime: 2018-01-01T00:00:00Z
+  containerStatuses:
+    - containerID: docker://abcd...
+      ready: true
+...</code></pre>
 <p>The Pod conditions you add must have names that meet the Kubernetes
 <a
 href="../../overview/working-with-objects/labels.html#syntax-and-character-set">label
@@ -1250,15 +1254,14 @@ container lifecycle. The list of signals that are valid depends on the
 OS the Pod is scheduled to. For Pods scheduled to Windows nodes, we only
 support SIGTERM and SIGKILL as valid signals.</p>
 <p>Here is an example Pod spec defining a custom stop signal:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">os</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> container-image:latest</span></span>
-<span class="at">      </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">stopSignal</span><span class="kw">:</span><span class="at"> SIGUSR1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  os:
+    name: linux
+  containers:
+    - name: my-container
+      image: container-image:latest
+      lifecycle:
+        stopSignal: SIGUSR1</code></pre>
 <p>If a stop signal is defined in the lifecycle, this will override the
 signal defined in the container image. If no stop signal is defined in
 the container spec, the container would fall back to the default
@@ -1565,6 +1568,7 @@ for Pod.</p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1573,6 +1577,8 @@ for Pod.</p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

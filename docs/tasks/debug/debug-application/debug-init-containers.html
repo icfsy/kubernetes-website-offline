@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -149,7 +164,7 @@ an Init Container</a>.</p></li>
 <h2 id="checking-the-status-of-init-containers">Checking the status of
 Init Containers</h2>
 <p>Display the status of your pod:</p>
-<pre class="shell"><code>kubectl get pod &lt;pod-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod &lt;pod-name&gt;</code></pre>
 <p>For example, a status of <code>Init:1/2</code> indicates that one of
 two Init Containers has completed successfully:</p>
 <pre><code>NAME         READY     STATUS     RESTARTS   AGE
@@ -159,7 +174,7 @@ for more examples of status values and their meanings.</p>
 <h2 id="getting-details-about-init-containers">Getting details about
 Init Containers</h2>
 <p>View more detailed information about Init Container execution:</p>
-<pre class="shell"><code>kubectl describe pod &lt;pod-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod &lt;pod-name&gt;</code></pre>
 <p>For example, a Pod with two Init Containers might show the
 following:</p>
 <pre><code>Init Containers:
@@ -190,14 +205,14 @@ following:</p>
 <p>You can also access the Init Container statuses programmatically by
 reading the <code>status.initContainerStatuses</code> field on the Pod
 Spec:</p>
-<pre class="shell"><code>kubectl get pod &lt;pod-name&gt; --template &#39;{{.status.initContainerStatuses}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod &lt;pod-name&gt; --template &#39;{{.status.initContainerStatuses}}&#39;</code></pre>
 <p>This command will return the same information as above, formatted
 using a <a target="_blank" rel="noopener" href="https://pkg.go.dev/text/template">Go template</a>.</p>
 <h2 id="accessing-logs-from-init-containers">Accessing logs from Init
 Containers</h2>
 <p>Pass the Init Container name along with the Pod name to access its
 logs.</p>
-<pre class="shell"><code>kubectl logs &lt;pod-name&gt; -c &lt;init-container-2&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs &lt;pod-name&gt; -c &lt;init-container-2&gt;</code></pre>
 <p>Init Containers that run a shell script print commands as they're
 executed. For example, you can do this in Bash by running
 <code>set -x</code> at the beginning of the script.</p>
@@ -304,6 +319,7 @@ completed so far.</td>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -312,6 +328,8 @@ completed so far.</td>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

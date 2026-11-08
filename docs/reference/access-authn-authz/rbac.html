@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -128,17 +143,16 @@ policies through the Kubernetes API.</p>
 <p>To enable RBAC, start the <a class="glossary-term" href="../glossary.html#term-kube-apiserver" title="Glossary: kube-apiserver">API server</a> with the
 <code>--authorization-config</code> flag set to a file that includes the
 <code>RBAC</code> authorizer; for example:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthorizationConfiguration</span></span>
-<span class="fu">authorizers</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RBAC</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AuthorizationConfiguration
+authorizers:
+  ...
+  - type: RBAC
+  ...</code></pre>
 <p>Or, start the <a class="glossary-term" href="../glossary.html#term-kube-apiserver" title="Glossary: kube-apiserver">API server</a> with the
 <code>--authorization-mode</code> flag set to a comma-separated list
 that includes <code>RBAC</code>; for example:</p>
-<pre class="shell"><code>kube-apiserver --authorization-mode=...,RBAC --other-options --more-options</code></pre>
+<pre class="shell"><code class="language-shell">kube-apiserver --authorization-mode=...,RBAC --other-options --more-options</code></pre>
 <h2 id="api-overview">API objects</h2>
 <p>The RBAC API declares four kinds of Kubernetes object: <em>Role</em>,
 <em>ClusterRole</em>, <em>RoleBinding</em> and
@@ -181,16 +195,15 @@ want to define a role cluster-wide, use a ClusterRole.</p>
 grant read access to <a class="glossary-term" href="../glossary.html#term-pod" title="Glossary: pod">pods</a>:</p>
 <div class="code-sample">
 <p><code>access/simple-role.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-reader</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span><span class="at"> </span><span class="co"># &quot;&quot; indicates the core API group</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-reader
+rules:
+- apiGroups: [&quot;&quot;] # &quot;&quot; indicates the core API group
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;watch&quot;, &quot;list&quot;]</code></pre>
 </div>
 <h4 id="clusterrole-example">ClusterRole example</h4>
 <p>A ClusterRole can be used to grant the same permissions as a Role.
@@ -209,19 +222,18 @@ in any particular namespace, or across all namespaces (depending on how
 it is <a href="#rolebinding-and-clusterrolebinding">bound</a>):</p>
 <div class="code-sample">
 <p><code>access/simple-clusterrole.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># &quot;namespace&quot; omitted since ClusterRoles are not namespaced</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-reader</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing Secret</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;secrets&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;secrets&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  # &quot;namespace&quot; omitted since ClusterRoles are not namespaced
+  name: secret-reader
+rules:
+- apiGroups: [&quot;&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing Secret
+  # objects is &quot;secrets&quot;
+  resources: [&quot;secrets&quot;]
+  verbs: [&quot;get&quot;, &quot;watch&quot;, &quot;list&quot;]</code></pre>
 </div>
 <p>The name of a Role or a ClusterRole object must be a valid <a
 href="../../concepts/overview/working-with-objects/names.html#path-segment-names">path
@@ -248,24 +260,23 @@ to the user "jane" within the "default" namespace. This allows "jane" to
 read pods in the "default" namespace.</p>
 <div class="code-sample">
 <p><code>access/simple-rolebinding-with-role.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="co"># This role binding allows &quot;jane&quot; to read pods in the &quot;default&quot; namespace.</span></span>
-<span class="co"># You need to already have a Role named &quot;pod-reader&quot; in that namespace.</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> read-pods</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="co"># You can specify more than one &quot;subject&quot;</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jane</span><span class="co"> # &quot;name&quot; is case sensitive</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># &quot;roleRef&quot; specifies the binding to a Role / ClusterRole</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span><span class="co"> #this must be Role or ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-reader</span><span class="co"> # this must match the name of the Role or ClusterRole you wish to bind to</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+# This role binding allows &quot;jane&quot; to read pods in the &quot;default&quot; namespace.
+# You need to already have a Role named &quot;pod-reader&quot; in that namespace.
+kind: RoleBinding
+metadata:
+  name: read-pods
+  namespace: default
+subjects:
+# You can specify more than one &quot;subject&quot;
+- kind: User
+  name: jane # &quot;name&quot; is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  # &quot;roleRef&quot; specifies the binding to a Role / ClusterRole
+  kind: Role #this must be Role or ClusterRole
+  name: pod-reader # this must match the name of the Role or ClusterRole you wish to bind to
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 </div>
 <p>A RoleBinding can also reference a ClusterRole to grant the
 permissions defined in that ClusterRole to resources inside the
@@ -278,25 +289,24 @@ read Secrets in the "development" namespace, because the RoleBinding's
 namespace (in its metadata) is "development".</p>
 <div class="code-sample">
 <p><code>access/simple-rolebinding-with-clusterrole.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="co"># This role binding allows &quot;dave&quot; to read secrets in the &quot;development&quot; namespace.</span></span>
-<span class="co"># You need to already have a ClusterRole named &quot;secret-reader&quot;.</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> read-secrets</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># The namespace of the RoleBinding determines where the permissions are granted.</span></span>
-<span class="at">  </span><span class="co"># This only grants permissions within the &quot;development&quot; namespace.</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> development</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dave</span><span class="co"> # Name is case sensitive</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-reader</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+# This role binding allows &quot;dave&quot; to read secrets in the &quot;development&quot; namespace.
+# You need to already have a ClusterRole named &quot;secret-reader&quot;.
+kind: RoleBinding
+metadata:
+  name: read-secrets
+  #
+  # The namespace of the RoleBinding determines where the permissions are granted.
+  # This only grants permissions within the &quot;development&quot; namespace.
+  namespace: development
+subjects:
+- kind: User
+  name: dave # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 </div>
 <h4 id="clusterrolebinding-example">ClusterRoleBinding example</h4>
 <p>To grant permissions across a whole cluster, you can use a
@@ -304,20 +314,19 @@ ClusterRoleBinding. The following ClusterRoleBinding allows any user in
 the group "manager" to read secrets in any namespace.</p>
 <div class="code-sample">
 <p><code>access/simple-clusterrolebinding.yaml</code></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="co"># This cluster role binding allows anyone in the &quot;manager&quot; group to read secrets in any namespace.</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> read-secrets-global</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> manager</span><span class="co"> # Name is case sensitive</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-reader</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+# This cluster role binding allows anyone in the &quot;manager&quot; group to read secrets in any namespace.
+kind: ClusterRoleBinding
+metadata:
+  name: read-secrets-global
+subjects:
+- kind: Group
+  name: manager # Name is case sensitive
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: secret-reader
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 </div>
 <p>After you create a binding, you cannot change the Role or ClusterRole
 that it refers to. If you try to change a binding's
@@ -349,43 +358,41 @@ using a string representation of their object name, such as
 same name that appears in the URL for the relevant API endpoint. Some
 Kubernetes APIs involve a <em>subresource</em>, such as the logs for a
 Pod. A request for a Pod's logs looks like:</p>
-<pre class="http"><code>GET /api/v1/namespaces/{namespace}/pods/{name}/log</code></pre>
+<pre class="http"><code class="language-http">GET /api/v1/namespaces/{namespace}/pods/{name}/log</code></pre>
 <p>In this case, <code>pods</code> is the namespaced resource for Pod
 resources, and <code>log</code> is a subresource of <code>pods</code>.
 To represent this in an RBAC role, use a slash (<code>/</code>) to
 delimit the resource and subresource. To allow a subject to read
 <code>pods</code> and also access the <code>log</code> subresource for
 each of those Pods, you write:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-and-pod-logs-reader</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pods/log&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: pod-and-pod-logs-reader
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;, &quot;pods/log&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;]</code></pre>
 <p>You can also refer to resources by name for certain requests through
 the <code>resourceNames</code> list. When specified, requests can be
 restricted to individual instances of a resource. Here is an example
 that restricts its subject to only <code>get</code> or
 <code>update</code> a Configmap named
 <code>my-configmap</code>:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-updater</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing ConfigMap</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;configmaps&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;configmaps&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;my-configmap&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;get&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: configmap-updater
+rules:
+- apiGroups: [&quot;&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing ConfigMap
+  # objects is &quot;configmaps&quot;
+  resources: [&quot;configmaps&quot;]
+  resourceNames: [&quot;my-configmap&quot;]
+  verbs: [&quot;update&quot;, &quot;get&quot;]</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -413,16 +420,15 @@ that everything is allowed. Here is an example that allows access to
 perform any current and future action on all current and future
 resources in the <code>example.com</code> API group. This is similar to
 the built-in <code>cluster-admin</code> role.</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example.com-superuser</span><span class="co"> # DO NOT USE THIS ROLE, IT IS JUST AN EXAMPLE</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  namespace: default
+  name: example.com-superuser # DO NOT USE THIS ROLE, IT IS JUST AN EXAMPLE
+rules:
+- apiGroups: [&quot;example.com&quot;]
+  resources: [&quot;*&quot;]
+  verbs: [&quot;*&quot;]</code></pre>
 <div class="admonition caution">
 <div class="admonition-title">
 <p>Caution:</p>
@@ -464,37 +470,35 @@ controllers typically do) repeatedly clear the aggregated rules, which
 the control plane then fills in again.</p>
 </div>
 <p>Here is an example aggregated ClusterRole:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> monitoring</span></span>
-<span class="fu">aggregationRule</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">clusterRoleSelectors</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">rbac.example.com/aggregate-to-monitoring</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="co"># The control plane automatically fills in the rules</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring
+aggregationRule:
+  clusterRoleSelectors:
+  - matchLabels:
+      rbac.example.com/aggregate-to-monitoring: &quot;true&quot;
+# The control plane automatically fills in the rules</code></pre>
 <p>If you create a new ClusterRole that matches the label selector of an
 existing aggregated ClusterRole, that change triggers adding the new
 rules into the aggregated ClusterRole. Here is an example that adds
 rules to the "monitoring" ClusterRole, by creating another ClusterRole
 labeled <code>rbac.example.com/aggregate-to-monitoring: true</code>.</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> monitoring-endpointslices</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rbac.example.com/aggregate-to-monitoring</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="co"># When you create the &quot;monitoring-endpointslices&quot; ClusterRole,</span></span>
-<span class="co"># the rules below will be added to the &quot;monitoring&quot; ClusterRole.</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;services&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;discovery.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;endpointslices&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitoring-endpointslices
+  labels:
+    rbac.example.com/aggregate-to-monitoring: &quot;true&quot;
+# When you create the &quot;monitoring-endpointslices&quot; ClusterRole,
+# the rules below will be added to the &quot;monitoring&quot; ClusterRole.
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;services&quot;, &quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+- apiGroups: [&quot;discovery.k8s.io&quot;]
+  resources: [&quot;endpointslices&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</code></pre>
 <p>The <a href="#default-roles-and-role-bindings">default user-facing
 roles</a> use ClusterRole aggregation. This lets you, as a cluster
 administrator, include rules for custom resources, such as those served
@@ -505,100 +509,93 @@ default roles manage the custom resource named CronTab, whereas the
 "view" role can perform only read actions on CronTab resources. You can
 assume that CronTab objects are named <code>"crontabs"</code> in URLs as
 seen by the API server.</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> aggregate-cron-tabs-edit</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># Add these permissions to the &quot;admin&quot; and &quot;edit&quot; default roles.</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-admin</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-edit</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;stable.example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;crontabs&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;patch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> aggregate-cron-tabs-view</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># Add these permissions to the &quot;view&quot; default role.</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-view</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;stable.example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;crontabs&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: aggregate-cron-tabs-edit
+  labels:
+    # Add these permissions to the &quot;admin&quot; and &quot;edit&quot; default roles.
+    rbac.authorization.k8s.io/aggregate-to-admin: &quot;true&quot;
+    rbac.authorization.k8s.io/aggregate-to-edit: &quot;true&quot;
+rules:
+- apiGroups: [&quot;stable.example.com&quot;]
+  resources: [&quot;crontabs&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: aggregate-cron-tabs-view
+  labels:
+    # Add these permissions to the &quot;view&quot; default role.
+    rbac.authorization.k8s.io/aggregate-to-view: &quot;true&quot;
+rules:
+- apiGroups: [&quot;stable.example.com&quot;]
+  resources: [&quot;crontabs&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</code></pre>
 <h4 id="role-examples">Role examples</h4>
 <p>The following examples are excerpts from Role or ClusterRole objects,
 showing only the <code>rules</code> section.</p>
 <p>Allow reading <code>"pods"</code> resources in the core <span
 class="glossary-term" data-term="api-group">API Group</span>:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing Pod</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;pods&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- apiGroups: [&quot;&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing Pod
+  # objects is &quot;pods&quot;
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</code></pre>
 <p>Allow reading/writing Deployments (at the HTTP level: objects with
 <code>"deployments"</code> in the resource part of their URL) in the
 <code>"apps"</code> API groups:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing Deployment</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;deployments&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;patch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- apiGroups: [&quot;apps&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing Deployment
+  # objects is &quot;deployments&quot;
+  resources: [&quot;deployments&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]</code></pre>
 <p>Allow reading Pods in the core API group, as well as reading or
 writing Job resources in the <code>"batch"</code> API group:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing Pod</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;pods&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;batch&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing Job</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;jobs&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;jobs&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;patch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- apiGroups: [&quot;&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing Pod
+  # objects is &quot;pods&quot;
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]
+- apiGroups: [&quot;batch&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing Job
+  # objects is &quot;jobs&quot;
+  resources: [&quot;jobs&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]</code></pre>
 <p>Allow reading a ConfigMap named "my-config" (must be bound with a
 RoleBinding to limit to a single ConfigMap in a single namespace):</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing ConfigMap</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;configmaps&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;configmaps&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;my-config&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- apiGroups: [&quot;&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing ConfigMap
+  # objects is &quot;configmaps&quot;
+  resources: [&quot;configmaps&quot;]
+  resourceNames: [&quot;my-config&quot;]
+  verbs: [&quot;get&quot;]</code></pre>
 <p>Allow reading the resource <code>"nodes"</code> in the core group
 (because a Node is cluster-scoped, this must be in a ClusterRole bound
 with a ClusterRoleBinding to be effective):</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co">#</span></span>
-<span class="at">  </span><span class="co"># at the HTTP level, the name of the resource for accessing Node</span></span>
-<span class="at">  </span><span class="co"># objects is &quot;nodes&quot;</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;nodes&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- apiGroups: [&quot;&quot;]
+  #
+  # at the HTTP level, the name of the resource for accessing Node
+  # objects is &quot;nodes&quot;
+  resources: [&quot;nodes&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;]</code></pre>
 <p>Allow GET and POST requests to the non-resource endpoint
 <code>/healthz</code> and all subpaths (must be in a ClusterRole bound
 with a ClusterRoleBinding to be effective):</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">nonResourceURLs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/healthz&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;/healthz/*&quot;</span><span class="kw">]</span><span class="at"> </span><span class="co"># &#39;*&#39; in a nonResourceURL is a suffix glob match</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;post&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">rules:
+- nonResourceURLs: [&quot;/healthz&quot;, &quot;/healthz/*&quot;] # &#39;*&#39; in a nonResourceURL is a suffix glob match
+  verbs: [&quot;get&quot;, &quot;post&quot;]</code></pre>
 <h3 id="referring-to-subjects">Referring to subjects</h3>
 <p>A RoleBinding or ClusterRoleBinding binds a role to subjects.
 Subjects can be groups, users or <a class="glossary-term" href="../glossary.html#term-service-account" title="Glossary: service-account">ServiceAccounts</a>.</p>
@@ -643,56 +640,48 @@ service account groups.</li>
 <p>The following examples are <code>RoleBinding</code> excerpts that
 only show the <code>subjects</code> section.</p>
 <p>For a user named <code>alice@example.com</code>:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;alice@example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: User
+  name: &quot;alice@example.com&quot;
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>For a group named <code>frontend-admins</code>:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;frontend-admins&quot;</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: Group
+  name: &quot;frontend-admins&quot;
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>For the default service account in the "kube-system" namespace:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: kube-system</code></pre>
 <p>For all service accounts in the "qa" namespace:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:serviceaccounts:qa</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: Group
+  name: system:serviceaccounts:qa
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>For all service accounts in any namespace:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:serviceaccounts</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: Group
+  name: system:serviceaccounts
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>For all authenticated users:</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:authenticated</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: Group
+  name: system:authenticated
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>For all unauthenticated users:</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:unauthenticated</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: Group
+  name: system:unauthenticated
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>For all users:</p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:authenticated</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:unauthenticated</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">subjects:
+- kind: Group
+  name: system:authenticated
+  apiGroup: rbac.authorization.k8s.io
+- kind: Group
+  name: system:unauthenticated
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <h2 id="default-roles-and-role-bindings">Default roles and role
 bindings</h2>
 <p>API servers create a set of default ClusterRole and
@@ -731,7 +720,7 @@ anonymous unauthenticated access, add
 configuration.</p>
 <p>To view the configuration of these roles via <code>kubectl</code>
 run:</p>
-<pre class="shell"><code>kubectl get clusterroles system:discovery -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get clusterroles system:discovery -o yaml</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -818,12 +807,11 @@ admins to include rules for custom resources on these ClusterRoles. To
 add rules to the <code>admin</code>, <code>edit</code>, or
 <code>view</code> roles, create a ClusterRole with one or more of the
 following labels:</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-admin</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-edit</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-view</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-admin: &quot;true&quot;
+    rbac.authorization.k8s.io/aggregate-to-edit: &quot;true&quot;
+    rbac.authorization.k8s.io/aggregate-to-view: &quot;true&quot;</code></pre>
 <table>
 <colgroup>
 <col style="width: 25%;" />
@@ -1260,34 +1248,33 @@ role.</li>
 <code>user-1</code> to grant other users the <code>admin</code>,
 <code>edit</code>, and <code>view</code> roles in the namespace
 <code>user-1-namespace</code>:</p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> role-grantor</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;rbac.authorization.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;rolebindings&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;create&quot;</span><span class="kw">]</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;rbac.authorization.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;clusterroles&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bind&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co"># omit resourceNames to allow binding any ClusterRole</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;admin&quot;</span><span class="kw">,</span><span class="st">&quot;edit&quot;</span><span class="kw">,</span><span class="st">&quot;view&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> role-grantor-binding</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> user-1-namespace</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> role-grantor</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> user-1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: role-grantor
+rules:
+- apiGroups: [&quot;rbac.authorization.k8s.io&quot;]
+  resources: [&quot;rolebindings&quot;]
+  verbs: [&quot;create&quot;]
+- apiGroups: [&quot;rbac.authorization.k8s.io&quot;]
+  resources: [&quot;clusterroles&quot;]
+  verbs: [&quot;bind&quot;]
+  # omit resourceNames to allow binding any ClusterRole
+  resourceNames: [&quot;admin&quot;,&quot;edit&quot;,&quot;view&quot;]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: role-grantor-binding
+  namespace: user-1-namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: role-grantor
+subjects:
+- apiGroup: rbac.authorization.k8s.io
+  kind: User
+  name: user-1</code></pre>
 <p>When bootstrapping the first roles and role bindings, it is necessary
 for the initial user to grant permissions they do not yet have. To
 bootstrap initial roles and role bindings:</p>
@@ -1302,17 +1289,17 @@ Examples:</p>
 <ul>
 <li><p>Create a Role named "pod-reader" that allows users to perform
 <code>get</code>, <code>watch</code> and <code>list</code> on pods:</p>
-<pre class="shell"><code>kubectl create role pod-reader --verb=get --verb=list --verb=watch --resource=pods</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create role pod-reader --verb=get --verb=list --verb=watch --resource=pods</code></pre></li>
 <li><p>Create a Role named "pod-reader" with resourceNames
 specified:</p>
-<pre class="shell"><code>kubectl create role pod-reader --verb=get --resource=pods --resource-name=readablepod --resource-name=anotherpod</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create role pod-reader --verb=get --resource=pods --resource-name=readablepod --resource-name=anotherpod</code></pre></li>
 <li><p>Create a Role named "foo" with apiGroups specified:</p>
-<pre class="shell"><code>kubectl create role foo --verb=get,list,watch --resource=replicasets.apps</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create role foo --verb=get,list,watch --resource=replicasets.apps</code></pre></li>
 <li><p>Create a Role named "foo" with subresource permissions:</p>
-<pre class="shell"><code>kubectl create role foo --verb=get,list,watch --resource=pods,pods/status</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create role foo --verb=get,list,watch --resource=pods,pods/status</code></pre></li>
 <li><p>Create a Role named "my-component-lease-holder" with permissions
 to get/update a resource with a specific name:</p>
-<pre class="shell"><code>kubectl create role my-component-lease-holder --verb=get,list,watch,update --resource=lease --resource-name=my-component</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create role my-component-lease-holder --verb=get,list,watch,update --resource=lease --resource-name=my-component</code></pre></li>
 </ul>
 <h3
 id="kubectl-create-clusterrole"><code>kubectl create clusterrole</code></h3>
@@ -1321,21 +1308,21 @@ id="kubectl-create-clusterrole"><code>kubectl create clusterrole</code></h3>
 <li><p>Create a ClusterRole named "pod-reader" that allows user to
 perform <code>get</code>, <code>watch</code> and <code>list</code> on
 pods:</p>
-<pre class="shell"><code>kubectl create clusterrole pod-reader --verb=get,list,watch --resource=pods</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrole pod-reader --verb=get,list,watch --resource=pods</code></pre></li>
 <li><p>Create a ClusterRole named "pod-reader" with resourceNames
 specified:</p>
-<pre class="shell"><code>kubectl create clusterrole pod-reader --verb=get --resource=pods --resource-name=readablepod --resource-name=anotherpod</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrole pod-reader --verb=get --resource=pods --resource-name=readablepod --resource-name=anotherpod</code></pre></li>
 <li><p>Create a ClusterRole named "foo" with apiGroups specified:</p>
-<pre class="shell"><code>kubectl create clusterrole foo --verb=get,list,watch --resource=replicasets.apps</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrole foo --verb=get,list,watch --resource=replicasets.apps</code></pre></li>
 <li><p>Create a ClusterRole named "foo" with subresource
 permissions:</p>
-<pre class="shell"><code>kubectl create clusterrole foo --verb=get,list,watch --resource=pods,pods/status</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrole foo --verb=get,list,watch --resource=pods,pods/status</code></pre></li>
 <li><p>Create a ClusterRole named "foo" with nonResourceURL
 specified:</p>
-<pre class="shell"><code>kubectl create clusterrole &quot;foo&quot; --verb=get --non-resource-url=/logs/*</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrole &quot;foo&quot; --verb=get --non-resource-url=/logs/*</code></pre></li>
 <li><p>Create a ClusterRole named "monitoring" with an aggregationRule
 specified:</p>
-<pre class="shell"><code>kubectl create clusterrole monitoring --aggregation-rule=&quot;rbac.example.com/aggregate-to-monitoring=true&quot;</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrole monitoring --aggregation-rule=&quot;rbac.example.com/aggregate-to-monitoring=true&quot;</code></pre></li>
 </ul>
 <h3
 id="kubectl-create-rolebinding"><code>kubectl create rolebinding</code></h3>
@@ -1344,15 +1331,15 @@ Examples:</p>
 <ul>
 <li><p>Within the namespace "acme", grant the permissions in the "admin"
 ClusterRole to a user named "bob":</p>
-<pre class="shell"><code>kubectl create rolebinding bob-admin-binding --clusterrole=admin --user=bob --namespace=acme</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create rolebinding bob-admin-binding --clusterrole=admin --user=bob --namespace=acme</code></pre></li>
 <li><p>Within the namespace "acme", grant the permissions in the "view"
 ClusterRole to the service account in the namespace "acme" named
 "myapp":</p>
-<pre class="shell"><code>kubectl create rolebinding myapp-view-binding --clusterrole=view --serviceaccount=acme:myapp --namespace=acme</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create rolebinding myapp-view-binding --clusterrole=view --serviceaccount=acme:myapp --namespace=acme</code></pre></li>
 <li><p>Within the namespace "acme", grant the permissions in the "view"
 ClusterRole to a service account in the namespace "myappnamespace" named
 "myapp":</p>
-<pre class="shell"><code>kubectl create rolebinding myappnamespace-myapp-view-binding --clusterrole=view --serviceaccount=myappnamespace:myapp --namespace=acme</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create rolebinding myappnamespace-myapp-view-binding --clusterrole=view --serviceaccount=myappnamespace:myapp --namespace=acme</code></pre></li>
 </ul>
 <h3
 id="kubectl-create-clusterrolebinding"><code>kubectl create clusterrolebinding</code></h3>
@@ -1361,15 +1348,15 @@ Examples:</p>
 <ul>
 <li><p>Across the entire cluster, grant the permissions in the
 "cluster-admin" ClusterRole to a user named "root":</p>
-<pre class="shell"><code>kubectl create clusterrolebinding root-cluster-admin-binding --clusterrole=cluster-admin --user=root</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrolebinding root-cluster-admin-binding --clusterrole=cluster-admin --user=root</code></pre></li>
 <li><p>Across the entire cluster, grant the permissions in the
 "system:node-proxier" ClusterRole to a user named
 "system:kube-proxy":</p>
-<pre class="shell"><code>kubectl create clusterrolebinding kube-proxy-binding --clusterrole=system:node-proxier --user=system:kube-proxy</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrolebinding kube-proxy-binding --clusterrole=system:node-proxier --user=system:kube-proxy</code></pre></li>
 <li><p>Across the entire cluster, grant the permissions in the "view"
 ClusterRole to a service account named "myapp" in the namespace
 "acme":</p>
-<pre class="shell"><code>kubectl create clusterrolebinding myapp-view-binding --clusterrole=view --serviceaccount=acme:myapp</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create clusterrolebinding myapp-view-binding --clusterrole=view --serviceaccount=acme:myapp</code></pre></li>
 </ul>
 <h3 id="kubectl-auth-reconcile"><code>kubectl auth reconcile</code></h3>
 <p>Creates or updates <code>rbac.authorization.k8s.io/v1</code> API
@@ -1386,13 +1373,13 @@ objects, and remove extra subjects if
 <ul>
 <li><p>Test applying a manifest file of RBAC objects, displaying changes
 that would be made:</p>
-<pre class="shell"><code>kubectl auth reconcile -f my-rbac-rules.yaml --dry-run=client</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl auth reconcile -f my-rbac-rules.yaml --dry-run=client</code></pre></li>
 <li><p>Apply a manifest file of RBAC objects, preserving any extra
 permissions (in roles) and any extra subjects (in bindings):</p>
-<pre class="shell"><code>kubectl auth reconcile -f my-rbac-rules.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl auth reconcile -f my-rbac-rules.yaml</code></pre></li>
 <li><p>Apply a manifest file of RBAC objects, removing any extra
 permissions (in roles) and any extra subjects (in bindings):</p>
-<pre class="shell"><code>kubectl auth reconcile -f my-rbac-rules.yaml --remove-extra-subjects --remove-extra-permissions</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl auth reconcile -f my-rbac-rules.yaml --remove-extra-subjects --remove-extra-permissions</code></pre></li>
 </ul>
 <h2 id="service-account-permissions">ServiceAccount permissions</h2>
 <p>Default RBAC policies grant scoped permissions to control-plane
@@ -1415,7 +1402,7 @@ account to be created (via the API, application manifest,
 <code>kubectl create serviceaccount</code>, etc.).</p>
 <p>For example, grant read-only permission within "my-namespace" to the
 "my-sa" service account:</p>
-<pre class="shell"><code>kubectl create rolebinding my-sa-view \
+<pre class="shell"><code class="language-shell">kubectl create rolebinding my-sa-view \
   --clusterrole=view \
   --serviceaccount=my-namespace:my-sa \
   --namespace=my-namespace</code></pre></li>
@@ -1432,7 +1419,7 @@ any pod in the namespace that does not specify a
 </div>
 <p>For example, grant read-only permission within "my-namespace" to the
 "default" service account:</p>
-<pre class="shell"><code>kubectl create rolebinding default-view \
+<pre class="shell"><code class="language-shell">kubectl create rolebinding default-view \
   --clusterrole=view \
   --serviceaccount=my-namespace:default \
   --namespace=my-namespace</code></pre></li>
@@ -1442,7 +1429,7 @@ what service account they use, you can grant a role to the service
 account group for that namespace.</p>
 <p>For example, grant read-only permission within "my-namespace" to all
 service accounts in that namespace:</p>
-<pre class="shell"><code>kubectl create rolebinding serviceaccounts-view \
+<pre class="shell"><code class="language-shell">kubectl create rolebinding serviceaccounts-view \
   --clusterrole=view \
   --group=system:serviceaccounts:my-namespace \
   --namespace=my-namespace</code></pre></li>
@@ -1452,7 +1439,7 @@ service accounts in that namespace:</p>
 a cluster-wide role to all service accounts.</p>
 <p>For example, grant read-only permission across all namespaces to all
 service accounts in the cluster:</p>
-<pre class="shell"><code>kubectl create clusterrolebinding serviceaccounts-view \
+<pre class="shell"><code class="language-shell">kubectl create clusterrolebinding serviceaccounts-view \
   --clusterrole=view \
  --group=system:serviceaccounts</code></pre></li>
 <li><p>Grant super-user access to all service accounts cluster-wide
@@ -1467,7 +1454,7 @@ grant super-user access to all service accounts.</p>
 grants any user with read access to Secrets (or the ability to create
 any pod) full access to your cluster.</p>
 </div>
-<pre class="shell"><code>kubectl create clusterrolebinding serviceaccounts-cluster-admin \
+<pre class="shell"><code class="language-shell">kubectl create clusterrolebinding serviceaccounts-cluster-admin \
   --clusterrole=cluster-admin \
   --group=system:serviceaccounts</code></pre></li>
 </ol>
@@ -1487,27 +1474,26 @@ existing clusters.</p>
 aggregated roles, you can create the following ClusterRole:</p>
 <div class="code-sample">
 <p><code>access/endpoints-aggregated.yaml</code></p>
-<div class="sourceCode" id="cb57"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">      Add endpoints write permissions to the edit and admin roles. This was</span></span>
-<span class="at">      removed by default in 1.22 because of CVE-2021-25740. See</span></span>
-<span class="at">      https://issue.k8s.io/103675. This can allow writers to direct LoadBalancer</span></span>
-<span class="at">      or Ingress implementations to expose backend IPs that would not otherwise</span></span>
-<span class="at">      be accessible, and can circumvent network policies or security controls</span></span>
-<span class="at">      intended to prevent/isolate access to those backends.</span></span>
-<span class="at">      EndpointSlices were never included in the edit or admin roles, so there</span></span>
-<span class="at">      is nothing to restore for the EndpointSlice API.</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.k8s.io/aggregate-to-edit</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> custom:aggregate-to-edit:endpoints</span><span class="co"> # you can change this if you wish</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;endpoints&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;deletecollection&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;patch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    kubernetes.io/description: |-
+      Add endpoints write permissions to the edit and admin roles. This was
+      removed by default in 1.22 because of CVE-2021-25740. See
+      https://issue.k8s.io/103675. This can allow writers to direct LoadBalancer
+      or Ingress implementations to expose backend IPs that would not otherwise
+      be accessible, and can circumvent network policies or security controls
+      intended to prevent/isolate access to those backends.
+      EndpointSlices were never included in the edit or admin roles, so there
+      is nothing to restore for the EndpointSlice API.
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: &quot;true&quot;
+  name: custom:aggregate-to-edit:endpoints # you can change this if you wish
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;endpoints&quot;]
+    verbs: [&quot;create&quot;, &quot;delete&quot;, &quot;deletecollection&quot;, &quot;patch&quot;, &quot;update&quot;]</code></pre>
 </div>
 <h2 id="upgrading-from-abac">Upgrading from ABAC</h2>
 <p>Clusters that originally ran older Kubernetes versions often used
@@ -1526,7 +1512,7 @@ approaches for managing this transition:</p>
 that contains the <a
 href="abac.html#policy-file-format">legacy
 ABAC policy</a>:</p>
-<pre class="shell"><code>--authorization-mode=...,RBAC,ABAC --authorization-policy-file=mypolicy.json</code></pre>
+<pre class="shell"><code class="language-shell">--authorization-mode=...,RBAC,ABAC --authorization-policy-file=mypolicy.json</code></pre>
 <p>To explain that first command line option in detail: if earlier
 authorizers, such as Node, deny a request, then the RBAC authorizer
 attempts to authorize the API request. If RBAC also denies that API
@@ -1553,7 +1539,7 @@ act as cluster administrators. Any application running in a container
 receives service account credentials automatically, and could perform
 any action against the API, including viewing secrets and modifying
 permissions. This is not a recommended policy.</p>
-<pre class="shell"><code>kubectl create clusterrolebinding permissive-binding \
+<pre class="shell"><code class="language-shell">kubectl create clusterrolebinding permissive-binding \
   --clusterrole=cluster-admin \
   --user=admin \
   --user=kubelet \
@@ -1626,6 +1612,7 @@ security needs.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1634,6 +1621,8 @@ security needs.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

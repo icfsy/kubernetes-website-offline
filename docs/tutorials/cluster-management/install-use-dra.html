@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -186,17 +201,17 @@ installed and no Pod claims yet to satisfy, the output of these commands
 won't show any resources.</p>
 <ol type="1">
 <li><p>Get a list of <a class="glossary-term" href="../../reference/glossary.html#term-deviceclass" title="Glossary: deviceclass">DeviceClasses</a>:</p>
-<pre class="shell"><code>kubectl get deviceclasses</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deviceclasses</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>No resources found</code></pre></li>
 <li><p>Get a list of <a class="glossary-term" href="../../reference/glossary.html#term-resourceslice" title="Glossary: resourceslice">ResourceSlices</a>:</p>
-<pre class="shell"><code>kubectl get resourceslices</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourceslices</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>No resources found</code></pre></li>
 <li><p>Get a list of <a class="glossary-term" href="../../reference/glossary.html#term-resourceclaim" title="Glossary: resourceclaim">ResourceClaims</a> and <span
 class="glossary-term"
 data-term="resourceclaimtemplate">ResourceClaimTemplates</span>.</p>
-<pre class="shell"><code>kubectl get resourceclaims -A
+<pre class="shell"><code class="language-shell">kubectl get resourceclaims -A
 kubectl get resourceclaimtemplates -A</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>No resources found
@@ -226,7 +241,7 @@ installation</h3>
 <p>To simplify cleanup, create a namespace named dra-tutorial:</p>
 <ol type="1">
 <li><p>Create the namespace:</p>
-<pre class="shell"><code>kubectl create namespace dra-tutorial </code></pre>
+<pre class="shell"><code class="language-shell">kubectl create namespace dra-tutorial </code></pre>
 <p>In a production environment, you would likely be using a previously
 released or qualified image from the driver vendor or your own
 organization, and your nodes would need to have access to the image
@@ -235,7 +250,7 @@ use a publicly released image of the dra-example-driver to simulate
 access to a DRA driver image.</p></li>
 <li><p>Confirm your nodes have access to the image by running the
 following from within one of your cluster's nodes:</p>
-<pre class="shell"><code>docker pull registry.k8s.io/dra-example-driver/dra-example-driver:v0.2.0</code></pre></li>
+<pre class="shell"><code class="language-shell">docker pull registry.k8s.io/dra-example-driver/dra-example-driver:v0.2.0</code></pre></li>
 </ol>
 <h3 id="deploy-the-dra-driver-components">Deploy the DRA driver
 components</h3>
@@ -246,17 +261,16 @@ driver components individually with <code>kubectl</code>.</p>
 driver supports:</p>
 <div class="code-sample">
 <p><code>dra/driver-install/deviceclass.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> DeviceClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span><span class="at"> </span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;device.driver == &#39;gpu.example.com&#39;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: DeviceClass
+metadata:
+  name: gpu.example.com
+spec:
+  selectors:
+  - cel: 
+      expression: &quot;device.driver == &#39;gpu.example.com&#39;&quot;</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/deviceclass.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/deviceclass.yaml</code></pre></li>
 <li><p>Create the ServiceAccount, ClusterRole and ClusterRoleBinding
 that will be used by the driver to gain permissions to interact with the
 Kubernetes API on this cluster:</p>
@@ -264,55 +278,52 @@ Kubernetes API on this cluster:</p>
 <li><p>Create the Service Account:</p>
 <div class="code-sample">
 <p><code>dra/driver-install/serviceaccount.yaml</code></p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-example-driver-service-account</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dra-tutorial</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> dra-example-driver</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/instance</span><span class="kw">:</span><span class="at"> dra-example-driver</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dra-example-driver-service-account
+  namespace: dra-tutorial
+  labels:
+    app.kubernetes.io/name: dra-example-driver
+    app.kubernetes.io/instance: dra-example-driver</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/serviceaccount.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/serviceaccount.yaml</code></pre></li>
 <li><p>Create the ClusterRole:</p>
 <div class="code-sample">
 <p><code>dra/driver-install/clusterrole.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-example-driver-role</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;resource.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;resourceclaims&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">]</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;nodes&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">]</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;resource.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;resourceslices&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;patch&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dra-example-driver-role
+rules:
+- apiGroups: [&quot;resource.k8s.io&quot;]
+  resources: [&quot;resourceclaims&quot;]
+  verbs: [&quot;get&quot;]
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;nodes&quot;]
+  verbs: [&quot;get&quot;]
+- apiGroups: [&quot;resource.k8s.io&quot;]
+  resources: [&quot;resourceslices&quot;]
+  verbs: [&quot;get&quot;, &quot;list&quot;, &quot;watch&quot;, &quot;create&quot;, &quot;update&quot;, &quot;patch&quot;, &quot;delete&quot;]</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/clusterrole.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/clusterrole.yaml</code></pre></li>
 <li><p>Create the ClusterRoleBinding:</p>
 <div class="code-sample">
 <p><code>dra/driver-install/clusterrolebinding.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-example-driver-role-binding</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-example-driver-service-account</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dra-tutorial</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-example-driver-role</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: dra-example-driver-role-binding
+subjects:
+- kind: ServiceAccount
+  name: dra-example-driver-service-account
+  namespace: dra-tutorial
+roleRef:
+  kind: ClusterRole
+  name: dra-example-driver-role
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/clusterrolebinding.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/clusterrolebinding.yaml</code></pre></li>
 </ol></li>
 <li><p>Create a <a class="glossary-term" href="../../reference/glossary.html#term-priority-class" title="Glossary: priority-class">PriorityClass</a> for the DRA driver. The
 PriorityClass prevents preemption of th DRA driver component, which is
@@ -322,101 +333,99 @@ href="../../concepts/scheduling-eviction/pod-priority-preemption.html">pod
 priority and preemption here</a>.</p>
 <div class="code-sample">
 <p><code>dra/driver-install/priorityclass.yaml</code></p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-driver-high-priority</span></span>
-<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000000</span></span>
-<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class should be used for DRA driver pods only.&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: dra-driver-high-priority
+value: 1000000
+globalDefault: false
+description: &quot;This priority class should be used for DRA driver pods only.&quot;</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/priorityclass.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/priorityclass.yaml</code></pre></li>
 <li><p>Deploy the actual DRA driver as a DaemonSet configured to run the
 example driver binary with the permissions provisioned above. The
 DaemonSet has the permissions that you granted to the ServiceAccount in
 the previous steps.</p>
 <div class="code-sample">
 <p><code>dra/driver-install/daemonset.yaml</code></p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> DaemonSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dra-example-driver-kubeletplugin</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dra-tutorial</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> dra-example-driver</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> dra-example-driver</span></span>
-<span class="at">  </span><span class="fu">updateStrategy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> dra-example-driver</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> dra-driver-high-priority</span></span>
-<span class="at">      </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> dra-example-driver-service-account</span></span>
-<span class="at">      </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">{}</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> plugin</span></span>
-<span class="at">        </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">privileged</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/dra-example-driver/dra-example-driver:v0.2.0</span></span>
-<span class="at">        </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;dra-example-kubeletplugin&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">{}</span></span>
-<span class="at">        </span><span class="co"># Production drivers should always implement a liveness probe</span></span>
-<span class="at">        </span><span class="co"># For the tutorial we simply omit it</span></span>
-<span class="at">        </span><span class="co"># livenessProbe:</span></span>
-<span class="at">        </span><span class="co">#   grpc:</span></span>
-<span class="at">        </span><span class="co">#     port: 51515</span></span>
-<span class="at">        </span><span class="co">#     service: liveness</span></span>
-<span class="at">        </span><span class="co">#   failureThreshold: 3</span></span>
-<span class="at">        </span><span class="co">#   periodSeconds: 10</span></span>
-<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CDI_ROOT</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> /var/run/cdi</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> KUBELET_REGISTRAR_DIRECTORY_PATH</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/plugins_registry&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> KUBELET_PLUGINS_DIRECTORY_PATH</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/plugins&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NODE_NAME</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> spec.nodeName</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NAMESPACE</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.namespace</span></span>
-<span class="at">        </span><span class="co"># Simulated number of devices the example driver will pretend to have.</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NUM_DEVICES</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;9&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> HEALTHCHECK_PORT</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;51515&quot;</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> plugins-registry</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/plugins_registry&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> plugins</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/plugins&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cdi</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/run/cdi</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> plugins-registry</span></span>
-<span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/plugins_registry&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> plugins</span></span>
-<span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/plugins&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cdi</span></span>
-<span class="at">        </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/run/cdi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: dra-example-driver-kubeletplugin
+  namespace: dra-tutorial
+  labels:
+    app.kubernetes.io/name: dra-example-driver
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: dra-example-driver
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: dra-example-driver
+    spec:
+      priorityClassName: dra-driver-high-priority
+      serviceAccountName: dra-example-driver-service-account
+      securityContext:
+        {}
+      containers:
+      - name: plugin
+        securityContext:
+          privileged: true
+        image: registry.k8s.io/dra-example-driver/dra-example-driver:v0.2.0
+        imagePullPolicy: IfNotPresent
+        command: [&quot;dra-example-kubeletplugin&quot;]
+        resources:
+          {}
+        # Production drivers should always implement a liveness probe
+        # For the tutorial we simply omit it
+        # livenessProbe:
+        #   grpc:
+        #     port: 51515
+        #     service: liveness
+        #   failureThreshold: 3
+        #   periodSeconds: 10
+        env:
+        - name: CDI_ROOT
+          value: /var/run/cdi
+        - name: KUBELET_REGISTRAR_DIRECTORY_PATH
+          value: &quot;/var/lib/kubelet/plugins_registry&quot;
+        - name: KUBELET_PLUGINS_DIRECTORY_PATH
+          value: &quot;/var/lib/kubelet/plugins&quot;
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        # Simulated number of devices the example driver will pretend to have.
+        - name: NUM_DEVICES
+          value: &quot;9&quot;
+        - name: HEALTHCHECK_PORT
+          value: &quot;51515&quot;
+        volumeMounts:
+        - name: plugins-registry
+          mountPath: &quot;/var/lib/kubelet/plugins_registry&quot;
+        - name: plugins
+          mountPath: &quot;/var/lib/kubelet/plugins&quot;
+        - name: cdi
+          mountPath: /var/run/cdi
+      volumes:
+      - name: plugins-registry
+        hostPath:
+          path: &quot;/var/lib/kubelet/plugins_registry&quot;
+      - name: plugins
+        hostPath:
+          path: &quot;/var/lib/kubelet/plugins&quot;
+      - name: cdi
+        hostPath:
+          path: /var/run/cdi</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/daemonset.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/daemonset.yaml</code></pre>
 <p>The DaemonSet is configured with the volume mounts necessary to
 interact with the underlying Container Device Interface (CDI) directory,
 and to expose its socket to <code>kubelet</code> via the
@@ -426,7 +435,7 @@ and to expose its socket to <code>kubelet</code> via the
 <ol type="1">
 <li><p>Get a list of the Pods of the DRA driver DaemonSet across all
 worker nodes:</p>
-<pre class="shell"><code>kubectl get pod -l app.kubernetes.io/name=dra-example-driver -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod -l app.kubernetes.io/name=dra-example-driver -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                                     READY   STATUS    RESTARTS   AGE
 dra-example-driver-kubeletplugin-4sk2x   1/1     Running   0          13s
@@ -437,7 +446,7 @@ by publishing its metadata to the ResourceSlices API. You can check that
 API to see that each node with a driver is advertising the device class
 it represents.</p>
 <p>Check for available ResourceSlices:</p>
-<pre class="shell"><code>kubectl get resourceslices</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourceslices</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                                 NODE           DRIVER            POOL           AGE
 kind-worker-gpu.example.com-k69gd    kind-worker    gpu.example.com   kind-worker    19s
@@ -471,23 +480,22 @@ example driver takes the form
 the name of the claim is set to <code>some-gpu</code>.</p>
 <div class="code-sample">
 <p><code>dra/driver-install/example/resourceclaim.yaml</code></p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> some-gpu</span></span>
-<span class="at"> </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dra-tutorial</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">     </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> some-gpu</span></span>
-<span class="at">       </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">         </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="at">         </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">         </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">             </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;device.capacity[&#39;gpu.example.com&#39;].memory.compareTo(quantity(&#39;10Gi&#39;)) &gt;= 0&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+ name: some-gpu
+ namespace: dra-tutorial
+spec:
+   devices:
+     requests:
+     - name: some-gpu
+       exactly:
+         deviceClassName: gpu.example.com
+         selectors:
+         - cel:
+             expression: &quot;device.capacity[&#39;gpu.example.com&#39;].memory.compareTo(quantity(&#39;10Gi&#39;)) &gt;= 0&quot;</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/example/resourceclaim.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/example/resourceclaim.yaml</code></pre>
 <h3 id="create-the-pod-that-references-that-resourceclaim">Create the
 Pod that references that ResourceClaim</h3>
 <p>Below is the Pod manifest referencing the ResourceClaim you just
@@ -498,30 +506,29 @@ for that claim, <code>gpu</code>, is then used in the
 claim to the Pod's underlying container.</p>
 <div class="code-sample">
 <p><code>dra/driver-install/example/pod.yaml</code></p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod0</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dra-tutorial</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ctr0</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu:24.04</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bash&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;export; trap &#39;exit 0&#39; TERM; sleep 9999 &amp; wait&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">claims</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">  </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">    </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> some-gpu</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod0
+  namespace: dra-tutorial
+  labels:
+    app: pod
+spec:
+  containers:
+  - name: ctr0
+    image: ubuntu:24.04
+    command: [&quot;bash&quot;, &quot;-c&quot;]
+    args: [&quot;export; trap &#39;exit 0&#39; TERM; sleep 9999 &amp; wait&quot;]
+    resources:
+      claims:
+      - name: gpu
+  resourceClaims:
+  - name: gpu
+    resourceClaimName: some-gpu</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/example/pod.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f http://k8s.io/examples/dra/driver-install/example/pod.yaml</code></pre>
 <p>Confirm the pod has deployed:</p>
-<pre class="shell"><code>kubectl get pod pod0 -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod pod0 -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME   READY   STATUS    RESTARTS   AGE
 pod0   1/1     Running   0          9s</code></pre>
@@ -541,11 +548,11 @@ by the system.</p>
 <ol type="1">
 <li><p>Check the Pod logs, which report the name of the mock GPU that
 was allocated:</p>
-<pre class="shell"><code>kubectl logs pod0 -c ctr0 -n dra-tutorial | grep -E &quot;GPU_DEVICE_[0-9]+=&quot; | grep -v &quot;RESOURCE_CLAIM&quot;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs pod0 -c ctr0 -n dra-tutorial | grep -E &quot;GPU_DEVICE_[0-9]+=&quot; | grep -v &quot;RESOURCE_CLAIM&quot;</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>declare -x GPU_DEVICE_0=&quot;gpu-0&quot;</code></pre></li>
 <li><p>Check the state of the ResourceClaim object:</p>
-<pre class="shell"><code>kubectl get resourceclaims -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourceclaims -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME       STATE                AGE
 some-gpu   allocated,reserved   34s</code></pre>
@@ -554,53 +561,52 @@ ResourceClaim is allocated and reserved.</p></li>
 <li><p>Check the details of the <code>some-gpu</code> ResourceClaim. The
 <code>status</code> stanza of the ResourceClaim has information about
 the allocated device and the Pod it has been reserved for:</p>
-<pre class="shell"><code>kubectl get resourceclaim some-gpu -n dra-tutorial -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourceclaim some-gpu -n dra-tutorial -o yaml</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb36"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2025-08-20T18:17:31Z&quot;</span></span>
-<span class="at">      </span><span class="fu">finalizers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">resource.kubernetes.io/delete-protection</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> some-gpu</span></span>
-<span class="at">      </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dra-tutorial</span></span>
-<span class="at">      </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2326&quot;</span></span>
-<span class="at">      </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> d3e48dbf-40da-47c3-a7b9-f7d54d1051c3</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">allocationMode</span><span class="kw">:</span><span class="at"> ExactCount</span></span>
-<span class="at">            </span><span class="fu">count</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">            </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="at">            </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> device.capacity[&#39;gpu.example.com&#39;].memory.compareTo(quantity(&#39;10Gi&#39;))</span></span>
-<span class="at">                </span><span class="ch">&gt;</span><span class="er">=</span><span class="ch"> </span><span class="er">0</span></span>
-          name: some-gpu</span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">allocation</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">results</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">device</span><span class="kw">:</span><span class="at"> gpu-0</span></span>
-<span class="at">            </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="at">            </span><span class="fu">pool</span><span class="kw">:</span><span class="at"> kind-worker</span></span>
-<span class="at">            </span><span class="fu">request</span><span class="kw">:</span><span class="at"> some-gpu</span></span>
-<span class="at">        </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">matchFields</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> metadata.name</span></span>
-<span class="at">              </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">              </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="at">kind-worker</span></span>
-<span class="at">      </span><span class="fu">reservedFor</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod0</span></span>
-<span class="at">        </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> pods</span></span>
-<span class="at">        </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> c4dadf20-392a-474d-a47b-ab82080c8bd7</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">    apiVersion: resource.k8s.io/v1
+    kind: ResourceClaim
+    metadata:
+      creationTimestamp: &quot;2025-08-20T18:17:31Z&quot;
+      finalizers:
+      - resource.kubernetes.io/delete-protection
+      name: some-gpu
+      namespace: dra-tutorial
+      resourceVersion: &quot;2326&quot;
+      uid: d3e48dbf-40da-47c3-a7b9-f7d54d1051c3
+    spec:
+      devices:
+        requests:
+        - exactly:
+            allocationMode: ExactCount
+            count: 1
+            deviceClassName: gpu.example.com
+            selectors:
+            - cel:
+                expression: device.capacity[&#39;gpu.example.com&#39;].memory.compareTo(quantity(&#39;10Gi&#39;))
+                &gt;= 0
+          name: some-gpu
+    status:
+      allocation:
+        devices:
+          results:
+          - device: gpu-0
+            driver: gpu.example.com
+            pool: kind-worker
+            request: some-gpu
+        nodeSelector:
+          nodeSelectorTerms:
+          - matchFields:
+            - key: metadata.name
+              operator: In
+              values:
+              - kind-worker
+      reservedFor:
+      - name: pod0
+        resource: pods
+        uid: c4dadf20-392a-474d-a47b-ab82080c8bd7</code></pre></li>
 <li><p>To check how the driver handled device allocation, get the logs
 for the driver DaemonSet Pods:</p>
-<pre class="shell"><code>kubectl logs -l app.kubernetes.io/name=dra-example-driver -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs -l app.kubernetes.io/name=dra-example-driver -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>I0820 18:17:44.131324       1 driver.go:106] PrepareResourceClaims is called: number of claims: 1
 I0820 18:17:44.135056       1 driver.go:133] Returning newly prepared devices for claim &#39;d3e48dbf-40da-47c3-a7b9-f7d54d1051c3&#39;: [{[some-gpu] kind-worker gpu-0 [k8s.gpu.example.com/gpu=common k8s.gpu.example.com/gpu=d3e48dbf-40da-47c3-a7b9-f7d54d1051c3-gpu-0]}]</code></pre></li>
@@ -615,7 +621,7 @@ resource so it can be available for future scheduling. To validate this
 behavior, delete the Pod that you created in the previous steps and
 watch the corresponding changes to the ResourceClaim and driver.</p>
 <p>Delete the <code>pod0</code> Pod:</p>
-<pre class="shell"><code>kubectl delete pod pod0 -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod pod0 -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>pod &quot;pod0&quot; deleted</code></pre>
 <h3 id="observe-the-dra-state">Observe the DRA state</h3>
@@ -625,13 +631,13 @@ API. The ResourceClaim has a <code>pending</code> state until it's
 referenced in a new Pod.</p>
 <ol type="1">
 <li><p>Check the state of the <code>some-gpu</code> ResourceClaim:</p>
-<pre class="shell"><code>kubectl get resourceclaims -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourceclaims -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME       STATE     AGE
 some-gpu   pending   76s</code></pre></li>
 <li><p>Verify that the driver has processed unpreparing the device for
 this claim by checking the driver logs:</p>
-<pre class="shell"><code>kubectl logs -l app.kubernetes.io/name=dra-example-driver -n dra-tutorial</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs -l app.kubernetes.io/name=dra-example-driver -n dra-tutorial</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>I0820 18:22:15.629376       1 driver.go:138] UnprepareResourceClaims is called: number of claims: 1</code></pre></li>
 </ol>
@@ -642,7 +648,7 @@ future scheduling.</p>
 <h2 id="cleaning-up">Cleaning up</h2>
 <p>To clean up the resources that you created in this tutorial, follow
 these steps:</p>
-<pre class="shell"><code>kubectl delete namespace dra-tutorial
+<pre class="shell"><code class="language-shell">kubectl delete namespace dra-tutorial
 kubectl delete deviceclass gpu.example.com
 kubectl delete clusterrole dra-example-driver-role
 kubectl delete clusterrolebinding dra-example-driver-role-binding
@@ -720,6 +726,7 @@ Devices to Workloads with DRA</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -728,6 +735,8 @@ Devices to Workloads with DRA</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

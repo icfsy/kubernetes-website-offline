@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -151,34 +166,33 @@ href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
 installation of <a target="_blank" rel="noopener" href="https://www.python.org/">Python</a>, and the
 Jinja2 template library for Python.</p>
 <p>Once you have Python set up, you can install Jinja2 by running:</p>
-<pre class="shell"><code>pip install --user jinja2</code></pre>
+<pre class="shell"><code class="language-shell">pip install --user jinja2</code></pre>
 <h2 id="create-jobs-based-on-a-template">Create Jobs based on a
 template</h2>
 <p>First, download the following template of a Job to a file called
 <code>job-tmpl.yaml</code>. Here's what you'll download:</p>
 <div class="code-sample">
 <p><code>application/job/job-tmpl.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> process-item-$ITEM</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">jobgroup</span><span class="kw">:</span><span class="at"> jobexample</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jobexample</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">jobgroup</span><span class="kw">:</span><span class="at"> jobexample</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> c</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;echo Processing item $ITEM &amp;&amp; sleep 5&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: process-item-$ITEM
+  labels:
+    jobgroup: jobexample
+spec:
+  template:
+    metadata:
+      name: jobexample
+      labels:
+        jobgroup: jobexample
+    spec:
+      containers:
+      - name: c
+        image: busybox:1.28
+        command: [&quot;sh&quot;, &quot;-c&quot;, &quot;echo Processing item $ITEM &amp;&amp; sleep 5&quot;]
+      restartPolicy: Never</code></pre>
 </div>
-<pre class="shell"><code># Use curl to download job-tmpl.yaml
+<pre class="shell"><code class="language-shell"># Use curl to download job-tmpl.yaml
 curl -L -s -O https://k8s.io/examples/application/job/job-tmpl.yaml</code></pre>
 <p>The file you downloaded is not yet a valid Kubernetes <span
 class="glossary-term" data-term="manifest">manifest</span>. Instead that
@@ -190,14 +204,14 @@ template</h3>
 <p>The following shell snippet uses <code>sed</code> to replace the
 string <code>$ITEM</code> with the loop variable, writing into a
 temporary directory named <code>jobs</code>. Run this now:</p>
-<pre class="shell"><code># Expand the template into multiple files, one for each item to be processed.
+<pre class="shell"><code class="language-shell"># Expand the template into multiple files, one for each item to be processed.
 mkdir ./jobs
 for i in apple banana cherry
 do
   cat job-tmpl.yaml | sed &quot;s/\$ITEM/$i/&quot; &gt; ./jobs/job-$i.yaml
 done</code></pre>
 <p>Check if it worked:</p>
-<pre class="shell"><code>ls jobs/</code></pre>
+<pre class="shell"><code class="language-shell">ls jobs/</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>job-apple.yaml
 job-banana.yaml
@@ -207,13 +221,13 @@ ERB), or write a program to generate the Job manifests.</p>
 <h3 id="create-jobs-from-the-manifests">Create Jobs from the
 manifests</h3>
 <p>Next, create all the Jobs with one kubectl command:</p>
-<pre class="shell"><code>kubectl create -f ./jobs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f ./jobs</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>job.batch/process-item-apple created
 job.batch/process-item-banana created
 job.batch/process-item-cherry created</code></pre>
 <p>Now, check on the jobs:</p>
-<pre class="shell"><code>kubectl get jobs -l jobgroup=jobexample</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get jobs -l jobgroup=jobexample</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                  COMPLETIONS   DURATION   AGE
 process-item-apple    1/1           14s        22s
@@ -224,7 +238,7 @@ that are part of this group of jobs (there might be other unrelated jobs
 in the system).</p>
 <p>You can check on the Pods as well using the same <span
 class="glossary-term" data-term="selector">label selector</span>:</p>
-<pre class="shell"><code>kubectl get pods -l jobgroup=jobexample</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l jobgroup=jobexample</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME                        READY     STATUS      RESTARTS   AGE
 process-item-apple-kixwv    0/1       Completed   0          4m
@@ -232,13 +246,13 @@ process-item-banana-wrsf7   0/1       Completed   0          4m
 process-item-cherry-dnfu9   0/1       Completed   0          4m</code></pre>
 <p>We can use this single command to check on the output of all jobs at
 once:</p>
-<pre class="shell"><code>kubectl logs -f -l jobgroup=jobexample</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs -f -l jobgroup=jobexample</code></pre>
 <p>The output should be:</p>
 <pre><code>Processing item apple
 Processing item banana
 Processing item cherry</code></pre>
 <h3 id="cleanup-1">Clean up</h3>
-<pre class="shell"><code># Remove the Jobs you created
+<pre class="shell"><code class="language-shell"># Remove the Jobs you created
 # Your cluster automatically cleans up their Pods
 kubectl delete job -l jobgroup=jobexample</code></pre>
 <h2 id="use-advanced-template-parameters">Use advanced template
@@ -256,7 +270,7 @@ multiple parameters for each Job.</p>
 script to convert the template to a set of manifests.</p>
 <p>First, copy and paste the following template of a Job object, into a
 file called <code>job.yaml.jinja2</code>:</p>
-<pre class="liquid"><code>{% set params = [{ &quot;name&quot;: &quot;apple&quot;, &quot;url&quot;: &quot;http://dbpedia.org/resource/Apple&quot;, },
+<pre class="liquid"><code class="language-liquid">{% set params = [{ &quot;name&quot;: &quot;apple&quot;, &quot;url&quot;: &quot;http://dbpedia.org/resource/Apple&quot;, },
                   { &quot;name&quot;: &quot;banana&quot;, &quot;url&quot;: &quot;http://dbpedia.org/resource/Banana&quot;, },
                   { &quot;name&quot;: &quot;cherry&quot;, &quot;url&quot;: &quot;http://dbpedia.org/resource/Cherry&quot; }]
 %}
@@ -291,19 +305,19 @@ multiple documents (Kubernetes manifests, in this case), separated by
 <code>---</code> on a line by itself. You can pipe the output directly
 to <code>kubectl</code> to create the Jobs.</p>
 <p>Next, use this one-line Python program to expand the template:</p>
-<pre class="shell"><code>alias render_template=&#39;python -c &quot;from jinja2 import Template; import sys; print(Template(sys.stdin.read()).render());&quot;&#39;</code></pre>
+<pre class="shell"><code class="language-shell">alias render_template=&#39;python -c &quot;from jinja2 import Template; import sys; print(Template(sys.stdin.read()).render());&quot;&#39;</code></pre>
 <p>Use <code>render_template</code> to convert the parameters and
 template into a single YAML file containing Kubernetes manifests:</p>
-<pre class="shell"><code># This requires the alias you defined earlier
+<pre class="shell"><code class="language-shell"># This requires the alias you defined earlier
 cat job.yaml.jinja2 | render_template &gt; jobs.yaml</code></pre>
 <p>You can view <code>jobs.yaml</code> to verify that the
 <code>render_template</code> script worked correctly.</p>
 <p>Once you are happy that <code>render_template</code> is working how
 you intend, you can pipe its output into <code>kubectl</code>:</p>
-<pre class="shell"><code>cat job.yaml.jinja2 | render_template | kubectl apply -f -</code></pre>
+<pre class="shell"><code class="language-shell">cat job.yaml.jinja2 | render_template | kubectl apply -f -</code></pre>
 <p>Kubernetes accepts and runs the Jobs you created.</p>
 <h3 id="cleanup-2">Clean up</h3>
-<pre class="shell"><code># Remove the Jobs you created
+<pre class="shell"><code class="language-shell"># Remove the Jobs you created
 # Your cluster automatically cleans up their Pods
 kubectl delete job -l jobgroup=jobexample</code></pre>
 <h2 id="using-jobs-in-real-workloads">Using Jobs in real workloads</h2>
@@ -426,6 +440,7 @@ Job objects automatically.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -434,6 +449,8 @@ Job objects automatically.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

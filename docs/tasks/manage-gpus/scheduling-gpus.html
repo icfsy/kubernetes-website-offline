@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -176,19 +191,18 @@ request value by default.</li>
 <code>limits</code>.</li>
 </ul>
 <p>Here's an example manifest for a Pod that requests a GPU:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-vector-add</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-vector-add</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;registry.example/example-vector-add:v42&quot;</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">gpu-vendor.example/example-gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # requesting 1 GPU</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: example-vector-add
+spec:
+  restartPolicy: OnFailure
+  containers:
+    - name: example-vector-add
+      image: &quot;registry.example/example-vector-add:v42&quot;
+      resources:
+        limits:
+          gpu-vendor.example/example-gpu: 1 # requesting 1 GPU</code></pre>
 <h2 id="manage-clusters-with-different-types-of-gpus">Manage clusters
 with different types of GPUs</h2>
 <p>If different nodes in your cluster have different types of GPUs, then
@@ -196,7 +210,7 @@ you can use <a
 href="../configure-pod-container/assign-pods-nodes.html">Node
 Labels and Node Selectors</a> to schedule pods to appropriate nodes.</p>
 <p>For example:</p>
-<pre class="shell"><code># Label your nodes with the accelerator type they have.
+<pre class="shell"><code class="language-shell"># Label your nodes with the accelerator type they have.
 kubectl label nodes node1 accelerator=example-gpu-x100
 kubectl label nodes node2 accelerator=other-gpu-k915</code></pre>
 <p>That label key <code>accelerator</code> is just an example; you can
@@ -220,31 +234,30 @@ those features can be scheduled on those nodes.</p>
 nodes; these might be generic labels or they could be vendor specific.
 Your GPU vendor may provide a third party plugin for NFD; check their
 documentation for more details.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-vector-add</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span>
-<span class="at">  </span><span class="co"># You can use Kubernetes node affinity to schedule this Pod onto a node</span></span>
-<span class="at">  </span><span class="co"># that provides the kind of GPU that its container needs in order to work</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;gpu.gpu-vendor.example/installed-memory&quot;</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Gt</span><span class="co"> # (greater than)</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;40535&quot;</span><span class="kw">]</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;feature.node.kubernetes.io/pci-10.present&quot;</span><span class="at"> </span><span class="co"># NFD Feature label</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;true&quot;</span><span class="kw">]</span><span class="at"> </span><span class="co"># (optional) only schedule on nodes with PCI device 10</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-vector-add</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;registry.example/example-vector-add:v42&quot;</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">gpu-vendor.example/example-gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # requesting 1 GPU</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: example-vector-add
+spec:
+  restartPolicy: OnFailure
+  # You can use Kubernetes node affinity to schedule this Pod onto a node
+  # that provides the kind of GPU that its container needs in order to work
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: &quot;gpu.gpu-vendor.example/installed-memory&quot;
+            operator: Gt # (greater than)
+            values: [&quot;40535&quot;]
+          - key: &quot;feature.node.kubernetes.io/pci-10.present&quot; # NFD Feature label
+            values: [&quot;true&quot;] # (optional) only schedule on nodes with PCI device 10
+  containers:
+    - name: example-vector-add
+      image: &quot;registry.example/example-vector-add:v42&quot;
+      resources:
+        limits:
+          gpu-vendor.example/example-gpu: 1 # requesting 1 GPU</code></pre>
 <h4 id="gpu-vendor-implementations">GPU vendor implementations</h4>
 <ul>
 <li><a
@@ -316,6 +329,7 @@ href="https://github.com/NVIDIA/k8s-device-plugin">NVIDIA</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -324,6 +338,8 @@ href="https://github.com/NVIDIA/k8s-device-plugin">NVIDIA</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

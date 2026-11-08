@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -182,39 +197,37 @@ non-retriable software bug.</p>
 <li><p>Examine the following manifest:</p>
 <div class="code-sample">
 <p><code>/controllers/job-pod-failure-policy-failjob.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-pod-failure-policy-failjob</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/bash:5</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bash&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">echo &quot;Hello world! I&#39;m going to exit with 42 to simulate a software bug.&quot; &amp;&amp; sleep 30 &amp;&amp; exit 42</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">6</span></span>
-<span class="at">  </span><span class="fu">podFailurePolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> FailJob</span></span>
-<span class="at">      </span><span class="fu">onExitCodes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">42</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-pod-failure-policy-failjob
+spec:
+  completions: 8
+  parallelism: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: main
+        image: docker.io/library/bash:5
+        command: [&quot;bash&quot;]
+        args:
+        - -c
+        - echo &quot;Hello world! I&#39;m going to exit with 42 to simulate a software bug.&quot; &amp;&amp; sleep 30 &amp;&amp; exit 42
+  backoffLimit: 6
+  podFailurePolicy:
+    rules:
+    - action: FailJob
+      onExitCodes:
+        containerName: main
+        operator: In
+        values: [42]</code></pre>
 </div></li>
 <li><p>Apply the manifest:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> create <span class="at">-f</span> https://k8s.io/examples/controllers/job-pod-failure-policy-failjob.yaml</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl create -f https://k8s.io/examples/controllers/job-pod-failure-policy-failjob.yaml</code></pre></li>
 <li><p>After around 30 seconds the entire Job should be terminated.
 Inspect the status of the Job by running:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get jobs <span class="at">-l</span> job-name=job-pod-failure-policy-failjob <span class="at">-o</span> yaml</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl get jobs -l job-name=job-pod-failure-policy-failjob -o yaml</code></pre>
 <p>In the Job status, the following conditions display:</p>
 <ul>
 <li><code>FailureTarget</code> condition: has a <code>reason</code>
@@ -239,7 +252,7 @@ at least 9 minutes before the Job fails.</p></li>
 </ol>
 <h4 id="clean-up">Clean up</h4>
 <p>Delete the Job you created:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> delete jobs/job-pod-failure-policy-failjob</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl delete jobs/job-pod-failure-policy-failjob</code></pre>
 <p>The cluster automatically cleans up the Pods.</p>
 <h3 id="pod-failure-policy-ignore">Using Pod failure policy to ignore
 Pod disruptions</h3>
@@ -259,49 +272,43 @@ since the Pod is scheduled).</p>
 <li><p>Examine the following manifest:</p>
 <div class="code-sample">
 <p><code>/controllers/job-pod-failure-policy-ignore.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-pod-failure-policy-ignore</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/bash:5</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bash&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">echo &quot;Hello world! I&#39;m going to exit with 0 (success).&quot; &amp;&amp; sleep 90 &amp;&amp; exit 0</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">  </span><span class="fu">podFailurePolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> Ignore</span></span>
-<span class="at">      </span><span class="fu">onPodConditions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DisruptionTarget</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-pod-failure-policy-ignore
+spec:
+  completions: 4
+  parallelism: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: main
+        image: docker.io/library/bash:5
+        command: [&quot;bash&quot;]
+        args:
+        - -c
+        - echo &quot;Hello world! I&#39;m going to exit with 0 (success).&quot; &amp;&amp; sleep 90 &amp;&amp; exit 0
+  backoffLimit: 0
+  podFailurePolicy:
+    rules:
+    - action: Ignore
+      onPodConditions:
+      - type: DisruptionTarget</code></pre>
 </div></li>
 <li><p>Apply the manifest:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> create <span class="at">-f</span> https://k8s.io/examples/controllers/job-pod-failure-policy-ignore.yaml</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl create -f https://k8s.io/examples/controllers/job-pod-failure-policy-ignore.yaml</code></pre></li>
 <li><p>Run this command to check the <code>nodeName</code> the Pod is
 scheduled to:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="va">nodeName</span><span class="op">=</span><span class="va">$(</span><span class="ex">kubectl</span> get pods <span class="at">-l</span> job-name=job-pod-failure-policy-ignore <span class="at">-o</span> jsonpath=<span class="st">&#39;{.items[0].spec.nodeName}&#39;</span><span class="va">)</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">nodeName=$(kubectl get pods -l job-name=job-pod-failure-policy-ignore -o jsonpath=&#39;{.items[0].spec.nodeName}&#39;)</code></pre></li>
 <li><p>Drain the node to evict the Pod before it completes (within
 90s):</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> drain nodes/<span class="va">$nodeName</span> <span class="at">--ignore-daemonsets</span> <span class="at">--grace-period</span><span class="op">=</span>0</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl drain nodes/$nodeName --ignore-daemonsets --grace-period=0</code></pre></li>
 <li><p>Inspect the <code>.status.failed</code> to check the counter for
 the Job is not incremented:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get jobs <span class="at">-l</span> job-name=job-pod-failure-policy-ignore <span class="at">-o</span> yaml</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl get jobs -l job-name=job-pod-failure-policy-ignore -o yaml</code></pre></li>
 <li><p>Uncordon the node:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> uncordon nodes/<span class="va">$nodeName</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl uncordon nodes/$nodeName</code></pre></li>
 </ol>
 <p>The Job resumes and succeeds.</p>
 <p>For comparison, if the Pod failure policy was disabled the Pod
@@ -309,8 +316,7 @@ disruption would result in terminating the entire Job (as the
 <code>.spec.backoffLimit</code> is set to 0).</p>
 <h4 id="cleaning-up">Cleaning up</h4>
 <p>Delete the Job you created:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> delete jobs/job-pod-failure-policy-ignore</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl delete jobs/job-pod-failure-policy-ignore</code></pre>
 <p>The cluster automatically cleans up the Pods.</p>
 <h3 id="pod-failure-policy-config-issue">Using Pod failure policy to
 avoid unnecessary Pod retries based on custom Pod Conditions</h3>
@@ -331,76 +337,67 @@ Phase</a>).</p>
 <li><p>Examine the following manifest:</p>
 <div class="code-sample">
 <p><code>/controllers/job-pod-failure-policy-config-issue.yaml</code></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-pod-failure-policy-config-issue</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;non-existing-repo/non-existing-image:example&quot;</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">6</span></span>
-<span class="at">  </span><span class="fu">podFailurePolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> FailJob</span></span>
-<span class="at">      </span><span class="fu">onPodConditions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ConfigIssue</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-pod-failure-policy-config-issue
+spec:
+  completions: 8
+  parallelism: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: main
+        image: &quot;non-existing-repo/non-existing-image:example&quot;
+  backoffLimit: 6
+  podFailurePolicy:
+    rules:
+    - action: FailJob
+      onPodConditions:
+      - type: ConfigIssue</code></pre>
 </div></li>
 <li><p>Apply the manifest:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> create <span class="at">-f</span> https://k8s.io/examples/controllers/job-pod-failure-policy-config-issue.yaml</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl create -f https://k8s.io/examples/controllers/job-pod-failure-policy-config-issue.yaml</code></pre>
 <p>Note that, the image is misconfigured, as it does not exist.</p></li>
 <li><p>Inspect the status of the job's Pods by running:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get pods <span class="at">-l</span> job-name=job-pod-failure-policy-config-issue <span class="at">-o</span> yaml</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl get pods -l job-name=job-pod-failure-policy-config-issue -o yaml</code></pre>
 <p>You will see output similar to this:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">containerStatuses</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> non-existing-repo/non-existing-image:example</span></span>
-<span class="at">   ...</span></span>
-<span class="at">   </span><span class="fu">state</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">waiting</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Back-off pulling image &quot;non-existing-repo/non-existing-image:example&quot;</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> ImagePullBackOff</span></span>
-<span class="at">      ...</span></span>
-<span class="fu">phase</span><span class="kw">:</span><span class="at"> Pending</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">containerStatuses:
+- image: non-existing-repo/non-existing-image:example
+   ...
+   state:
+   waiting:
+      message: Back-off pulling image &quot;non-existing-repo/non-existing-image:example&quot;
+      reason: ImagePullBackOff
+      ...
+phase: Pending</code></pre>
 <p>Note that the pod remains in the <code>Pending</code> phase as it
 fails to pull the misconfigured image. This, in principle, could be a
 transient issue and the image could get pulled. However, in this case,
 the image does not exist so we indicate this fact by a custom
 condition.</p></li>
 <li><p>Add the custom condition. First prepare the patch by running:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="fu">cat</span> <span class="op">&lt;&amp;</span>lt<span class="kw">;</span><span class="ex">EOF</span> <span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span> <span class="ex">patch.yaml</span></span>
-<span class="ex">status:</span></span>
-  <span class="ex">conditions:</span></span>
-  <span class="ex">-</span> type: ConfigIssue</span>
-    <span class="ex">status:</span> <span class="st">&quot;True&quot;</span></span>
-    <span class="ex">reason:</span> <span class="st">&quot;NonExistingImage&quot;</span></span>
-    <span class="ex">lastTransitionTime:</span> <span class="st">&quot;</span><span class="va">$(</span><span class="fu">date</span> <span class="at">-u</span> +<span class="st">&quot;%Y-%m-%dT%H:%M:%SZ&quot;</span><span class="va">)</span><span class="st">&quot;</span></span>
-<span class="ex">EOF</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">cat &lt;&lt;EOF &gt; patch.yaml
+status:
+  conditions:
+  - type: ConfigIssue
+    status: &quot;True&quot;
+    reason: &quot;NonExistingImage&quot;
+    lastTransitionTime: &quot;$(date -u +&quot;%Y-%m-%dT%H:%M:%SZ&quot;)&quot;
+EOF</code></pre>
 <p>Second, select one of the pods created by the job by running:</p>
 <pre><code>podName=$(kubectl get pods -l job-name=job-pod-failure-policy-config-issue -o jsonpath=&#39;{.items[0].metadata.name}&#39;)</code></pre>
 <p>Then, apply the patch on one of the pods by running the following
 command:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> patch pod <span class="va">$podName</span> <span class="at">--subresource</span><span class="op">=</span>status <span class="at">--patch-file</span><span class="op">=</span>patch.yaml</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl patch pod $podName --subresource=status --patch-file=patch.yaml</code></pre>
 <p>If applied successfully, you will get a notification like this:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">pod/job-pod-failure-policy-config-issue-k6pvp</span> patched</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">pod/job-pod-failure-policy-config-issue-k6pvp patched</code></pre></li>
 <li><p>Delete the pod to transition it to <code>Failed</code> phase, by
 running the command:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> delete pods/<span class="va">$podName</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl delete pods/$podName</code></pre></li>
 <li><p>Inspect the status of the Job by running:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get jobs <span class="at">-l</span> job-name=job-pod-failure-policy-config-issue <span class="at">-o</span> yaml</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl get jobs -l job-name=job-pod-failure-policy-config-issue -o yaml</code></pre>
 <p>In the Job status, see a job <code>Failed</code> condition with the
 field <code>reason</code> equal <code>PodFailurePolicy</code>.
 Additionally, the <code>message</code> field contains a more detailed
@@ -416,8 +413,7 @@ a user-provided controller.</p>
 </div>
 <h4 id="cleaning-up-1">Cleaning up</h4>
 <p>Delete the Job you created:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> delete jobs/job-pod-failure-policy-config-issue</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl delete jobs/job-pod-failure-policy-config-issue</code></pre>
 <p>The cluster automatically cleans up the Pods.</p>
 <h3 id="backoff-limit-per-index-failindex">Using Pod Failure Policy to
 avoid unnecessary Pod retries per index</h3>
@@ -428,56 +424,54 @@ section of the page shows how to use these features together.</p>
 <li><p>Examine the following manifest:</p>
 <div class="code-sample">
 <p><code>/controllers/job-backoff-limit-per-index-failindex.yaml</code></p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-backoff-limit-per-index-failindex</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">completionMode</span><span class="kw">:</span><span class="at"> Indexed</span></span>
-<span class="at">  </span><span class="fu">backoffLimitPerIndex</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/python:3</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># The script:</span></span>
-<span class="at">          </span><span class="co"># - fails the Pod with index 0 with exit code 1, which results in one retry;</span></span>
-<span class="at">          </span><span class="co"># - fails the Pod with index 1 with exit code 42 which results</span></span>
-<span class="at">          </span><span class="co">#   in failing the index without retry.</span></span>
-<span class="at">          </span><span class="co"># - succeeds Pods with any other index.</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">python3</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">            import os, sys</span></span>
-<span class="at">            index = int(os.environ.get(&quot;JOB_COMPLETION_INDEX&quot;))</span></span>
-<span class="at">            </span><span class="fu">if index == 0</span><span class="kw">:</span></span>
-<span class="at">              sys.exit(1)</span></span>
-<span class="at">            </span><span class="fu">elif index == 1</span><span class="kw">:</span></span>
-<span class="at">              sys.exit(42)</span></span>
-<span class="at">            </span><span class="fu">else</span><span class="kw">:</span></span>
-<span class="at">              sys.exit(0)</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">6</span></span>
-<span class="at">  </span><span class="fu">podFailurePolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> FailIndex</span></span>
-<span class="at">      </span><span class="fu">onExitCodes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">42</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-backoff-limit-per-index-failindex
+spec:
+  completions: 4
+  parallelism: 2
+  completionMode: Indexed
+  backoffLimitPerIndex: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: main
+        image: docker.io/library/python:3
+        command:
+          # The script:
+          # - fails the Pod with index 0 with exit code 1, which results in one retry;
+          # - fails the Pod with index 1 with exit code 42 which results
+          #   in failing the index without retry.
+          # - succeeds Pods with any other index.
+          - python3
+          - -c
+          - |
+            import os, sys
+            index = int(os.environ.get(&quot;JOB_COMPLETION_INDEX&quot;))
+            if index == 0:
+              sys.exit(1)
+            elif index == 1:
+              sys.exit(42)
+            else:
+              sys.exit(0)
+  backoffLimit: 6
+  podFailurePolicy:
+    rules:
+    - action: FailIndex
+      onExitCodes:
+        containerName: main
+        operator: In
+        values: [42]</code></pre>
 </div></li>
 <li><p>Apply the manifest:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> create <span class="at">-f</span> https://k8s.io/examples/controllers/job-backoff-limit-per-index-failindex.yaml</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl create -f https://k8s.io/examples/controllers/job-backoff-limit-per-index-failindex.yaml</code></pre></li>
 <li><p>After around 15 seconds, inspect the status of the Pods for the
 Job. You can do that by running:</p>
-<pre class="shell"><code>kubectl get pods -l job-name=job-backoff-limit-per-index-failindex -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l job-name=job-backoff-limit-per-index-failindex -o yaml</code></pre>
 <p>You will see output similar to this:</p>
-<pre class="none"><code>NAME                                            READY   STATUS      RESTARTS   AGE
+<pre class="none"><code class="language-none">NAME                                            READY   STATUS      RESTARTS   AGE
 job-backoff-limit-per-index-failindex-0-4g4cm   0/1     Error       0          4s
 job-backoff-limit-per-index-failindex-0-fkdzq   0/1     Error       0          15s
 job-backoff-limit-per-index-failindex-1-2bgdj   0/1     Error       0          15s
@@ -492,8 +486,7 @@ matched the Pod failure policy with the <code>FailIndex</code>
 action.</li>
 </ul></li>
 <li><p>Inspect the status of the Job by running:</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get jobs <span class="at">-l</span> job-name=job-backoff-limit-per-index-failindex <span class="at">-o</span> yaml</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl get jobs -l job-name=job-backoff-limit-per-index-failindex -o yaml</code></pre>
 <p>In the Job status, see that the <code>failedIndexes</code> field
 shows "0,1", because both indexes failed. Because the index 1 was not
 retried the number of failed Pods, indicated by the status field
@@ -501,8 +494,7 @@ retried the number of failed Pods, indicated by the status field
 </ol>
 <h4 id="cleaning-up-2">Cleaning up</h4>
 <p>Delete the Job you created:</p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> delete jobs/job-backoff-limit-per-index-failindex</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl delete jobs/job-backoff-limit-per-index-failindex</code></pre>
 <p>The cluster automatically cleans up the Pods.</p>
 <h2 id="alternatives">Alternatives</h2>
 <p>You could rely solely on the <a
@@ -577,6 +569,7 @@ disruptions.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -585,6 +578,8 @@ disruptions.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -138,18 +153,17 @@ struct.</p>
 parameters in this struct. Make sure the kubelet has read permissions on
 the file.</p>
 <p>Here is an example of what this file might look like:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">address</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;192.168.0.8&quot;</span></span>
-<span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">20250</span></span>
-<span class="fu">serializeImagePulls</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="fu">evictionHard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">memory.available</span><span class="kw">:</span><span class="at">  </span><span class="st">&quot;100Mi&quot;</span></span>
-<span class="at">    </span><span class="fu">nodefs.available</span><span class="kw">:</span><span class="at">  </span><span class="st">&quot;10%&quot;</span></span>
-<span class="at">    </span><span class="fu">nodefs.inodesFree</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5%&quot;</span></span>
-<span class="at">    </span><span class="fu">imagefs.available</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;15%&quot;</span></span>
-<span class="at">    </span><span class="fu">imagefs.inodesFree</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5%&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+address: &quot;192.168.0.8&quot;
+port: 20250
+serializeImagePulls: false
+evictionHard:
+    memory.available:  &quot;100Mi&quot;
+    nodefs.available:  &quot;10%&quot;
+    nodefs.inodesFree: &quot;5%&quot;
+    imagefs.available: &quot;15%&quot;
+    imagefs.inodesFree: &quot;5%&quot;</code></pre>
 <p>In this example, the kubelet is configured with the following
 settings:</p>
 <ol type="1">
@@ -280,137 +294,134 @@ configuration:</p>
 <li><p>Start a proxy server using <a
 href="../../reference/kubectl/generated/kubectl_proxy.html"><code>kubectl proxy</code></a>
 in your terminal.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> proxy</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl proxy</code></pre>
 <p>Which gives output like:</p>
-<pre class="none"><code>Starting to serve on 127.0.0.1:8001</code></pre></li>
+<pre class="none"><code class="language-none">Starting to serve on 127.0.0.1:8001</code></pre></li>
 <li><p>Open another terminal window and use <code>curl</code> to fetch
 the kubelet configuration. Replace
 <code>&lt;node-name&gt;</code> with the actual name of your
 node:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> <span class="at">-X</span> GET http://127.0.0.1:8001/api/v1/nodes/<span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">node-name</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span><span class="ex">/proxy/configz</span> <span class="kw">|</span> <span class="ex">jq</span> .</span></code></pre></div>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kubeletconfig&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;enableServer&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;staticPodPath&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/run/kubernetes/static-pods&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;syncFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;1m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;fileCheckFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;20s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;httpCheckFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;20s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;address&quot;</span><span class="fu">:</span> <span class="st">&quot;192.168.1.16&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;port&quot;</span><span class="fu">:</span> <span class="dv">10250</span><span class="fu">,</span></span>
-    <span class="dt">&quot;readOnlyPort&quot;</span><span class="fu">:</span> <span class="dv">10255</span><span class="fu">,</span></span>
-    <span class="dt">&quot;tlsCertFile&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/lib/kubelet/pki/kubelet.crt&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;tlsPrivateKeyFile&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/lib/kubelet/pki/kubelet.key&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;rotateCertificates&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;authentication&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;x509&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;clientCAFile&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/run/kubernetes/client-ca.crt&quot;</span></span>
-      <span class="fu">},</span></span>
-      <span class="dt">&quot;webhook&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;enabled&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-        <span class="dt">&quot;cacheTTL&quot;</span><span class="fu">:</span> <span class="st">&quot;2m0s&quot;</span></span>
-      <span class="fu">},</span></span>
-      <span class="dt">&quot;anonymous&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;enabled&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;authorization&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;mode&quot;</span><span class="fu">:</span> <span class="st">&quot;AlwaysAllow&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;webhook&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;cacheAuthorizedTTL&quot;</span><span class="fu">:</span> <span class="st">&quot;5m0s&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;cacheUnauthorizedTTL&quot;</span><span class="fu">:</span> <span class="st">&quot;30s&quot;</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;registryPullQPS&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
-    <span class="dt">&quot;registryBurst&quot;</span><span class="fu">:</span> <span class="dv">10</span><span class="fu">,</span></span>
-    <span class="dt">&quot;eventRecordQPS&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
-    <span class="dt">&quot;eventBurst&quot;</span><span class="fu">:</span> <span class="dv">100</span><span class="fu">,</span></span>
-    <span class="dt">&quot;enableDebuggingHandlers&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;healthzPort&quot;</span><span class="fu">:</span> <span class="dv">10248</span><span class="fu">,</span></span>
-    <span class="dt">&quot;healthzBindAddress&quot;</span><span class="fu">:</span> <span class="st">&quot;127.0.0.1&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;oomScoreAdj&quot;</span><span class="fu">:</span> <span class="dv">-999</span><span class="fu">,</span></span>
-    <span class="dt">&quot;clusterDomain&quot;</span><span class="fu">:</span> <span class="st">&quot;cluster.local&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;clusterDNS&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-      <span class="st">&quot;10.0.0.10&quot;</span></span>
-    <span class="ot">]</span><span class="fu">,</span></span>
-    <span class="dt">&quot;streamingConnectionIdleTimeout&quot;</span><span class="fu">:</span> <span class="st">&quot;4h0m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nodeStatusUpdateFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;10s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nodeStatusReportFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;5m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nodeLeaseDurationSeconds&quot;</span><span class="fu">:</span> <span class="dv">40</span><span class="fu">,</span></span>
-    <span class="dt">&quot;imageMinimumGCAge&quot;</span><span class="fu">:</span> <span class="st">&quot;2m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;imageMaximumGCAge&quot;</span><span class="fu">:</span> <span class="st">&quot;0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;imageGCHighThresholdPercent&quot;</span><span class="fu">:</span> <span class="dv">85</span><span class="fu">,</span></span>
-    <span class="dt">&quot;imageGCLowThresholdPercent&quot;</span><span class="fu">:</span> <span class="dv">80</span><span class="fu">,</span></span>
-    <span class="dt">&quot;volumeStatsAggPeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;1m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;cgroupsPerQOS&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;cgroupDriver&quot;</span><span class="fu">:</span> <span class="st">&quot;systemd&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;cpuManagerPolicy&quot;</span><span class="fu">:</span> <span class="st">&quot;none&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;cpuManagerReconcilePeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;10s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;memoryManagerPolicy&quot;</span><span class="fu">:</span> <span class="st">&quot;None&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;topologyManagerPolicy&quot;</span><span class="fu">:</span> <span class="st">&quot;none&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;topologyManagerScope&quot;</span><span class="fu">:</span> <span class="st">&quot;container&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;runtimeRequestTimeout&quot;</span><span class="fu">:</span> <span class="st">&quot;2m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;hairpinMode&quot;</span><span class="fu">:</span> <span class="st">&quot;promiscuous-bridge&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;maxPods&quot;</span><span class="fu">:</span> <span class="dv">110</span><span class="fu">,</span></span>
-    <span class="dt">&quot;podPidsLimit&quot;</span><span class="fu">:</span> <span class="dv">-1</span><span class="fu">,</span></span>
-    <span class="dt">&quot;resolvConf&quot;</span><span class="fu">:</span> <span class="st">&quot;/run/systemd/resolve/resolv.conf&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;cpuCFSQuota&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;cpuCFSQuotaPeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;100ms&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nodeStatusMaxImages&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
-    <span class="dt">&quot;maxOpenFiles&quot;</span><span class="fu">:</span> <span class="dv">1000000</span><span class="fu">,</span></span>
-    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;application/vnd.kubernetes.protobuf&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;kubeAPIQPS&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
-    <span class="dt">&quot;kubeAPIBurst&quot;</span><span class="fu">:</span> <span class="dv">100</span><span class="fu">,</span></span>
-    <span class="dt">&quot;serializeImagePulls&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;evictionHard&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;imagefs.available&quot;</span><span class="fu">:</span> <span class="st">&quot;15%&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;memory.available&quot;</span><span class="fu">:</span> <span class="st">&quot;100Mi&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;nodefs.available&quot;</span><span class="fu">:</span> <span class="st">&quot;10%&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;nodefs.inodesFree&quot;</span><span class="fu">:</span> <span class="st">&quot;5%&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;imagefs.inodesFree&quot;</span><span class="fu">:</span> <span class="st">&quot;5%&quot;</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;evictionPressureTransitionPeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;1m0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;mergeDefaultEvictionSettings&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-    <span class="dt">&quot;enableControllerAttachDetach&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;makeIPTablesUtilChains&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iptablesMasqueradeBit&quot;</span><span class="fu">:</span> <span class="dv">14</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iptablesDropBit&quot;</span><span class="fu">:</span> <span class="dv">15</span><span class="fu">,</span></span>
-    <span class="dt">&quot;featureGates&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;AllAlpha&quot;</span><span class="fu">:</span> <span class="kw">false</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;failSwapOn&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-    <span class="dt">&quot;memorySwap&quot;</span><span class="fu">:</span> <span class="fu">{},</span></span>
-    <span class="dt">&quot;containerLogMaxSize&quot;</span><span class="fu">:</span> <span class="st">&quot;10Mi&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;containerLogMaxFiles&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
-    <span class="dt">&quot;configMapAndSecretChangeDetectionStrategy&quot;</span><span class="fu">:</span> <span class="st">&quot;Watch&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;enforceNodeAllocatable&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-      <span class="st">&quot;pods&quot;</span></span>
-    <span class="ot">]</span><span class="fu">,</span></span>
-    <span class="dt">&quot;volumePluginDir&quot;</span><span class="fu">:</span> <span class="st">&quot;/usr/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;logging&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;format&quot;</span><span class="fu">:</span> <span class="st">&quot;text&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;flushFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;5s&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;verbosity&quot;</span><span class="fu">:</span> <span class="dv">3</span><span class="fu">,</span></span>
-      <span class="dt">&quot;options&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;json&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-          <span class="dt">&quot;infoBufferSize&quot;</span><span class="fu">:</span> <span class="st">&quot;0&quot;</span></span>
-        <span class="fu">}</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;enableSystemLogHandler&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;enableSystemLogQuery&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-    <span class="dt">&quot;shutdownGracePeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;shutdownGracePeriodCriticalPods&quot;</span><span class="fu">:</span> <span class="st">&quot;0s&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;enableProfilingHandler&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;enableDebugFlagsHandler&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;seccompDefault&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-    <span class="dt">&quot;registerNode&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;localStorageCapacityIsolation&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
-    <span class="dt">&quot;containerRuntimeEndpoint&quot;</span><span class="fu">:</span> <span class="st">&quot;unix:///var/run/crio/crio.sock&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div></li>
+<pre class="bash"><code class="language-bash">curl -X GET http://127.0.0.1:8001/api/v1/nodes/&lt;node-name&gt;/proxy/configz | jq .</code></pre>
+<pre class="json"><code class="language-json">{
+  &quot;kubeletconfig&quot;: {
+    &quot;enableServer&quot;: true,
+    &quot;staticPodPath&quot;: &quot;/var/run/kubernetes/static-pods&quot;,
+    &quot;syncFrequency&quot;: &quot;1m0s&quot;,
+    &quot;fileCheckFrequency&quot;: &quot;20s&quot;,
+    &quot;httpCheckFrequency&quot;: &quot;20s&quot;,
+    &quot;address&quot;: &quot;192.168.1.16&quot;,
+    &quot;port&quot;: 10250,
+    &quot;readOnlyPort&quot;: 10255,
+    &quot;tlsCertFile&quot;: &quot;/var/lib/kubelet/pki/kubelet.crt&quot;,
+    &quot;tlsPrivateKeyFile&quot;: &quot;/var/lib/kubelet/pki/kubelet.key&quot;,
+    &quot;rotateCertificates&quot;: true,
+    &quot;authentication&quot;: {
+      &quot;x509&quot;: {
+        &quot;clientCAFile&quot;: &quot;/var/run/kubernetes/client-ca.crt&quot;
+      },
+      &quot;webhook&quot;: {
+        &quot;enabled&quot;: true,
+        &quot;cacheTTL&quot;: &quot;2m0s&quot;
+      },
+      &quot;anonymous&quot;: {
+        &quot;enabled&quot;: true
+      }
+    },
+    &quot;authorization&quot;: {
+      &quot;mode&quot;: &quot;AlwaysAllow&quot;,
+      &quot;webhook&quot;: {
+        &quot;cacheAuthorizedTTL&quot;: &quot;5m0s&quot;,
+        &quot;cacheUnauthorizedTTL&quot;: &quot;30s&quot;
+      }
+    },
+    &quot;registryPullQPS&quot;: 5,
+    &quot;registryBurst&quot;: 10,
+    &quot;eventRecordQPS&quot;: 50,
+    &quot;eventBurst&quot;: 100,
+    &quot;enableDebuggingHandlers&quot;: true,
+    &quot;healthzPort&quot;: 10248,
+    &quot;healthzBindAddress&quot;: &quot;127.0.0.1&quot;,
+    &quot;oomScoreAdj&quot;: -999,
+    &quot;clusterDomain&quot;: &quot;cluster.local&quot;,
+    &quot;clusterDNS&quot;: [
+      &quot;10.0.0.10&quot;
+    ],
+    &quot;streamingConnectionIdleTimeout&quot;: &quot;4h0m0s&quot;,
+    &quot;nodeStatusUpdateFrequency&quot;: &quot;10s&quot;,
+    &quot;nodeStatusReportFrequency&quot;: &quot;5m0s&quot;,
+    &quot;nodeLeaseDurationSeconds&quot;: 40,
+    &quot;imageMinimumGCAge&quot;: &quot;2m0s&quot;,
+    &quot;imageMaximumGCAge&quot;: &quot;0s&quot;,
+    &quot;imageGCHighThresholdPercent&quot;: 85,
+    &quot;imageGCLowThresholdPercent&quot;: 80,
+    &quot;volumeStatsAggPeriod&quot;: &quot;1m0s&quot;,
+    &quot;cgroupsPerQOS&quot;: true,
+    &quot;cgroupDriver&quot;: &quot;systemd&quot;,
+    &quot;cpuManagerPolicy&quot;: &quot;none&quot;,
+    &quot;cpuManagerReconcilePeriod&quot;: &quot;10s&quot;,
+    &quot;memoryManagerPolicy&quot;: &quot;None&quot;,
+    &quot;topologyManagerPolicy&quot;: &quot;none&quot;,
+    &quot;topologyManagerScope&quot;: &quot;container&quot;,
+    &quot;runtimeRequestTimeout&quot;: &quot;2m0s&quot;,
+    &quot;hairpinMode&quot;: &quot;promiscuous-bridge&quot;,
+    &quot;maxPods&quot;: 110,
+    &quot;podPidsLimit&quot;: -1,
+    &quot;resolvConf&quot;: &quot;/run/systemd/resolve/resolv.conf&quot;,
+    &quot;cpuCFSQuota&quot;: true,
+    &quot;cpuCFSQuotaPeriod&quot;: &quot;100ms&quot;,
+    &quot;nodeStatusMaxImages&quot;: 50,
+    &quot;maxOpenFiles&quot;: 1000000,
+    &quot;contentType&quot;: &quot;application/vnd.kubernetes.protobuf&quot;,
+    &quot;kubeAPIQPS&quot;: 50,
+    &quot;kubeAPIBurst&quot;: 100,
+    &quot;serializeImagePulls&quot;: true,
+    &quot;evictionHard&quot;: {
+      &quot;imagefs.available&quot;: &quot;15%&quot;,
+      &quot;memory.available&quot;: &quot;100Mi&quot;,
+      &quot;nodefs.available&quot;: &quot;10%&quot;,
+      &quot;nodefs.inodesFree&quot;: &quot;5%&quot;,
+      &quot;imagefs.inodesFree&quot;: &quot;5%&quot;
+    },
+    &quot;evictionPressureTransitionPeriod&quot;: &quot;1m0s&quot;,
+    &quot;mergeDefaultEvictionSettings&quot;: false,
+    &quot;enableControllerAttachDetach&quot;: true,
+    &quot;makeIPTablesUtilChains&quot;: true,
+    &quot;iptablesMasqueradeBit&quot;: 14,
+    &quot;iptablesDropBit&quot;: 15,
+    &quot;featureGates&quot;: {
+      &quot;AllAlpha&quot;: false
+    },
+    &quot;failSwapOn&quot;: false,
+    &quot;memorySwap&quot;: {},
+    &quot;containerLogMaxSize&quot;: &quot;10Mi&quot;,
+    &quot;containerLogMaxFiles&quot;: 5,
+    &quot;configMapAndSecretChangeDetectionStrategy&quot;: &quot;Watch&quot;,
+    &quot;enforceNodeAllocatable&quot;: [
+      &quot;pods&quot;
+    ],
+    &quot;volumePluginDir&quot;: &quot;/usr/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;,
+    &quot;logging&quot;: {
+      &quot;format&quot;: &quot;text&quot;,
+      &quot;flushFrequency&quot;: &quot;5s&quot;,
+      &quot;verbosity&quot;: 3,
+      &quot;options&quot;: {
+        &quot;json&quot;: {
+          &quot;infoBufferSize&quot;: &quot;0&quot;
+        }
+      }
+    },
+    &quot;enableSystemLogHandler&quot;: true,
+    &quot;enableSystemLogQuery&quot;: false,
+    &quot;shutdownGracePeriod&quot;: &quot;0s&quot;,
+    &quot;shutdownGracePeriodCriticalPods&quot;: &quot;0s&quot;,
+    &quot;enableProfilingHandler&quot;: true,
+    &quot;enableDebugFlagsHandler&quot;: true,
+    &quot;seccompDefault&quot;: false,
+    &quot;registerNode&quot;: true,
+    &quot;localStorageCapacityIsolation&quot;: true,
+    &quot;containerRuntimeEndpoint&quot;: &quot;unix:///var/run/crio/crio.sock&quot;
+  }
+}</code></pre></li>
 </ol>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -485,6 +496,7 @@ document</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -493,6 +505,8 @@ document</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

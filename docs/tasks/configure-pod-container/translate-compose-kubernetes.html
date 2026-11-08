@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -151,17 +166,17 @@ downloading the binary from the latest GitHub release.</p>
 current releases on the <a
 href="https://github.com/kubernetes/kompose/releases">GitHub release
 page</a>.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># Linux</span></span>
-<span class="ex">curl</span> <span class="at">-L</span> https://github.com/kubernetes/kompose/releases/download/v1.34.0/kompose-linux-amd64 <span class="at">-o</span> kompose</span>
-</span>
-<span class="co"># macOS</span></span>
-<span class="ex">curl</span> <span class="at">-L</span> https://github.com/kubernetes/kompose/releases/download/v1.34.0/kompose-darwin-amd64 <span class="at">-o</span> kompose</span>
-</span>
-<span class="co"># Windows</span></span>
-<span class="ex">curl</span> <span class="at">-L</span> https://github.com/kubernetes/kompose/releases/download/v1.34.0/kompose-windows-amd64.exe <span class="at">-o</span> kompose.exe</span>
-</span>
-<span class="fu">chmod</span> +x kompose</span>
-<span class="fu">sudo</span> mv ./kompose /usr/local/bin/kompose</span></code></pre></div>
+<pre class="sh"><code class="language-sh"># Linux
+curl -L https://github.com/kubernetes/kompose/releases/download/v1.34.0/kompose-linux-amd64 -o kompose
+
+# macOS
+curl -L https://github.com/kubernetes/kompose/releases/download/v1.34.0/kompose-darwin-amd64 -o kompose
+
+# Windows
+curl -L https://github.com/kubernetes/kompose/releases/download/v1.34.0/kompose-windows-amd64.exe -o kompose.exe
+
+chmod +x kompose
+sudo mv ./kompose /usr/local/bin/kompose</code></pre>
 <p>Alternatively, you can download the <a
 href="https://github.com/kubernetes/kompose/releases">tarball</a>.</p>
 <div class="tab-label">
@@ -169,14 +184,13 @@ href="https://github.com/kubernetes/kompose/releases">tarball</a>.</p>
 </div>
 <p>Installing using <code>go get</code> pulls from the master branch
 with the latest development changes.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">go</span> get <span class="at">-u</span> github.com/kubernetes/kompose</span></code></pre></div>
+<pre class="sh"><code class="language-sh">go get -u github.com/kubernetes/kompose</code></pre>
 <div class="tab-label">
 <p>Homebrew (macOS)</p>
 </div>
 <p>On macOS you can install the latest release via <a
 href="https://brew.sh">Homebrew</a>:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">brew</span> install kompose</span></code></pre></div>
+<pre class="bash"><code class="language-bash">brew install kompose</code></pre>
 </div>
 <h2 id="use-kompose">Use Kompose</h2>
 <p>In a few steps, we'll take you from Docker Compose to Kubernetes. All
@@ -185,48 +199,45 @@ you need is an existing <code>docker-compose.yml</code> file.</p>
 <li><p>Go to the directory containing your
 <code>docker-compose.yml</code> file. If you don't have one, test using
 this one.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"></span>
-<span class="fu">services</span><span class="kw">:</span></span>
-</span>
-<span class="at">  </span><span class="fu">redis-leader</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">container_name</span><span class="kw">:</span><span class="at"> redis-leader</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;6379&quot;</span></span>
-</span>
-<span class="at">  </span><span class="fu">redis-replica</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">container_name</span><span class="kw">:</span><span class="at"> redis-replica</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;6379&quot;</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> redis-server --replicaof redis-leader 6379 --dir /tmp</span></span>
-</span>
-<span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">container_name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> quay.io/kompose/web</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;8080:8080&quot;</span></span>
-<span class="at">    </span><span class="fu">environment</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">GET_HOSTS_FROM=dns</span></span>
-<span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">kompose.service.type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">
+services:
+
+  redis-leader:
+    container_name: redis-leader
+    image: redis
+    ports:
+      - &quot;6379&quot;
+
+  redis-replica:
+    container_name: redis-replica
+    image: redis
+    ports:
+      - &quot;6379&quot;
+    command: redis-server --replicaof redis-leader 6379 --dir /tmp
+
+  web:
+    container_name: web
+    image: quay.io/kompose/web
+    ports:
+      - &quot;8080:8080&quot;
+    environment:
+      - GET_HOSTS_FROM=dns
+    labels:
+      kompose.service.type: LoadBalancer</code></pre></li>
 <li><p>To convert the <code>docker-compose.yml</code> file to files that
 you can use with <code>kubectl</code>, run <code>kompose convert</code>
 and then <code>kubectl apply -f &lt;output file&gt;</code>.</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kompose</span> convert</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kompose convert</code></pre>
 <p>The output is similar to:</p>
-<pre class="none"><code>INFO Kubernetes file &quot;redis-leader-service.yaml&quot; created
+<pre class="none"><code class="language-none">INFO Kubernetes file &quot;redis-leader-service.yaml&quot; created
 INFO Kubernetes file &quot;redis-replica-service.yaml&quot; created
 INFO Kubernetes file &quot;web-tcp-service.yaml&quot; created
 INFO Kubernetes file &quot;redis-leader-deployment.yaml&quot; created
 INFO Kubernetes file &quot;redis-replica-deployment.yaml&quot; created
 INFO Kubernetes file &quot;web-deployment.yaml&quot; created</code></pre>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"> <span class="ex">kubectl</span> apply <span class="at">-f</span> web-tcp-service.yaml,redis-leader-service.yaml,redis-replica-service.yaml,web-deployment.yaml,redis-leader-deployment.yaml,redis-replica-deployment.yaml</span></code></pre></div>
+<pre class="bash"><code class="language-bash"> kubectl apply -f web-tcp-service.yaml,redis-leader-service.yaml,redis-replica-service.yaml,web-deployment.yaml,redis-leader-deployment.yaml,redis-replica-deployment.yaml</code></pre>
 <p>The output is similar to:</p>
-<pre class="none"><code>deployment.apps/redis-leader created
+<pre class="none"><code class="language-none">deployment.apps/redis-leader created
 deployment.apps/redis-replica created
 deployment.apps/web created
 service/redis-leader created
@@ -236,12 +247,10 @@ service/web-tcp created</code></pre>
 <li><p>Access your application.</p>
 <p>If you're already using <code>minikube</code> for your development
 process:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">minikube</span> service web-tcp</span></code></pre></div>
+<pre class="bash"><code class="language-bash">minikube service web-tcp</code></pre>
 <p>Otherwise, let's look up what IP your service is using!</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> describe svc web-tcp</span></code></pre></div>
-<pre class="none"><code> Name:                     web-tcp
+<pre class="sh"><code class="language-sh">kubectl describe svc web-tcp</code></pre>
+<pre class="none"><code class="language-none"> Name:                     web-tcp
  Namespace:                default
  Labels:                   io.kompose.service=web-tcp
  Annotations:              kompose.cmd: kompose convert
@@ -262,14 +271,12 @@ class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</sp
  Events:                   &lt;none&gt;</code></pre>
 <p>If you're using a cloud provider, your IP will be listed next to
 <code>LoadBalancer Ingress</code>.</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">curl</span> http://192.0.2.89</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">curl http://192.0.2.89</code></pre></li>
 <li><p>Clean-up.</p>
 <p>After you are finished testing out the example application
 deployment, simply run the following command in your shell to delete the
 resources used.</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> delete <span class="at">-f</span> web-tcp-service.yaml,redis-leader-service.yaml,redis-replica-service.yaml,web-deployment.yaml,redis-leader-deployment.yaml,redis-replica-deployment.yaml</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl delete -f web-tcp-service.yaml,redis-leader-service.yaml,redis-replica-service.yaml,web-deployment.yaml,redis-leader-deployment.yaml,redis-replica-deployment.yaml</code></pre></li>
 </ol>
 <h2 id="user-guide">User Guide</h2>
 <ul>
@@ -294,8 +301,8 @@ by default.</p>
 into Kubernetes and OpenShift objects.</p>
 <h3 id="kubernetes-kompose-convert-example">Kubernetes
 <code>kompose convert</code> example</h3>
-<pre class="shell"><code>kompose --file docker-voting.yml convert</code></pre>
-<pre class="none"><code>WARN Unsupported key networks - ignoring
+<pre class="shell"><code class="language-shell">kompose --file docker-voting.yml convert</code></pre>
+<pre class="none"><code class="language-none">WARN Unsupported key networks - ignoring
 WARN Unsupported key build - ignoring
 INFO Kubernetes file &quot;worker-svc.yaml&quot; created
 INFO Kubernetes file &quot;db-svc.yaml&quot; created
@@ -307,13 +314,13 @@ INFO Kubernetes file &quot;result-deployment.yaml&quot; created
 INFO Kubernetes file &quot;vote-deployment.yaml&quot; created
 INFO Kubernetes file &quot;worker-deployment.yaml&quot; created
 INFO Kubernetes file &quot;db-deployment.yaml&quot; created</code></pre>
-<pre class="shell"><code>ls</code></pre>
-<pre class="none"><code>db-deployment.yaml  docker-compose.yml         docker-gitlab.yml  redis-deployment.yaml  result-deployment.yaml  vote-deployment.yaml  worker-deployment.yaml
+<pre class="shell"><code class="language-shell">ls</code></pre>
+<pre class="none"><code class="language-none">db-deployment.yaml  docker-compose.yml         docker-gitlab.yml  redis-deployment.yaml  result-deployment.yaml  vote-deployment.yaml  worker-deployment.yaml
 db-svc.yaml         docker-voting.yml          redis-svc.yaml     result-svc.yaml        vote-svc.yaml           worker-svc.yaml</code></pre>
 <p>You can also provide multiple docker-compose files at the same
 time:</p>
-<pre class="shell"><code>kompose -f docker-compose.yml -f docker-guestbook.yml convert</code></pre>
-<pre class="none"><code>INFO Kubernetes file &quot;frontend-service.yaml&quot; created         
+<pre class="shell"><code class="language-shell">kompose -f docker-compose.yml -f docker-guestbook.yml convert</code></pre>
+<pre class="none"><code class="language-none">INFO Kubernetes file &quot;frontend-service.yaml&quot; created         
 INFO Kubernetes file &quot;mlbparks-service.yaml&quot; created         
 INFO Kubernetes file &quot;mongodb-service.yaml&quot; created          
 INFO Kubernetes file &quot;redis-master-service.yaml&quot; created     
@@ -324,8 +331,8 @@ INFO Kubernetes file &quot;mongodb-deployment.yaml&quot; created
 INFO Kubernetes file &quot;mongodb-claim0-persistentvolumeclaim.yaml&quot; created
 INFO Kubernetes file &quot;redis-master-deployment.yaml&quot; created  
 INFO Kubernetes file &quot;redis-slave-deployment.yaml&quot; created   </code></pre>
-<pre class="shell"><code>ls</code></pre>
-<pre class="none"><code>mlbparks-deployment.yaml  mongodb-service.yaml                       redis-slave-service.jsonmlbparks-service.yaml  
+<pre class="shell"><code class="language-shell">ls</code></pre>
+<pre class="none"><code class="language-none">mlbparks-deployment.yaml  mongodb-service.yaml                       redis-slave-service.jsonmlbparks-service.yaml  
 frontend-deployment.yaml  mongodb-claim0-persistentvolumeclaim.yaml  redis-master-service.yaml
 frontend-service.yaml     mongodb-deployment.yaml                    redis-slave-deployment.yaml
 redis-master-deployment.yaml</code></pre>
@@ -334,9 +341,8 @@ merged. Any configuration that is common will be overridden by
 subsequent file.</p>
 <h3 id="openshift-kompose-convert-example">OpenShift
 <code>kompose convert</code> example</h3>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kompose</span> <span class="at">--provider</span> openshift <span class="at">--file</span> docker-voting.yml convert</span></code></pre></div>
-<pre class="none"><code>WARN [worker] Service cannot be created because of missing port.
+<pre class="sh"><code class="language-sh">kompose --provider openshift --file docker-voting.yml convert</code></pre>
+<pre class="none"><code class="language-none">WARN [worker] Service cannot be created because of missing port.
 INFO OpenShift file &quot;vote-service.yaml&quot; created             
 INFO OpenShift file &quot;db-service.yaml&quot; created               
 INFO OpenShift file &quot;redis-service.yaml&quot; created            
@@ -357,9 +363,8 @@ as the source repo, and the current branch as the source branch for the
 build. You can specify a different source repo and branch using
 <code>--build-repo</code> and <code>--build-branch</code> options
 respectively.</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kompose</span> <span class="at">--provider</span> openshift <span class="at">--file</span> buildconfig/docker-compose.yml convert</span></code></pre></div>
-<pre class="none"><code>WARN [foo] Service cannot be created because of missing port.
+<pre class="sh"><code class="language-sh">kompose --provider openshift --file buildconfig/docker-compose.yml convert</code></pre>
+<pre class="none"><code class="language-none">WARN [foo] Service cannot be created because of missing port.
 INFO OpenShift Buildconfig using git@github.com:rtnpro/kompose.git::master as source.
 INFO OpenShift file &quot;foo-deploymentconfig.yaml&quot; created     
 INFO OpenShift file &quot;foo-imagestream.yaml&quot; created          
@@ -384,25 +389,23 @@ href="../../concepts/workloads/controllers/replicationcontroller.html">Replicati
 Controllers</a> objects, <a
 href="../../concepts/workloads/controllers/daemonset.html">Daemon Sets</a>,
 or <a target="_blank" rel="noopener" href="https://github.com/helm/helm">Helm</a> charts.</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kompose</span> convert <span class="at">-j</span></span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;redis-svc.json&quot;</span> created</span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;web-svc.json&quot;</span> created</span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;redis-deployment.json&quot;</span> created</span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;web-deployment.json&quot;</span> created</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kompose convert -j
+INFO Kubernetes file &quot;redis-svc.json&quot; created
+INFO Kubernetes file &quot;web-svc.json&quot; created
+INFO Kubernetes file &quot;redis-deployment.json&quot; created
+INFO Kubernetes file &quot;web-deployment.json&quot; created</code></pre>
 <p>The <code>*-deployment.json</code> files contain the Deployment
 objects.</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kompose</span> convert <span class="at">--replication-controller</span></span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;redis-svc.yaml&quot;</span> created</span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;web-svc.yaml&quot;</span> created</span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;redis-replicationcontroller.yaml&quot;</span> created</span>
-<span class="ex">INFO</span> Kubernetes file <span class="st">&quot;web-replicationcontroller.yaml&quot;</span> created</span></code></pre></div>
+<pre class="sh"><code class="language-sh">kompose convert --replication-controller
+INFO Kubernetes file &quot;redis-svc.yaml&quot; created
+INFO Kubernetes file &quot;web-svc.yaml&quot; created
+INFO Kubernetes file &quot;redis-replicationcontroller.yaml&quot; created
+INFO Kubernetes file &quot;web-replicationcontroller.yaml&quot; created</code></pre>
 <p>The <code>*-replicationcontroller.yaml</code> files contain the
 Replication Controller objects. If you want to specify replicas (default
 is 1), use <code>--replicas</code> flag:
 <code>kompose convert --replication-controller --replicas 3</code>.</p>
-<pre class="shell"><code>kompose convert --daemon-set
+<pre class="shell"><code class="language-shell">kompose convert --daemon-set
 INFO Kubernetes file &quot;redis-svc.yaml&quot; created
 INFO Kubernetes file &quot;web-svc.yaml&quot; created
 INFO Kubernetes file &quot;redis-daemonset.yaml&quot; created
@@ -411,14 +414,14 @@ INFO Kubernetes file &quot;web-daemonset.yaml&quot; created</code></pre>
 objects.</p>
 <p>If you want to generate a Chart to be used with <a
 href="https://github.com/kubernetes/helm">Helm</a> run:</p>
-<pre class="shell"><code>kompose convert -c</code></pre>
-<pre class="none"><code>INFO Kubernetes file &quot;web-svc.yaml&quot; created
+<pre class="shell"><code class="language-shell">kompose convert -c</code></pre>
+<pre class="none"><code class="language-none">INFO Kubernetes file &quot;web-svc.yaml&quot; created
 INFO Kubernetes file &quot;redis-svc.yaml&quot; created
 INFO Kubernetes file &quot;web-deployment.yaml&quot; created
 INFO Kubernetes file &quot;redis-deployment.yaml&quot; created
 chart created in &quot;./docker-compose/&quot;</code></pre>
-<pre class="shell"><code>tree docker-compose/</code></pre>
-<pre class="none"><code>docker-compose
+<pre class="shell"><code class="language-shell">tree docker-compose/</code></pre>
+<pre class="none"><code class="language-none">docker-compose
 ├── Chart.yaml
 ├── README.md
 └── templates
@@ -436,18 +439,17 @@ service's behavior upon conversion.</p>
 <li><p><code>kompose.service.type</code> defines the type of service to
 be created.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="fu">services</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">nginx</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">dockerfile</span><span class="kw">:</span><span class="at"> foobar</span></span>
-<span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> ./foobar</span></span>
-<span class="at">    </span><span class="fu">cap_add</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">ALL</span></span>
-<span class="at">    </span><span class="fu">container_name</span><span class="kw">:</span><span class="at"> foobar</span></span>
-<span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">kompose.service.type</span><span class="kw">:</span><span class="at"> nodeport</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">version: &quot;2&quot;
+services:
+  nginx:
+    image: nginx
+    dockerfile: foobar
+    build: ./foobar
+    cap_add:
+      - ALL
+    container_name: foobar
+    labels:
+      kompose.service.type: nodeport</code></pre></li>
 <li><p><code>kompose.service.expose</code> defines if the service needs
 to be made accessible from outside the cluster or not. If the value is
 set to "true", the provider sets the endpoint automatically, and for any
@@ -459,21 +461,20 @@ is assumed that an ingress controller has already been configured.</li>
 <li>For the OpenShift provider, a route is created.</li>
 </ul>
 <p>For example:</p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="fu">services</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">web</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> tuna/docker-counter23</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;5000:5000&quot;</span></span>
-<span class="at">    </span><span class="fu">links</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">redis</span></span>
-<span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">kompose.service.expose</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;counter.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">redis</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:3.0</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;6379&quot;</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">version: &quot;2&quot;
+services:
+  web:
+    image: tuna/docker-counter23
+    ports:
+    - &quot;5000:5000&quot;
+    links:
+    - redis
+    labels:
+      kompose.service.expose: &quot;counter.example.com&quot;
+  redis:
+    image: redis:3.0
+    ports:
+    - &quot;6379&quot;</code></pre></li>
 </ul>
 <p>The currently supported options are:</p>
 <table>
@@ -545,14 +546,13 @@ table below to see what happens on the <code>restart</code> value.</p>
 </div>
 <p>For example, the <code>pival</code> service will become pod down
 here. This container calculated value of <code>pi</code>.</p>
-<div class="sourceCode" id="cb35"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;2&#39;</span></span>
-</span>
-<span class="fu">services</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">pival</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> perl</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;perl&quot;</span><span class="kw">,</span><span class="at">  </span><span class="st">&quot;-Mbignum=bpi&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-wle&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;print bpi(2000)&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">restart</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;on-failure&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">version: &#39;2&#39;
+
+services:
+  pival:
+    image: perl
+    command: [&quot;perl&quot;,  &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]
+    restart: &quot;on-failure&quot;</code></pre>
 <h3 id="warning-about-deployment-configurations">Warning about
 Deployment Configurations</h3>
 <p>If the Docker Compose file has a volume specified for a service, the
@@ -639,6 +639,7 @@ keys.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -647,6 +648,8 @@ keys.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

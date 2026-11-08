@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -212,7 +227,7 @@ configuration line L70</a> like this:
 "<code>health [__PILLAR__LOCAL__DNS__]:8080</code>"</p></li>
 <li><p>Substitute the variables in the manifest with the right
 values:</p>
-<pre class="shell"><code># For historical reasons, the Service for CoreDNS is called &quot;kube-dns&quot;
+<pre class="shell"><code class="language-shell"># For historical reasons, the Service for CoreDNS is called &quot;kube-dns&quot;
 coredns=`kubectl get svc kube-dns -n kube-system -o jsonpath={.spec.clusterIP}`
 domain=&lt;cluster-domain&gt;
 localdns=&lt;node-local-address&gt;</code></pre>
@@ -222,8 +237,7 @@ localdns=&lt;node-local-address&gt;</code></pre>
 address chosen for NodeLocal DNSCache.</p>
 <ul>
 <li><p>If kube-proxy is running in IPTABLES mode:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sed</span> <span class="at">-i</span> <span class="st">&quot;s/__PILLAR__LOCAL__DNS__/</span><span class="va">$localdns</span><span class="st">/g; s/__PILLAR__DNS__DOMAIN__/</span><span class="va">$domain</span><span class="st">/g; s/__PILLAR__DNS__SERVER__/</span><span class="va">$coredns</span><span class="st">/g&quot;</span> nodelocaldns.yaml</span></code></pre></div>
+<pre class="bash"><code class="language-bash">sed -i &quot;s/__PILLAR__LOCAL__DNS__/$localdns/g; s/__PILLAR__DNS__DOMAIN__/$domain/g; s/__PILLAR__DNS__SERVER__/$coredns/g&quot; nodelocaldns.yaml</code></pre>
 <p><code>__PILLAR__CLUSTER__DNS__</code> and
 <code>__PILLAR__UPSTREAM__SERVERS__</code> will be populated by the
 <code>node-local-dns</code> pods. In this mode, the
@@ -231,8 +245,7 @@ class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sed</span
 as well as <code>&lt;node-local-address&gt;</code>, so pods can
 look up DNS records using either IP address.</p></li>
 <li><p>If kube-proxy is running in IPVS mode:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sed</span> <span class="at">-i</span> <span class="st">&quot;s/__PILLAR__LOCAL__DNS__/</span><span class="va">$localdns</span><span class="st">/g; s/__PILLAR__DNS__DOMAIN__/</span><span class="va">$domain</span><span class="st">/g; s/,__PILLAR__DNS__SERVER__//g; s/__PILLAR__CLUSTER__DNS__/</span><span class="va">$coredns</span><span class="st">/g&quot;</span> nodelocaldns.yaml</span></code></pre></div>
+<pre class="bash"><code class="language-bash">sed -i &quot;s/__PILLAR__LOCAL__DNS__/$localdns/g; s/__PILLAR__DNS__DOMAIN__/$domain/g; s/,__PILLAR__DNS__SERVER__//g; s/__PILLAR__CLUSTER__DNS__/$coredns/g&quot; nodelocaldns.yaml</code></pre>
 <p>In this mode, the <code>node-local-dns</code> pods listen only on
 <code>&lt;node-local-address&gt;</code>. The
 <code>node-local-dns</code> interface cannot bind the CoreDNS cluster IP
@@ -263,15 +276,14 @@ modified with the stubDomain configuration. Some cloud providers might
 not allow modifying the <code>node-local-dns</code> ConfigMap directly;
 in that case, a <code>kube-dns</code> ConfigMap in the format
 traditionally used by <code>kube-dns</code> can be used instead:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">stubDomains</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    </span><span class="kw">{</span><span class="fu">&quot;abc.com&quot; </span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;1.2.3.4&quot;</span><span class="kw">],</span><span class="at"> </span><span class="fu">&quot;my.cluster.local&quot; </span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;2.3.4.5&quot;</span><span class="kw">]}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: kube-system
+  name: kube-dns
+data:
+  stubDomains: |
+    {&quot;abc.com&quot; : [&quot;1.2.3.4&quot;], &quot;my.cluster.local&quot; : [&quot;2.3.4.5&quot;]}</code></pre>
 <h2 id="setting-memory-limits">Setting memory limits</h2>
 <p>The <code>node-local-dns</code> Pods use memory for storing cache
 entries and processing queries. Since they do not watch Kubernetes
@@ -368,6 +380,7 @@ in <em>recommender mode</em>, and then check its recommendations.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -376,6 +389,8 @@ in <em>recommender mode</em>, and then check its recommendations.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

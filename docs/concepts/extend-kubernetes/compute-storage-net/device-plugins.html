@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -134,7 +149,7 @@ adapters, and other similar computing resources that may require vendor
 specific initialization and setup.</p>
 <h2 id="device-plugin-registration">Device plugin registration</h2>
 <p>The kubelet exports a <code>Registration</code> gRPC service:</p>
-<pre class="grpc"><code>service Registration {
+<pre class="grpc"><code class="language-grpc">service Registration {
     rpc Register(RegisterRequest) returns (Empty) {}
 }</code></pre>
 <p>A device plugin can register itself with the kubelet through this
@@ -172,26 +187,25 @@ cannot be overcommitted.</li>
 advertises resource <code>hardware-vendor.example/foo</code> on certain
 nodes. Here is an example of a pod requesting this resource to run a
 demo workload:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo-container-1</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">hardware-vendor.example/foo</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="co">#</span></span>
-<span class="co"># This Pod needs 2 of the hardware-vendor.example/foo devices</span></span>
-<span class="co"># and can only schedule onto a Node that&#39;s able to satisfy</span></span>
-<span class="co"># that need.</span></span>
-<span class="co">#</span></span>
-<span class="co"># If the Node has more than 2 of those devices available, the</span></span>
-<span class="co"># remainder would be available for other Pods to use.</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo-pod
+spec:
+  containers:
+    - name: demo-container-1
+      image: registry.k8s.io/pause:3.8
+      resources:
+        limits:
+          hardware-vendor.example/foo: 2
+#
+# This Pod needs 2 of the hardware-vendor.example/foo devices
+# and can only schedule onto a Node that&#39;s able to satisfy
+# that need.
+#
+# If the Node has more than 2 of those devices available, the
+# remainder would be available for other Pods to use.</code></pre>
 <h2 id="device-plugin-implementation">Device plugin implementation</h2>
 <p>The general workflow of a device plugin includes the following
 steps:</p>
@@ -204,7 +218,7 @@ host path <code>/var/lib/kubelet/device-plugins/</code> (this path is
 hardcoded and is not affected by the kubelet's <code>--root-dir</code>
 or any other configuration), that implements the following
 interfaces:</p>
-<pre class="grpc"><code>service DevicePlugin {
+<pre class="grpc"><code class="language-grpc">service DevicePlugin {
       // GetDevicePluginOptions returns options to be communicated with Device Manager.
       rpc GetDevicePluginOptions(Empty) returns (DevicePluginOptions) {}
 
@@ -399,7 +413,7 @@ Instrumentation Guidelines</a>, identifying containers using
 prometheus labels.</p>
 <p>The kubelet provides a gRPC service to enable discovery of in-use
 devices, and to provide metadata for these devices:</p>
-<pre class="grpc"><code>// PodResourcesLister is a service provided by the kubelet that provides information about the
+<pre class="grpc"><code class="language-grpc">// PodResourcesLister is a service provided by the kubelet that provides information about the
 // node resources consumed by pods and containers on the node
 service PodResourcesLister {
     rpc List(ListPodResourcesRequest) returns (ListPodResourcesResponse) {}
@@ -418,7 +432,7 @@ provide information on resources of running pods allocated in
 <code>ResourceClaims</code> by the
 <code>DynamicResourceAllocation</code> API. Starting from Kubernetes
 v1.34, this feature is enabled by default.</p>
-<pre class="grpc"><code>// ListPodResourcesResponse is the response returned by List function
+<pre class="grpc"><code class="language-grpc">// ListPodResourcesResponse is the response returned by List function
 message ListPodResourcesResponse {
     repeated PodResources pod_resources = 1;
 }
@@ -533,7 +547,7 @@ health changes), client is expected to call
 sufficient in case of cpu and/or memory update and Kubelet needs to be
 restarted to reflect the correct resource capacity and allocatable.</p>
 </div>
-<pre class="grpc"><code>// AllocatableResourcesResponses contains information about all the devices known by the kubelet
+<pre class="grpc"><code class="language-grpc">// AllocatableResourcesResponses contains information about all the devices known by the kubelet
 message AllocatableResourcesResponse {
     repeated ContainerDevices devices = 1;
     repeated int64 cpu_ids = 2;
@@ -590,7 +604,7 @@ running Pod. It exposes information similar to those described in the
 <code>List</code> endpoint. The <code>Get</code> endpoint requires
 <code>PodName</code> and <code>PodNamespace</code> of the running
 Pod.</p>
-<pre class="grpc"><code>// GetPodResourcesRequest contains information about the pod
+<pre class="grpc"><code class="language-grpc">// GetPodResourcesRequest contains information about the pod
 message GetPodResourcesRequest {
     string pod_name = 1;
     string pod_namespace = 2;
@@ -610,7 +624,7 @@ plugin integration with the Topology Manager</h2>
 be co-ordinated in a Topology aligned manner. In order to do this, the
 Device Plugin API was extended to include a <code>TopologyInfo</code>
 struct.</p>
-<pre class="grpc"><code>message TopologyInfo {
+<pre class="grpc"><code class="language-grpc">message TopologyInfo {
     repeated NUMANode nodes = 1;
 }
 
@@ -766,6 +780,7 @@ Resource allocation by DRA</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -774,6 +789,8 @@ Resource allocation by DRA</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

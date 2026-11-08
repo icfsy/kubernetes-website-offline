@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -262,25 +277,24 @@ use the <code>agnhost</code> container image, which includes the
 <code>stress</code> utility. This workload will put a heavy load on one
 CPU core.</p>
 <p>Create a file named <code>cpu-pressure-pod.yaml</code>:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu-pressure-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu-stress</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.47</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;stress&quot;</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;--cpus&quot;</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: cpu-pressure-pod
+spec:
+  restartPolicy: Never
+  containers:
+  - name: cpu-stress
+    image: registry.k8s.io/e2e-test-images/agnhost:2.47
+    args:
+    - &quot;stress&quot;
+    - &quot;--cpus&quot;
+    - &quot;1&quot;
+    resources:
+      limits:
+        cpu: &quot;500m&quot;
+      requests:
+        cpu: &quot;500m&quot;</code></pre>
 <p>Apply it to your cluster:
 <code>kubectl apply -f cpu-pressure-pod.yaml</code></p>
 <h4 id="observing-cpu-pressure">Observing CPU Pressure</h4>
@@ -289,7 +303,7 @@ either the Summary API or the Prometheus metrics endpoint.</p>
 <p><strong>Using the Summary API:</strong></p>
 <p>Watch the summary stats for your node. In a separate terminal,
 run:</p>
-<pre class="shell"><code># Replace &lt;node-name&gt; with the name of a node in your cluster
+<pre class="shell"><code class="language-shell"># Replace &lt;node-name&gt; with the name of a node in your cluster
 kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/stats/summary&quot; | jq &#39;.pods[] | select(.podRef.name | contains(&quot;cpu-pressure-pod&quot;))&#39;</code></pre>
 <p>You will see the <code>some</code> PSI metrics for CPU increase in
 the summary API output. The <code>avg10</code> value for
@@ -298,37 +312,36 @@ are spending time stalled on the CPU.</p>
 <p><strong>Using the Prometheus metrics endpoint:</strong></p>
 <p>Query the <code>/metrics/cadvisor</code> endpoint to see the
 <code>container_pressure_cpu_waiting_seconds_total</code> metric.</p>
-<pre class="shell"><code># Replace &lt;node-name&gt; with the name of the node where the pod is running
+<pre class="shell"><code class="language-shell"># Replace &lt;node-name&gt; with the name of the node where the pod is running
 kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/metrics/cadvisor&quot; | \
     grep &#39;container_pressure_cpu_waiting_seconds_total{container=&quot;cpu-stress&quot;&#39;</code></pre>
 <p>The output should show an increasing value, indicating that the
 container is spending time stalled waiting for CPU resources.</p>
 <h4 id="cleanup">Cleanup</h4>
 <p>Clean up the Pod when you are finished:</p>
-<pre class="shell"><code>kubectl delete pod cpu-pressure-pod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod cpu-pressure-pod</code></pre>
 <h3 id="generating-memory-pressure">Generating Memory Pressure</h3>
 <p>This example creates a Pod that continuously writes to files in the
 container's writable layer, causing the kernel's page cache to grow and
 forcing memory reclamation, which generates pressure.</p>
 <p>Create a file named <code>memory-pressure-pod.yaml</code>:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-pressure-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-stress</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.47</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;i=0; while true; do dd if=/dev/zero of=testfile.$i bs=1M count=50 &amp;&gt;/dev/null; i=$(((i+1)%5)); sleep 0.1; done&quot;</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200M&quot;</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200M&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: memory-pressure-pod
+spec:
+  restartPolicy: Never
+  containers:
+  - name: memory-stress
+    image: registry.k8s.io/e2e-test-images/agnhost:2.47
+    command: [&quot;/bin/sh&quot;, &quot;-c&quot;]
+    args:
+    - &quot;i=0; while true; do dd if=/dev/zero of=testfile.$i bs=1M count=50 &amp;&gt;/dev/null; i=$(((i+1)%5)); sleep 0.1; done&quot;
+    resources:
+      limits:
+        memory: &quot;200M&quot;
+      requests:
+        memory: &quot;200M&quot;</code></pre>
 <p>Apply it to your cluster:
 <code>kubectl apply -f memory-pressure-pod.yaml</code></p>
 <h4 id="observing-memory-pressure">Observing Memory Pressure</h4>
@@ -336,56 +349,55 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 <p>In the summary output, you will observe an increase in the
 <code>full</code> PSI metrics for memory, indicating that the system is
 under significant memory pressure.</p>
-<pre class="shell"><code># Replace &lt;node-name&gt; with the name of a node in your cluster
+<pre class="shell"><code class="language-shell"># Replace &lt;node-name&gt; with the name of a node in your cluster
 kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/stats/summary&quot; | jq &#39;.pods[] | select(.podRef.name | contains(&quot;memory-pressure-pod&quot;))&#39;</code></pre>
 <p><strong>Using the Prometheus metrics endpoint:</strong></p>
 <p>Query the <code>/metrics/cadvisor</code> endpoint to see the
 <code>container_pressure_memory_waiting_seconds_total</code> metric.</p>
-<pre class="shell"><code># Replace &lt;node-name&gt; with the name of the node where the pod is running
+<pre class="shell"><code class="language-shell"># Replace &lt;node-name&gt; with the name of the node where the pod is running
 kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/metrics/cadvisor&quot; | \
     grep &#39;container_pressure_memory_waiting_seconds_total{container=&quot;memory-stress&quot;&#39;</code></pre>
 <p>In the output, you will observe an increasing value for the metric,
 indicating that the system is under significant memory pressure.</p>
 <h4 id="cleanup-1">Cleanup</h4>
 <p>Clean up the Pod when you are finished:</p>
-<pre class="shell"><code>kubectl delete pod memory-pressure-pod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod memory-pressure-pod</code></pre>
 <h3 id="generating-i-o-pressure">Generating I/O Pressure</h3>
 <p>This Pod generates I/O pressure by repeatedly writing a file to disk
 and using <code>sync</code> to flush the data from memory, which creates
 I/O stalls.</p>
 <p>Create a file named <code>io-pressure-pod.yaml</code>:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> io-pressure-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> io-stress</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.47</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;while true; do dd if=/dev/zero of=testfile bs=1M count=128 &amp;&gt;/dev/null; sync; rm testfile &amp;&gt;/dev/null; done&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: io-pressure-pod
+spec:
+  restartPolicy: Never
+  containers:
+  - name: io-stress
+    image: registry.k8s.io/e2e-test-images/agnhost:2.47
+    command: [&quot;/bin/sh&quot;, &quot;-c&quot;]
+    args:
+      - &quot;while true; do dd if=/dev/zero of=testfile bs=1M count=128 &amp;&gt;/dev/null; sync; rm testfile &amp;&gt;/dev/null; done&quot;</code></pre>
 <p>Apply this to your cluster:
 <code>kubectl apply -f io-pressure-pod.yaml</code></p>
 <h4 id="observing-i-o-pressure">Observing I/O Pressure</h4>
 <p><strong>Using the Summary API:</strong></p>
 <p>You will see the <code>some</code> PSI metrics for I/O increase as
 the Pod continuously writes to disk.</p>
-<pre class="shell"><code># Replace &lt;node-name&gt; with the name of a node in your cluster
+<pre class="shell"><code class="language-shell"># Replace &lt;node-name&gt; with the name of a node in your cluster
 kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/stats/summary&quot; | jq &#39;.pods[] | select(.podRef.name | contains(&quot;io-pressure-pod&quot;))&#39;</code></pre>
 <p><strong>Using the Prometheus metrics endpoint:</strong></p>
 <p>Query the <code>/metrics/cadvisor</code> endpoint to see the
 <code>container_pressure_io_waiting_seconds_total</code> metric.</p>
-<pre class="shell"><code># Replace &lt;node-name&gt; with the name of the node where the pod is running
+<pre class="shell"><code class="language-shell"># Replace &lt;node-name&gt; with the name of the node where the pod is running
 kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/metrics/cadvisor&quot; | \
     grep &#39;container_pressure_io_waiting_seconds_total{container=&quot;io-stress&quot;&#39;</code></pre>
 <p>You will see the metric's value increase as the Pod continuously
 writes to disk.</p>
 <h4 id="cleanup-2">Cleanup</h4>
 <p>Clean up the Pod when you are finished:</p>
-<pre class="shell"><code>kubectl delete pod io-pressure-pod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod io-pressure-pod</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <p>The task pages for <a
 href="../../tasks/debug/debug-cluster.html">Troubleshooting Clusters</a>
@@ -454,6 +466,7 @@ discuss how to use a metrics pipeline that rely on these data.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -462,6 +475,8 @@ discuss how to use a metrics pipeline that rely on these data.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

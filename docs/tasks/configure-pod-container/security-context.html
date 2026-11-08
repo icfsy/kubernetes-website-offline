@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -192,29 +207,28 @@ Containers in the Pod. Here is a configuration file for a Pod that has a
 <code>securityContext</code> and an <code>emptyDir</code> volume:</p>
 <div class="code-sample">
 <p><code>pods/security/security-context.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">    </span><span class="fu">runAsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
-<span class="at">    </span><span class="fu">fsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
-<span class="at">    </span><span class="fu">supplementalGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">4000</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-vol</span></span>
-<span class="at">    </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-demo</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sleep 1h&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-vol</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data/demo</span></span>
-<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+    supplementalGroups: [4000]
+  volumes:
+  - name: sec-ctx-vol
+    emptyDir: {}
+  containers:
+  - name: sec-ctx-demo
+    image: busybox:1.28
+    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;sleep 1h&quot; ]
+    volumeMounts:
+    - name: sec-ctx-vol
+      mountPath: /data/demo
+    securityContext:
+      allowPrivilegeEscalation: false</code></pre>
 </div>
 <p>In the configuration file, the <code>runAsUser</code> field specifies
 that for any Containers in the Pod, all processes run with user ID 1000.
@@ -230,39 +244,39 @@ Group ID 2000. Additionally, when the <code>supplementalGroups</code>
 field is specified, all processes of the container are also part of the
 specified groups. If this field is omitted, it means empty.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/security-context.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/security/security-context.yaml</code></pre>
 <p>Verify that the Pod's Container is running:</p>
-<pre class="shell"><code>kubectl get pod security-context-demo</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod security-context-demo</code></pre>
 <p>Get a shell to the running Container:</p>
-<pre class="shell"><code>kubectl exec -it security-context-demo -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it security-context-demo -- sh</code></pre>
 <p>In your shell, list the running processes:</p>
-<pre class="shell"><code>ps</code></pre>
+<pre class="shell"><code class="language-shell">ps</code></pre>
 <p>The output shows that the processes are running as user 1000, which
 is the value of <code>runAsUser</code>:</p>
-<pre class="none"><code>PID   USER     TIME  COMMAND
+<pre class="none"><code class="language-none">PID   USER     TIME  COMMAND
     1 1000      0:00 sleep 1h
     6 1000      0:00 sh
 ...</code></pre>
 <p>In your shell, navigate to <code>/data</code>, and list the one
 directory:</p>
-<pre class="shell"><code>cd /data
+<pre class="shell"><code class="language-shell">cd /data
 ls -l</code></pre>
 <p>The output shows that the <code>/data/demo</code> directory has group
 ID 2000, which is the value of <code>fsGroup</code>.</p>
-<pre class="none"><code>drwxrwsrwx 2 root 2000 4096 Jun  6 20:08 demo</code></pre>
+<pre class="none"><code class="language-none">drwxrwsrwx 2 root 2000 4096 Jun  6 20:08 demo</code></pre>
 <p>In your shell, navigate to <code>/data/demo</code>, and create a
 file:</p>
-<pre class="shell"><code>cd demo
+<pre class="shell"><code class="language-shell">cd demo
 echo hello &gt; testfile</code></pre>
 <p>List the file in the <code>/data/demo</code> directory:</p>
-<pre class="shell"><code>ls -l</code></pre>
+<pre class="shell"><code class="language-shell">ls -l</code></pre>
 <p>The output shows that <code>testfile</code> has group ID 2000, which
 is the value of <code>fsGroup</code>.</p>
-<pre class="none"><code>-rw-r--r-- 1 1000 2000 6 Jun  6 20:08 testfile</code></pre>
+<pre class="none"><code class="language-none">-rw-r--r-- 1 1000 2000 6 Jun  6 20:08 testfile</code></pre>
 <p>Run the following command:</p>
-<pre class="shell"><code>id</code></pre>
+<pre class="shell"><code class="language-shell">id</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>uid=1000 gid=3000 groups=2000,3000,4000</code></pre>
+<pre class="none"><code class="language-none">uid=1000 gid=3000 groups=2000,3000,4000</code></pre>
 <p>From the output, you can see that <code>gid</code> is 3000 which is
 same as the <code>runAsGroup</code> field. If the
 <code>runAsGroup</code> was omitted, the <code>gid</code> would remain
@@ -273,7 +287,7 @@ permissions for the root (0) group. You can also see that
 <code>fsGroup</code> and <code>supplementalGroups</code>, in addition to
 <code>gid</code>.</p>
 <p>Exit your shell:</p>
-<pre class="shell"><code>exit</code></pre>
+<pre class="shell"><code class="language-shell">exit</code></pre>
 <h3
 id="implicit-group-memberships-defined-in-etc-group-in-the-container-image">Implicit
 group memberships defined in <code>/etc/group</code> in the container
@@ -283,22 +297,21 @@ information defined in <code>/etc/group</code> in the container
 image.</p>
 <div class="code-sample">
 <p><code>pods/security/security-context-5.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">    </span><span class="fu">runAsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
-<span class="at">    </span><span class="fu">supplementalGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">4000</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-demo</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.45</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sleep 1h&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 3000
+    supplementalGroups: [4000]
+  containers:
+  - name: sec-ctx-demo
+    image: registry.k8s.io/e2e-test-images/agnhost:2.45
+    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;sleep 1h&quot; ]
+    securityContext:
+      allowPrivilegeEscalation: false</code></pre>
 </div>
 <p>This Pod security context contains <code>runAsUser</code>,
 <code>runAsGroup</code> and <code>supplementalGroups</code>. However,
@@ -306,29 +319,29 @@ you can see that the actual supplementary groups attached to the
 container process will include group IDs which come from
 <code>/etc/group</code> in the container image.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/security-context-5.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/security/security-context-5.yaml</code></pre>
 <p>Verify that the Pod's Container is running:</p>
-<pre class="shell"><code>kubectl get pod security-context-demo</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod security-context-demo</code></pre>
 <p>Get a shell to the running Container:</p>
-<pre class="shell"><code>kubectl exec -it security-context-demo -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it security-context-demo -- sh</code></pre>
 <p>Check the process identity:</p>
-<pre class="shell"><code>id</code></pre>
+<pre class="shell"><code class="language-shell">id</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>uid=1000 gid=3000 groups=3000,4000,50000</code></pre>
+<pre class="none"><code class="language-none">uid=1000 gid=3000 groups=3000,4000,50000</code></pre>
 <p>You can see that <code>groups</code> includes group ID
 <code>50000</code>. This is because the user (<code>uid=1000</code>),
 which is defined in the image, belongs to the group
 (<code>gid=50000</code>), which is defined in <code>/etc/group</code>
 inside the container image.</p>
 <p>Check the <code>/etc/group</code> in the container image:</p>
-<pre class="shell"><code>cat /etc/group</code></pre>
+<pre class="shell"><code class="language-shell">cat /etc/group</code></pre>
 <p>You can see that uid <code>1000</code> belongs to group
 <code>50000</code>.</p>
-<pre class="none"><code>...
+<pre class="none"><code class="language-none">...
 user-defined-in-image:x:1000:
 group-defined-in-image:x:50000:user-defined-in-image</code></pre>
 <p>Exit your shell:</p>
-<pre class="shell"><code>exit</code></pre>
+<pre class="shell"><code class="language-shell">exit</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -372,42 +385,41 @@ attached to the first container process in
 useful for detecting if implicit group ID's are attached.</p>
 <div class="code-sample">
 <p><code>pods/security/security-context-6.yaml</code></p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">    </span><span class="fu">runAsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
-<span class="at">    </span><span class="fu">supplementalGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">4000</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">supplementalGroupsPolicy</span><span class="kw">:</span><span class="at"> Strict</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-demo</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.45</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sleep 1h&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo
+spec:
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 3000
+    supplementalGroups: [4000]
+    supplementalGroupsPolicy: Strict
+  containers:
+  - name: sec-ctx-demo
+    image: registry.k8s.io/e2e-test-images/agnhost:2.45
+    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;sleep 1h&quot; ]
+    securityContext:
+      allowPrivilegeEscalation: false</code></pre>
 </div>
 <p>This pod manifest defines
 <code>supplementalGroupsPolicy=Strict</code>. You can see that no group
 memberships defined in <code>/etc/group</code> are merged to the
 supplementary groups for container processes.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/security-context-6.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/security/security-context-6.yaml</code></pre>
 <p>Verify that the Pod's Container is running:</p>
-<pre class="shell"><code>kubectl get pod security-context-demo</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod security-context-demo</code></pre>
 <p>Check the process identity:</p>
-<pre class="shell"><code>kubectl exec -it security-context-demo -- id</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it security-context-demo -- id</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>uid=1000 gid=3000 groups=3000,4000</code></pre>
+<pre class="none"><code class="language-none">uid=1000 gid=3000 groups=3000,4000</code></pre>
 <p>See the Pod's status:</p>
-<pre class="shell"><code>kubectl get pod security-context-demo -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod security-context-demo -o yaml</code></pre>
 <p>You can see that the
 <code>status.containerStatuses[].user.linux</code> field exposes the
 process identity attached to the first container process.</p>
-<pre class="none"><code>...
+<pre class="none"><code class="language-none">...
 status:
   containerStatuses:
   - name: sec-ctx-demo
@@ -458,13 +470,12 @@ SupplementalGroups control.</p>
 <li><a target="_blank" rel="noopener" href="https://cri-o.io/">CRI-O</a>, since v1.31</li>
 </ul>
 <p>You can see if the feature is supported in the Node status.</p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Node</span></span>
-<span class="co">...</span></span>
-<span class="er">status:</span></span>
-<span class="er">  features:</span></span>
-<span class="er">    supplementalGroupsPolicy: true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Node
+...
+status:
+  features:
+    supplementalGroupsPolicy: true</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -480,17 +491,16 @@ strictly, <strong>such pod creation will be rejected by kubelet because
 the node cannot ensure the specified policy</strong>. When your pod is
 rejected, you will see warning events with
 <code>reason=SupplementalGroupsPolicyNotSupported</code> like below:</p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Event</span></span>
-<span class="co">...</span></span>
-<span class="er">type: Warning</span></span>
-<span class="er">reason: SupplementalGroupsPolicyNotSupported</span></span>
-<span class="er">message: &quot;</span><span class="st">SupplementalGroupsPolicy=Strict is not supported in this node&quot;</span></span>
-<span class="fu">involvedObject</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Event
+...
+type: Warning
+reason: SupplementalGroupsPolicyNotSupported
+message: &quot;SupplementalGroupsPolicy=Strict is not supported in this node&quot;
+involvedObject:
+  apiVersion: v1
+  kind: Pod
+  ...</code></pre>
 </div>
 <h2
 id="configure-volume-permission-and-ownership-change-policy-for-pods">Configure
@@ -524,12 +534,11 @@ takes to change ownership and permission of a volume.</li>
 volume when volume is mounted.</li>
 </ul>
 <p>For example:</p>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">  </span><span class="fu">runAsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
-<span class="at">  </span><span class="fu">fsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
-<span class="at">  </span><span class="fu">fsGroupChangePolicy</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;OnRootMismatch&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">securityContext:
+  runAsUser: 1000
+  runAsGroup: 3000
+  fsGroup: 2000
+  fsGroupChangePolicy: &quot;OnRootMismatch&quot;</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -576,29 +585,28 @@ Volumes.</p>
 the Pod and the Container have a <code>securityContext</code> field:</p>
 <div class="code-sample">
 <p><code>pods/security/security-context-2.yaml</code></p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo-2</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-demo-2</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span>
-<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
-<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo-2
+spec:
+  securityContext:
+    runAsUser: 1000
+  containers:
+  - name: sec-ctx-demo-2
+    image: gcr.io/google-samples/hello-app:2.0
+    securityContext:
+      runAsUser: 2000
+      allowPrivilegeEscalation: false</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/security-context-2.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/security/security-context-2.yaml</code></pre>
 <p>Verify that the Pod's Container is running:</p>
-<pre class="shell"><code>kubectl get pod security-context-demo-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod security-context-demo-2</code></pre>
 <p>Get a shell into the running Container:</p>
-<pre class="shell"><code>kubectl exec -it security-context-demo-2 -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it security-context-demo-2 -- sh</code></pre>
 <p>In your shell, list the running processes:</p>
-<pre class="shell"><code>ps aux</code></pre>
+<pre class="shell"><code class="language-shell">ps aux</code></pre>
 <p>The output shows that the processes are running as user 2000. This is
 the value of <code>runAsUser</code> specified for the Container. It
 overrides the value 1000 that is specified for the Pod.</p>
@@ -607,7 +615,7 @@ overrides the value 1000 that is specified for the Pod.</p>
 2000         8  0.1  0.5 772124 22604 ?        Sl   20:36   0:00 node server.js
 ...</code></pre>
 <p>Exit your shell:</p>
-<pre class="shell"><code>exit</code></pre>
+<pre class="shell"><code class="language-shell">exit</code></pre>
 <h2 id="set-capabilities-for-a-container">Set capabilities for a
 Container</h2>
 <p>With <a
@@ -622,30 +630,29 @@ manifest.</p>
 not add or drop any Container capabilities:</p>
 <div class="code-sample">
 <p><code>pods/security/security-context-3.yaml</code></p>
-<div class="sourceCode" id="cb41"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo-3</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-3</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo-3
+spec:
+  containers:
+  - name: sec-ctx-3
+    image: gcr.io/google-samples/hello-app:2.0</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/security-context-3.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/security/security-context-3.yaml</code></pre>
 <p>Verify that the Pod's Container is running:</p>
-<pre class="shell"><code>kubectl get pod security-context-demo-3</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod security-context-demo-3</code></pre>
 <p>Get a shell into the running Container:</p>
-<pre class="shell"><code>kubectl exec -it security-context-demo-3 -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it security-context-demo-3 -- sh</code></pre>
 <p>In your shell, list the running processes:</p>
-<pre class="shell"><code>ps aux</code></pre>
+<pre class="shell"><code class="language-shell">ps aux</code></pre>
 <p>The output shows the process IDs (PIDs) for the Container:</p>
 <pre><code>USER  PID %CPU %MEM    VSZ   RSS TTY   STAT START   TIME COMMAND
 root    1  0.0  0.0   4336   796 ?     Ss   18:17   0:00 /bin/sh -c node server.js
 root    5  0.1  0.5 772124 22700 ?     Sl   18:17   0:00 node server.js</code></pre>
 <p>In your shell, view the status for process 1:</p>
-<pre class="shell"><code>cd /proc/1
+<pre class="shell"><code class="language-shell">cd /proc/1
 cat status</code></pre>
 <p>The output shows the capabilities bitmap for the process:</p>
 <pre><code>...
@@ -653,7 +660,7 @@ CapPrm: 00000000a80425fb
 CapEff: 00000000a80425fb
 ...</code></pre>
 <p>Make a note of the capabilities bitmap, and then exit your shell:</p>
-<pre class="shell"><code>exit</code></pre>
+<pre class="shell"><code class="language-shell">exit</code></pre>
 <p>Next, run a Container that is the same as the preceding container,
 except that it has additional capabilities set.</p>
 <p>Here is the configuration file for a Pod that runs one Container. The
@@ -661,25 +668,24 @@ configuration adds the <code>CAP_NET_ADMIN</code> and
 <code>CAP_SYS_TIME</code> capabilities:</p>
 <div class="code-sample">
 <p><code>pods/security/security-context-4.yaml</code></p>
-<div class="sourceCode" id="cb50"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo-4</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-4</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span>
-<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">capabilities</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">add</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;NET_ADMIN&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;SYS_TIME&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo-4
+spec:
+  containers:
+  - name: sec-ctx-4
+    image: gcr.io/google-samples/hello-app:2.0
+    securityContext:
+      capabilities:
+        add: [&quot;NET_ADMIN&quot;, &quot;SYS_TIME&quot;]</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/security-context-4.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/security/security-context-4.yaml</code></pre>
 <p>Get a shell into the running Container:</p>
-<pre class="shell"><code>kubectl exec -it security-context-demo-4 -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it security-context-demo-4 -- sh</code></pre>
 <p>In your shell, view the capabilities for process 1:</p>
-<pre class="shell"><code>cd /proc/1
+<pre class="shell"><code class="language-shell">cd /proc/1
 cat status</code></pre>
 <p>The output shows capabilities bitmap for the process:</p>
 <pre><code>...
@@ -722,20 +728,18 @@ Seccomp profile location (configured with the <code>--root-dir</code>
 flag).</p>
 <p>Here is an example that sets the Seccomp profile to the node's
 container runtime default profile:</p>
-<div class="sourceCode" id="cb56"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">securityContext:</span></span>
-<span class="er">  seccompProfile:</span></span>
-<span class="er">    type: RuntimeDefault</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+securityContext:
+  seccompProfile:
+    type: RuntimeDefault</code></pre>
 <p>Here is an example that sets the Seccomp profile to a pre-configured
 file at
 <code>&lt;kubelet-root-dir&gt;/seccomp/my-profiles/profile-allow.json</code>:</p>
-<div class="sourceCode" id="cb57"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">securityContext:</span></span>
-<span class="er">  seccompProfile:</span></span>
-<span class="er">    type: Localhost</span></span>
-<span class="er">    localhostProfile: my-profiles/profile-allow.json</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+securityContext:
+  seccompProfile:
+    type: Localhost
+    localhostProfile: my-profiles/profile-allow.json</code></pre>
 <h2 id="set-the-apparmor-profile-for-a-container">Set the AppArmor
 Profile for a Container</h2>
 <p>To set the AppArmor profile for a Container, include the
@@ -765,23 +769,21 @@ AppArmor disabled the Pod will be admitted but the Container will not be
 restricted by the <code>RuntimeDefault</code> profile.</p>
 <p>Here is an example that sets the AppArmor profile to the node's
 container runtime default profile:</p>
-<div class="sourceCode" id="cb58"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">containers:</span></span>
-<span class="er">- name: container-1</span></span>
-<span class="er">  securityContext:</span></span>
-<span class="er">    appArmorProfile:</span></span>
-<span class="er">      type: RuntimeDefault</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+containers:
+- name: container-1
+  securityContext:
+    appArmorProfile:
+      type: RuntimeDefault</code></pre>
 <p>Here is an example that sets the AppArmor profile to a pre-configured
 profile named <code>k8s-apparmor-example-deny-write</code>:</p>
-<div class="sourceCode" id="cb59"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">containers:</span></span>
-<span class="er">- name: container-1</span></span>
-<span class="er">  securityContext:</span></span>
-<span class="er">    appArmorProfile:</span></span>
-<span class="er">      type: Localhost</span></span>
-<span class="er">      localhostProfile: k8s-apparmor-example-deny-write</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+containers:
+- name: container-1
+  securityContext:
+    appArmorProfile:
+      type: Localhost
+      localhostProfile: k8s-apparmor-example-deny-write</code></pre>
 <p>For more details please see, <a
 href="../../tutorials/security/apparmor.html">Restrict a Container's Access
 to Resources with AppArmor</a>.</p>
@@ -793,11 +795,10 @@ section of your Pod or Container manifest. The
 <code>seLinuxOptions</code> field is an <a
 href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#selinuxoptions-v1-core">SELinuxOptions</a>
 object. Here's an example that applies an SELinux level:</p>
-<div class="sourceCode" id="cb60"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">securityContext:</span></span>
-<span class="er">  seLinuxOptions:</span></span>
-<span class="er">    level: &quot;</span><span class="st">s0:c123,c456&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+securityContext:
+  seLinuxOptions:
+    level: &quot;s0:c123,c456&quot;</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -970,10 +971,9 @@ a user to request a container's <code>/proc</code> be
 <code>Unmasked</code>, or be mounted as read-write by the container
 process. This also applies to <code>/sys/firmware</code> which is not in
 <code>/proc</code>.</p>
-<div class="sourceCode" id="cb61"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
-<span class="er">securityContext:</span></span>
-<span class="er">  procMount: Unmasked</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">...
+securityContext:
+  procMount: Unmasked</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1015,7 +1015,7 @@ assign a unique MCS label to each Pod.</p>
 </div>
 <h2 id="clean-up">Clean up</h2>
 <p>Delete the Pod:</p>
-<pre class="shell"><code>kubectl delete pod security-context-demo
+<pre class="shell"><code class="language-shell">kubectl delete pod security-context-demo
 kubectl delete pod security-context-demo-2
 kubectl delete pod security-context-demo-3
 kubectl delete pod security-context-demo-4</code></pre>
@@ -1115,6 +1115,7 @@ Paths in the OCI Runtime Specification</a> </label></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1123,6 +1124,8 @@ Paths in the OCI Runtime Specification</a> </label></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

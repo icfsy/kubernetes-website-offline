@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -163,7 +178,7 @@ pull a private image.</p>
 <em>log in</em> section of <a
 href="https://docs.docker.com/docker-id/#log-in">Docker ID accounts</a>
 for more information.</p>
-<pre class="shell"><code>docker login</code></pre>
+<pre class="shell"><code class="language-shell">docker login</code></pre>
 <p>When prompted, enter your Docker ID, and then the credential you want
 to use (access token, or the password for your Docker ID).</p>
 <p>The login process creates or updates a <code>config.json</code> file
@@ -171,16 +186,15 @@ that holds an authorization token. Review <a
 href="../../concepts/containers/images.html#config-json">how Kubernetes
 interprets this file</a>.</p>
 <p>View the <code>config.json</code> file:</p>
-<pre class="shell"><code>cat ~/.docker/config.json</code></pre>
+<pre class="shell"><code class="language-shell">cat ~/.docker/config.json</code></pre>
 <p>The output contains a section similar to this:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-    <span class="dt">&quot;auths&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;https://index.docker.io/v1/&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-            <span class="dt">&quot;auth&quot;</span><span class="fu">:</span> <span class="st">&quot;c3R...zE2&quot;</span></span>
-        <span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+    &quot;auths&quot;: {
+        &quot;https://index.docker.io/v1/&quot;: {
+            &quot;auth&quot;: &quot;c3R...zE2&quot;
+        }
+    }
+}</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -199,7 +213,7 @@ existing credentials</h2>
 container registry to pull a private image.</p>
 <p>If you already ran <code>docker login</code>, you can copy that
 credential into Kubernetes:</p>
-<pre class="shell"><code>kubectl create secret generic regcred \
+<pre class="shell"><code class="language-shell">kubectl create secret generic regcred \
     --from-file=.dockerconfigjson=&lt;path/to/.docker/config.json&gt; \
     --type=kubernetes.io/dockerconfigjson</code></pre>
 <p>If you need more control (for example, to set a namespace or a label
@@ -214,15 +228,14 @@ string, unbroken as the value for field
 <code>kubernetes.io/dockerconfigjson</code></li>
 </ul>
 <p>Example:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myregistrykey</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> awesomeapps</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">.dockerconfigjson</span><span class="kw">:</span><span class="at"> UmVhbGx5IHJlYWxseSByZWVlZWVlZWVlZWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGx5eXl5eXl5eXl5eXl5eXl5eXl5eSBsbGxsbGxsbGxsbGxsbG9vb29vb29vb29vb29vb29vb29vb29vb29vb25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubmdnZ2dnZ2dnZ2dnZ2dnZ2dnZ2cgYXV0aCBrZXlzCg==</span></span>
-<span class="fu">type</span><span class="kw">:</span><span class="at"> kubernetes.io/dockerconfigjson</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: myregistrykey
+  namespace: awesomeapps
+data:
+  .dockerconfigjson: UmVhbGx5IHJlYWxseSByZWVlZWVlZWVlZWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGx5eXl5eXl5eXl5eXl5eXl5eXl5eSBsbGxsbGxsbGxsbGxsbG9vb29vb29vb29vb29vb29vb29vb29vb29vb25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubmdnZ2dnZ2dnZ2dnZ2dnZ2dnZ2cgYXV0aCBrZXlzCg==
+type: kubernetes.io/dockerconfigjson</code></pre>
 <p>If you get the error message
 <code>error: no objects passed to create</code>, it may mean the base64
 encoded string is invalid. If you get an error message like
@@ -233,7 +246,7 @@ but could not be parsed as a <code>.docker/config.json</code> file.</p>
 id="create-a-secret-by-providing-credentials-on-the-command-line">Create
 a Secret by providing credentials on the command line</h2>
 <p>Create this Secret, naming it <code>regcred</code>:</p>
-<pre class="shell"><code>kubectl create secret docker-registry regcred --docker-server=&lt;your-registry-server&gt; --docker-username=&lt;your-name&gt; --docker-password=&lt;your-pword&gt; --docker-email=&lt;your-email&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create secret docker-registry regcred --docker-server=&lt;your-registry-server&gt; --docker-username=&lt;your-name&gt; --docker-password=&lt;your-pword&gt; --docker-email=&lt;your-email&gt;</code></pre>
 <p>where:</p>
 <ul>
 <li><code>&lt;your-registry-server&gt;</code> is your Private
@@ -259,32 +272,30 @@ running.</p>
 <code>regcred</code></h2>
 <p>To understand the contents of the <code>regcred</code> Secret you
 created, start by viewing the Secret in YAML format:</p>
-<pre class="shell"><code>kubectl get secret regcred --output=yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get secret regcred --output=yaml</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> regcred</span></span>
-<span class="at">  ...</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">.dockerconfigjson</span><span class="kw">:</span><span class="at"> eyJodHRwczovL2luZGV4L ... J0QUl6RTIifX0=</span></span>
-<span class="fu">type</span><span class="kw">:</span><span class="at"> kubernetes.io/dockerconfigjson</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Secret
+metadata:
+  ...
+  name: regcred
+  ...
+data:
+  .dockerconfigjson: eyJodHRwczovL2luZGV4L ... J0QUl6RTIifX0=
+type: kubernetes.io/dockerconfigjson</code></pre>
 <p>The value of the <code>.dockerconfigjson</code> field is a base64
 representation of your Docker credentials.</p>
 <p>To understand what is in the <code>.dockerconfigjson</code> field,
 convert the secret data to a readable format:</p>
-<pre class="shell"><code>kubectl get secret regcred --output=&quot;jsonpath={.data.\.dockerconfigjson}&quot; | base64 --decode</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get secret regcred --output=&quot;jsonpath={.data.\.dockerconfigjson}&quot; | base64 --decode</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span><span class="dt">&quot;auths&quot;</span><span class="fu">:{</span><span class="dt">&quot;your.private.registry.example.com&quot;</span><span class="fu">:{</span><span class="dt">&quot;username&quot;</span><span class="fu">:</span><span class="st">&quot;janedoe&quot;</span><span class="fu">,</span><span class="dt">&quot;password&quot;</span><span class="fu">:</span><span class="st">&quot;xxxxxxxxxxx&quot;</span><span class="fu">,</span><span class="dt">&quot;email&quot;</span><span class="fu">:</span><span class="st">&quot;jdoe@example.com&quot;</span><span class="fu">,</span><span class="dt">&quot;auth&quot;</span><span class="fu">:</span><span class="st">&quot;c3R...zE2&quot;</span><span class="fu">}}}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{&quot;auths&quot;:{&quot;your.private.registry.example.com&quot;:{&quot;username&quot;:&quot;janedoe&quot;,&quot;password&quot;:&quot;xxxxxxxxxxx&quot;,&quot;email&quot;:&quot;jdoe@example.com&quot;,&quot;auth&quot;:&quot;c3R...zE2&quot;}}}</code></pre>
 <p>To understand what is in the <code>auth</code> field, convert the
 base64-encoded data to a readable format:</p>
-<pre class="shell"><code>echo &quot;c3R...zE2&quot; | base64 --decode</code></pre>
+<pre class="shell"><code class="language-shell">echo &quot;c3R...zE2&quot; | base64 --decode</code></pre>
 <p>The output, username and password concatenated with a <code>:</code>,
 is similar to this:</p>
-<pre class="none"><code>janedoe:xxxxxxxxxxx</code></pre>
+<pre class="none"><code class="language-none">janedoe:xxxxxxxxxxx</code></pre>
 <p>Notice that the Secret data contains the authorization token similar
 to your local <code>~/.docker/config.json</code> file.</p>
 <p>You have successfully set your Docker credentials as a Secret called
@@ -295,31 +306,30 @@ Secret</h2>
 Docker credentials in <code>regcred</code>:</p>
 <div class="code-sample">
 <p><code>pods/private-reg-pod.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> private-reg</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> private-reg-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;your-private-image&gt;</span></span>
-<span class="at">  </span><span class="fu">imagePullSecrets</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> regcred</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: private-reg
+spec:
+  containers:
+  - name: private-reg-container
+    image: &lt;your-private-image&gt;
+  imagePullSecrets:
+  - name: regcred</code></pre>
 </div>
 <p>Download the above file onto your computer:</p>
-<pre class="shell"><code>curl -L -o my-private-reg-pod.yaml https://k8s.io/examples/pods/private-reg-pod.yaml</code></pre>
+<pre class="shell"><code class="language-shell">curl -L -o my-private-reg-pod.yaml https://k8s.io/examples/pods/private-reg-pod.yaml</code></pre>
 <p>In file <code>my-private-reg-pod.yaml</code>, replace
 <code>&lt;your-private-image&gt;</code> with the path to an
 image in a private registry such as:</p>
-<pre class="none"><code>your.private.registry.example.com/janedoe/jdoe-private:v1</code></pre>
+<pre class="none"><code class="language-none">your.private.registry.example.com/janedoe/jdoe-private:v1</code></pre>
 <p>To pull the image from the private registry, Kubernetes needs
 credentials. The <code>imagePullSecrets</code> field in the
 configuration file specifies that Kubernetes should get the credentials
 from a Secret named <code>regcred</code>.</p>
 <p>Create a Pod that uses your Secret, and verify that the Pod is
 running:</p>
-<pre class="shell"><code>kubectl apply -f my-private-reg-pod.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f my-private-reg-pod.yaml
 kubectl get pod private-reg</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
@@ -332,13 +342,13 @@ to use is the same namespace where you defined the Pod.</p>
 </div>
 <p>Also, in case the Pod fails to start with the status
 <code>ImagePullBackOff</code>, view the Pod events:</p>
-<pre class="shell"><code>kubectl describe pod private-reg</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod private-reg</code></pre>
 <p>If you then see an event with the reason set to
 <code>FailedToRetrieveImagePullSecret</code>, Kubernetes can't find a
 Secret with name (<code>regcred</code>, in this example).</p>
 <p>Make sure that the Secret you have specified exists, and that its
 name is spelled properly.</p>
-<pre class="shell"><code>Events:
+<pre class="shell"><code class="language-shell">Events:
   ...  Reason                           ...  Message
        ------                                -------
   ...  FailedToRetrieveImagePullSecret  ...  Unable to retrieve some image pull secrets (&lt;regcred&gt;); attempting to pull the image may not succeed.</code></pre>
@@ -436,6 +446,7 @@ definitions</a> of a Pod</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -444,6 +455,8 @@ definitions</a> of a Pod</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

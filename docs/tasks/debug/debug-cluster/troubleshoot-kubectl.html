@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -134,9 +149,9 @@ href="../../tools.html#kubectl">install tools</a></li>
 correctly on your local machine. Check the <code>kubectl</code> version
 to ensure it is up-to-date and compatible with your cluster.</p>
 <p>Check kubectl version:</p>
-<pre class="shell"><code>kubectl version</code></pre>
+<pre class="shell"><code class="language-shell">kubectl version</code></pre>
 <p>You'll see a similar output:</p>
-<pre class="console"><code>Client Version: version.Info{Major:&quot;1&quot;, Minor:&quot;27&quot;, GitVersion:&quot;v1.27.4&quot;,GitCommit:&quot;fa3d7990104d7c1f16943a67f11b154b71f6a132&quot;, GitTreeState:&quot;clean&quot;,BuildDate:&quot;2023-07-19T12:20:54Z&quot;, GoVersion:&quot;go1.20.6&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
+<pre class="console"><code class="language-console">Client Version: version.Info{Major:&quot;1&quot;, Minor:&quot;27&quot;, GitVersion:&quot;v1.27.4&quot;,GitCommit:&quot;fa3d7990104d7c1f16943a67f11b154b71f6a132&quot;, GitTreeState:&quot;clean&quot;,BuildDate:&quot;2023-07-19T12:20:54Z&quot;, GoVersion:&quot;go1.20.6&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
 Kustomize Version: v5.0.1
 Server Version: version.Info{Major:&quot;1&quot;, Minor:&quot;27&quot;, GitVersion:&quot;v1.27.3&quot;,GitCommit:&quot;25b4e43193bcda6c7328a6d147b1fb73a33f1598&quot;, GitTreeState:&quot;clean&quot;,BuildDate:&quot;2023-06-14T09:47:40Z&quot;, GoVersion:&quot;go1.20.5&quot;, Compiler:&quot;gc&quot;, Platform:&quot;linux/amd64&quot;}
 </code></pre>
@@ -185,9 +200,9 @@ href="../../access-application-cluster/configure-access-multiple-clusters.html">
 clusters and contexts</a>. Ensure that you are using the correct context
 to interact with your cluster.</p>
 <p>List available contexts:</p>
-<pre class="shell"><code>kubectl config get-contexts</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config get-contexts</code></pre>
 <p>Switch to the appropriate context:</p>
-<pre class="shell"><code>kubectl config use-context &lt;context-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config use-context &lt;context-name&gt;</code></pre>
 <h2 id="api-server-and-load-balancer">API server and load balancer</h2>
 <p>The <a class="glossary-term" href="../../../reference/glossary.html#term-kube-apiserver" title="Glossary: kube-apiserver">kube-apiserver</a> server is the central
 component of a Kubernetes cluster. If the API server or the load
@@ -214,20 +229,20 @@ the <code>~/.kube/config</code> directory. The
 and the <code>client-certificate</code> attribute contains the client
 certificate.</p>
 <p>Verify the expiry of these certificates:</p>
-<pre class="shell"><code>kubectl config view --flatten --output &#39;jsonpath={.clusters[0].cluster.certificate-authority-data}&#39; | base64 -d | openssl x509 -noout -dates</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config view --flatten --output &#39;jsonpath={.clusters[0].cluster.certificate-authority-data}&#39; | base64 -d | openssl x509 -noout -dates</code></pre>
 <p>output:</p>
-<pre class="console"><code>notBefore=Feb 13 05:57:47 2024 GMT
+<pre class="console"><code class="language-console">notBefore=Feb 13 05:57:47 2024 GMT
 notAfter=Feb 10 06:02:47 2034 GMT</code></pre>
-<pre class="shell"><code>kubectl config view --flatten --output &#39;jsonpath={.users[0].user.client-certificate-data}&#39;| base64 -d | openssl x509 -noout -dates</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config view --flatten --output &#39;jsonpath={.users[0].user.client-certificate-data}&#39;| base64 -d | openssl x509 -noout -dates</code></pre>
 <p>output:</p>
-<pre class="console"><code>notBefore=Feb 13 05:57:47 2024 GMT
+<pre class="console"><code class="language-console">notBefore=Feb 13 05:57:47 2024 GMT
 notAfter=Feb 12 06:02:50 2025 GMT</code></pre>
 <h2 id="verify-kubectl-helpers">Verify kubectl helpers</h2>
 <p>Some kubectl authentication helpers provide easy access to Kubernetes
 clusters. If you have used such helpers and are facing connectivity
 issues, ensure that the necessary configurations are still present.</p>
 <p>Check kubectl configuration for authentication details:</p>
-<pre class="shell"><code>kubectl config view</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config view</code></pre>
 <p>If you previously used a helper tool (for example,
 <code>kubectl-oidc-login</code>), ensure that it is still installed and
 configured correctly.</p>
@@ -295,6 +310,7 @@ configured correctly.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -303,6 +319,8 @@ configured correctly.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -319,8 +334,7 @@ using the same etcd endpoints, you will see state from previous
 clusters.</p>
 <p>To wipe etcd data it is recommended you use a client like etcdctl,
 such as:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">etcdctl</span> del <span class="st">&quot;&quot;</span> <span class="at">--prefix</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">etcdctl del &quot;&quot; --prefix</code></pre>
 <p>See the <a
 href="https://github.com/coreos/etcd/tree/master/etcdctl">etcd
 documentation</a> for more information.</p>
@@ -334,8 +348,7 @@ that cluster. It can result in a configuration conflict between CNI
 plugins.</p>
 <p>To cleanup the directory, backup its contents if needed and then
 execute the following command:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sudo</span> rm <span class="at">-rf</span> /etc/cni/net.d</span></code></pre></div>
+<pre class="bash"><code class="language-bash">sudo rm -rf /etc/cni/net.d</code></pre>
 <h3 id="cleanup-of-network-traffic-rules">Cleanup of network traffic
 rules</h3>
 <p>The <code>kubeadm reset</code> command does not clean any iptables,
@@ -350,8 +363,7 @@ different purpose.</p>
 <p>If you wish to perform this cleanup, you can use the same kube-proxy
 container which was used in your cluster and the <code>--cleanup</code>
 flag of the <code>kube-proxy</code> binary:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">docker</span> run <span class="at">--privileged</span> <span class="at">--network</span><span class="op">=</span>host <span class="at">-v</span> /lib/modules:/lib/modules:ro <span class="at">--rm</span> registry.k8s.io/kube-proxy:v1.37.1 sh <span class="at">-c</span> <span class="st">&quot;kube-proxy --cleanup &amp;&amp; echo DONE&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">docker run --privileged --network=host -v /lib/modules:/lib/modules:ro --rm registry.k8s.io/kube-proxy:v1.37.1 sh -c &quot;kube-proxy --cleanup &amp;&amp; echo DONE&quot;</code></pre>
 <p>The output of the above command should print <code>DONE</code> at the
 end. Instead of Docker, you can use your preferred container runtime to
 start the container.</p>
@@ -374,17 +386,15 @@ exist, it is highly recommended to delete the file, as the admin
 credentials stored in it will continue to be valid.</p>
 <p>To cleanup the directory, examine its contents, perform backup if
 needed and execute the following command:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">rm</span> <span class="at">-rf</span> <span class="va">$HOME</span>/.kube</span></code></pre></div>
+<pre class="bash"><code class="language-bash">rm -rf $HOME/.kube</code></pre>
 <h3 id="graceful-kube-apiserver-shutdown">Graceful kube-apiserver
 shutdown</h3>
 <p>If you have your <code>kube-apiserver</code> configured with the
 <code>--shutdown-delay-duration</code> flag, you can run the following
 commands to attempt a graceful shutdown for the running API server Pod,
 before you run <code>kubeadm reset</code>:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">yq</span> eval <span class="at">-i</span> <span class="st">&#39;.spec.containers[0].command = []&#39;</span> /etc/kubernetes/manifests/kube-apiserver.yaml</span>
-<span class="fu">timeout</span> 60 sh <span class="at">-c</span> <span class="st">&#39;while pgrep kube-apiserver &gt;/dev/null; do sleep 1; done&#39;</span> <span class="kw">||</span> <span class="fu">true</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">yq eval -i &#39;.spec.containers[0].command = []&#39; /etc/kubernetes/manifests/kube-apiserver.yaml
+timeout 60 sh -c &#39;while pgrep kube-apiserver &gt;/dev/null; do sleep 1; done&#39; || true</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li><a href="kubeadm-init.html">kubeadm
@@ -457,6 +467,7 @@ cluster</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -465,6 +476,8 @@ cluster</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -171,41 +186,40 @@ set.</p>
 ResourceClaim has been populated by the driver
 (<code>resource-driver.example.com</code>) responsible for managing the
 allocated device:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> macvlan-eth0</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="co">...</span></span>
-<span class="er">status:</span></span>
-<span class="er">  allocation:</span></span>
-<span class="er">    devices:</span></span>
-<span class="er">      results:</span></span>
-<span class="er">      - device: eth0</span></span>
-<span class="er">        driver: resource-driver.example.com</span></span>
-<span class="er">        pool: nic-worker-a</span></span>
-<span class="er">        request: macvlan-eth0</span></span>
-<span class="er">        shareID: 8e7acdf9-0290-4ecd-a801-a654b021d2b7</span></span>
-<span class="er">        consumedCapacity:</span></span>
-<span class="er">          resource-driver.example.com/bandwidth: 1G</span></span>
-<span class="er">  devices:</span></span>
-<span class="er">  - conditions:</span></span>
-<span class="er">    - lastTransitionTime: &quot;</span><span class="st">2025-10-21T08:38:17Z&quot;</span></span>
-<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Device successfully allocated and assigned to the pod</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> NetworkReady</span></span>
-<span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NetworkReady</span></span>
-<span class="at">    </span><span class="fu">device</span><span class="kw">:</span><span class="at"> eth0</span></span>
-<span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> resource-driver.example.com</span></span>
-<span class="at">    </span><span class="fu">networkData</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">hardwareAddress</span><span class="kw">:</span><span class="at"> 00:01:ec:84:fb:51</span></span>
-<span class="at">      </span><span class="fu">interfaceName</span><span class="kw">:</span><span class="at"> net1</span></span>
-<span class="at">      </span><span class="fu">ips</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">10.10.1.2/24</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">2001:db8::1/64</span></span>
-<span class="at">    </span><span class="fu">pool</span><span class="kw">:</span><span class="at"> nic-worker-a</span></span>
-<span class="at">    </span><span class="fu">shareID</span><span class="kw">:</span><span class="at"> 8e7acdf9-0290-4ecd-a801-a654b021d2b7</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: macvlan-eth0
+spec:
+...
+status:
+  allocation:
+    devices:
+      results:
+      - device: eth0
+        driver: resource-driver.example.com
+        pool: nic-worker-a
+        request: macvlan-eth0
+        shareID: 8e7acdf9-0290-4ecd-a801-a654b021d2b7
+        consumedCapacity:
+          resource-driver.example.com/bandwidth: 1G
+  devices:
+  - conditions:
+    - lastTransitionTime: &quot;2025-10-21T08:38:17Z&quot;
+      message: Device successfully allocated and assigned to the pod
+      reason: NetworkReady
+      status: &quot;True&quot;
+      type: NetworkReady
+    device: eth0
+    driver: resource-driver.example.com
+    networkData:
+      hardwareAddress: 00:01:ec:84:fb:51
+      interfaceName: net1
+      ips:
+      - 10.10.1.2/24
+      - 2001:db8::1/64
+    pool: nic-worker-a
+    shareID: 8e7acdf9-0290-4ecd-a801-a654b021d2b7</code></pre>
 <p>If a device has not been allocated, a driver's request to update the
 <code>status.devices</code> field of the ResourceClaim with that device
 is rejected. When a device is deallocated (removed from
@@ -276,21 +290,20 @@ DRA resource pools.</p>
 <li><p>Create a ResourcePoolStatusRequest specifying the driver name
 (required) and optionally a limit on the number of pools returned. You
 can also limit it to a single pool by specifying a pool name:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourcePoolStatusRequest</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> check-gpus</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> example.com/gpu</span></span>
-<span class="at">  </span><span class="co"># Optional: filter to a specific pool</span></span>
-<span class="at">  </span><span class="co"># poolName: my-pool</span></span>
-<span class="at">  </span><span class="co"># Optional: limit number of pools returned (default: 100, max: 1000)</span></span>
-<span class="at">  </span><span class="co"># limit: 10</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1alpha3
+kind: ResourcePoolStatusRequest
+metadata:
+  name: check-gpus
+spec:
+  driver: example.com/gpu
+  # Optional: filter to a specific pool
+  # poolName: my-pool
+  # Optional: limit number of pools returned (default: 100, max: 1000)
+  # limit: 10</code></pre></li>
 <li><p>Wait for the controller to process the request:</p>
-<pre class="shell"><code>kubectl wait --for=condition=Complete resourcepoolstatusrequest/check-gpus --timeout=30s</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl wait --for=condition=Complete resourcepoolstatusrequest/check-gpus --timeout=30s</code></pre></li>
 <li><p>Read the status to see pool availability:</p>
-<pre class="shell"><code>kubectl get resourcepoolstatusrequest/check-gpus -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourcepoolstatusrequest/check-gpus -o yaml</code></pre>
 <p>The status includes:</p>
 <ul>
 <li><code>poolCount</code>: total number of pools matching the filter
@@ -328,7 +341,7 @@ href="#resource-pool-shareable-summary">Shareable summary</a>).</li>
 <code>Failed</code> (error) condition types.</li>
 </ul></li>
 <li><p>Delete the request when done:</p>
-<pre class="shell"><code>kubectl delete resourcepoolstatusrequest/check-gpus</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete resourcepoolstatusrequest/check-gpus</code></pre></li>
 </ol>
 <p>ResourcePoolStatusRequest objects are processed once by a controller
 in kube-controller-manager. The spec is immutable once created, and the
@@ -384,29 +397,27 @@ partition-type attribute.</p>
 with a string attribute whose value names the partition type, and names
 that attribute in the ResourceSlice's
 <code>partitionTypeAttribute</code> field:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
-<span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># Every partitionable device in this slice carries this attribute; devices</span></span>
-<span class="at">  </span><span class="co"># that share a value share the same shared-counter cost.</span></span>
-<span class="at">  </span><span class="fu">partitionTypeAttribute</span><span class="kw">:</span><span class="at"> gpu.example.com/profile</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+# ...
+spec:
+  # Every partitionable device in this slice carries this attribute; devices
+  # that share a value share the same shared-counter cost.
+  partitionTypeAttribute: gpu.example.com/profile</code></pre>
 <p>If a driver has not yet been updated to declare
 <code>partitionTypeAttribute</code>, a request can still obtain a
 partition summary by naming a fallback attribute in its spec. A slice's
 own <code>partitionTypeAttribute</code> always takes precedence; the
 request-level default applies only to devices whose slice does not
 declare one:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourcePoolStatusRequest</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> check-gpu-partitions</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="at">  </span><span class="co"># Fallback grouping attribute for slices that don&#39;t declare one themselves.</span></span>
-<span class="at">  </span><span class="fu">defaultPartitionTypeAttribute</span><span class="kw">:</span><span class="at"> gpu.example.com/profile</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1alpha3
+kind: ResourcePoolStatusRequest
+metadata:
+  name: check-gpu-partitions
+spec:
+  driver: gpu.example.com
+  # Fallback grouping attribute for slices that don&#39;t declare one themselves.
+  defaultPartitionTypeAttribute: gpu.example.com/profile</code></pre>
 <p>When neither the slice nor the request names an attribute, a
 partitionable pool reports no <code>partitionSummary</code>.</p>
 <p>The <code>partitionSummary</code> view is controlled by the <a
@@ -507,10 +518,10 @@ is read-only.</p></li>
 feature gate and is disabled by default in the DRA kubelet plugin
 library. A driver must enable the feature and explicitly select the
 versions that it writes:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go">kubeletplugin<span class="op">.</span>EnableDeviceMetadata<span class="op">(</span><span class="ot">true</span><span class="op">,</span> <span class="op">[]</span>schema<span class="op">.</span>GroupVersion<span class="op">{</span></span>
-    metadatav1beta1<span class="op">.</span>SchemeGroupVersion<span class="op">,</span></span>
-    metadatav1alpha1<span class="op">.</span>SchemeGroupVersion<span class="op">,</span></span>
-<span class="op">})</span></span></code></pre></div>
+<pre class="go"><code class="language-go">kubeletplugin.EnableDeviceMetadata(true, []schema.GroupVersion{
+    metadatav1beta1.SchemeGroupVersion,
+    metadatav1alpha1.SchemeGroupVersion,
+})</code></pre>
 <p>The <code>v1beta1</code> version is required. A driver can also write
 <code>v1alpha1</code> for compatibility with older consumers. The order
 in the slice is the order in the metadata stream; the framework does not
@@ -573,44 +584,43 @@ href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/api/metadata/v1beta1
 API documentation</a>.</p>
 <p>The following example shows one object in a metadata stream for a GPU
 device allocated through a ResourceClaimTemplate:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;DeviceMetadata&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;metadata.resource.k8s.io/v1beta1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;pod0-gpu-2kqrd&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;namespace&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu-test1&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;uid&quot;</span><span class="fu">:</span> <span class="st">&quot;c7e7b22e-239b-4498-b27c-7f1344481e14&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;generation&quot;</span><span class="fu">:</span> <span class="dv">1</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;podClaimName&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;requests&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;devices&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-        <span class="fu">{</span></span>
-          <span class="dt">&quot;driver&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu.example.com&quot;</span><span class="fu">,</span></span>
-          <span class="dt">&quot;pool&quot;</span><span class="fu">:</span> <span class="st">&quot;worker-0&quot;</span><span class="fu">,</span></span>
-          <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu-0&quot;</span><span class="fu">,</span></span>
-          <span class="dt">&quot;attributes&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-            <span class="dt">&quot;driverVersion&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-              <span class="dt">&quot;version&quot;</span><span class="fu">:</span> <span class="st">&quot;1.0.0&quot;</span></span>
-            <span class="fu">},</span></span>
-            <span class="dt">&quot;index&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-              <span class="dt">&quot;int&quot;</span><span class="fu">:</span> <span class="dv">0</span></span>
-            <span class="fu">},</span></span>
-            <span class="dt">&quot;model&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-              <span class="dt">&quot;string&quot;</span><span class="fu">:</span> <span class="st">&quot;LATEST-GPU-MODEL&quot;</span></span>
-            <span class="fu">},</span></span>
-            <span class="dt">&quot;uuid&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-              <span class="dt">&quot;string&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu-18db0e85-99e9-c746-8531-ffeb86328b39&quot;</span></span>
-            <span class="fu">}</span></span>
-          <span class="fu">}</span></span>
-        <span class="fu">}</span></span>
-      <span class="ot">]</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;DeviceMetadata&quot;,
+  &quot;apiVersion&quot;: &quot;metadata.resource.k8s.io/v1beta1&quot;,
+  &quot;metadata&quot;: {
+    &quot;name&quot;: &quot;pod0-gpu-2kqrd&quot;,
+    &quot;namespace&quot;: &quot;gpu-test1&quot;,
+    &quot;uid&quot;: &quot;c7e7b22e-239b-4498-b27c-7f1344481e14&quot;,
+    &quot;generation&quot;: 1
+  },
+  &quot;podClaimName&quot;: &quot;gpu&quot;,
+  &quot;requests&quot;: [
+    {
+      &quot;name&quot;: &quot;gpu&quot;,
+      &quot;devices&quot;: [
+        {
+          &quot;driver&quot;: &quot;gpu.example.com&quot;,
+          &quot;pool&quot;: &quot;worker-0&quot;,
+          &quot;name&quot;: &quot;gpu-0&quot;,
+          &quot;attributes&quot;: {
+            &quot;driverVersion&quot;: {
+              &quot;version&quot;: &quot;1.0.0&quot;
+            },
+            &quot;index&quot;: {
+              &quot;int&quot;: 0
+            },
+            &quot;model&quot;: {
+              &quot;string&quot;: &quot;LATEST-GPU-MODEL&quot;
+            },
+            &quot;uuid&quot;: {
+              &quot;string&quot;: &quot;gpu-18db0e85-99e9-c746-8531-ffeb86328b39&quot;
+            }
+          }
+        }
+      ]
+    }
+  ]
+}</code></pre>
 <p>The DRA kubelet plugin does not validate metadata before writing it.
 Go consumers can opt in to generated validation when decoding a stream.
 Decoding and validation have separate results: a validation error does
@@ -708,6 +718,7 @@ read-only through CDI or an equivalent mechanism.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -716,6 +727,8 @@ read-only through CDI or an equivalent mechanism.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

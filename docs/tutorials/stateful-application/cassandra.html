@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -182,7 +197,7 @@ setup instructions</h3>
 configuration results in insufficient resource errors during this
 tutorial. To avoid these errors, start Minikube with the following
 settings:</p>
-<pre class="shell"><code>minikube start --memory 5120 --cpus=4</code></pre>
+<pre class="shell"><code class="language-shell">minikube start --memory 5120 --cpus=4</code></pre>
 </div>
 <h2 id="creating-a-cassandra-headless-service">Creating a headless
 Service for Cassandra</h2>
@@ -193,26 +208,25 @@ task.</p>
 and clients within your cluster:</p>
 <div class="code-sample">
 <p><code>application/cassandra/cassandra-service.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">9042</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: cassandra
+  name: cassandra
+spec:
+  clusterIP: None
+  ports:
+  - port: 9042
+  selector:
+    app: cassandra</code></pre>
 </div>
 <p>Create a Service to track all Cassandra StatefulSet members from the
 <code>cassandra-service.yaml</code> file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/cassandra/cassandra-service.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/cassandra/cassandra-service.yaml</code></pre>
 <h3 id="validating">Validating (optional)</h3>
 <p>Get the Cassandra Service.</p>
-<pre class="shell"><code>kubectl get svc cassandra</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc cassandra</code></pre>
 <p>The response is</p>
 <pre><code>NAME        TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
 cassandra   ClusterIP   None         &lt;none&gt;        9042/TCP   45s</code></pre>
@@ -233,133 +247,132 @@ the following StatefulSet for the cloud you are working with.</p>
 </div>
 <div class="code-sample">
 <p><code>application/cassandra/cassandra-statefulset.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">terminationGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">500</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/cassandra:v13</span></span>
-<span class="at">        </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">7000</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intra-node</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">7001</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> tls-intra-node</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">7199</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jmx</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9042</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cql</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
-<span class="at">        </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">capabilities</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="at">IPC_LOCK</span></span>
-<span class="at">        </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">preStop</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span></span>
-<span class="at">              </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="at">nodetool drain</span></span>
-<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MAX_HEAP_SIZE</span></span>
-<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 512M</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> HEAP_NEWSIZE</span></span>
-<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 100M</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_SEEDS</span></span>
-<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cassandra-0.cassandra.default.svc.cluster.local&quot;</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_CLUSTER_NAME</span></span>
-<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;K8Demo&quot;</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_DC</span></span>
-<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;DC1-K8Demo&quot;</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_RACK</span></span>
-<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Rack1-K8Demo&quot;</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> POD_IP</span></span>
-<span class="at">            </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> status.podIP</span></span>
-<span class="at">        </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">/bin/bash</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">/ready-probe.sh</span></span>
-<span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">          </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">        </span><span class="co"># These volume mounts are persistent. They are like inline claims,</span></span>
-<span class="at">        </span><span class="co"># but not exactly because the names need to match exactly one of</span></span>
-<span class="at">        </span><span class="co"># the stateful pod volumes.</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra-data</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /cassandra_data</span></span>
-<span class="at">  </span><span class="co"># These are converted to volume claims by the controller</span></span>
-<span class="at">  </span><span class="co"># and mounted at the paths mentioned above.</span></span>
-<span class="at">  </span><span class="co"># do not use these in production until ssd GCEPersistentDisk or other ssd pd</span></span>
-<span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra-data</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> fast</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
-<span class="pp">---</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fast</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> k8s.io/minikube-hostpath</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> pd-ssd</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: cassandra
+  labels:
+    app: cassandra
+spec:
+  serviceName: cassandra
+  replicas: 3
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      terminationGracePeriodSeconds: 500
+      containers:
+      - name: cassandra
+        image: gcr.io/google-samples/cassandra:v13
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 7000
+          name: intra-node
+        - containerPort: 7001
+          name: tls-intra-node
+        - containerPort: 7199
+          name: jmx
+        - containerPort: 9042
+          name: cql
+        resources:
+          limits:
+            cpu: &quot;500m&quot;
+            memory: 1Gi
+          requests:
+            cpu: &quot;500m&quot;
+            memory: 1Gi
+        securityContext:
+          capabilities:
+            add:
+              - IPC_LOCK
+        lifecycle:
+          preStop:
+            exec:
+              command: 
+              - /bin/sh
+              - -c
+              - nodetool drain
+        env:
+          - name: MAX_HEAP_SIZE
+            value: 512M
+          - name: HEAP_NEWSIZE
+            value: 100M
+          - name: CASSANDRA_SEEDS
+            value: &quot;cassandra-0.cassandra.default.svc.cluster.local&quot;
+          - name: CASSANDRA_CLUSTER_NAME
+            value: &quot;K8Demo&quot;
+          - name: CASSANDRA_DC
+            value: &quot;DC1-K8Demo&quot;
+          - name: CASSANDRA_RACK
+            value: &quot;Rack1-K8Demo&quot;
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+        readinessProbe:
+          exec:
+            command:
+            - /bin/bash
+            - -c
+            - /ready-probe.sh
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+        # These volume mounts are persistent. They are like inline claims,
+        # but not exactly because the names need to match exactly one of
+        # the stateful pod volumes.
+        volumeMounts:
+        - name: cassandra-data
+          mountPath: /cassandra_data
+  # These are converted to volume claims by the controller
+  # and mounted at the paths mentioned above.
+  # do not use these in production until ssd GCEPersistentDisk or other ssd pd
+  volumeClaimTemplates:
+  - metadata:
+      name: cassandra-data
+    spec:
+      accessModes: [ &quot;ReadWriteOnce&quot; ]
+      storageClassName: fast
+      resources:
+        requests:
+          storage: 1Gi
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: fast
+provisioner: k8s.io/minikube-hostpath
+parameters:
+  type: pd-ssd</code></pre>
 </div>
 <p>Create the Cassandra StatefulSet from the
 <code>cassandra-statefulset.yaml</code> file:</p>
-<pre class="shell"><code># Use this if you are able to apply cassandra-statefulset.yaml unmodified
+<pre class="shell"><code class="language-shell"># Use this if you are able to apply cassandra-statefulset.yaml unmodified
 kubectl apply -f https://k8s.io/examples/application/cassandra/cassandra-statefulset.yaml</code></pre>
 <p>If you need to modify <code>cassandra-statefulset.yaml</code> to suit
 your cluster, download
 https://k8s.io/examples/application/cassandra/cassandra-statefulset.yaml
 and then apply that manifest, from the folder you saved the modified
 version into:</p>
-<pre class="shell"><code># Use this if you needed to modify cassandra-statefulset.yaml locally
+<pre class="shell"><code class="language-shell"># Use this if you needed to modify cassandra-statefulset.yaml locally
 kubectl apply -f cassandra-statefulset.yaml</code></pre>
 <h2 id="validating-the-cassandra-statefulset">Validating the Cassandra
 StatefulSet</h2>
 <ol type="1">
 <li><p>Get the Cassandra StatefulSet:</p>
-<pre class="shell"><code>kubectl get statefulset cassandra</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get statefulset cassandra</code></pre>
 <p>The response should be similar to:</p>
 <pre><code>NAME        DESIRED   CURRENT   AGE
 cassandra   3         0         13s</code></pre>
 <p>The <code>StatefulSet</code> resource deploys Pods
 sequentially.</p></li>
 <li><p>Get the Pods to see the ordered creation status:</p>
-<pre class="shell"><code>kubectl get pods -l=&quot;app=cassandra&quot;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l=&quot;app=cassandra&quot;</code></pre>
 <p>The response should be similar to:</p>
-<pre class="shell"><code>NAME          READY     STATUS              RESTARTS   AGE
+<pre class="shell"><code class="language-shell">NAME          READY     STATUS              RESTARTS   AGE
 cassandra-0   1/1       Running             0          1m
 cassandra-1   0/1       ContainerCreating   0          8s</code></pre>
 <p>It can take several minutes for all three Pods to deploy. Once they
@@ -371,7 +384,7 @@ cassandra-2   1/1       Running   0          8m</code></pre></li>
 <li><p>Run the Cassandra <a
 href="https://cwiki.apache.org/confluence/display/CASSANDRA2/NodeTool">nodetool</a>
 inside the first Pod, to display the status of the ring.</p>
-<pre class="shell"><code>kubectl exec -it cassandra-0 -- nodetool status</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it cassandra-0 -- nodetool status</code></pre>
 <p>The response should look something like:</p>
 <pre><code>Datacenter: DC1-K8Demo
 ======================
@@ -388,33 +401,32 @@ StatefulSet</h2>
 StatefulSet.</p>
 <ol type="1">
 <li><p>Run the following command:</p>
-<pre class="shell"><code>kubectl edit statefulset cassandra</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit statefulset cassandra</code></pre>
 <p>This command opens an editor in your terminal. The line you need to
 change is the <code>replicas</code> field. The following sample is an
 excerpt of the StatefulSet file:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Please edit the object below. Lines beginning with a &#39;#&#39; will be ignored,</span></span>
-<span class="co"># and an empty file will abort the edit. If an error occurs while saving this file will be</span></span>
-<span class="co"># reopened with the relevant failures.</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2016-08-13T18:40:58Z</span></span>
-<span class="at">  </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;323&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 7a219483-6185-11e6-a910-42010a8a0fc0</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml"># Please edit the object below. Lines beginning with a &#39;#&#39; will be ignored,
+# and an empty file will abort the edit. If an error occurs while saving this file will be
+# reopened with the relevant failures.
+#
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  creationTimestamp: 2016-08-13T18:40:58Z
+  generation: 1
+  labels:
+  app: cassandra
+  name: cassandra
+  namespace: default
+  resourceVersion: &quot;323&quot;
+  uid: 7a219483-6185-11e6-a910-42010a8a0fc0
+spec:
+  replicas: 3</code></pre></li>
 <li><p>Change the number of replicas to 4, and then save the
 manifest.</p>
 <p>The StatefulSet now scales to run with 4 Pods.</p></li>
 <li><p>Get the Cassandra StatefulSet to verify your change:</p>
-<pre class="shell"><code>kubectl get statefulset cassandra</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get statefulset cassandra</code></pre>
 <p>The response should be similar to:</p>
 <pre><code>NAME        DESIRED   CURRENT   AGE
 cassandra   4         4         36m</code></pre></li>
@@ -436,14 +448,14 @@ claims are deleted.</p>
 <ol type="1">
 <li><p>Run the following commands (chained together into a single
 command) to delete everything in the Cassandra StatefulSet:</p>
-<pre class="shell"><code>grace=$(kubectl get pod cassandra-0 -o=jsonpath=&#39;{.spec.terminationGracePeriodSeconds}&#39;) \
+<pre class="shell"><code class="language-shell">grace=$(kubectl get pod cassandra-0 -o=jsonpath=&#39;{.spec.terminationGracePeriodSeconds}&#39;) \
   &amp;&amp; kubectl delete statefulset -l app=cassandra \
   &amp;&amp; echo &quot;Sleeping ${grace} seconds&quot; 1&gt;&amp;2 \
   &amp;&amp; sleep $grace \
   &amp;&amp; kubectl delete persistentvolumeclaim -l app=cassandra</code></pre></li>
 <li><p>Run the following command to delete the Service you set up for
 Cassandra:</p>
-<pre class="shell"><code>kubectl delete service -l app=cassandra</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete service -l app=cassandra</code></pre></li>
 </ol>
 <h2 id="cassandra-container-environment-variables">Cassandra container
 environment variables</h2>
@@ -554,6 +566,7 @@ Provider Configurations</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -562,6 +575,8 @@ Provider Configurations</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

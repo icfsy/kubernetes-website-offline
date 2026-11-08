@@ -18,6 +18,14 @@
   const PAGE_TITLE = document.body.dataset.title || "";
   const SITE = window.__SITE || { version: "", commit: "", generated: "", pages: 0 };
   const NAV = window.__NAV || { root: null };
+  const CODE_THEMES = window.__CODE_THEMES || [{ id: "auto", label: "Auto (page theme)" }];
+  const HLJS_ALIASES = {
+    shell: "bash", console: "bash", sh: "bash", zsh: "bash",
+    dosbat: "dos", bat: "dos", cmd: "dos",
+    text: "plaintext", plain: "plaintext", plaintext: "plaintext",
+    yml: "yaml", md: "markdown", js: "javascript", ts: "typescript",
+    py: "python", rb: "ruby", kt: "kotlin", rs: "rust",
+  };
 
   /* --------------------------------------------------------------- storage */
   const storage = {
@@ -101,6 +109,7 @@
     fontScale: parseFloat(storage.raw("font-scale", "1")) || 1,
     contentWidth: storage.raw("content-width", "normal") || "normal",
     navWidth: parseInt(storage.raw("nav-width", "400"), 10) || 400,
+    codeStyle: storage.raw("code-style", "auto") || "auto",
   };
 
   function saveNavState() {
@@ -116,6 +125,7 @@
     root.setAttribute("data-theme", dark ? "dark" : "light");
     const button = document.getElementById("k8s-theme-toggle");
     if (button) button.title = dark ? "Switch to light mode (Alt+T)" : "Switch to dark mode (Alt+T)";
+    if (state.codeStyle === "auto") applyCodeTheme("auto", false);
   }
 
   function toggleTheme() {
@@ -129,6 +139,86 @@
     state.fontScale = Math.min(1.35, Math.max(0.85, Math.round(scale * 100) / 100));
     document.documentElement.style.setProperty("--fs", String(state.fontScale));
     storage.setRaw("font-scale", String(state.fontScale));
+  }
+
+  function pageIsDark() {
+    return document.documentElement.getAttribute("data-theme") === "dark";
+  }
+
+  function codeThemeLabel(id) {
+    const found = CODE_THEMES.find((theme) => theme.id === id);
+    return found ? found.label : id;
+  }
+
+  function applyCodeTheme(id, persist) {
+    state.codeStyle = id;
+    const file = id === "auto" ? (pageIsDark() ? "github-dark" : "github") : id;
+    const link = document.getElementById("k8s-code-theme");
+    if (link) link.setAttribute("href", PREFIX + "assets/code-themes/" + file + ".css");
+    const label = codeThemeLabel(id);
+    const prev = document.getElementById("k8s-code-prev");
+    const next = document.getElementById("k8s-code-next");
+    if (prev) prev.title = "Previous code block style (Alt+[) · now: " + label;
+    if (next) next.title = "Next code block style (Alt+]) · now: " + label;
+    if (persist) storage.setRaw("code-style", id);
+  }
+
+  function cycleCodeTheme(direction) {
+    const index = CODE_THEMES.findIndex((theme) => theme.id === state.codeStyle);
+    const current = index >= 0 ? index : 0;
+    const next = (current + direction + CODE_THEMES.length) % CODE_THEMES.length;
+    const theme = CODE_THEMES[next];
+    applyCodeTheme(theme.id, true);
+    toast("Code style: " + theme.label);
+  }
+
+  function highlightCodeBlocks() {
+    if (!window.hljs) return;
+    const article = document.getElementById("k8s-doc");
+    if (!article) return;
+    const autoLanguages = [
+      "bash", "yaml", "json", "go", "powershell", "ini", "dockerfile",
+      "xml", "sql", "python", "javascript",
+    ];
+    article.querySelectorAll("pre > code").forEach((code) => {
+      if (code.dataset.highlighted === "yes") return;
+      code.dataset.highlighted = "yes";
+      const pre = code.parentElement;
+      let lang = "";
+      if (pre && pre.className) lang = pre.className.trim().split(/\s+/)[0];
+      if (!lang && code.className) {
+        const match = code.className.match(/language-([\w+#.-]+)/);
+        if (match) lang = match[1];
+      }
+      lang = HLJS_ALIASES[lang] || lang;
+      const text = code.textContent;
+      if (!lang) {
+        // Indented code blocks carry no language info.  Most of those in the
+        // docs are shell sessions or YAML samples, so try the cheap
+        // heuristics first and only then let highlight.js guess.
+        if (/(^|\n)\s*(?:kubectl|docker|curl|sudo|export|cd|helm|minikube|kind|kubeadm|openssl|systemctl|apt|apt-get|yum|brew|choco|winget|powershell|setx|New-Item|Add-Content)\s/.test(text)) {
+          lang = "bash";
+        } else if (/^\s*(?:apiVersion|kind|metadata|spec|data|rules|spec):/m.test(text)) {
+          lang = "yaml";
+        } else if (/^\s*[[{]/m.test(text) && /"[^"]+"\s*:/.test(text)) {
+          lang = "json";
+        }
+      }
+      try {
+        if (lang && hljs.getLanguage(lang)) {
+          code.innerHTML = hljs.highlight(text, {
+            language: lang,
+            ignoreIllegals: true,
+          }).value;
+        } else if (text.trim().length > 20 && text.length < 6000) {
+          const guess = hljs.highlightAuto(text, autoLanguages);
+          if (guess.relevance >= 2) code.innerHTML = guess.value;
+        }
+        code.classList.add("hljs");
+      } catch (err) {
+        code.classList.add("hljs");
+      }
+    });
   }
 
   function applyContentWidth(mode) {
@@ -867,6 +957,8 @@
     const sideVersion = document.getElementById("k8s-side-version");
     if (sideVersion && SITE.version) sideVersion.textContent = "v" + SITE.version;
 
+    applyCodeTheme(state.codeStyle, false);
+    highlightCodeBlocks();
     enhanceCodeBlocks();
     initScrollSpy();
     initScrollMemory();
@@ -946,6 +1038,8 @@
     bind("theme-toggle", toggleTheme);
     bind("font-up", () => applyFontScale(state.fontScale + 0.05));
     bind("font-down", () => applyFontScale(state.fontScale - 0.05));
+    bind("code-prev", () => cycleCodeTheme(-1));
+    bind("code-next", () => cycleCodeTheme(1));
     bind("width-toggle", () => {
       applyContentWidth(state.contentWidth === "wide" ? "normal" : "wide");
       toast(state.contentWidth === "wide" ? "Wide layout" : "Normal layout");
@@ -1076,12 +1170,18 @@
         }
         return;
       }
-      if (event.key === "[") {
+      if (!event.altKey && event.key === "[") {
         const link = document.querySelector(".page-nav-link.prev");
         if (link) window.location.href = link.href;
-      } else if (event.key === "]") {
+      } else if (!event.altKey && event.key === "]") {
         const link = document.querySelector(".page-nav-link.next");
         if (link) window.location.href = link.href;
+      } else if (event.altKey && event.key === "[") {
+        event.preventDefault();
+        cycleCodeTheme(-1);
+      } else if (event.altKey && event.key === "]") {
+        event.preventDefault();
+        cycleCodeTheme(1);
       } else if (event.altKey && event.key.toLowerCase() === "b") {
         event.preventDefault();
         toggleBookmark();

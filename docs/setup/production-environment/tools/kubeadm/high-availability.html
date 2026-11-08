@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../../" href="../../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -279,7 +294,7 @@ for Software Load Balancing</a> guide for more details.</p></li>
 </ul></li>
 <li><p>Add the first control plane node to the load balancer, and test
 the connection:</p>
-<pre class="shell"><code>nc -zv -w 2 &lt;LOAD_BALANCER_IP&gt; &lt;PORT&gt;</code></pre>
+<pre class="shell"><code class="language-shell">nc -zv -w 2 &lt;LOAD_BALANCER_IP&gt; &lt;PORT&gt;</code></pre>
 <p>A connection refused error is expected because the API server is not
 yet running. A timeout, however, means the load balancer cannot
 communicate with the control plane node. If a timeout occurs,
@@ -294,7 +309,7 @@ etcd nodes</h2>
 control plane node</h3>
 <ol type="1">
 <li><p>Initialize the control plane:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm init <span class="at">--control-plane-endpoint</span> <span class="st">&quot;LOAD_BALANCER_DNS:LOAD_BALANCER_PORT&quot;</span> <span class="at">--upload-certs</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">sudo kubeadm init --control-plane-endpoint &quot;LOAD_BALANCER_DNS:LOAD_BALANCER_PORT&quot; --upload-certs</code></pre>
 <ul>
 <li><p>You can use the <code>--kubernetes-version</code> flag to set the
 Kubernetes version to use. It is recommended that the versions of
@@ -333,15 +348,15 @@ configuration file set the <code>podSubnet</code> field under the
 <code>networking</code> object of <code>ClusterConfiguration</code>.</p>
 </div>
 <p>The output looks similar to:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">...</span></span>
-<span class="ex">You</span> can now join any number of control-plane node by running the following command on each as a root:</span>
-    <span class="ex">kubeadm</span> join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866 <span class="at">--control-plane</span> <span class="at">--certificate-key</span> f8902e114ef118304e561c3ecd4d0b543adc226b7a07f675f56564185ffe0c07</span>
-</span>
-<span class="ex">Please</span> note that the certificate-key gives access to cluster sensitive data, keep it secret!</span>
-<span class="ex">As</span> a safeguard, uploaded-certs will be deleted in two hours<span class="kw">;</span> <span class="ex">If</span> necessary, you can use kubeadm init phase upload-certs to reload certs afterward.</span>
-</span>
-<span class="ex">Then</span> you can join any number of worker nodes by running the following on each as root:</span>
-    <span class="ex">kubeadm</span> join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866</span></code></pre></div>
+<pre class="sh"><code class="language-sh">...
+You can now join any number of control-plane node by running the following command on each as a root:
+    kubeadm join 192.168.0.200:6443 --token 9vr73a.a8uxyaju799qwdjv --discovery-token-ca-cert-hash sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866 --control-plane --certificate-key f8902e114ef118304e561c3ecd4d0b543adc226b7a07f675f56564185ffe0c07
+
+Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
+As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use kubeadm init phase upload-certs to reload certs afterward.
+
+Then you can join any number of worker nodes by running the following on each as root:
+    kubeadm join 192.168.0.200:6443 --token 9vr73a.a8uxyaju799qwdjv --discovery-token-ca-cert-hash sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866</code></pre>
 <ul>
 <li><p>Copy this output to a text file. You will need it later to join
 control plane and worker nodes to the cluster.</p></li>
@@ -352,13 +367,11 @@ Secret.</p></li>
 <li><p>To re-upload the certificates and generate a new decryption key,
 use the following command on a control plane node that is already joined
 to the cluster:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm init phase upload-certs <span class="at">--upload-certs</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">sudo kubeadm init phase upload-certs --upload-certs</code></pre></li>
 <li><p>You can also specify a custom <code>--certificate-key</code>
 during <code>init</code> that can later be used by <code>join</code>. To
 generate such a key you can use the following command:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubeadm</span> certs certificate-key</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubeadm certs certificate-key</code></pre></li>
 </ul>
 <p>The certificate key is a hex encoded string that is an AES key of
 size 32 bytes.</p>
@@ -391,8 +404,7 @@ able to launch your cluster properly.</p>
 </div></li>
 <li><p>Type the following and watch the pods of the control plane
 components get started:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get pod <span class="at">-n</span> kube-system <span class="at">-w</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl get pod -n kube-system -w</code></pre></li>
 </ol>
 <h3 id="steps-for-the-rest-of-the-control-plane-nodes">Steps for the
 rest of the control plane nodes</h3>
@@ -401,7 +413,7 @@ rest of the control plane nodes</h3>
 <li><p>Execute the join command that was previously given to you by the
 <code>kubeadm init</code> output on the first node. It should look
 something like this:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866 <span class="at">--control-plane</span> <span class="at">--certificate-key</span> f8902e114ef118304e561c3ecd4d0b543adc226b7a07f675f56564185ffe0c07</span></code></pre></div>
+<pre class="sh"><code class="language-sh">sudo kubeadm join 192.168.0.200:6443 --token 9vr73a.a8uxyaju799qwdjv --discovery-token-ca-cert-hash sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866 --control-plane --certificate-key f8902e114ef118304e561c3ecd4d0b543adc226b7a07f675f56564185ffe0c07</code></pre>
 <ul>
 <li>The <code>--control-plane</code> flag tells
 <code>kubeadm join</code> to create a new control plane.</li>
@@ -434,10 +446,10 @@ to set up the etcd cluster.</p></li>
 href="#manual-certs">here</a>.</p></li>
 <li><p>Copy the following files from any etcd node in the cluster to the
 first control plane node:</p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="bu">export</span> <span class="va">CONTROL_PLANE</span><span class="op">=</span><span class="st">&quot;ubuntu@10.0.0.7&quot;</span></span>
-<span class="fu">scp</span> /etc/kubernetes/pki/etcd/ca.crt <span class="st">&quot;</span><span class="va">${CONTROL_PLANE}</span><span class="st">&quot;</span>:</span>
-<span class="fu">scp</span> /etc/kubernetes/pki/apiserver-etcd-client.crt <span class="st">&quot;</span><span class="va">${CONTROL_PLANE}</span><span class="st">&quot;</span>:</span>
-<span class="fu">scp</span> /etc/kubernetes/pki/apiserver-etcd-client.key <span class="st">&quot;</span><span class="va">${CONTROL_PLANE}</span><span class="st">&quot;</span>:</span></code></pre></div>
+<pre class="sh"><code class="language-sh">export CONTROL_PLANE=&quot;ubuntu@10.0.0.7&quot;
+scp /etc/kubernetes/pki/etcd/ca.crt &quot;${CONTROL_PLANE}&quot;:
+scp /etc/kubernetes/pki/apiserver-etcd-client.crt &quot;${CONTROL_PLANE}&quot;:
+scp /etc/kubernetes/pki/apiserver-etcd-client.key &quot;${CONTROL_PLANE}&quot;:</code></pre>
 <ul>
 <li>Replace the value of <code>CONTROL_PLANE</code> with the
 <code>user@host</code> of the first control-plane node.</li>
@@ -448,21 +460,20 @@ plane node</h3>
 <ol type="1">
 <li><p>Create a file called <code>kubeadm-config.yaml</code> with the
 following contents:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">kubernetesVersion</span><span class="kw">:</span><span class="at"> stable</span></span>
-<span class="fu">controlPlaneEndpoint</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;LOAD_BALANCER_DNS:LOAD_BALANCER_PORT&quot;</span><span class="at"> </span><span class="co"># change this (see below)</span></span>
-<span class="fu">etcd</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">external</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">endpoints</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">https://ETCD_0_IP:2379</span><span class="co"> # change ETCD_0_IP appropriately</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">https://ETCD_1_IP:2379</span><span class="co"> # change ETCD_1_IP appropriately</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">https://ETCD_2_IP:2379</span><span class="co"> # change ETCD_2_IP appropriately</span></span>
-<span class="at">    </span><span class="fu">caFile</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki/etcd/ca.crt</span></span>
-<span class="at">    </span><span class="fu">certFile</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki/apiserver-etcd-client.crt</span></span>
-<span class="at">    </span><span class="fu">keyFile</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki/apiserver-etcd-client.key</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+kubernetesVersion: stable
+controlPlaneEndpoint: &quot;LOAD_BALANCER_DNS:LOAD_BALANCER_PORT&quot; # change this (see below)
+etcd:
+  external:
+    endpoints:
+      - https://ETCD_0_IP:2379 # change ETCD_0_IP appropriately
+      - https://ETCD_1_IP:2379 # change ETCD_1_IP appropriately
+      - https://ETCD_2_IP:2379 # change ETCD_2_IP appropriately
+    caFile: /etc/kubernetes/pki/etcd/ca.crt
+    certFile: /etc/kubernetes/pki/apiserver-etcd-client.crt
+    keyFile: /etc/kubernetes/pki/apiserver-etcd-client.key</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -518,8 +529,7 @@ after bootstrapping control plane</h2>
 <h3 id="install-workers">Install workers</h3>
 <p>Worker nodes can be joined to the cluster with the command you stored
 previously as the output from the <code>kubeadm init</code> command:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866</span></code></pre></div>
+<pre class="sh"><code class="language-sh">sudo kubeadm join 192.168.0.200:6443 --token 9vr73a.a8uxyaju799qwdjv --discovery-token-ca-cert-hash sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866</code></pre>
 <h2 id="manual-certs">Manual certificate distribution</h2>
 <p>If you choose to not use <code>kubeadm init</code> with the
 <code>--upload-certs</code> flag this means that you are going to have
@@ -532,9 +542,9 @@ machine.</p>
 <ol type="1">
 <li><p>Enable ssh-agent on your main device that has access to all other
 nodes in the system:</p>
-<pre class="shell"><code>eval $(ssh-agent)</code></pre></li>
+<pre class="shell"><code class="language-shell">eval $(ssh-agent)</code></pre></li>
 <li><p>Add your SSH identity to the session:</p>
-<pre class="shell"><code>ssh-add ~/.ssh/path_to_private_key</code></pre></li>
+<pre class="shell"><code class="language-shell">ssh-add ~/.ssh/path_to_private_key</code></pre></li>
 <li><p>SSH between nodes to check that the connection is working
 correctly.</p>
 <ul>
@@ -542,10 +552,10 @@ correctly.</p>
 allows the node that you have logged into via SSH to access the SSH
 agent on your PC. Consider alternative methods if you do not fully trust
 the security of your user session on the node.</p>
-<pre class="shell"><code>ssh -A 10.0.0.7</code></pre></li>
+<pre class="shell"><code class="language-shell">ssh -A 10.0.0.7</code></pre></li>
 <li><p>When using sudo on any node, make sure to preserve the
 environment so SSH forwarding works:</p>
-<pre class="shell"><code>sudo -E -s</code></pre></li>
+<pre class="shell"><code class="language-shell">sudo -E -s</code></pre></li>
 </ul></li>
 <li><p>After configuring SSH on all the nodes you should run the
 following script on the first control plane node after running
@@ -553,20 +563,19 @@ following script on the first control plane node after running
 the first control plane node to the other control plane nodes:</p>
 <p>In the following example, replace <code>CONTROL_PLANE_IPS</code> with
 the IP addresses of the other control plane nodes.</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span><span class="op">=</span>ubuntu <span class="co"># customizable</span></span>
-<span class="va">CONTROL_PLANE_IPS</span><span class="op">=</span><span class="st">&quot;10.0.0.7 10.0.0.8&quot;</span></span>
-<span class="cf">for</span> host <span class="kw">in</span> <span class="va">${CONTROL_PLANE_IPS}</span><span class="kw">;</span> <span class="cf">do</span></span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/ca.crt <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/ca.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/sa.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/sa.pub <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/front-proxy-ca.crt <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/front-proxy-ca.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/etcd/ca.crt <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:etcd-ca.crt</span>
-    <span class="co"># Skip the next line if you are using external etcd</span></span>
-    <span class="fu">scp</span> /etc/kubernetes/pki/etcd/ca.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:etcd-ca.key</span>
-<span class="cf">done</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">USER=ubuntu # customizable
+CONTROL_PLANE_IPS=&quot;10.0.0.7 10.0.0.8&quot;
+for host in ${CONTROL_PLANE_IPS}; do
+    scp /etc/kubernetes/pki/ca.crt &quot;${USER}&quot;@$host:
+    scp /etc/kubernetes/pki/ca.key &quot;${USER}&quot;@$host:
+    scp /etc/kubernetes/pki/sa.key &quot;${USER}&quot;@$host:
+    scp /etc/kubernetes/pki/sa.pub &quot;${USER}&quot;@$host:
+    scp /etc/kubernetes/pki/front-proxy-ca.crt &quot;${USER}&quot;@$host:
+    scp /etc/kubernetes/pki/front-proxy-ca.key &quot;${USER}&quot;@$host:
+    scp /etc/kubernetes/pki/etcd/ca.crt &quot;${USER}&quot;@$host:etcd-ca.crt
+    # Skip the next line if you are using external etcd
+    scp /etc/kubernetes/pki/etcd/ca.key &quot;${USER}&quot;@$host:etcd-ca.key
+done</code></pre>
 <div class="admonition caution">
 <div class="admonition-title">
 <p>Caution:</p>
@@ -581,18 +590,17 @@ required SANs.</p>
 following script before running <code>kubeadm join</code>. This script
 will move the previously copied certificates from the home directory to
 <code>/etc/kubernetes/pki</code>:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span><span class="op">=</span>ubuntu <span class="co"># customizable</span></span>
-<span class="fu">mkdir</span> <span class="at">-p</span> /etc/kubernetes/pki/etcd</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/ca.crt /etc/kubernetes/pki/</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/ca.key /etc/kubernetes/pki/</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/sa.pub /etc/kubernetes/pki/</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/sa.key /etc/kubernetes/pki/</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/front-proxy-ca.crt /etc/kubernetes/pki/</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/front-proxy-ca.key /etc/kubernetes/pki/</span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt</span>
-<span class="co"># Skip the next line if you are using external etcd</span></span>
-<span class="fu">mv</span> /home/<span class="va">${USER}</span>/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">USER=ubuntu # customizable
+mkdir -p /etc/kubernetes/pki/etcd
+mv /home/${USER}/ca.crt /etc/kubernetes/pki/
+mv /home/${USER}/ca.key /etc/kubernetes/pki/
+mv /home/${USER}/sa.pub /etc/kubernetes/pki/
+mv /home/${USER}/sa.key /etc/kubernetes/pki/
+mv /home/${USER}/front-proxy-ca.crt /etc/kubernetes/pki/
+mv /home/${USER}/front-proxy-ca.key /etc/kubernetes/pki/
+mv /home/${USER}/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt
+# Skip the next line if you are using external etcd
+mv /home/${USER}/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key</code></pre></li>
 </ol>
 
         </article>
@@ -658,6 +666,7 @@ class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -666,6 +675,8 @@ class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../../assets/nav.js"></script>
 <script src="../../../../../assets/site.js"></script>
 </body>

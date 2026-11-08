@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -146,38 +161,37 @@ href="https://v1-24.docs.kubernetes.io/docs/tasks/configure-pod-container/enforc
 For v1.22, use <a
 href="https://v1-22.docs.kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-admission-controller/">v1alpha1</a>.</p>
 </div>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> PodSecurity</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> pod-security.admission.config.k8s.io/v1</span><span class="co"> # see compatibility note</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> PodSecurityConfiguration</span></span>
-<span class="at">    </span><span class="co"># Defaults applied when a mode label is not set.</span></span>
-<span class="at">    </span><span class="co">#</span></span>
-<span class="at">    </span><span class="co"># Level label values must be one of:</span></span>
-<span class="at">    </span><span class="co"># - &quot;privileged&quot; (default)</span></span>
-<span class="at">    </span><span class="co"># - &quot;baseline&quot;</span></span>
-<span class="at">    </span><span class="co"># - &quot;restricted&quot;</span></span>
-<span class="at">    </span><span class="co">#</span></span>
-<span class="at">    </span><span class="co"># Version label values must be one of:</span></span>
-<span class="at">    </span><span class="co"># - &quot;latest&quot; (default) </span></span>
-<span class="at">    </span><span class="co"># - specific version like &quot;v1.37&quot;</span></span>
-<span class="at">    </span><span class="fu">defaults</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">enforce</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;privileged&quot;</span></span>
-<span class="at">      </span><span class="fu">enforce-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;latest&quot;</span></span>
-<span class="at">      </span><span class="fu">audit</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;privileged&quot;</span></span>
-<span class="at">      </span><span class="fu">audit-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;latest&quot;</span></span>
-<span class="at">      </span><span class="fu">warn</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;privileged&quot;</span></span>
-<span class="at">      </span><span class="fu">warn-version</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;latest&quot;</span></span>
-<span class="at">    </span><span class="fu">exemptions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Array of authenticated usernames to exempt.</span></span>
-<span class="at">      </span><span class="fu">usernames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
-<span class="at">      </span><span class="co"># Array of runtime class names to exempt.</span></span>
-<span class="at">      </span><span class="fu">runtimeClasses</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span>
-<span class="at">      </span><span class="co"># Array of namespaces to exempt.</span></span>
-<span class="at">      </span><span class="fu">namespaces</span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: PodSecurity
+  configuration:
+    apiVersion: pod-security.admission.config.k8s.io/v1 # see compatibility note
+    kind: PodSecurityConfiguration
+    # Defaults applied when a mode label is not set.
+    #
+    # Level label values must be one of:
+    # - &quot;privileged&quot; (default)
+    # - &quot;baseline&quot;
+    # - &quot;restricted&quot;
+    #
+    # Version label values must be one of:
+    # - &quot;latest&quot; (default) 
+    # - specific version like &quot;v1.37&quot;
+    defaults:
+      enforce: &quot;privileged&quot;
+      enforce-version: &quot;latest&quot;
+      audit: &quot;privileged&quot;
+      audit-version: &quot;latest&quot;
+      warn: &quot;privileged&quot;
+      warn-version: &quot;latest&quot;
+    exemptions:
+      # Array of authenticated usernames to exempt.
+      usernames: []
+      # Array of runtime class names to exempt.
+      runtimeClasses: []
+      # Array of namespaces to exempt.
+      namespaces: []</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -249,6 +263,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -257,6 +272,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

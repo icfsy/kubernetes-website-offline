@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -203,77 +218,76 @@ Service</a>, <code>nginx</code>, to publish the IP addresses of Pods in
 the StatefulSet, <code>web</code>.</p>
 <div class="code-sample">
 <p><code>application/web/web.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;nginx&quot;</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/nginx-slim:0.21</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> www</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
-<span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> www</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: &quot;nginx&quot;
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: registry.k8s.io/nginx-slim:0.21
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ &quot;ReadWriteOnce&quot; ]
+      resources:
+        requests:
+          storage: 1Gi</code></pre>
 </div>
 <p>You will need to use at least two terminal windows. In the first
 terminal, use <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#get"><code>kubectl get</code></a>
 to <a class="glossary-term" href="../../reference/glossary.html#term-watch" title="Glossary: watch">watch</a> the
 creation of the StatefulSet's Pods.</p>
-<pre class="shell"><code># use this terminal to run commands that specify --watch
+<pre class="shell"><code class="language-shell"># use this terminal to run commands that specify --watch
 # end this watch when you are asked to start a new watch
 kubectl get pods --watch -l app=nginx</code></pre>
 <p>In the second terminal, use <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#apply"><code>kubectl apply</code></a>
 to create the headless Service and StatefulSet:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/web/web.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/web/web.yaml</code></pre>
 <pre><code>service/nginx created
 statefulset.apps/web created</code></pre>
 <p>The command above creates two Pods, each running an <a
 href="https://www.nginx.com">NGINX</a> webserver. Get the
 <code>nginx</code> Service...</p>
-<pre class="shell"><code>kubectl get service nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get service nginx</code></pre>
 <pre><code>NAME      TYPE         CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 nginx     ClusterIP    None         &lt;none&gt;        80/TCP    12s</code></pre>
 <p>...then get the <code>web</code> StatefulSet, to verify that both
 were created successfully:</p>
-<pre class="shell"><code>kubectl get statefulset web</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get statefulset web</code></pre>
 <pre><code>NAME   READY   AGE
 web    2/2     37s</code></pre>
 <h3 id="ordered-pod-creation">Ordered Pod creation</h3>
@@ -282,7 +296,7 @@ web    2/2     37s</code></pre>
 deployed, they are created sequentially, ordered from <em>{0..n-1}</em>.
 Examine the output of the <code>kubectl get</code> command in the first
 terminal. Eventually, the output will look like the example below.</p>
-<pre class="shell"><code># Do not start a new watch;
+<pre class="shell"><code class="language-shell"># Do not start a new watch;
 # this should already be running
 kubectl get pods --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
@@ -317,7 +331,7 @@ network identity.</p>
 <h3 id="examining-the-pod-s-ordinal-index">Examining the Pod's ordinal
 index</h3>
 <p>Get the StatefulSet's Pods:</p>
-<pre class="shell"><code>kubectl get pods -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 web-0     1/1       Running   0          1m
 web-1     1/1       Running   0          1m</code></pre>
@@ -335,7 +349,7 @@ identities</h3>
 <p>Each Pod has a stable hostname based on its ordinal index. Use <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#exec"><code>kubectl exec</code></a>
 to execute the <code>hostname</code> command in each Pod:</p>
-<pre class="shell"><code>for i in 0 1; do kubectl exec &quot;web-$i&quot; -- sh -c &#39;hostname&#39;; done</code></pre>
+<pre class="shell"><code class="language-shell">for i in 0 1; do kubectl exec &quot;web-$i&quot; -- sh -c &#39;hostname&#39;; done</code></pre>
 <pre><code>web-0
 web-1</code></pre>
 <p>Use <a
@@ -343,9 +357,9 @@ href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#r
 to execute a container that provides the <code>nslookup</code> command
 from the <code>dnsutils</code> package. Using <code>nslookup</code> on
 the Pods' hostnames, you can examine their in-cluster DNS addresses:</p>
-<pre class="shell"><code>kubectl run -i --tty --image busybox:1.28 dns-test --restart=Never --rm</code></pre>
+<pre class="shell"><code class="language-shell">kubectl run -i --tty --image busybox:1.28 dns-test --restart=Never --rm</code></pre>
 <p>which starts a new shell. In that new shell, run:</p>
-<pre class="shell"><code># Run this in the dns-test container shell
+<pre class="shell"><code class="language-shell"># Run this in the dns-test container shell
 nslookup web-0.nginx</code></pre>
 <p>The output is similar to:</p>
 <pre><code>Server:    10.0.0.10
@@ -365,18 +379,18 @@ Address 1: 10.244.2.6</code></pre>
 Pod that is Running and Ready). The SRV records point to A record
 entries that contain the Pods' IP addresses.</p>
 <p>In one terminal, watch the StatefulSet's Pods:</p>
-<pre class="shell"><code># Start a new watch
+<pre class="shell"><code class="language-shell"># Start a new watch
 # End this watch when you&#39;ve seen that the delete is finished
 kubectl get pod --watch -l app=nginx</code></pre>
 <p>In a second terminal, use <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#delete"><code>kubectl delete</code></a>
 to delete all the Pods in the StatefulSet:</p>
-<pre class="shell"><code>kubectl delete pod -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod -l app=nginx</code></pre>
 <pre><code>pod &quot;web-0&quot; deleted
 pod &quot;web-1&quot; deleted</code></pre>
 <p>Wait for the StatefulSet to restart them, and for both Pods to
 transition to Running and Ready:</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pod --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS              RESTARTS   AGE
 web-0     0/1       ContainerCreating   0          0s
@@ -389,14 +403,14 @@ web-1     1/1       Running   0         34s</code></pre>
 <p>Use <code>kubectl exec</code> and <code>kubectl run</code> to view
 the Pods' hostnames and in-cluster DNS entries. First, view the Pods'
 hostnames:</p>
-<pre class="shell"><code>for i in 0 1; do kubectl exec web-$i -- sh -c &#39;hostname&#39;; done</code></pre>
+<pre class="shell"><code class="language-shell">for i in 0 1; do kubectl exec web-$i -- sh -c &#39;hostname&#39;; done</code></pre>
 <pre><code>web-0
 web-1</code></pre>
 <p>then, run:</p>
-<pre class="shell"><code>kubectl run -i --tty --image busybox:1.28 dns-test --restart=Never --rm</code></pre>
+<pre class="shell"><code class="language-shell">kubectl run -i --tty --image busybox:1.28 dns-test --restart=Never --rm</code></pre>
 <p>which starts a new shell.<br />
 In that new shell, run:</p>
-<pre class="shell"><code># Run this in the dns-test container shell
+<pre class="shell"><code class="language-shell"># Run this in the dns-test container shell
 nslookup web-0.nginx</code></pre>
 <p>The output is similar to:</p>
 <pre><code>Server:    10.0.0.10
@@ -441,7 +455,7 @@ Pods.</p>
 <h3 id="writing-to-stable-storage">Writing to stable storage</h3>
 <p>Get the PersistentVolumeClaims for <code>web-0</code> and
 <code>web-1</code>:</p>
-<pre class="shell"><code>kubectl get pvc -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pvc -l app=nginx</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME        STATUS    VOLUME                                     CAPACITY   ACCESSMODES   AGE
 www-web-0   Bound     pvc-15c268c7-b507-11e6-932f-42010a800002   1Gi        RWO           48s
@@ -458,7 +472,7 @@ ensures that the <code>/usr/share/nginx/html</code> directory is backed
 by a PersistentVolume.</p>
 <p>Write the Pods' hostnames to their <code>index.html</code> files and
 verify that the NGINX webservers serve the hostnames:</p>
-<pre class="shell"><code>for i in 0 1; do kubectl exec &quot;web-$i&quot; -- sh -c &#39;echo &quot;$(hostname)&quot; &gt; /usr/share/nginx/html/index.html&#39;; done
+<pre class="shell"><code class="language-shell">for i in 0 1; do kubectl exec &quot;web-$i&quot; -- sh -c &#39;echo &quot;$(hostname)&quot; &gt; /usr/share/nginx/html/index.html&#39;; done
 
 for i in 0 1; do kubectl exec -i -t &quot;web-$i&quot; -- curl http://localhost/; done</code></pre>
 <pre><code>web-0
@@ -476,17 +490,17 @@ using hostPath volumes</a>), by running:</p>
 <p>before retrying the <code>curl</code> command above.</p>
 </div>
 <p>In one terminal, watch the StatefulSet's Pods:</p>
-<pre class="shell"><code># End this watch when you&#39;ve reached the end of the section.
+<pre class="shell"><code class="language-shell"># End this watch when you&#39;ve reached the end of the section.
 # At the start of &quot;Scaling a StatefulSet&quot; you&#39;ll start a new watch.
 kubectl get pod --watch -l app=nginx</code></pre>
 <p>In a second terminal, delete all of the StatefulSet's Pods:</p>
-<pre class="shell"><code>kubectl delete pod -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod -l app=nginx</code></pre>
 <pre><code>pod &quot;web-0&quot; deleted
 pod &quot;web-1&quot; deleted</code></pre>
 <p>Examine the output of the <code>kubectl get</code> command in the
 first terminal, and wait for all of the Pods to transition to Running
 and Ready.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pod --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS              RESTARTS   AGE
 web-0     0/1       ContainerCreating   0          0s
@@ -519,18 +533,18 @@ to scale a StatefulSet.</p>
 to distribute work across the StatefulSet, the new larger set of Pods
 can perform more of that work.</p>
 <p>In one terminal window, watch the Pods in the StatefulSet:</p>
-<pre class="shell"><code># If you already have a watch running, you can continue using that.
+<pre class="shell"><code class="language-shell"># If you already have a watch running, you can continue using that.
 # Otherwise, start one.
 # End this watch when there are 5 healthy Pods for the StatefulSet
 kubectl get pods --watch -l app=nginx</code></pre>
 <p>In another terminal window, use <code>kubectl scale</code> to scale
 the number of replicas to 5:</p>
-<pre class="shell"><code>kubectl scale sts web --replicas=5</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale sts web --replicas=5</code></pre>
 <pre><code>statefulset.apps/web scaled</code></pre>
 <p>Examine the output of the <code>kubectl get</code> command in the
 first terminal, and wait for the three additional Pods to transition to
 Running and Ready.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pod --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 web-0     1/1       Running   0          2h
@@ -558,15 +572,15 @@ before launching the subsequent Pod.</p>
 might do this because the level of traffic to a service has decreased,
 and at the current scale there are idle resources.</p>
 <p>In one terminal, watch the StatefulSet's Pods:</p>
-<pre class="shell"><code># End this watch when there are only 3 Pods for the StatefulSet
+<pre class="shell"><code class="language-shell"># End this watch when there are only 3 Pods for the StatefulSet
 kubectl get pod --watch -l app=nginx</code></pre>
 <p>In another terminal, use <code>kubectl patch</code> to scale the
 StatefulSet back down to three replicas:</p>
-<pre class="shell"><code>kubectl patch sts web -p &#39;{&quot;spec&quot;:{&quot;replicas&quot;:3}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch sts web -p &#39;{&quot;spec&quot;:{&quot;replicas&quot;:3}}&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
 <p>Wait for <code>web-4</code> and <code>web-3</code> to transition to
 Terminating.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pods --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS              RESTARTS   AGE
 web-0     1/1       Running             0          3h
@@ -585,7 +599,7 @@ web-3     1/1       Terminating   0         42s</code></pre>
 respect to its ordinal index, and it waited for each Pod to be
 completely shut down before deleting the next one.</p>
 <p>Get the StatefulSet's PersistentVolumeClaims:</p>
-<pre class="shell"><code>kubectl get pvc -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pvc -l app=nginx</code></pre>
 <pre><code>NAME        STATUS    VOLUME                                     CAPACITY   ACCESSMODES   AGE
 www-web-0   Bound     pvc-15c268c7-b507-11e6-932f-42010a800002   1Gi        RWO           13h
 www-web-1   Bound     pvc-15c79307-b507-11e6-932f-42010a800002   1Gi        RWO           13h
@@ -618,10 +632,10 @@ You'll practice that later in this tutorial.</p>
 <p>First, try a simple rolling update.</p>
 <p>In one terminal window, patch the <code>web</code> StatefulSet to
 change the container image again:</p>
-<pre class="shell"><code>kubectl patch statefulset web --type=&#39;json&#39; -p=&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/image&quot;, &quot;value&quot;:&quot;registry.k8s.io/nginx-slim:0.24&quot;}]&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch statefulset web --type=&#39;json&#39; -p=&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/image&quot;, &quot;value&quot;:&quot;registry.k8s.io/nginx-slim:0.24&quot;}]&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
 <p>In another terminal, watch the Pods in the StatefulSet:</p>
-<pre class="shell"><code># End this watch when the rollout is complete
+<pre class="shell"><code class="language-shell"># End this watch when the rollout is complete
 #
 # If you&#39;re not sure, leave it running one more minute
 kubectl get pod -l app=nginx --watch</code></pre>
@@ -671,7 +685,7 @@ restored to the previous version. In this way, the controller attempts
 to continue to keep the application healthy and the update consistent in
 the presence of intermittent failures.</p>
 <p>Get the Pods to view their container images:</p>
-<pre class="shell"><code>for p in 0 1 2; do kubectl get pod &quot;web-$p&quot; --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;; echo; done</code></pre>
+<pre class="shell"><code class="language-shell">for p in 0 1 2; do kubectl get pod &quot;web-$p&quot; --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;; echo; done</code></pre>
 <pre><code>registry.k8s.io/nginx-slim:0.24
 registry.k8s.io/nginx-slim:0.24
 registry.k8s.io/nginx-slim:0.24
@@ -703,21 +717,21 @@ tutorial, some external automation - can trigger that prepared
 update.</p>
 <p>First, patch the <code>web</code> StatefulSet to add a partition to
 the <code>updateStrategy</code> field:</p>
-<pre class="shell"><code># The value of &quot;partition&quot; determines which ordinals a change applies to
+<pre class="shell"><code class="language-shell"># The value of &quot;partition&quot; determines which ordinals a change applies to
 # Make sure to use a number bigger than the last ordinal for the
 # StatefulSet
 kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&quot;:{&quot;type&quot;:&quot;RollingUpdate&quot;,&quot;rollingUpdate&quot;:{&quot;partition&quot;:3}}}}&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
 <p>Patch the StatefulSet again to change the container image that this
 StatefulSet uses:</p>
-<pre class="shell"><code>kubectl patch statefulset web --type=&#39;json&#39; -p=&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/image&quot;, &quot;value&quot;:&quot;registry.k8s.io/nginx-slim:0.21&quot;}]&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch statefulset web --type=&#39;json&#39; -p=&#39;[{&quot;op&quot;: &quot;replace&quot;, &quot;path&quot;: &quot;/spec/template/spec/containers/0/image&quot;, &quot;value&quot;:&quot;registry.k8s.io/nginx-slim:0.21&quot;}]&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
 <p>Delete a Pod in the StatefulSet:</p>
-<pre class="shell"><code>kubectl delete pod web-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod web-2</code></pre>
 <pre><code>pod &quot;web-2&quot; deleted</code></pre>
 <p>Wait for the replacement <code>web-2</code> Pod to be Running and
 Ready:</p>
-<pre class="shell"><code># End the watch when you see that web-2 is healthy
+<pre class="shell"><code class="language-shell"># End the watch when you see that web-2 is healthy
 kubectl get pod -l app=nginx --watch</code></pre>
 <pre><code>NAME      READY     STATUS              RESTARTS   AGE
 web-0     1/1       Running             0          4m
@@ -725,7 +739,7 @@ web-1     1/1       Running             0          4m
 web-2     0/1       ContainerCreating   0          11s
 web-2     1/1       Running   0         18s</code></pre>
 <p>Get the Pod's container image:</p>
-<pre class="shell"><code>kubectl get pod web-2 --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod web-2 --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;</code></pre>
 <pre><code>registry.k8s.io/nginx-slim:0.24</code></pre>
 <p>Notice that, even though the update strategy is
 <code>RollingUpdate</code> the StatefulSet restored the Pod with the
@@ -740,7 +754,7 @@ that staged change.</p>
 decrementing the <code>partition</code> you specified <a
 href="#staging-an-update">above</a>.</p>
 <p>Patch the StatefulSet to decrement the partition:</p>
-<pre class="shell"><code># The value of &quot;partition&quot; should match the highest existing ordinal for
+<pre class="shell"><code class="language-shell"># The value of &quot;partition&quot; should match the highest existing ordinal for
 # the StatefulSet
 kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&quot;:{&quot;type&quot;:&quot;RollingUpdate&quot;,&quot;rollingUpdate&quot;:{&quot;partition&quot;:2}}}}&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
@@ -748,7 +762,7 @@ kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&qu
 (implemented by a graceful <strong>delete</strong> followed by creating
 a new Pod once the deletion is complete). Wait for the new
 <code>web-2</code> Pod to be Running and Ready.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pod -l app=nginx --watch</code></pre>
 <pre><code>NAME      READY     STATUS              RESTARTS   AGE
 web-0     1/1       Running             0          4m
@@ -756,7 +770,7 @@ web-1     1/1       Running             0          4m
 web-2     0/1       ContainerCreating   0          11s
 web-2     1/1       Running   0         18s</code></pre>
 <p>Get the Pod's container:</p>
-<pre class="shell"><code>kubectl get pod web-2 --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod web-2 --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;</code></pre>
 <pre><code>registry.k8s.io/nginx-slim:0.21
 </code></pre>
 <p>When you changed the <code>partition</code>, the StatefulSet
@@ -764,10 +778,10 @@ controller automatically updated the <code>web-2</code> Pod because the
 Pod's ordinal was greater than or equal to the
 <code>partition</code>.</p>
 <p>Delete the <code>web-1</code> Pod:</p>
-<pre class="shell"><code>kubectl delete pod web-1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod web-1</code></pre>
 <pre><code>pod &quot;web-1&quot; deleted</code></pre>
 <p>Wait for the <code>web-1</code> Pod to be Running and Ready.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pod -l app=nginx --watch</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME      READY     STATUS        RESTARTS   AGE
@@ -782,7 +796,7 @@ web-1     0/1       Pending   0         0s
 web-1     0/1       ContainerCreating   0         0s
 web-1     1/1       Running   0         18s</code></pre>
 <p>Get the <code>web-1</code> Pod's container image:</p>
-<pre class="shell"><code>kubectl get pod web-1 --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod web-1 --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;</code></pre>
 <pre><code>registry.k8s.io/nginx-slim:0.24</code></pre>
 <p><code>web-1</code> was restored to its original configuration because
 the Pod's ordinal was less than the partition. When a partition is
@@ -800,11 +814,11 @@ set the <code>partition</code> to the ordinal at which you want the
 controller to pause the update.</p>
 <p>The partition is currently set to <code>2</code>. Set the partition
 to <code>0</code>:</p>
-<pre class="shell"><code>kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&quot;:{&quot;type&quot;:&quot;RollingUpdate&quot;,&quot;rollingUpdate&quot;:{&quot;partition&quot;:0}}}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&quot;:{&quot;type&quot;:&quot;RollingUpdate&quot;,&quot;rollingUpdate&quot;:{&quot;partition&quot;:0}}}}&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
 <p>Wait for all of the Pods in the StatefulSet to become Running and
 Ready.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pod -l app=nginx --watch</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME      READY     STATUS              RESTARTS   AGE
@@ -823,7 +837,7 @@ web-0     0/1       Pending   0         0s
 web-0     0/1       ContainerCreating   0         0s
 web-0     1/1       Running   0         3s</code></pre>
 <p>Get the container image details for the Pods in the StatefulSet:</p>
-<pre class="shell"><code>for p in 0 1 2; do kubectl get pod &quot;web-$p&quot; --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;; echo; done</code></pre>
+<pre class="shell"><code class="language-shell">for p in 0 1 2; do kubectl get pod &quot;web-$p&quot; --template &#39;{{range $i, $c := .spec.containers}}{{$c.image}}{{end}}&#39;; echo; done</code></pre>
 <pre><code>registry.k8s.io/nginx-slim:0.21
 registry.k8s.io/nginx-slim:0.21
 registry.k8s.io/nginx-slim:0.21</code></pre>
@@ -834,7 +848,7 @@ the StatefulSet to continue the update process.</p>
 <code>.spec.updateStrategy.type</code> to <code>OnDelete</code>.</p>
 <p>Patch the <code>web</code> StatefulSet to use the
 <code>OnDelete</code> update strategy:</p>
-<pre class="shell"><code>kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&quot;:{&quot;type&quot;:&quot;OnDelete&quot;, &quot;rollingUpdate&quot;: null}}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch statefulset web -p &#39;{&quot;spec&quot;:{&quot;updateStrategy&quot;:{&quot;type&quot;:&quot;OnDelete&quot;, &quot;rollingUpdate&quot;: null}}}&#39;</code></pre>
 <pre><code>statefulset.apps/web patched</code></pre>
 <p>When you select this update strategy, the StatefulSet controller does
 not automatically update Pods when a modification is made to the
@@ -860,32 +874,32 @@ to delete the StatefulSet. Make sure to supply the
 <code>--cascade=orphan</code> parameter to the command. This parameter
 tells Kubernetes to only delete the StatefulSet, and to
 <strong>not</strong> delete any of its Pods.</p>
-<pre class="shell"><code>kubectl delete statefulset web --cascade=orphan</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete statefulset web --cascade=orphan</code></pre>
 <pre><code>statefulset.apps &quot;web&quot; deleted</code></pre>
 <p>Get the Pods, to examine their status:</p>
-<pre class="shell"><code>kubectl get pods -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 web-0     1/1       Running   0          6m
 web-1     1/1       Running   0          7m
 web-2     1/1       Running   0          5m</code></pre>
 <p>Even though <code>web</code> has been deleted, all of the Pods are
 still Running and Ready. Delete <code>web-0</code>:</p>
-<pre class="shell"><code>kubectl delete pod web-0</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod web-0</code></pre>
 <pre><code>pod &quot;web-0&quot; deleted</code></pre>
 <p>Get the StatefulSet's Pods:</p>
-<pre class="shell"><code>kubectl get pods -l app=nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 web-1     1/1       Running   0          10m
 web-2     1/1       Running   0          7m</code></pre>
 <p>As the <code>web</code> StatefulSet has been deleted,
 <code>web-0</code> has not been relaunched.</p>
 <p>In one terminal, watch the StatefulSet's Pods.</p>
-<pre class="shell"><code># Leave this watch running until the next time you start a watch
+<pre class="shell"><code class="language-shell"># Leave this watch running until the next time you start a watch
 kubectl get pods --watch -l app=nginx</code></pre>
 <p>In a second terminal, recreate the StatefulSet. Note that, unless you
 deleted the <code>nginx</code> Service (which you should not have), you
 will see an error indicating that the Service already exists.</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/web/web.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/web/web.yaml</code></pre>
 <pre><code>statefulset.apps/web created
 service/nginx unchanged</code></pre>
 <p>Ignore the error. It only indicates that an attempt was made to
@@ -893,7 +907,7 @@ create the <em>nginx</em> headless Service even though that Service
 already exists.</p>
 <p>Examine the output of the <code>kubectl get</code> command running in
 the first terminal.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pods --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 web-1     1/1       Running   0          16m
@@ -916,7 +930,7 @@ recreated, and once <code>web-1</code> had been determined to already be
 Running and Ready, <code>web-2</code> was terminated.</p>
 <p>Now take another look at the contents of the <code>index.html</code>
 file served by the Pods' webservers:</p>
-<pre class="shell"><code>for i in 0 1; do kubectl exec -i -t &quot;web-$i&quot; -- curl http://localhost/; done</code></pre>
+<pre class="shell"><code class="language-shell">for i in 0 1; do kubectl exec -i -t &quot;web-$i&quot; -- curl http://localhost/; done</code></pre>
 <pre><code>web-0
 web-1</code></pre>
 <p>Even though you deleted both the StatefulSet and the
@@ -927,16 +941,16 @@ recreated the StatefulSet and it relaunched <code>web-0</code>, its
 original PersistentVolume was remounted.</p>
 <h3 id="cascading-delete">Cascading delete</h3>
 <p>In one terminal window, watch the Pods in the StatefulSet.</p>
-<pre class="shell"><code># Leave this running until the next page section
+<pre class="shell"><code class="language-shell"># Leave this running until the next page section
 kubectl get pods --watch -l app=nginx</code></pre>
 <p>In another terminal, delete the StatefulSet again. This time, omit
 the <code>--cascade=orphan</code> parameter.</p>
-<pre class="shell"><code>kubectl delete statefulset web</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete statefulset web</code></pre>
 <pre><code>statefulset.apps &quot;web&quot; deleted</code></pre>
 <p>Examine the output of the <code>kubectl get</code> command running in
 the first terminal, and wait for all of the Pods to transition to
 Terminating.</p>
-<pre class="shell"><code># This should already be running
+<pre class="shell"><code class="language-shell"># This should already be running
 kubectl get pods --watch -l app=nginx</code></pre>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 web-0     1/1       Running   0          11m
@@ -965,15 +979,15 @@ Pods, the cascade does <strong>not</strong> delete the headless Service
 associated with the StatefulSet. You must delete the <code>nginx</code>
 Service manually.</p>
 </div>
-<pre class="shell"><code>kubectl delete service nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete service nginx</code></pre>
 <pre><code>service &quot;nginx&quot; deleted</code></pre>
 <p>Recreate the StatefulSet and headless Service one more time:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/web/web.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/web/web.yaml</code></pre>
 <pre><code>service/nginx created
 statefulset.apps/web created</code></pre>
 <p>When all of the StatefulSet's Pods transition to Running and Ready,
 retrieve the contents of their <code>index.html</code> files:</p>
-<pre class="shell"><code>for i in 0 1; do kubectl exec -i -t &quot;web-$i&quot; -- curl http://localhost/; done</code></pre>
+<pre class="shell"><code class="language-shell">for i in 0 1; do kubectl exec -i -t &quot;web-$i&quot; -- curl http://localhost/; done</code></pre>
 <pre><code>web-0
 web-1</code></pre>
 <p>Even though you completely deleted the StatefulSet, and all of its
@@ -981,10 +995,10 @@ Pods, the Pods are recreated with their PersistentVolumes mounted, and
 <code>web-0</code> and <code>web-1</code> continue to serve their
 hostnames.</p>
 <p>Finally, delete the <code>nginx</code> Service...</p>
-<pre class="shell"><code>kubectl delete service nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete service nginx</code></pre>
 <pre><code>service &quot;nginx&quot; deleted</code></pre>
 <p>...and the <code>web</code> StatefulSet:</p>
-<pre class="shell"><code>kubectl delete statefulset web</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete statefulset web</code></pre>
 <pre><code>statefulset &quot;web&quot; deleted</code></pre>
 <h2 id="pod-management-policy">Pod management policy</h2>
 <p>For some distributed systems, the StatefulSet ordering guarantees are
@@ -1024,69 +1038,68 @@ StatefulSet, the hostname for each Pod is different and
 predictable).</p>
 <div class="code-sample">
 <p><code>application/web/web-parallel.yaml</code></p>
-<div class="sourceCode" id="cb118"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;nginx&quot;</span></span>
-<span class="at">  </span><span class="fu">podManagementPolicy</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Parallel&quot;</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/nginx-slim:0.24</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> www</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
-<span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> www</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: &quot;nginx&quot;
+  podManagementPolicy: &quot;Parallel&quot;
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: registry.k8s.io/nginx-slim:0.24
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ &quot;ReadWriteOnce&quot; ]
+      resources:
+        requests:
+          storage: 1Gi</code></pre>
 </div>
 <p>This manifest is identical to the one you downloaded above except
 that the <code>.spec.podManagementPolicy</code> of the <code>web</code>
 StatefulSet is set to <code>Parallel</code>.</p>
 <p>In one terminal, watch the Pods in the StatefulSet.</p>
-<pre class="shell"><code># Leave this watch running until the end of the section
+<pre class="shell"><code class="language-shell"># Leave this watch running until the end of the section
 kubectl get pod -l app=nginx --watch</code></pre>
 <p>In another terminal, reconfigure the StatefulSet for
 <code>Parallel</code> Pod management:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/web/web-parallel.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/web/web-parallel.yaml</code></pre>
 <pre><code>service/nginx updated
 statefulset.apps/web updated</code></pre>
 <p>Keep the terminal open where you're running the watch. In another
 terminal window, scale the StatefulSet:</p>
-<pre class="shell"><code>kubectl scale statefulset/web --replicas=5</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale statefulset/web --replicas=5</code></pre>
 <pre><code>statefulset.apps/web scaled</code></pre>
 <p>Examine the output of the terminal where the <code>kubectl get</code>
 command is running. It may look something like</p>
@@ -1114,11 +1127,11 @@ extra capacity and having it available for use.</p>
 <h2 id="cleaning-up">Cleaning up</h2>
 <p>You should have two terminals open, ready for you to run
 <code>kubectl</code> commands as part of cleanup.</p>
-<pre class="shell"><code>kubectl delete sts web
+<pre class="shell"><code class="language-shell">kubectl delete sts web
 # sts is an abbreviation for statefulset</code></pre>
 <p>You can watch <code>kubectl get</code> to see those Pods being
 deleted.</p>
-<pre class="shell"><code># end the watch when you&#39;ve seen what you need to
+<pre class="shell"><code class="language-shell"># end the watch when you&#39;ve seen what you need to
 kubectl get pod -l app=nginx --watch</code></pre>
 <pre><code>web-3     1/1       Terminating   0         9m
 web-2     1/1       Terminating   0         9m
@@ -1148,30 +1161,30 @@ not wait for a Pod's ordinal successor to terminate prior to deleting
 that Pod.</p>
 <p>Close the terminal where the <code>kubectl get</code> command is
 running and delete the <code>nginx</code> Service:</p>
-<pre class="shell"><code>kubectl delete svc nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete svc nginx</code></pre>
 <p>Delete the persistent storage media for the PersistentVolumes used in
 this tutorial.</p>
-<pre class="shell"><code>kubectl get pvc</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pvc</code></pre>
 <pre><code>NAME        STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
 www-web-0   Bound    pvc-2bf00408-d366-4a12-bad0-1869c65d0bee   1Gi        RWO            standard       25m
 www-web-1   Bound    pvc-ba3bfe9c-413e-4b95-a2c0-3ea8a54dbab4   1Gi        RWO            standard       24m
 www-web-2   Bound    pvc-cba6cfa6-3a47-486b-a138-db5930207eaf   1Gi        RWO            standard       15m
 www-web-3   Bound    pvc-0c04d7f0-787a-4977-8da3-d9d3a6d8d752   1Gi        RWO            standard       15m
 www-web-4   Bound    pvc-b2c73489-e70b-4a4e-9ec1-9eab439aa43e   1Gi        RWO            standard       14m</code></pre>
-<pre class="shell"><code>kubectl get pv</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pv</code></pre>
 <pre><code>NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM               STORAGECLASS   REASON   AGE
 pvc-0c04d7f0-787a-4977-8da3-d9d3a6d8d752   1Gi        RWO            Delete           Bound    default/www-web-3   standard                15m
 pvc-2bf00408-d366-4a12-bad0-1869c65d0bee   1Gi        RWO            Delete           Bound    default/www-web-0   standard                25m
 pvc-b2c73489-e70b-4a4e-9ec1-9eab439aa43e   1Gi        RWO            Delete           Bound    default/www-web-4   standard                14m
 pvc-ba3bfe9c-413e-4b95-a2c0-3ea8a54dbab4   1Gi        RWO            Delete           Bound    default/www-web-1   standard                24m
 pvc-cba6cfa6-3a47-486b-a138-db5930207eaf   1Gi        RWO            Delete           Bound    default/www-web-2   standard                15m</code></pre>
-<pre class="shell"><code>kubectl delete pvc www-web-0 www-web-1 www-web-2 www-web-3 www-web-4</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pvc www-web-0 www-web-1 www-web-2 www-web-3 www-web-4</code></pre>
 <pre><code>persistentvolumeclaim &quot;www-web-0&quot; deleted
 persistentvolumeclaim &quot;www-web-1&quot; deleted
 persistentvolumeclaim &quot;www-web-2&quot; deleted
 persistentvolumeclaim &quot;www-web-3&quot; deleted
 persistentvolumeclaim &quot;www-web-4&quot; deleted</code></pre>
-<pre class="shell"><code>kubectl get pvc</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pvc</code></pre>
 <pre><code>No resources found in default namespace.</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
@@ -1246,6 +1259,7 @@ method, to ensure that all storage is reclaimed.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1254,6 +1268,8 @@ method, to ensure that all storage is reclaimed.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

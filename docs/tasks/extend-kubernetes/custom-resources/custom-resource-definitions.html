@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -155,49 +170,48 @@ CustomResourceDefinitions themselves are non-namespaced and are
 available to all namespaces.</p>
 <p>For example, if you save the following CustomResourceDefinition to
 <code>resourcedefinition.yaml</code>:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># name must match the spec fields below, and be in the form: &lt;plural&gt;.&lt;group&gt;</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> crontabs.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># group name to use for REST API: /apis/&lt;group&gt;/&lt;version&gt;</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="co"># list of versions supported by this CustomResourceDefinition</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="co"># Each version can be enabled/disabled by Served flag.</span></span>
-<span class="at">      </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="co"># One and only one version must be marked as the storage version.</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">              </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">cronSpec</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">  </span><span class="co"># either Namespaced or Cluster</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># plural name to be used in the URL: /apis/&lt;group&gt;/&lt;version&gt;/&lt;plural&gt;</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> crontabs</span></span>
-<span class="at">    </span><span class="co"># singular name to be used as an alias on the CLI and for display</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> crontab</span></span>
-<span class="at">    </span><span class="co"># kind is normally the CamelCased singular type. Your resource manifests use this.</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">    </span><span class="co"># shortNames allow shorter string to match your resource on the CLI</span></span>
-<span class="at">    </span><span class="fu">shortNames</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ct</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  # name must match the spec fields below, and be in the form: &lt;plural&gt;.&lt;group&gt;
+  name: crontabs.stable.example.com
+spec:
+  # group name to use for REST API: /apis/&lt;group&gt;/&lt;version&gt;
+  group: stable.example.com
+  # list of versions supported by this CustomResourceDefinition
+  versions:
+    - name: v1
+      # Each version can be enabled/disabled by Served flag.
+      served: true
+      # One and only one version must be marked as the storage version.
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                image:
+                  type: string
+                replicas:
+                  type: integer
+  # either Namespaced or Cluster
+  scope: Namespaced
+  names:
+    # plural name to be used in the URL: /apis/&lt;group&gt;/&lt;version&gt;/&lt;plural&gt;
+    plural: crontabs
+    # singular name to be used as an alias on the CLI and for display
+    singular: crontab
+    # kind is normally the CamelCased singular type. Your resource manifests use this.
+    kind: CronTab
+    # shortNames allow shorter string to match your resource on the CLI
+    shortNames:
+    - ct</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl apply -f resourcedefinition.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f resourcedefinition.yaml</code></pre>
 <p>Then a new namespaced RESTful API endpoint is created at:</p>
 <pre><code>/apis/stable.example.com/v1/namespaces/*/crontabs/...</code></pre>
 <p>This endpoint URL can then be used to create and manage custom
@@ -217,58 +231,56 @@ custom object of kind <code>CronTab</code>. The kind
 <code>CronTab</code> comes from the spec of the CustomResourceDefinition
 object you created above.</p>
 <p>If you save the following YAML to <code>my-crontab.yaml</code>:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * * */5&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;* * * * */5&quot;
+  image: my-awesome-cron-image</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl apply -f my-crontab.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f my-crontab.yaml</code></pre>
 <p>You can then manage your CronTab objects using kubectl. For
 example:</p>
-<pre class="shell"><code>kubectl get crontab</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get crontab</code></pre>
 <p>Should print a list like this:</p>
-<pre class="none"><code>NAME                 AGE
+<pre class="none"><code class="language-none">NAME                 AGE
 my-new-cron-object   6s</code></pre>
 <p>Resource names are not case-sensitive when using kubectl, and you can
 use either the singular or plural forms defined in the CRD, as well as
 any short names.</p>
 <p>You can also view the raw YAML data:</p>
-<pre class="shell"><code>kubectl get ct -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get ct -o yaml</code></pre>
 <p>You should see that it contains the custom <code>cronSpec</code> and
 <code>image</code> fields from the YAML you used to create it:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">items</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> stable.example.com/v1</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">        </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;stable.example.com/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;CronTab&quot;</span><span class="kw">,</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;my-new-cron-object&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;cronSpec&quot;</span><span class="kw">:</span><span class="st">&quot;* * * * */5&quot;</span><span class="kw">,</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;my-awesome-cron-image&quot;</span><span class="kw">}}</span></span>
-<span class="at">    </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2021-06-20T07:35:27Z&quot;</span></span>
-<span class="at">    </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">    </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1326&quot;</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 9aab1d66-628e-41bb-a422-57b8b3b1f5a9</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;* * * * */5&#39;</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> List</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">selfLink</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+items:
+- apiVersion: stable.example.com/v1
+  kind: CronTab
+  metadata:
+    annotations:
+      kubectl.kubernetes.io/last-applied-configuration: |
+        {&quot;apiVersion&quot;:&quot;stable.example.com/v1&quot;,&quot;kind&quot;:&quot;CronTab&quot;,&quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;my-new-cron-object&quot;,&quot;namespace&quot;:&quot;default&quot;},&quot;spec&quot;:{&quot;cronSpec&quot;:&quot;* * * * */5&quot;,&quot;image&quot;:&quot;my-awesome-cron-image&quot;}}
+    creationTimestamp: &quot;2021-06-20T07:35:27Z&quot;
+    generation: 1
+    name: my-new-cron-object
+    namespace: default
+    resourceVersion: &quot;1326&quot;
+    uid: 9aab1d66-628e-41bb-a422-57b8b3b1f5a9
+  spec:
+    cronSpec: &#39;* * * * */5&#39;
+    image: my-awesome-cron-image
+kind: List
+metadata:
+  resourceVersion: &quot;&quot;
+  selfLink: &quot;&quot;</code></pre>
 <h2 id="delete-a-customresourcedefinition">Delete a
 CustomResourceDefinition</h2>
 <p>When you delete a CustomResourceDefinition, the server will uninstall
 the RESTful API endpoint and delete all custom objects stored in it.</p>
-<pre class="shell"><code>kubectl delete -f resourcedefinition.yaml
+<pre class="shell"><code class="language-shell">kubectl delete -f resourcedefinition.yaml
 kubectl get crontabs</code></pre>
-<pre class="none"><code>Error from server (NotFound): Unable to list {&quot;stable.example.com&quot; &quot;v1&quot; &quot;crontabs&quot;}: the server could not
+<pre class="none"><code class="language-none">Error from server (NotFound): Unable to list {&quot;stable.example.com&quot; &quot;v1&quot; &quot;crontabs&quot;}: the server could not
 find the requested resource (get crontabs.stable.example.com)</code></pre>
 <p>If you later recreate the same CustomResourceDefinition, it will
 start out empty.</p>
@@ -313,61 +325,56 @@ below).</li>
 allowed.</li>
 </ol>
 <p>Non-structural example 1:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">allOf</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">allOf:
+- properties:
+    foo:
+      # ...</code></pre>
 <p>conflicts with rule 2. The following would be correct:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="fu">allOf</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">properties:
+  foo:
+    # ...
+allOf:
+- properties:
+    foo:
+      # ...</code></pre>
 <p>Non-structural example 2:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">allOf</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">allOf:
+- items:
+    properties:
+      foo:
+        # ...</code></pre>
 <p>conflicts with rule 2. The following would be correct:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="fu">allOf</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">items:
+  properties:
+    foo:
+      # ...
+allOf:
+- items:
+    properties:
+      foo:
+        # ...</code></pre>
 <p>Non-structural example 3:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;abc&quot;</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">        </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;^a&quot;</span></span>
-<span class="at">      </span><span class="fu">finalizers</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">          </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;my-finalizer&quot;</span></span>
-<span class="fu">anyOf</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">bar</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">      </span><span class="fu">minimum</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span></span>
-<span class="at">  </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bar&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;foo bar object&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">properties:
+  foo:
+    pattern: &quot;abc&quot;
+  metadata:
+    type: object
+    properties:
+      name:
+        type: string
+        pattern: &quot;^a&quot;
+      finalizers:
+        type: array
+        items:
+          type: string
+          pattern: &quot;my-finalizer&quot;
+anyOf:
+- properties:
+    bar:
+      type: integer
+      minimum: 42
+  required: [&quot;bar&quot;]
+  description: &quot;foo bar object&quot;</code></pre>
 <p>is not a structural schema because of the following violations:</p>
 <ul>
 <li>the type at the root is missing (rule 1).</li>
@@ -381,26 +388,25 @@ outside (rule 2).</li>
 4).</li>
 </ul>
 <p>In contrast, the following, corresponding schema is structural:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;foo bar object&quot;</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">    </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;abc&quot;</span></span>
-<span class="at">  </span><span class="fu">bar</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">        </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;^a&quot;</span></span>
-<span class="fu">anyOf</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">bar</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">minimum</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span></span>
-<span class="at">  </span><span class="fu">required</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bar&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+description: &quot;foo bar object&quot;
+properties:
+  foo:
+    type: string
+    pattern: &quot;abc&quot;
+  bar:
+    type: integer
+  metadata:
+    type: object
+    properties:
+      name:
+        type: string
+        pattern: &quot;^a&quot;
+anyOf:
+- properties:
+    bar:
+      minimum: 42
+  required: [&quot;bar&quot;]</code></pre>
 <p>Violations of the structural schema rules are reported in the
 <code>NonStructural</code> condition in the
 CustomResourceDefinition.</p>
@@ -429,31 +435,29 @@ your custom resource definitions to:</p>
 <code>false</code>.</li>
 </ol>
 <p>If you save the following YAML to <code>my-crontab.yaml</code>:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * * */5&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span>
-<span class="at">  </span><span class="fu">someRandomField</span><span class="kw">:</span><span class="at"> </span><span class="dv">42</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;* * * * */5&quot;
+  image: my-awesome-cron-image
+  someRandomField: 42</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl create --validate=false -f my-crontab.yaml -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create --validate=false -f my-crontab.yaml -o yaml</code></pre>
 <p>Your output is similar to:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> stable.example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2017-05-31T12:56:35Z</span></span>
-<span class="at">  </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;285&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 9423255b-4600-11e7-af6a-28d2447dc82b</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;* * * * */5&#39;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: stable.example.com/v1
+kind: CronTab
+metadata:
+  creationTimestamp: 2017-05-31T12:56:35Z
+  generation: 1
+  name: my-new-cron-object
+  namespace: default
+  resourceVersion: &quot;285&quot;
+  uid: 9423255b-4600-11e7-af6a-28d2447dc82b
+spec:
+  cronSpec: &#39;* * * * */5&#39;
+  image: my-awesome-cron-image</code></pre>
 <p>Notice that the field <code>someRandomField</code> was pruned.</p>
 <p>This example turned off client-side validation to demonstrate the API
 server's behavior, by adding the <code>--validate=false</code> command
@@ -470,83 +474,75 @@ specific sub-trees of fields by adding
 href="#specifying-a-structural-schema">structural OpenAPI v3 validation
 schema</a>.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">json</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-preserve-unknown-fields</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+properties:
+  json:
+    x-kubernetes-preserve-unknown-fields: true</code></pre>
 <p>The field <code>json</code> can store any JSON value, without
 anything being pruned.</p>
 <p>You can also partially specify the permitted JSON; for example:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">json</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-preserve-unknown-fields</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">description</span><span class="kw">:</span><span class="at"> this is arbitrary JSON</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+properties:
+  json:
+    x-kubernetes-preserve-unknown-fields: true
+    type: object
+    description: this is arbitrary JSON</code></pre>
 <p>With this, only <code>object</code> type values are allowed.</p>
 <p>Pruning is enabled again for each specified property (or
 <code>additionalProperties</code>):</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">json</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-preserve-unknown-fields</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">          </span><span class="fu">bar</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+properties:
+  json:
+    x-kubernetes-preserve-unknown-fields: true
+    type: object
+    properties:
+      spec:
+        type: object
+        properties:
+          foo:
+            type: string
+          bar:
+            type: string</code></pre>
 <p>With this, the value:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">json</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span><span class="at"> abc</span></span>
-<span class="at">    </span><span class="fu">bar</span><span class="kw">:</span><span class="at"> def</span></span>
-<span class="at">    </span><span class="fu">something</span><span class="kw">:</span><span class="at"> x</span></span>
-<span class="at">  </span><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">something</span><span class="kw">:</span><span class="at"> x</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">json:
+  spec:
+    foo: abc
+    bar: def
+    something: x
+  status:
+    something: x</code></pre>
 <p>is pruned to:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">json</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span><span class="at"> abc</span></span>
-<span class="at">    </span><span class="fu">bar</span><span class="kw">:</span><span class="at"> def</span></span>
-<span class="at">  </span><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">something</span><span class="kw">:</span><span class="at"> x</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">json:
+  spec:
+    foo: abc
+    bar: def
+  status:
+    something: x</code></pre>
 <p>This means that the <code>something</code> field in the specified
 <code>spec</code> object is pruned, but everything outside is not.</p>
 <h3 id="intorstring">IntOrString</h3>
 <p>Nodes in a schema with <code>x-kubernetes-int-or-string: true</code>
 are excluded from rule 1, such that the following is structural:</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-int-or-string</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+properties:
+  foo:
+    x-kubernetes-int-or-string: true</code></pre>
 <p>Also those nodes are partially excluded from rule 3 in the sense that
 the following two patterns are allowed (exactly those, without
 variations in order to additional fields):</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">x-kubernetes-int-or-string</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="fu">anyOf</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="co">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">x-kubernetes-int-or-string: true
+anyOf:
+  - type: integer
+  - type: string
+...</code></pre>
 <p>and</p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">x-kubernetes-int-or-string</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="fu">allOf</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">anyOf</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="co"># ... zero or more</span></span>
-<span class="co">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">x-kubernetes-int-or-string: true
+allOf:
+  - anyOf:
+      - type: integer
+      - type: string
+  - # ... zero or more
+...</code></pre>
 <p>With one of those specification, both an integer and a string
 validate.</p>
 <p>In <a href="#publish-validation-schema-in-openapi">Validation Schema
@@ -560,19 +556,17 @@ holds complete Kubernetes objects, i.e. with <code>apiVersion</code> and
 <p>It is possible to specify those embedded objects (both completely
 without constraints or partially specified) by setting
 <code>x-kubernetes-embedded-resource: true</code>. For example:</p>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-embedded-resource</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-preserve-unknown-fields</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+properties:
+  foo:
+    x-kubernetes-embedded-resource: true
+    x-kubernetes-preserve-unknown-fields: true</code></pre>
 <p>Here, the field <code>foo</code> holds a complete object, e.g.:</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">foo:
+  apiVersion: v1
+  kind: Pod
+  spec:
+    # ...</code></pre>
 <p>Because <code>x-kubernetes-preserve-unknown-fields: true</code> is
 specified alongside, nothing is pruned. The use of
 <code>x-kubernetes-preserve-unknown-fields: true</code> is optional
@@ -593,12 +587,11 @@ objects from one version to another.</p>
 pre-delete hooks. Custom objects support finalizers similar to built-in
 objects.</p>
 <p>You can add a finalizer to a custom object like this:</p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">finalizers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">stable.example.com/finalizer</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  finalizers:
+  - stable.example.com/finalizer</code></pre>
 <p>Identifiers of custom finalizers consist of a domain name, a forward
 slash and the name of the finalizer. Any controller can add a finalizer
 to any object's list of finalizers.</p>
@@ -667,43 +660,42 @@ minimum value of 1 and a maximum value of 10.</li>
 </ul>
 <p>Save the CustomResourceDefinition to
 <code>resourcedefinition.yaml</code>:</p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> crontabs.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># openAPIV3Schema is the schema for validating custom objects.</span></span>
-<span class="at">        </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">              </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">cronSpec</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                  </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;^(\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}$&#39;</span></span>
-<span class="at">                </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">                  </span><span class="fu">minimum</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">                  </span><span class="fu">maximum</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> crontabs</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> crontab</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">    </span><span class="fu">shortNames</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ct</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crontabs.stable.example.com
+spec:
+  group: stable.example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        # openAPIV3Schema is the schema for validating custom objects.
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                  pattern: &#39;^(\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}$&#39;
+                image:
+                  type: string
+                replicas:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+  scope: Namespaced
+  names:
+    plural: crontabs
+    singular: crontab
+    kind: CronTab
+    shortNames:
+    - ct</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl apply -f resourcedefinition.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f resourcedefinition.yaml</code></pre>
 <p>A request to create a custom object of kind CronTab is rejected if
 there are invalid values in its fields. In the following example, the
 custom object contains fields with invalid values:</p>
@@ -713,36 +705,34 @@ expression.</li>
 <li><code>spec.replicas</code> is greater than 10.</li>
 </ul>
 <p>If you save the following YAML to <code>my-crontab.yaml</code>:</p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * *&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;* * * *&quot;
+  image: my-awesome-cron-image
+  replicas: 15</code></pre>
 <p>and attempt to create it:</p>
-<pre class="shell"><code>kubectl apply -f my-crontab.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f my-crontab.yaml</code></pre>
 <p>then you get an error:</p>
-<pre class="console"><code>The CronTab &quot;my-new-cron-object&quot; is invalid: []: Invalid value: map[string]interface {}{&quot;apiVersion&quot;:&quot;stable.example.com/v1&quot;, &quot;kind&quot;:&quot;CronTab&quot;, &quot;metadata&quot;:map[string]interface {}{&quot;name&quot;:&quot;my-new-cron-object&quot;, &quot;namespace&quot;:&quot;default&quot;, &quot;deletionTimestamp&quot;:interface {}(nil), &quot;deletionGracePeriodSeconds&quot;:(*int64)(nil), &quot;creationTimestamp&quot;:&quot;2017-09-05T05:20:07Z&quot;, &quot;uid&quot;:&quot;e14d79e7-91f9-11e7-a598-f0761cb232d1&quot;, &quot;clusterName&quot;:&quot;&quot;}, &quot;spec&quot;:map[string]interface {}{&quot;cronSpec&quot;:&quot;* * * *&quot;, &quot;image&quot;:&quot;my-awesome-cron-image&quot;, &quot;replicas&quot;:15}}:
+<pre class="console"><code class="language-console">The CronTab &quot;my-new-cron-object&quot; is invalid: []: Invalid value: map[string]interface {}{&quot;apiVersion&quot;:&quot;stable.example.com/v1&quot;, &quot;kind&quot;:&quot;CronTab&quot;, &quot;metadata&quot;:map[string]interface {}{&quot;name&quot;:&quot;my-new-cron-object&quot;, &quot;namespace&quot;:&quot;default&quot;, &quot;deletionTimestamp&quot;:interface {}(nil), &quot;deletionGracePeriodSeconds&quot;:(*int64)(nil), &quot;creationTimestamp&quot;:&quot;2017-09-05T05:20:07Z&quot;, &quot;uid&quot;:&quot;e14d79e7-91f9-11e7-a598-f0761cb232d1&quot;, &quot;clusterName&quot;:&quot;&quot;}, &quot;spec&quot;:map[string]interface {}{&quot;cronSpec&quot;:&quot;* * * *&quot;, &quot;image&quot;:&quot;my-awesome-cron-image&quot;, &quot;replicas&quot;:15}}:
 validation failure list:
 spec.cronSpec in body should match &#39;^(\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}$&#39;
 spec.replicas in body should be less than or equal to 10</code></pre>
 <p>If the fields contain valid values, the object creation request is
 accepted.</p>
 <p>Save the following YAML to <code>my-crontab.yaml</code>:</p>
-<div class="sourceCode" id="cb37"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * * */5&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;* * * * */5&quot;
+  image: my-awesome-cron-image
+  replicas: 5</code></pre>
 <p>And create it:</p>
-<pre class="shell"><code>kubectl apply -f my-crontab.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f my-crontab.yaml
 crontab &quot;my-new-cron-object&quot; created</code></pre>
 <h3 id="validation-ratcheting">Validation ratcheting</h3>
 <div class="admonition feature-state">
@@ -833,40 +823,38 @@ value.</p>
 <p>All validation rules are scoped to the current object: no
 cross-object or stateful validation rules are supported.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb39"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.minReplicas &lt;= self.replicas&quot;</span></span>
-<span class="at">            </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicas should be greater than or equal to minReplicas.&quot;</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.replicas &lt;= self.maxReplicas&quot;</span></span>
-<span class="at">            </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicas should be smaller than or equal to maxReplicas.&quot;</span></span>
-<span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># ...</span></span>
-<span class="at">          </span><span class="fu">minReplicas</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">          </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">          </span><span class="fu">maxReplicas</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">        </span><span class="fu">required</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">minReplicas</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">replicas</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">maxReplicas</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  # ...
+  openAPIV3Schema:
+    type: object
+    properties:
+      spec:
+        type: object
+        x-kubernetes-validations:
+          - rule: &quot;self.minReplicas &lt;= self.replicas&quot;
+            message: &quot;replicas should be greater than or equal to minReplicas.&quot;
+          - rule: &quot;self.replicas &lt;= self.maxReplicas&quot;
+            message: &quot;replicas should be smaller than or equal to maxReplicas.&quot;
+        properties:
+          # ...
+          minReplicas:
+            type: integer
+          replicas:
+            type: integer
+          maxReplicas:
+            type: integer
+        required:
+          - minReplicas
+          - replicas
+          - maxReplicas</code></pre>
 <p>will reject a request to create this custom resource:</p>
-<div class="sourceCode" id="cb40"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">20</span></span>
-<span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  minReplicas: 0
+  replicas: 20
+  maxReplicas: 10</code></pre>
 <p>with the response:</p>
 <pre><code>The CronTab &quot;my-new-cron-object&quot; is invalid:
 * spec: Invalid value: map[string]interface {}{&quot;maxReplicas&quot;:10, &quot;minReplicas&quot;:0, &quot;replicas&quot;:20}: replicas should be smaller than or equal to maxReplicas.</code></pre>
@@ -893,16 +881,16 @@ rules fail. Compilation process includes type checking as well.</p>
 for the types of the arguments.</p>
 <p>For example, a rule like <code>self == true</code> against a field of
 integer type will get error:</p>
-<pre class="none"><code>Invalid value: apiextensions.ValidationRule{Rule:&quot;self == true&quot;, Message:&quot;&quot;}: compilation failed: ERROR: \&lt;input&gt;:1:6: found no matching overload for &#39;_==_&#39; applied to &#39;(int, bool)&#39;</code></pre></li>
+<pre class="none"><code class="language-none">Invalid value: apiextensions.ValidationRule{Rule:&quot;self == true&quot;, Message:&quot;&quot;}: compilation failed: ERROR: \&lt;input&gt;:1:6: found no matching overload for &#39;_==_&#39; applied to &#39;(int, bool)&#39;</code></pre></li>
 <li><p><code>no_such_field</code>: does not contain the desired
 field.</p>
 <p>For example, a rule like <code>self.nonExistingField &gt; 0</code>
 against a non-existing field will return the following error:</p>
-<pre class="none"><code>Invalid value: apiextensions.ValidationRule{Rule:&quot;self.nonExistingField &gt; 0&quot;, Message:&quot;&quot;}: compilation failed: ERROR: \&lt;input&gt;:1:5: undefined field &#39;nonExistingField&#39;</code></pre></li>
+<pre class="none"><code class="language-none">Invalid value: apiextensions.ValidationRule{Rule:&quot;self.nonExistingField &gt; 0&quot;, Message:&quot;&quot;}: compilation failed: ERROR: \&lt;input&gt;:1:5: undefined field &#39;nonExistingField&#39;</code></pre></li>
 <li><p><code>invalid argument</code>: invalid argument to macros.</p>
 <p>For example, a rule like <code>has(self)</code> will return
 error:</p>
-<pre class="none"><code>Invalid value: apiextensions.ValidationRule{Rule:&quot;has(self)&quot;, Message:&quot;&quot;}: compilation failed: ERROR: &lt;input&gt;:1:4: invalid argument to has() macro</code></pre></li>
+<pre class="none"><code class="language-none">Invalid value: apiextensions.ValidationRule{Rule:&quot;has(self)&quot;, Message:&quot;&quot;}: compilation failed: ERROR: &lt;input&gt;:1:4: invalid argument to has() macro</code></pre></li>
 </ul>
 <p>Validation Rules Examples:</p>
 <table>
@@ -991,92 +979,87 @@ CRD as well as <code>apiVersion</code>, <code>kind</code>,
 <code>metadata.name</code> and <code>metadata.generateName</code>. This
 includes selection of fields in both the <code>spec</code> and
 <code>status</code> in the same expression:</p>
-<div class="sourceCode" id="cb46"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.status.availableReplicas &gt;= self.spec.minReplicas&quot;</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">minReplicas</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">            </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">availableReplicas</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  # ...
+  openAPIV3Schema:
+    type: object
+    x-kubernetes-validations:
+      - rule: &quot;self.status.availableReplicas &gt;= self.spec.minReplicas&quot;
+    properties:
+        spec:
+          type: object
+          properties:
+            minReplicas:
+              type: integer
+            # ...
+        status:
+          type: object
+          properties:
+            availableReplicas:
+              type: integer</code></pre></li>
 <li><p>If the Rule is scoped to an object with properties, the
 accessible properties of the object are field selectable via
 <code>self.field</code> and field presence can be checked via
 <code>has(self.field)</code>. Null valued fields are treated as absent
 fields in CEL expressions.</p>
-<div class="sourceCode" id="cb47"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;has(self.foo)&quot;</span></span>
-<span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># ...</span></span>
-<span class="at">          </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  # ...
+  openAPIV3Schema:
+    type: object
+    properties:
+      spec:
+        type: object
+        x-kubernetes-validations:
+          - rule: &quot;has(self.foo)&quot;
+        properties:
+          # ...
+          foo:
+            type: integer</code></pre></li>
 <li><p>If the Rule is scoped to an object with additionalProperties
 (i.e. a map) the value of the map are accessible via
 <code>self[mapKey]</code>, map containment can be checked via
 <code>mapKey in self</code> and all entries of the map are accessible
 via CEL macros and functions such as <code>self.all(...)</code>.</p>
-<div class="sourceCode" id="cb48"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self[&#39;xyz&#39;].foo &gt; 0&quot;</span></span>
-<span class="at">        </span><span class="fu">additionalProperties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># ...</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  # ...
+  openAPIV3Schema:
+    type: object
+    properties:
+      spec:
+        type: object
+        x-kubernetes-validations:
+          - rule: &quot;self[&#39;xyz&#39;].foo &gt; 0&quot;
+        additionalProperties:
+          # ...
+          type: object
+          properties:
+            foo:
+              type: integer</code></pre></li>
 <li><p>If the Rule is scoped to an array, the elements of the array are
 accessible via <code>self[i]</code> and also by macros and
 functions.</p>
-<div class="sourceCode" id="cb49"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">        </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;size(self) == 1&quot;</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  # ...
+  openAPIV3Schema:
+    type: object
+    properties:
+      # ...
+      foo:
+        type: array
+        x-kubernetes-validations:
+          - rule: &quot;size(self) == 1&quot;
+        items:
+          type: string</code></pre></li>
 <li><p>If the Rule is scoped to a scalar, <code>self</code> is bound to
 the scalar value.</p>
-<div class="sourceCode" id="cb50"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># ...</span></span>
-<span class="at">          </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">            </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self &gt; 0&quot;</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  # ...
+  openAPIV3Schema:
+    type: object
+    properties:
+      spec:
+        type: object
+        properties:
+          # ...
+          foo:
+            type: integer
+            x-kubernetes-validations:
+            - rule: &quot;self &gt; 0&quot;</code></pre></li>
 </ul>
 <p>Examples:</p>
 <table>
@@ -1317,10 +1300,9 @@ allows you to insert more descriptive information into the validation
 failure message. <code>messageExpression</code> must evaluate a string
 and may use the same variables that are available to the
 <code>rule</code> field. For example:</p>
-<div class="sourceCode" id="cb51"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.x &lt;= self.maxLimit&quot;</span></span>
-<span class="at">  </span><span class="fu">messageExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;&quot;x exceeded max limit of &quot; + string(self.maxLimit)&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">x-kubernetes-validations:
+- rule: &quot;self.x &lt;= self.maxLimit&quot;
+  messageExpression: &#39;&quot;x exceeded max limit of &quot; + string(self.maxLimit)&#39;</code></pre>
 <p>Keep in mind that CEL string concatenation (<code>+</code> operator)
 does not auto-cast to string. If you have a non-string scalar, use the
 <code>string(&lt;value&gt;)</code> function to cast the scalar
@@ -1356,10 +1338,9 @@ validation fails.</p>
 <code>validation</code>, to be returned whenever a request fails this
 validation rule.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb52"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.x &lt;= self.maxLimit&quot;</span></span>
-<span class="at">  </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;FieldValueInvalid&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">x-kubernetes-validations:
+- rule: &quot;self.x &lt;= self.maxLimit&quot;
+  reason: &quot;FieldValueInvalid&quot;</code></pre>
 <p>The HTTP status code returned to the caller will match the reason of
 the first failed validation rule. The currently supported reasons are:
 "FieldValueInvalid", "FieldValueForbidden", "FieldValueRequired",
@@ -1370,10 +1351,9 @@ the first failed validation rule. The currently supported reasons are:
 <p>You can specify the field path returned when the validation
 fails.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb53"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.foo.test.x &lt;= self.maxLimit&quot;</span></span>
-<span class="at">  </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;.foo.test.x&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">x-kubernetes-validations:
+- rule: &quot;self.foo.test.x &lt;= self.maxLimit&quot;
+  fieldPath: &quot;.foo.test.x&quot;</code></pre>
 <p>In the example above, the validation checks the value of field
 <code>x</code> should be less than the value of <code>maxLimit</code>.
 If no <code>fieldPath</code> specified, when validation fails, the
@@ -1481,12 +1461,11 @@ extension library</a></li>
 <code>oldSelf</code> is implicitly considered a <em>transition
 rule</em>. Transition rules allow schema authors to prevent certain
 transitions between two otherwise valid states. For example:</p>
-<div class="sourceCode" id="cb54"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="fu">enum</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;low&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;medium&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;high&quot;</span><span class="kw">]</span></span>
-<span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!(self == &#39;high&#39; &amp;&amp; oldSelf == &#39;low&#39;) &amp;&amp; !(self == &#39;low&#39; &amp;&amp; oldSelf == &#39;high&#39;)&quot;</span></span>
-<span class="at">  </span><span class="fu">message</span><span class="kw">:</span><span class="at"> cannot transition directly between &#39;low&#39; and &#39;high&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: string
+enum: [&quot;low&quot;, &quot;medium&quot;, &quot;high&quot;]
+x-kubernetes-validations:
+- rule: &quot;!(self == &#39;high&#39; &amp;&amp; oldSelf == &#39;low&#39;) &amp;&amp; !(self == &#39;low&#39; &amp;&amp; oldSelf == &#39;high&#39;)&quot;
+  message: cannot transition directly between &#39;low&#39; and &#39;high&#39;</code></pre>
 <p>Unlike other rules, transition rules apply only to operations meeting
 the following criteria:</p>
 <ul>
@@ -1582,16 +1561,15 @@ can be iterated over (lists, maps, etc.).</p>
 <code>maxLength</code> for anything that will be processed in a
 validation rule in order to prevent validation errors during cost
 estimation. For example, given this schema with one rule:</p>
-<div class="sourceCode" id="cb55"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">  </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">      </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.all(x, x.contains(&#39;a string&#39;))&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">openAPIV3Schema:
+  type: object
+  properties:
+    foo:
+      type: array
+      items:
+        type: string
+      x-kubernetes-validations:
+        - rule: &quot;self.all(x, x.contains(&#39;a string&#39;))&quot;</code></pre>
 <p>then the API server rejects this rule on validation budget grounds
 with error:</p>
 <pre><code>spec.validation.openAPIV3Schema.properties[spec].properties[foo].x-kubernetes-validations[0].rule: Forbidden:
@@ -1605,65 +1583,61 @@ rule.</p>
 <p>If you do not specify any validation limit, the estimated cost of
 this rule will exceed the per-rule cost limit. But if you add limits in
 the appropriate places, the rule will be allowed:</p>
-<div class="sourceCode" id="cb57"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">  </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">      </span><span class="fu">maxItems</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">        </span><span class="fu">maxLength</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">      </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.all(x, x.contains(&#39;a string&#39;))&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">openAPIV3Schema:
+  type: object
+  properties:
+    foo:
+      type: array
+      maxItems: 25
+      items:
+        type: string
+        maxLength: 10
+      x-kubernetes-validations:
+        - rule: &quot;self.all(x, x.contains(&#39;a string&#39;))&quot;</code></pre>
 <p>The cost estimation system takes into account how many times the rule
 will be executed in addition to the estimated cost of the rule itself.
 For instance, the following rule will have the same estimated cost as
 the previous example (despite the rule now being defined on the
 individual array items):</p>
-<div class="sourceCode" id="cb58"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">  </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">      </span><span class="fu">maxItems</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">        </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.contains(&#39;a string&#39;))&quot;</span></span>
-<span class="at">        </span><span class="fu">maxLength</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">openAPIV3Schema:
+  type: object
+  properties:
+    foo:
+      type: array
+      maxItems: 25
+      items:
+        type: string
+        x-kubernetes-validations:
+          - rule: &quot;self.contains(&#39;a string&#39;))&quot;
+        maxLength: 10</code></pre>
 <p>If a list inside of a list has a validation rule that uses
 <code>self.all</code>, that is significantly more expensive than a
 non-nested list with the same rule. A rule that would have been allowed
 on a non-nested list might need lower limits set on both nested lists in
 order to be allowed. For example, even without having limits set, the
 following rule is allowed:</p>
-<div class="sourceCode" id="cb59"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">  </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">    </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.all(x, x == 5)&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">openAPIV3Schema:
+  type: object
+  properties:
+    foo:
+      type: array
+      items:
+        type: integer
+    x-kubernetes-validations:
+      - rule: &quot;self.all(x, x == 5)&quot;</code></pre>
 <p>But the same rule on the following schema (with a nested array added)
 produces a validation error:</p>
-<div class="sourceCode" id="cb60"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">  </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> array</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">        </span><span class="fu">x-kubernetes-validations</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">rule</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;self.all(x, x == 5)&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">openAPIV3Schema:
+  type: object
+  properties:
+    foo:
+      type: array
+      items:
+        type: array
+        items:
+          type: integer
+        x-kubernetes-validations:
+          - rule: &quot;self.all(x, x == 5)&quot;</code></pre>
 <p>This is because each item of <code>foo</code> is itself an array, and
 each subarray in turn calls <code>self.all</code>. Avoid nested lists
 and maps if possible where validation rules are used.</p>
@@ -1677,62 +1651,59 @@ and maps if possible where validation rules are used.</p>
 </div>
 <p>Defaulting allows you to specify default values in the <a
 href="#validation">OpenAPI v3 validation schema</a>:</p>
-<div class="sourceCode" id="cb61"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> crontabs.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># openAPIV3Schema is the schema for validating custom objects.</span></span>
-<span class="at">        </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">              </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">cronSpec</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                  </span><span class="fu">pattern</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;^(\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}$&#39;</span></span>
-<span class="at">                  </span><span class="fu">default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5 0 * * *&quot;</span></span>
-<span class="at">                </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">                  </span><span class="fu">minimum</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">                  </span><span class="fu">maximum</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">                  </span><span class="fu">default</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> crontabs</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> crontab</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">    </span><span class="fu">shortNames</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ct</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crontabs.stable.example.com
+spec:
+  group: stable.example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        # openAPIV3Schema is the schema for validating custom objects.
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                  pattern: &#39;^(\d+|\*)(/\d+)?(\s+(\d+|\*)(/\d+)?){4}$&#39;
+                  default: &quot;5 0 * * *&quot;
+                image:
+                  type: string
+                replicas:
+                  type: integer
+                  minimum: 1
+                  maximum: 10
+                  default: 1
+  scope: Namespaced
+  names:
+    plural: crontabs
+    singular: crontab
+    kind: CronTab
+    shortNames:
+    - ct</code></pre>
 <p>With this both <code>cronSpec</code> and <code>replicas</code> are
 defaulted:</p>
-<div class="sourceCode" id="cb62"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  image: my-awesome-cron-image</code></pre>
 <p>leads to</p>
-<div class="sourceCode" id="cb63"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5 0 * * *&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;5 0 * * *&quot;
+  image: my-awesome-cron-image
+  replicas: 1</code></pre>
 <p>Defaulting happens on the object</p>
 <ul>
 <li>in the request to the API server using the request version
@@ -1762,33 +1733,30 @@ happens. If a default is present, it will be applied. When nullable is
 <code>true</code>, null values will be conserved and won't be
 defaulted.</p>
 <p>For example, given the OpenAPI schema below:</p>
-<div class="sourceCode" id="cb64"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">    </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">foo</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">        </span><span class="fu">nullable</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">        </span><span class="fu">default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default&quot;</span></span>
-<span class="at">      </span><span class="fu">bar</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">        </span><span class="fu">nullable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">baz</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: object
+properties:
+  spec:
+    type: object
+    properties:
+      foo:
+        type: string
+        nullable: false
+        default: &quot;default&quot;
+      bar:
+        type: string
+        nullable: true
+      baz:
+        type: string</code></pre>
 <p>creating an object with null values for <code>foo</code> and
 <code>bar</code> and <code>baz</code></p>
-<div class="sourceCode" id="cb65"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="at">  </span><span class="fu">bar</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="at">  </span><span class="fu">baz</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  foo: null
+  bar: null
+  baz: null</code></pre>
 <p>leads to</p>
-<div class="sourceCode" id="cb66"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">foo</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default&quot;</span></span>
-<span class="at">  </span><span class="fu">bar</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  foo: &quot;default&quot;
+  bar: null</code></pre>
 <p>with <code>foo</code> pruned and defaulted because the field is
 non-nullable, <code>bar</code> maintaining the null value due to
 <code>nullable: true</code>, and <code>baz</code> pruned because the
@@ -1844,55 +1812,54 @@ CustomResourceDefinition. The following example adds the
 columns.</p>
 <p>Save the CustomResourceDefinition to
 <code>resourcedefinition.yaml</code>:</p>
-<div class="sourceCode" id="cb67"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> crontabs.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> crontabs</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> crontab</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">    </span><span class="fu">shortNames</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ct</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">    </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">            </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">cronSpec</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">              </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">              </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">    </span><span class="fu">additionalPrinterColumns</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Spec</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">      </span><span class="fu">description</span><span class="kw">:</span><span class="at"> The cron spec defining the interval a CronJob is run</span></span>
-<span class="at">      </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .spec.cronSpec</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Replicas</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">      </span><span class="fu">description</span><span class="kw">:</span><span class="at"> The number of jobs launched by the CronJob</span></span>
-<span class="at">      </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .spec.replicas</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Age</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> date</span></span>
-<span class="at">      </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .metadata.creationTimestamp</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crontabs.stable.example.com
+spec:
+  group: stable.example.com
+  scope: Namespaced
+  names:
+    plural: crontabs
+    singular: crontab
+    kind: CronTab
+    shortNames:
+    - ct
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              cronSpec:
+                type: string
+              image:
+                type: string
+              replicas:
+                type: integer
+    additionalPrinterColumns:
+    - name: Spec
+      type: string
+      description: The cron spec defining the interval a CronJob is run
+      jsonPath: .spec.cronSpec
+    - name: Replicas
+      type: integer
+      description: The number of jobs launched by the CronJob
+      jsonPath: .spec.replicas
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp</code></pre>
 <p>Create the CustomResourceDefinition:</p>
-<pre class="shell"><code>kubectl apply -f resourcedefinition.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f resourcedefinition.yaml</code></pre>
 <p>Create an instance using the <code>my-crontab.yaml</code> from the
 previous section.</p>
 <p>Invoke the server-side printing:</p>
-<pre class="shell"><code>kubectl get crontab my-new-cron-object</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get crontab my-new-cron-object</code></pre>
 <p>Notice the <code>NAME</code>, <code>SPEC</code>,
 <code>REPLICAS</code>, and <code>AGE</code> columns in the output:</p>
 <pre><code>NAME                 SPEC        REPLICAS   AGE
@@ -1979,80 +1946,78 @@ v1.31). The following example adds the <code>.spec.color</code> and
 <code>shirt-resource-definition.yaml</code>:</p>
 <div class="code-sample">
 <p><code>customresourcedefinition/shirt-resource-definition.yaml</code></p>
-<div class="sourceCode" id="cb71"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shirts.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> shirts</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> shirt</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Shirt</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">    </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">        </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">            </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">color</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">              </span><span class="fu">size</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">    </span><span class="fu">selectableFields</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .spec.color</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .spec.size</span></span>
-<span class="at">    </span><span class="fu">additionalPrinterColumns</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .spec.color</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Color</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">jsonPath</span><span class="kw">:</span><span class="at"> .spec.size</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Size</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: shirts.stable.example.com
+spec:
+  group: stable.example.com
+  scope: Namespaced
+  names:
+    plural: shirts
+    singular: shirt
+    kind: Shirt
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              color:
+                type: string
+              size:
+                type: string
+    selectableFields:
+    - jsonPath: .spec.color
+    - jsonPath: .spec.size
+    additionalPrinterColumns:
+    - jsonPath: .spec.color
+      name: Color
+      type: string
+    - jsonPath: .spec.size
+      name: Size
+      type: string</code></pre>
 </div>
 <p>Create the CustomResourceDefinition:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/customresourcedefinition/shirt-resource-definition.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/customresourcedefinition/shirt-resource-definition.yaml</code></pre>
 <p>Define some Shirts by editing <code>shirt-resources.yaml</code>; for
 example:</p>
 <div class="code-sample">
 <p><code>customresourcedefinition/shirt-resources.yaml</code></p>
-<div class="sourceCode" id="cb73"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> stable.example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Shirt</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example1</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">color</span><span class="kw">:</span><span class="at"> blue</span></span>
-<span class="at">  </span><span class="fu">size</span><span class="kw">:</span><span class="at"> S</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> stable.example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Shirt</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example2</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">color</span><span class="kw">:</span><span class="at"> blue</span></span>
-<span class="at">  </span><span class="fu">size</span><span class="kw">:</span><span class="at"> M</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> stable.example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Shirt</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example3</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">color</span><span class="kw">:</span><span class="at"> green</span></span>
-<span class="at">  </span><span class="fu">size</span><span class="kw">:</span><span class="at"> M</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: stable.example.com/v1
+kind: Shirt
+metadata:
+  name: example1
+spec:
+  color: blue
+  size: S
+---
+apiVersion: stable.example.com/v1
+kind: Shirt
+metadata:
+  name: example2
+spec:
+  color: blue
+  size: M
+---
+apiVersion: stable.example.com/v1
+kind: Shirt
+metadata:
+  name: example3
+spec:
+  color: green
+  size: M</code></pre>
 </div>
 <p>Create the custom resources:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/customresourcedefinition/shirt-resources.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/customresourcedefinition/shirt-resources.yaml</code></pre>
 <p>Get all the resources:</p>
-<pre class="shell"><code>kubectl get shirts.stable.example.com</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get shirts.stable.example.com</code></pre>
 <p>The output is:</p>
 <pre><code>NAME       COLOR  SIZE
 example1   blue   S
@@ -2060,14 +2025,14 @@ example2   blue   M
 example3   green  M</code></pre>
 <p>Fetch blue shirts (retrieve Shirts with a <code>color</code> of
 <code>blue</code>):</p>
-<pre class="shell"><code>kubectl get shirts.stable.example.com --field-selector spec.color=blue</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get shirts.stable.example.com --field-selector spec.color=blue</code></pre>
 <p>Should output:</p>
 <pre><code>NAME       COLOR  SIZE
 example1   blue   S
 example2   blue   M</code></pre>
 <p>Get only resources with a <code>color</code> of <code>green</code>
 and a <code>size</code> of <code>M</code>:</p>
-<pre class="shell"><code>kubectl get shirts.stable.example.com --field-selector spec.color=green,spec.size=M</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get shirts.stable.example.com --field-selector spec.color=green,spec.size=M</code></pre>
 <p>Should output:</p>
 <pre><code>NAME       COLOR   SIZE
 example3   green   M</code></pre>
@@ -2168,81 +2133,79 @@ string form.</li>
 enabled.</p>
 <p>Save the CustomResourceDefinition to
 <code>resourcedefinition.yaml</code>:</p>
-<div class="sourceCode" id="cb81"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> crontabs.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">              </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">cronSpec</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">            </span><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">              </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">                </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">      </span><span class="co"># subresources describes the subresources for custom resources.</span></span>
-<span class="at">      </span><span class="fu">subresources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># status enables the status subresource.</span></span>
-<span class="at">        </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">        </span><span class="co"># scale enables the scale subresource.</span></span>
-<span class="at">        </span><span class="fu">scale</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># specReplicasPath defines the JSONPath inside of a custom resource that corresponds to Scale.Spec.Replicas.</span></span>
-<span class="at">          </span><span class="fu">specReplicasPath</span><span class="kw">:</span><span class="at"> .spec.replicas</span></span>
-<span class="at">          </span><span class="co"># statusReplicasPath defines the JSONPath inside of a custom resource that corresponds to Scale.Status.Replicas.</span></span>
-<span class="at">          </span><span class="fu">statusReplicasPath</span><span class="kw">:</span><span class="at"> .status.replicas</span></span>
-<span class="at">          </span><span class="co"># labelSelectorPath defines the JSONPath inside of a custom resource that corresponds to Scale.Status.Selector.</span></span>
-<span class="at">          </span><span class="fu">labelSelectorPath</span><span class="kw">:</span><span class="at"> .status.labelSelector</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> crontabs</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> crontab</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">    </span><span class="fu">shortNames</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ct</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crontabs.stable.example.com
+spec:
+  group: stable.example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                image:
+                  type: string
+                replicas:
+                  type: integer
+            status:
+              type: object
+              properties:
+                replicas:
+                  type: integer
+                labelSelector:
+                  type: string
+      # subresources describes the subresources for custom resources.
+      subresources:
+        # status enables the status subresource.
+        status: {}
+        # scale enables the scale subresource.
+        scale:
+          # specReplicasPath defines the JSONPath inside of a custom resource that corresponds to Scale.Spec.Replicas.
+          specReplicasPath: .spec.replicas
+          # statusReplicasPath defines the JSONPath inside of a custom resource that corresponds to Scale.Status.Replicas.
+          statusReplicasPath: .status.replicas
+          # labelSelectorPath defines the JSONPath inside of a custom resource that corresponds to Scale.Status.Selector.
+          labelSelectorPath: .status.labelSelector
+  scope: Namespaced
+  names:
+    plural: crontabs
+    singular: crontab
+    kind: CronTab
+    shortNames:
+    - ct</code></pre>
 <p>And create it:</p>
-<pre class="shell"><code>kubectl apply -f resourcedefinition.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f resourcedefinition.yaml</code></pre>
 <p>After the CustomResourceDefinition object has been created, you can
 create custom objects.</p>
 <p>If you save the following YAML to <code>my-crontab.yaml</code>:</p>
-<div class="sourceCode" id="cb83"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * * */5&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;* * * * */5&quot;
+  image: my-awesome-cron-image
+  replicas: 3</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl apply -f my-crontab.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f my-crontab.yaml</code></pre>
 <p>Then new namespaced RESTful API endpoints are created at:</p>
-<pre class="none"><code>/apis/stable.example.com/v1/namespaces/*/crontabs/status</code></pre>
+<pre class="none"><code class="language-none">/apis/stable.example.com/v1/namespaces/*/crontabs/status</code></pre>
 <p>and</p>
-<pre class="none"><code>/apis/stable.example.com/v1/namespaces/*/crontabs/scale</code></pre>
+<pre class="none"><code class="language-none">/apis/stable.example.com/v1/namespaces/*/crontabs/scale</code></pre>
 <p>A custom resource can be scaled using the <code>kubectl scale</code>
 command. For example, the following command sets
 <code>.spec.replicas</code> of the custom resource created above to
 5:</p>
-<pre class="shell"><code>kubectl scale --replicas=5 crontabs/my-new-cron-object
+<pre class="shell"><code class="language-shell">kubectl scale --replicas=5 crontabs/my-new-cron-object
 crontabs &quot;my-new-cron-object&quot; scaled
 
 kubectl get crontabs my-new-cron-object -o jsonpath=&#39;{.spec.replicas}&#39;
@@ -2260,60 +2223,58 @@ in the CustomResourceDefinition and illustrates how to output the custom
 resource using <code>kubectl get all</code>.</p>
 <p>Save the following CustomResourceDefinition to
 <code>resourcedefinition.yaml</code>:</p>
-<div class="sourceCode" id="cb88"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiextensions.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CustomResourceDefinition</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> crontabs.stable.example.com</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">group</span><span class="kw">:</span><span class="at"> stable.example.com</span></span>
-<span class="at">  </span><span class="fu">versions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="fu">served</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">schema</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">openAPIV3Schema</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">          </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">type</span><span class="kw">:</span><span class="at"> object</span></span>
-<span class="at">              </span><span class="fu">properties</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">cronSpec</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> string</span></span>
-<span class="at">                </span><span class="fu">replicas</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> integer</span></span>
-<span class="at">  </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespaced</span></span>
-<span class="at">  </span><span class="fu">names</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">plural</span><span class="kw">:</span><span class="at"> crontabs</span></span>
-<span class="at">    </span><span class="fu">singular</span><span class="kw">:</span><span class="at"> crontab</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="at">    </span><span class="fu">shortNames</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ct</span></span>
-<span class="at">    </span><span class="co"># categories is a list of grouped resources the custom resource belongs to.</span></span>
-<span class="at">    </span><span class="fu">categories</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">all</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: crontabs.stable.example.com
+spec:
+  group: stable.example.com
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                cronSpec:
+                  type: string
+                image:
+                  type: string
+                replicas:
+                  type: integer
+  scope: Namespaced
+  names:
+    plural: crontabs
+    singular: crontab
+    kind: CronTab
+    shortNames:
+    - ct
+    # categories is a list of grouped resources the custom resource belongs to.
+    categories:
+    - all</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl apply -f resourcedefinition.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f resourcedefinition.yaml</code></pre>
 <p>After the CustomResourceDefinition object has been created, you can
 create custom objects.</p>
 <p>Save the following YAML to <code>my-crontab.yaml</code>:</p>
-<div class="sourceCode" id="cb90"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable.example.com/v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CronTab</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-new-cron-object</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">cronSpec</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;* * * * */5&quot;</span></span>
-<span class="at">  </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-awesome-cron-image</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;stable.example.com/v1&quot;
+kind: CronTab
+metadata:
+  name: my-new-cron-object
+spec:
+  cronSpec: &quot;* * * * */5&quot;
+  image: my-awesome-cron-image</code></pre>
 <p>and create it:</p>
-<pre class="shell"><code>kubectl apply -f my-crontab.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f my-crontab.yaml</code></pre>
 <p>You can specify the category when using <code>kubectl get</code>:</p>
-<pre class="shell"><code>kubectl get all</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get all</code></pre>
 <p>and it will include the custom resources of kind
 <code>CronTab</code>:</p>
-<pre class="none"><code>NAME                          AGE
+<pre class="none"><code class="language-none">NAME                          AGE
 crontabs/my-new-cron-object   3s</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -2390,6 +2351,7 @@ versions</a> of a CustomResourceDefinition.</p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -2398,6 +2360,8 @@ versions</a> of a CustomResourceDefinition.</p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

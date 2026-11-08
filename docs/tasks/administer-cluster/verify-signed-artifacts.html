@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -139,21 +154,20 @@ href="https://jqlang.github.io/jq/download/">download jq</a>)</li>
 SPDX files, standalone binaries) by using cosign's keyless signing. To
 verify a particular binary, retrieve it together with its signature and
 certificate:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="va">URL</span><span class="op">=</span>https://dl.k8s.io/release/v1.37.1/bin/linux/amd64</span>
-<span class="va">BINARY</span><span class="op">=</span>kubectl</span>
-</span>
-<span class="va">FILES</span><span class="op">=</span><span class="va">(</span></span>
-    <span class="st">&quot;</span><span class="va">$BINARY</span><span class="st">&quot;</span></span>
-    <span class="st">&quot;</span><span class="va">$BINARY</span><span class="st">.sig&quot;</span></span>
-    <span class="st">&quot;</span><span class="va">$BINARY</span><span class="st">.cert&quot;</span></span>
-<span class="va">)</span></span>
-</span>
-<span class="cf">for</span> FILE <span class="kw">in</span> <span class="st">&quot;</span><span class="va">${FILES</span><span class="op">[@]</span><span class="va">}</span><span class="st">&quot;</span><span class="kw">;</span> <span class="cf">do</span></span>
-    <span class="ex">curl</span> <span class="at">-sSfL</span> <span class="at">--retry</span> 3 <span class="at">--retry-delay</span> 3 <span class="st">&quot;</span><span class="va">$URL</span><span class="st">/</span><span class="va">$FILE</span><span class="st">&quot;</span> <span class="at">-o</span> <span class="st">&quot;</span><span class="va">$FILE</span><span class="st">&quot;</span></span>
-<span class="cf">done</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">URL=https://dl.k8s.io/release/v1.37.1/bin/linux/amd64
+BINARY=kubectl
+
+FILES=(
+    &quot;$BINARY&quot;
+    &quot;$BINARY.sig&quot;
+    &quot;$BINARY.cert&quot;
+)
+
+for FILE in &quot;${FILES[@]}&quot;; do
+    curl -sSfL --retry 3 --retry-delay 3 &quot;$URL/$FILE&quot; -o &quot;$FILE&quot;
+done</code></pre>
 <p>Then verify the blob by using <code>cosign verify-blob</code>:</p>
-<pre class="shell"><code>cosign verify-blob &quot;$BINARY&quot; \
+<pre class="shell"><code class="language-shell">cosign verify-blob &quot;$BINARY&quot; \
   --signature &quot;$BINARY&quot;.sig \
   --certificate &quot;$BINARY&quot;.cert \
   --certificate-identity krel-staging@k8s-releng-prod.iam.gserviceaccount.com \
@@ -178,7 +192,7 @@ Blog</a></p>
 href="https://kubernetes.io/releases/download/">Releases</a>.</p>
 <p>Pick one image from this list and verify its signature using the
 <code>cosign verify</code> command:</p>
-<pre class="shell"><code>cosign verify registry.k8s.io/kube-apiserver-amd64:v1.37.1 \
+<pre class="shell"><code class="language-shell">cosign verify registry.k8s.io/kube-apiserver-amd64:v1.37.1 \
   --certificate-identity krel-trust@k8s-releng-prod.iam.gserviceaccount.com \
   --certificate-oidc-issuer https://accounts.google.com \
   | jq .</code></pre>
@@ -186,7 +200,7 @@ href="https://kubernetes.io/releases/download/">Releases</a>.</p>
 images for all control plane components</h3>
 <p>To verify all signed control plane images for the latest stable
 version (v1.37.1), please run the following commands:</p>
-<pre class="shell"><code>curl -Ls &quot;https://sbom.k8s.io/$(curl -Ls https://dl.k8s.io/release/stable.txt)/release&quot; \
+<pre class="shell"><code class="language-shell">curl -Ls &quot;https://sbom.k8s.io/$(curl -Ls https://dl.k8s.io/release/stable.txt)/release&quot; \
   | grep &quot;SPDXID: SPDXRef-Package-registry.k8s.io&quot; \
   | grep -v sha256 | cut -d- -f3- | sed &#39;s/-/\//&#39; | sed &#39;s/-v1/:v1/&#39; \
   | sort &gt; images.txt
@@ -200,7 +214,7 @@ do
 done &lt; &quot;$input&quot;</code></pre>
 <p>Once you have verified an image, you can specify the image by its
 digest in your Pod manifests as per this example:</p>
-<pre class="console"><code>registry-url/image-name@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2</code></pre>
+<pre class="console"><code class="language-console">registry-url/image-name@sha256:45b23dee08af5e43a7fea6c4cf9c25ccf269ee113168c19722f87876677c5cb2</code></pre>
 <p>For more information, please refer to the <a
 href="../../concepts/containers/images.html#image-pull-policy">Image Pull
 Policy</a> section.</p>
@@ -225,7 +239,7 @@ Of Materials</h2>
 <p>You can verify the Kubernetes Software Bill of Materials (SBOM) by
 using the sigstore certificate and signature, or the corresponding SHA
 files:</p>
-<pre class="shell"><code># Retrieve the latest available Kubernetes release version
+<pre class="shell"><code class="language-shell"># Retrieve the latest available Kubernetes release version
 VERSION=$(curl -Ls https://dl.k8s.io/release/stable.txt)
 
 # Verify the SHA512 sum
@@ -310,6 +324,7 @@ cosign verify-blob \
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -318,6 +333,8 @@ cosign verify-blob \
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

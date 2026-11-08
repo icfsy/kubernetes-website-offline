@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -147,7 +162,7 @@ id="determining-whether-dns-horizontal-autoscaling-is-already-enabled">Determine
 whether DNS horizontal autoscaling is already enabled</h2>
 <p>List the <a class="glossary-term" href="../../reference/glossary.html#term-deployment" title="Glossary: deployment">Deployments</a> in your cluster in the
 kube-system <a class="glossary-term" href="../../reference/glossary.html#term-namespace" title="Glossary: namespace">namespace</a>:</p>
-<pre class="shell"><code>kubectl get deployment --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment --namespace=kube-system</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
 ...
@@ -160,7 +175,7 @@ parameters</a>.</p>
 <h2 id="find-scaling-target">Get the name of your DNS Deployment</h2>
 <p>List the DNS deployments in your cluster in the kube-system
 namespace:</p>
-<pre class="shell"><code>kubectl get deployment -l k8s-app=kube-dns --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment -l k8s-app=kube-dns --namespace=kube-system</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME      READY   UP-TO-DATE   AVAILABLE   AGE
 ...
@@ -168,7 +183,7 @@ coredns   2/2     2            2           ...
 ...</code></pre>
 <p>If you don't see a Deployment for DNS services, you can also look for
 it by name:</p>
-<pre class="shell"><code>kubectl get deployment --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment --namespace=kube-system</code></pre>
 <p>and look for a deployment named <code>coredns</code>.</p>
 <p>Your scale target is</p>
 <pre><code>Deployment/&lt;your-deployment-name&gt;</code></pre>
@@ -192,117 +207,115 @@ Deployment run a container based on the
 this content:</p>
 <div class="code-sample">
 <p><code>admin/dns/dns-horizontal-autoscaler.yaml</code></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="pp">---</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-dns-autoscaler</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;nodes&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;replicationcontrollers/scale&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;deployments/scale&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;replicasets/scale&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">]</span></span>
-<span class="co"># Remove the configmaps rule once below issue is fixed:</span></span>
-<span class="co"># kubernetes-incubator/cluster-proportional-autoscaler#16</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;configmaps&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;create&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-dns-autoscaler</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-dns-autoscaler</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-</span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/cluster-service</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> system-cluster-critical</span></span>
-<span class="at">      </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RuntimeDefault</span></span>
-<span class="at">        </span><span class="fu">supplementalGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="dv">65534</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">fsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">65534</span></span>
-<span class="at">      </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">kubernetes.io/os</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> autoscaler</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/cpa/cluster-proportional-autoscaler:1.8.4</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;20m&quot;</span></span>
-<span class="at">                </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">/cluster-proportional-autoscaler</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">--namespace=kube-system</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">--configmap=kube-dns-autoscaler</span></span>
-<span class="at">          </span><span class="co"># Should keep target in sync with cluster/addons/dns/coredns/coredns.yaml.base</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">--target=&lt;SCALE_TARGET&gt;</span></span>
-<span class="at">          </span><span class="co"># When cluster is using large nodes(with more cores), &quot;coresPerReplica&quot; should dominate.</span></span>
-<span class="at">          </span><span class="co"># If using small nodes, &quot;nodesPerReplica&quot; should dominate.</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">--default-params={&quot;linear&quot;:{&quot;coresPerReplica&quot;:256,&quot;nodesPerReplica&quot;:16,&quot;preventSinglePointFailure&quot;:true,&quot;includeUnschedulableNodes&quot;:true}}</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">--logtostderr=true</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">--v=2</span></span>
-<span class="at">      </span><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;CriticalAddonsOnly&quot;</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
-<span class="at">      </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: kube-dns-autoscaler
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: system:kube-dns-autoscaler
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;nodes&quot;]
+    verbs: [&quot;list&quot;, &quot;watch&quot;]
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;replicationcontrollers/scale&quot;]
+    verbs: [&quot;get&quot;, &quot;update&quot;]
+  - apiGroups: [&quot;apps&quot;]
+    resources: [&quot;deployments/scale&quot;, &quot;replicasets/scale&quot;]
+    verbs: [&quot;get&quot;, &quot;update&quot;]
+# Remove the configmaps rule once below issue is fixed:
+# kubernetes-incubator/cluster-proportional-autoscaler#16
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;configmaps&quot;]
+    verbs: [&quot;get&quot;, &quot;create&quot;]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: system:kube-dns-autoscaler
+subjects:
+  - kind: ServiceAccount
+    name: kube-dns-autoscaler
+    namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:kube-dns-autoscaler
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kube-dns-autoscaler
+  namespace: kube-system
+  labels:
+    k8s-app: kube-dns-autoscaler
+    kubernetes.io/cluster-service: &quot;true&quot;
+spec:
+  selector:
+    matchLabels:
+      k8s-app: kube-dns-autoscaler
+  template:
+    metadata:
+      labels:
+        k8s-app: kube-dns-autoscaler
+    spec:
+      priorityClassName: system-cluster-critical
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+        supplementalGroups: [ 65534 ]
+        fsGroup: 65534
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+      - name: autoscaler
+        image: registry.k8s.io/cpa/cluster-proportional-autoscaler:1.8.4
+        resources:
+            requests:
+                cpu: &quot;20m&quot;
+                memory: &quot;10Mi&quot;
+        command:
+          - /cluster-proportional-autoscaler
+          - --namespace=kube-system
+          - --configmap=kube-dns-autoscaler
+          # Should keep target in sync with cluster/addons/dns/coredns/coredns.yaml.base
+          - --target=&lt;SCALE_TARGET&gt;
+          # When cluster is using large nodes(with more cores), &quot;coresPerReplica&quot; should dominate.
+          # If using small nodes, &quot;nodesPerReplica&quot; should dominate.
+          - --default-params={&quot;linear&quot;:{&quot;coresPerReplica&quot;:256,&quot;nodesPerReplica&quot;:16,&quot;preventSinglePointFailure&quot;:true,&quot;includeUnschedulableNodes&quot;:true}}
+          - --logtostderr=true
+          - --v=2
+      tolerations:
+      - key: &quot;CriticalAddonsOnly&quot;
+        operator: &quot;Exists&quot;
+      serviceAccountName: kube-dns-autoscaler</code></pre>
 </div>
 <p>In the file, replace <code>&lt;SCALE_TARGET&gt;</code> with your
 scale target.</p>
 <p>Go to the directory that contains your configuration file, and enter
 this command to create the Deployment:</p>
-<pre class="shell"><code>kubectl apply -f dns-horizontal-autoscaler.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f dns-horizontal-autoscaler.yaml</code></pre>
 <p>The output of a successful command is:</p>
 <pre><code>deployment.apps/kube-dns-autoscaler created</code></pre>
 <p>DNS horizontal autoscaling is now enabled.</p>
 <h2 id="tuning-autoscaling-parameters">Tune DNS autoscaling
 parameters</h2>
 <p>Verify that the kube-dns-autoscaler <a class="glossary-term" href="../../reference/glossary.html#term-configmap" title="Glossary: configmap">ConfigMap</a> exists:</p>
-<pre class="shell"><code>kubectl get configmap --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmap --namespace=kube-system</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                  DATA      AGE
 ...
 kube-dns-autoscaler   1         ...
 ...</code></pre>
 <p>Modify the data in the ConfigMap:</p>
-<pre class="shell"><code>kubectl edit configmap kube-dns-autoscaler --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit configmap kube-dns-autoscaler --namespace=kube-system</code></pre>
 <p>Look for this line:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">linear</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;{&quot;coresPerReplica&quot;:256,&quot;min&quot;:1,&quot;nodesPerReplica&quot;:16}&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">linear: &#39;{&quot;coresPerReplica&quot;:256,&quot;min&quot;:1,&quot;nodesPerReplica&quot;:16}&#39;</code></pre>
 <p>Modify the fields according to your needs. The "min" field indicates
 the minimal number of DNS backends. The actual number of backends is
 calculated using this equation:</p>
@@ -322,11 +335,11 @@ option to use depends on different conditions.</p>
 id="option-1-scale-down-the-kube-dns-autoscaler-deployment-to-0-replicas">Option
 1: Scale down the kube-dns-autoscaler deployment to 0 replicas</h3>
 <p>This option works for all situations. Enter this command:</p>
-<pre class="shell"><code>kubectl scale deployment --replicas=0 kube-dns-autoscaler --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployment --replicas=0 kube-dns-autoscaler --namespace=kube-system</code></pre>
 <p>The output is:</p>
 <pre><code>deployment.apps/kube-dns-autoscaler scaled</code></pre>
 <p>Verify that the replica count is zero:</p>
-<pre class="shell"><code>kubectl get rs --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs --namespace=kube-system</code></pre>
 <p>The output displays 0 in the DESIRED and CURRENT columns:</p>
 <pre><code>NAME                                  DESIRED   CURRENT   READY   AGE
 ...
@@ -336,7 +349,7 @@ kube-dns-autoscaler-6b59789fc8        0         0         0       ...
 Delete the kube-dns-autoscaler deployment</h3>
 <p>This option works if kube-dns-autoscaler is under your own control,
 which means no one will re-create it:</p>
-<pre class="shell"><code>kubectl delete deployment kube-dns-autoscaler --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployment kube-dns-autoscaler --namespace=kube-system</code></pre>
 <p>The output is:</p>
 <pre><code>deployment.apps &quot;kube-dns-autoscaler&quot; deleted</code></pre>
 <h3
@@ -445,6 +458,7 @@ of cluster-proportional-autoscaler</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -453,6 +467,8 @@ of cluster-proportional-autoscaler</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -147,45 +162,43 @@ RuntimeClass definition with a virtualization container runtime (in this
 example, Kata Containers combined with the Firecracker virtual machine
 monitor) that uses around 120MiB per Pod for the virtual machine and the
 guest OS:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># You need to change this example to match the actual runtime name, and per-Pod</span></span>
-<span class="co"># resource overhead, that the container runtime is adding in your cluster.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> node.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RuntimeClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kata-fc</span></span>
-<span class="fu">handler</span><span class="kw">:</span><span class="at"> kata-fc</span></span>
-<span class="fu">overhead</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podFixed</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;120Mi&quot;</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># You need to change this example to match the actual runtime name, and per-Pod
+# resource overhead, that the container runtime is adding in your cluster.
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: kata-fc
+handler: kata-fc
+overhead:
+  podFixed:
+    memory: &quot;120Mi&quot;
+    cpu: &quot;250m&quot;</code></pre>
 <p>Workloads which are created which specify the <code>kata-fc</code>
 RuntimeClass handler will take the memory and cpu overheads into account
 for resource quota calculations, node scheduling, as well as Pod cgroup
 sizing.</p>
 <p>Consider running the given example workload, test-pod:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">runtimeClassName</span><span class="kw">:</span><span class="at"> kata-fc</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox-ctr</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">stdin</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">tty</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 500m</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-ctr</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 1500m</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pod
+spec:
+  runtimeClassName: kata-fc
+  containers:
+  - name: busybox-ctr
+    image: busybox:1.28
+    stdin: true
+    tty: true
+    resources:
+      limits:
+        cpu: 500m
+        memory: 100Mi
+  - name: nginx-ctr
+    image: nginx
+    resources:
+      limits:
+        cpu: 1500m
+        memory: 100Mi</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -203,8 +216,7 @@ example, since only the RuntimeClass name is specified, the admission
 controller mutates the Pod to include an <code>overhead</code>.</p>
 <p>After the RuntimeClass admission controller has made modifications,
 you can check the updated Pod overhead value:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> get pod test-pod <span class="at">-o</span> jsonpath=<span class="st">&#39;{.spec.overhead}&#39;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl get pod test-pod -o jsonpath=&#39;{.spec.overhead}&#39;</code></pre>
 <p>The output is:</p>
 <pre><code>map[cpu:250m memory:120Mi]</code></pre>
 <p>If a <a
@@ -231,13 +243,11 @@ set <code>cpu.shares</code> based on the sum of container requests plus
 the <code>overhead</code> defined in the PodSpec.</p>
 <p>Looking at our example, verify the container requests for the
 workload:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> get pod test-pod <span class="at">-o</span> jsonpath=<span class="st">&#39;{.spec.containers[*].resources.limits}&#39;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl get pod test-pod -o jsonpath=&#39;{.spec.containers[*].resources.limits}&#39;</code></pre>
 <p>The total container requests are 2000m CPU and 200MiB of memory:</p>
 <pre><code>map[cpu: 500m memory:100Mi] map[cpu:1500m memory:100Mi]</code></pre>
 <p>Check this against what is observed by the node:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> describe node <span class="kw">|</span> <span class="fu">grep</span> test-pod <span class="at">-B2</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl describe node | grep test-pod -B2</code></pre>
 <p>The output shows requests for 2250m CPU, and for 320MiB of memory.
 The requests include Pod overhead:</p>
 <pre><code>  Namespace    Name       CPU Requests  CPU Limits   Memory Requests  Memory Limits  AGE
@@ -252,23 +262,20 @@ runtimes. This is an advanced example to show Pod overhead behavior, and
 it is not expected that users should need to check cgroups directly on
 the node.</p>
 <p>First, on the particular node, determine the Pod identifier:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Run this on the node where the Pod is scheduled</span></span>
-<span class="va">POD_ID</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="fu">sudo</span> crictl pods <span class="at">--name</span> test-pod <span class="at">-q</span><span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash"># Run this on the node where the Pod is scheduled
+POD_ID=&quot;$(sudo crictl pods --name test-pod -q)&quot;</code></pre>
 <p>From this, you can determine the cgroup path for the Pod:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Run this on the node where the Pod is scheduled</span></span>
-<span class="fu">sudo</span> crictl inspectp <span class="at">-o</span><span class="op">=</span>json <span class="va">$POD_ID</span> <span class="kw">|</span> <span class="fu">grep</span> cgroupsPath</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># Run this on the node where the Pod is scheduled
+sudo crictl inspectp -o=json $POD_ID | grep cgroupsPath</code></pre>
 <p>The resulting cgroup path includes the Pod's <code>pause</code>
 container. The Pod level cgroup is one directory above.</p>
 <pre><code>  &quot;cgroupsPath&quot;: &quot;/kubepods/podd7f4b509-cf94-4951-9417-d1087c92a5b2/7ccf55aee35dd16aca4189c952d83487297f3cd760f1bbf09620e206e7d0c27a&quot;</code></pre>
 <p>In this specific case, the pod cgroup path is
 <code>kubepods/podd7f4b509-cf94-4951-9417-d1087c92a5b2</code>. Verify
 the Pod level cgroup setting for memory:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Run this on the node where the Pod is scheduled.</span></span>
-<span class="co"># Also, change the name of the cgroup to match the cgroup allocated for your pod.</span></span>
- <span class="fu">cat</span> /sys/fs/cgroup/memory/kubepods/podd7f4b509-cf94-4951-9417-d1087c92a5b2/memory.limit_in_bytes</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># Run this on the node where the Pod is scheduled.
+# Also, change the name of the cgroup to match the cgroup allocated for your pod.
+ cat /sys/fs/cgroup/memory/kubepods/podd7f4b509-cf94-4951-9417-d1087c92a5b2/memory.limit_in_bytes</code></pre>
 <p>This is 320 MiB, as expected:</p>
 <pre><code>335544320</code></pre>
 <h3 id="observability">Observability</h3>
@@ -348,6 +355,7 @@ Design</a> enhancement proposal for extra context</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -356,6 +364,8 @@ Design</a> enhancement proposal for extra context</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

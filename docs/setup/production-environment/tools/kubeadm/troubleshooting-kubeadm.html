@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../../" href="../../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -156,37 +171,36 @@ of the bootstrap-token permissions as well.</p>
 <p>or</p>
 <p>Apply the following RBAC manually using
 <code>kubectl apply -f ...</code>:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubeadm:get-nodes</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;&quot;</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">nodes</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">get</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubeadm:get-nodes</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubeadm:get-nodes</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:bootstrappers:kubeadm:default-node-token</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubeadm:get-nodes
+rules:
+  - apiGroups:
+      - &quot;&quot;
+    resources:
+      - nodes
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubeadm:get-nodes
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubeadm:get-nodes
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: Group
+    name: system:bootstrappers:kubeadm:default-node-token</code></pre>
 <h2
 id="ebtables-or-some-similar-executable-not-found-during-installation"><code>ebtables</code>
 or some similar executable not found during installation</h2>
 <p>If you see the following warnings while running
 <code>kubeadm init</code></p>
-<pre class="console"><code>[preflight] WARNING: ebtables not found in system path
+<pre class="console"><code class="language-console">[preflight] WARNING: ebtables not found in system path
 [preflight] WARNING: ethtool not found in system path</code></pre>
 <p>Then you may be missing <code>ebtables</code>, <code>ethtool</code>
 or a similar executable on your node. You can install them with the
@@ -202,7 +216,7 @@ id="kubeadm-blocks-waiting-for-control-plane-during-installation">kubeadm
 blocks waiting for control plane during installation</h2>
 <p>If you notice that <code>kubeadm init</code> hangs after printing out
 the following line:</p>
-<pre class="console"><code>[apiclient] Created API client, waiting for the control plane to become ready</code></pre>
+<pre class="console"><code class="language-console">[apiclient] Created API client, waiting for the control plane to become ready</code></pre>
 <p>This may be caused by a number of problems. The most common are:</p>
 <ul>
 <li>network connection problems. Check that your machine has full
@@ -217,8 +231,8 @@ nodes with crictl</a>.</li>
 when removing managed containers</h2>
 <p>The following could happen if the container runtime halts and does
 not remove any Kubernetes-managed containers:</p>
-<pre class="shell"><code>sudo kubeadm reset</code></pre>
-<pre class="console"><code>[preflight] Running pre-flight checks
+<pre class="shell"><code class="language-shell">sudo kubeadm reset</code></pre>
+<pre class="console"><code class="language-console">[preflight] Running pre-flight checks
 [reset] Stopping the kubelet service
 [reset] Unmounting mounted directories in &quot;/var/lib/kubelet&quot;
 [reset] Removing kubernetes-managed containers
@@ -291,7 +305,7 @@ for an example.</p></li>
 </ul>
 <h2 id="tls-certificate-errors">TLS certificate errors</h2>
 <p>The following error indicates a possible certificate mismatch.</p>
-<pre class="none"><code># kubectl get pods
+<pre class="none"><code class="language-none"># kubectl get pods
 Unable to connect to the server: x509: certificate signed by unknown authority (possibly because of &quot;crypto/rsa: verification error&quot; while trying to verify candidate authority certificate &quot;kubernetes&quot;)</code></pre>
 <ul>
 <li><p>Verify that the <code>$HOME/.kube/config</code> file contains a
@@ -301,17 +315,15 @@ certificates in a kubeconfig file are base64 encoded. The
 certificate and <code>openssl x509 -text -noout</code> can be used for
 viewing the certificate information.</p></li>
 <li><p>Unset the <code>KUBECONFIG</code> environment variable using:</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="bu">unset</span> <span class="va">KUBECONFIG</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">unset KUBECONFIG</code></pre>
 <p>Or set it to the default <code>KUBECONFIG</code> location:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="bu">export</span> <span class="va">KUBECONFIG</span><span class="op">=</span>/etc/kubernetes/admin.conf</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">export KUBECONFIG=/etc/kubernetes/admin.conf</code></pre></li>
 <li><p>Another workaround is to overwrite the existing
 <code>kubeconfig</code> for the "admin" user:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="fu">mv</span> <span class="va">$HOME</span>/.kube <span class="va">$HOME</span>/.kube.bak</span>
-<span class="fu">mkdir</span> <span class="va">$HOME</span>/.kube</span>
-<span class="fu">sudo</span> cp <span class="at">-i</span> /etc/kubernetes/admin.conf <span class="va">$HOME</span>/.kube/config</span>
-<span class="fu">sudo</span> chown <span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span>:<span class="va">$(</span><span class="fu">id</span> <span class="at">-g</span><span class="va">)</span> <span class="va">$HOME</span>/.kube/config</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">mv $HOME/.kube $HOME/.kube.bak
+mkdir $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre></li>
 </ul>
 <h2 id="kubelet-client-cert">Kubelet client certificate rotation
 fails</h2>
@@ -347,9 +359,8 @@ recreated.</p></li>
 rotated kubelet client certificates, by replacing
 <code>client-certificate-data</code> and <code>client-key-data</code>
 with:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">client-certificate</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/pki/kubelet-client-current.pem</span></span>
-<span class="fu">client-key</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/pki/kubelet-client-current.pem</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+client-key: /var/lib/kubelet/pki/kubelet-client-current.pem</code></pre></li>
 <li><p>Restart the kubelet.</p></li>
 <li><p>Make sure the node becomes <code>Ready</code>.</p></li>
 </ol>
@@ -358,8 +369,7 @@ id="default-nic-when-using-flannel-as-the-pod-network-in-vagrant">Default
 NIC When using flannel as the pod network in Vagrant</h2>
 <p>The following error might indicate that something was wrong in the
 pod network:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">Error</span> from server <span class="er">(</span><span class="ex">NotFound</span><span class="kw">)</span><span class="bu">:</span> the server could not find the requested resource</span></code></pre></div>
+<pre class="sh"><code class="language-sh">Error from server (NotFound): the server could not find the requested resource</code></pre>
 <ul>
 <li><p>If you're using flannel as the pod network inside Vagrant, then
 you will have to specify the default interface name for flannel.</p>
@@ -376,7 +386,7 @@ containers</h2>
 <p>In some situations <code>kubectl logs</code> and
 <code>kubectl run</code> commands may return with the following errors
 in an otherwise functional cluster:</p>
-<pre class="console"><code>Error from server: Get https://10.19.0.41:10250/containerLogs/default/mysql-ddc65b868-glc5m/mysql: dial tcp 10.19.0.41:10250: getsockopt: no route to host</code></pre>
+<pre class="console"><code class="language-console">Error from server: Get https://10.19.0.41:10250/containerLogs/default/mysql-ddc65b868-glc5m/mysql: dial tcp 10.19.0.41:10250: getsockopt: no route to host</code></pre>
 <ul>
 <li><p>This may be due to Kubernetes using an IP that can not
 communicate with other IPs on the seemingly same subnet, possibly by
@@ -389,8 +399,7 @@ feature, yet <code>kubelet</code> will pick the latter as the node's
 <code>ifconfig</code> because <code>ifconfig</code> will not display the
 offending alias IP address. Alternatively an API endpoint specific to
 DigitalOcean allows you to query for the anchor IP from the droplet:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">curl</span> http://169.254.169.254/metadata/v1/interfaces/public/0/anchor_ipv4/address</span></code></pre></div>
+<pre class="sh"><code class="language-sh">curl http://169.254.169.254/metadata/v1/interfaces/public/0/anchor_ipv4/address</code></pre>
 <p>The workaround is to tell <code>kubelet</code> which IP to use using
 <code>--node-ip</code>. When using DigitalOcean, it can be the public
 one (assigned to <code>eth0</code>) or the private one (assigned to
@@ -399,9 +408,8 @@ The <code>kubeletExtraArgs</code> section of the kubeadm <a
 href="../../../../reference/config-api/kubeadm-config.v1beta4.html#kubeadm-k8s-io-v1beta4-NodeRegistrationOptions"><code>NodeRegistrationOptions</code>
 structure</a> can be used for this.</p>
 <p>Then restart <code>kubelet</code>:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">systemctl</span> daemon-reload</span>
-<span class="ex">systemctl</span> restart kubelet</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">systemctl daemon-reload
+systemctl restart kubelet</code></pre></li>
 </ul>
 <h2
 id="coredns-pods-have-crashloopbackoff-or-error-state"><code>coredns</code>
@@ -420,10 +428,9 @@ SELinux</a>.</p></li>
 <li><p>Modify the <code>coredns</code> deployment to set
 <code>allowPrivilegeEscalation</code> to <code>true</code>:</p></li>
 </ul>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> <span class="at">-n</span> kube-system get deployment coredns <span class="at">-o</span> yaml <span class="kw">|</span> <span class="dt">\</span></span>
-  <span class="fu">sed</span> <span class="st">&#39;s/allowPrivilegeEscalation: false/allowPrivilegeEscalation: true/g&#39;</span> <span class="kw">|</span> <span class="dt">\</span></span>
-  <span class="ex">kubectl</span> apply <span class="at">-f</span> <span class="at">-</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl -n kube-system get deployment coredns -o yaml | \
+  sed &#39;s/allowPrivilegeEscalation: false/allowPrivilegeEscalation: true/g&#39; | \
+  kubectl apply -f -</code></pre>
 <p>Another cause for CoreDNS to have <code>CrashLoopBackOff</code> is
 when a CoreDNS Pod deployed in Kubernetes detects a loop. <a
 href="https://github.com/coredns/coredns/tree/master/plugin/loop#troubleshooting-loops-in-kubernetes-clusters">A
@@ -450,9 +457,8 @@ container.</p>
 <pre><code>dnf downgrade docker-1.13.1-75.git8633870.el7.centos.x86_64 docker-client-1.13.1-75.git8633870.el7.centos.x86_64 docker-common-1.13.1-75.git8633870.el7.centos.x86_64</code></pre></li>
 <li><p>Install one of the more recent recommended versions, such as
 18.06:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sudo</span> dnf config-manager <span class="at">--add-repo</span> https://download.docker.com/linux/centos/docker-ce.repo</span>
-<span class="ex">dnf</span> install docker-ce-18.06.1.ce-3.el7.x86_64</span></code></pre></div></li>
+<pre class="bash"><code class="language-bash">sudo dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+dnf install docker-ce-18.06.1.ce-3.el7.x86_64</code></pre></li>
 </ul>
 <h2
 id="not-possible-to-pass-a-comma-separated-list-of-values-to-arguments-inside-a-component-extra-args-flag">Not
@@ -539,28 +545,26 @@ file</a>.</p>
 <p>On the primary control-plane Node (created using
 <code>kubeadm init</code>), pass the following file using
 <code>--config</code>:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> InitConfiguration</span></span>
-<span class="fu">nodeRegistration</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;volume-plugin-dir&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/opt/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">controllerManager</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">extraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;flex-volume-plugin-dir&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/opt/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: &quot;volume-plugin-dir&quot;
+    value: &quot;/opt/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+controllerManager:
+  extraArgs:
+  - name: &quot;flex-volume-plugin-dir&quot;
+    value: &quot;/opt/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</code></pre>
 <p>On joining Nodes:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> JoinConfiguration</span></span>
-<span class="fu">nodeRegistration</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;volume-plugin-dir&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/opt/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: &quot;volume-plugin-dir&quot;
+    value: &quot;/opt/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</code></pre>
 <p>Alternatively, you can modify <code>/etc/fstab</code> to make the
 <code>/usr</code> mount writeable, but please be advised that this is
 modifying a design principle of the Linux distribution.</p>
@@ -632,51 +636,50 @@ cluster:</p>
 <ul>
 <li><p>The etcd upgrade can be skipped between the affected versions and
 v1.28.3 (or later) by using:</p>
-<pre class="shell"><code>kubeadm upgrade {apply|node} [version] --etcd-upgrade=false</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm upgrade {apply|node} [version] --etcd-upgrade=false</code></pre>
 <p>This is not recommended in case a new etcd version was introduced by
 a later v1.28 patch version.</p></li>
 <li><p>Before upgrade, patch the manifest for the etcd static pod, to
 remove the problematic defaulted attributes:</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode patch"><code class="sourceCode diff"><span class="kw">diff --git a/etc/kubernetes/manifests/etcd_defaults.yaml b/etc/kubernetes/manifests/etcd_origin.yaml</span></span>
-index d807ccbe0aa..46b35f00e15 100644</span>
-<span class="dt">--- a/etc/kubernetes/manifests/etcd_defaults.yaml</span></span>
-<span class="dt">+++ b/etc/kubernetes/manifests/etcd_origin.yaml</span></span>
-<span class="dt">@@ -43,7 +43,6 @@ spec:</span></span>
-        scheme: HTTP</span>
-      initialDelaySeconds: 10</span>
-      periodSeconds: 10</span>
-<span class="st">-      successThreshold: 1</span></span>
-      timeoutSeconds: 15</span>
-    name: etcd</span>
-    resources:</span>
-<span class="dt">@@ -59,26 +58,18 @@ spec:</span></span>
-        scheme: HTTP</span>
-      initialDelaySeconds: 10</span>
-      periodSeconds: 10</span>
-<span class="st">-      successThreshold: 1</span></span>
-      timeoutSeconds: 15</span>
-<span class="st">-    terminationMessagePath: /dev/termination-log</span></span>
-<span class="st">-    terminationMessagePolicy: File</span></span>
-    volumeMounts:</span>
-    - mountPath: /var/lib/etcd</span>
-      name: etcd-data</span>
-    - mountPath: /etc/kubernetes/pki/etcd</span>
-      name: etcd-certs</span>
-<span class="st">-  dnsPolicy: ClusterFirst</span></span>
-<span class="st">-  enableServiceLinks: true</span></span>
-  hostNetwork: true</span>
-  priority: 2000001000</span>
-  priorityClassName: system-node-critical</span>
-<span class="st">-  restartPolicy: Always</span></span>
-<span class="st">-  schedulerName: default-scheduler</span></span>
-  securityContext:</span>
-    seccompProfile:</span>
-      type: RuntimeDefault</span>
-<span class="st">-  terminationGracePeriodSeconds: 30</span></span>
-  volumes:</span>
-  - hostPath:</span>
-      path: /etc/kubernetes/pki/etcd</span></code></pre></div></li>
+<pre class="patch"><code class="language-patch">diff --git a/etc/kubernetes/manifests/etcd_defaults.yaml b/etc/kubernetes/manifests/etcd_origin.yaml
+index d807ccbe0aa..46b35f00e15 100644
+--- a/etc/kubernetes/manifests/etcd_defaults.yaml
++++ b/etc/kubernetes/manifests/etcd_origin.yaml
+@@ -43,7 +43,6 @@ spec:
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+-      successThreshold: 1
+      timeoutSeconds: 15
+    name: etcd
+    resources:
+@@ -59,26 +58,18 @@ spec:
+        scheme: HTTP
+      initialDelaySeconds: 10
+      periodSeconds: 10
+-      successThreshold: 1
+      timeoutSeconds: 15
+-    terminationMessagePath: /dev/termination-log
+-    terminationMessagePolicy: File
+    volumeMounts:
+    - mountPath: /var/lib/etcd
+      name: etcd-data
+    - mountPath: /etc/kubernetes/pki/etcd
+      name: etcd-certs
+-  dnsPolicy: ClusterFirst
+-  enableServiceLinks: true
+  hostNetwork: true
+  priority: 2000001000
+  priorityClassName: system-node-critical
+-  restartPolicy: Always
+-  schedulerName: default-scheduler
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+-  terminationGracePeriodSeconds: 30
+  volumes:
+  - hostPath:
+      path: /etc/kubernetes/pki/etcd</code></pre></li>
 </ul>
 <p>More information can be found in the <a
 href="https://github.com/kubernetes/kubeadm/issues/2927">tracking
@@ -745,6 +748,7 @@ issue</a> for this bug.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -753,6 +757,8 @@ issue</a> for this bug.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../../assets/nav.js"></script>
 <script src="../../../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -217,33 +232,31 @@ server to decrypt objects</h3>
 <p>To disable encryption at rest, place the <code>identity</code>
 provider as the first entry in your encryption configuration file.</p>
 <p>For example, if your existing EncryptionConfiguration file reads:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="co"># Do not use this (invalid) example key for encryption</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> 2KfZgdiq2K0g2YrYpyDYs9mF2LPZhQ==</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      - aescbc:
+          keys:
+            # Do not use this (invalid) example key for encryption
+            - name: example
+              secret: 2KfZgdiq2K0g2YrYpyDYs9mF2LPZhQ==</code></pre>
 <p>then change it to:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># add this line</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> 2KfZgdiq2K0g2YrYpyDYs9mF2LPZhQ==</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      - identity: {} # add this line
+      - aescbc:
+          keys:
+            - name: example
+              secret: 2KfZgdiq2K0g2YrYpyDYs9mF2LPZhQ==</code></pre>
 <p>and restart the kube-apiserver Pod on this node.</p>
 <h3 id="api-server-config-update-more-1">Reconfigure other control plane
 hosts</h3>
@@ -254,7 +267,7 @@ control plane host.</p>
 <h3 id="force-decryption">Force decryption</h3>
 <p>Then run the following command to force decryption of all
 Secrets:</p>
-<pre class="shell"><code># If you are decrypting a different kind of object, change &quot;secrets&quot; to match.
+<pre class="shell"><code class="language-shell"># If you are decrypting a different kind of object, change &quot;secrets&quot; to match.
 kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
 <p>Once you have replaced <strong>all</strong> existing encrypted
 resources with backing data that don't use encryption, you can remove
@@ -342,6 +355,7 @@ configuration API (v1)</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -350,6 +364,8 @@ configuration API (v1)</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

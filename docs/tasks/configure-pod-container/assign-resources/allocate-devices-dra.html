@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -170,7 +185,7 @@ that define categories of devices. You can claim devices by using <span
 class="glossary-term" data-term="cel">Common Expression Language</span>
 to filter for specific device properties.</p>
 <p>Get a list of DeviceClasses in the cluster:</p>
-<pre class="shell"><code>kubectl get deviceclasses</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deviceclasses</code></pre>
 <p>The output is similar to the following:</p>
 <pre><code>NAME                 AGE
 driver.example.com   16m</code></pre>
@@ -209,23 +224,22 @@ following options:</p>
 <p>Review the following example manifest:</p>
 <div class="code-sample">
 <p><code>dra/resourceclaimtemplate.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaimTemplate</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-resource-claim-template</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-claim</span></span>
-<span class="at">        </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> example-device-class</span></span>
-<span class="at">          </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">                  device.attributes[&quot;driver.example.com&quot;].type == &quot;gpu&quot; &amp;&amp;</span></span>
-<span class="at">                  device.capacity[&quot;driver.example.com&quot;].memory == quantity(&quot;64Gi&quot;)</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: example-resource-claim-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: gpu-claim
+        exactly:
+          deviceClassName: example-device-class
+          selectors:
+            - cel:
+                expression: |-
+                  device.attributes[&quot;driver.example.com&quot;].type == &quot;gpu&quot; &amp;&amp;
+                  device.capacity[&quot;driver.example.com&quot;].memory == quantity(&quot;64Gi&quot;)</code></pre>
 </div>
 <p>This manifest creates a ResourceClaimTemplate that requests devices
 in the <code>example-device-class</code> DeviceClass that match both of
@@ -236,30 +250,29 @@ with a value of <code>gpu</code>.</li>
 <li>Devices that have <code>64Gi</code> of capacity.</li>
 </ul>
 <p>To create the ResourceClaimTemplate, run the following command:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/dra/resourceclaimtemplate.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/dra/resourceclaimtemplate.yaml</code></pre>
 <div class="tab-label">
 <p>ResourceClaim</p>
 </div>
 <p>Review the following example manifest:</p>
 <div class="code-sample">
 <p><code>dra/resourceclaim.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-resource-claim</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> single-gpu-claim</span></span>
-<span class="at">      </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> example-device-class</span></span>
-<span class="at">        </span><span class="fu">allocationMode</span><span class="kw">:</span><span class="at"> All</span></span>
-<span class="at">        </span><span class="fu">selectors</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">cel</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">              device.attributes[&quot;driver.example.com&quot;].type == &quot;gpu&quot; &amp;&amp;</span></span>
-<span class="at">              device.capacity[&quot;driver.example.com&quot;].memory == quantity(&quot;64Gi&quot;)</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: example-resource-claim
+spec:
+  devices:
+    requests:
+    - name: single-gpu-claim
+      exactly:
+        deviceClassName: example-device-class
+        allocationMode: All
+        selectors:
+        - cel:
+            expression: |-
+              device.attributes[&quot;driver.example.com&quot;].type == &quot;gpu&quot; &amp;&amp;
+              device.capacity[&quot;driver.example.com&quot;].memory == quantity(&quot;64Gi&quot;)</code></pre>
 </div>
 <p>This manifest creates ResourceClaim that requests devices in the
 <code>example-device-class</code> DeviceClass that match both of the
@@ -270,7 +283,7 @@ with a value of <code>gpu</code>.</li>
 <li>Devices that have <code>64Gi</code> of capacity.</li>
 </ul>
 <p>To create the ResourceClaim, run the following command:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/dra/resourceclaim.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/dra/resourceclaim.yaml</code></pre>
 </div>
 <h2 id="request-devices-workloads">Request devices in workloads using
 DRA</h2>
@@ -284,41 +297,40 @@ use specific claims in different containers.</p>
 <li><p>Review the following example Job:</p>
 <div class="code-sample">
 <p><code>dra/dra-example-job.yaml</code></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-dra-job</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> container0</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu:24.04</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;9999&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">claims</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> separate-gpu-claim</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> container1</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu:24.04</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;9999&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">claims</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-gpu-claim</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> container2</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu:24.04</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;9999&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">claims</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-gpu-claim</span></span>
-<span class="at">      </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> separate-gpu-claim</span></span>
-<span class="at">        </span><span class="fu">resourceClaimTemplateName</span><span class="kw">:</span><span class="at"> example-resource-claim-template</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-gpu-claim</span></span>
-<span class="at">        </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> example-resource-claim</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: example-dra-job
+spec:
+  completions: 10
+  parallelism: 2
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: container0
+        image: ubuntu:24.04
+        command: [&quot;sleep&quot;, &quot;9999&quot;]
+        resources:
+          claims:
+          - name: separate-gpu-claim
+      - name: container1
+        image: ubuntu:24.04
+        command: [&quot;sleep&quot;, &quot;9999&quot;]
+        resources:
+          claims:
+          - name: shared-gpu-claim
+      - name: container2
+        image: ubuntu:24.04
+        command: [&quot;sleep&quot;, &quot;9999&quot;]
+        resources:
+          claims:
+          - name: shared-gpu-claim
+      resourceClaims:
+      - name: separate-gpu-claim
+        resourceClaimTemplateName: example-resource-claim-template
+      - name: shared-gpu-claim
+        resourceClaimName: example-resource-claim</code></pre>
 </div>
 <p>Each Pod in this Job has the following properties:</p>
 <ul>
@@ -334,7 +346,7 @@ the devices from the <code>shared-gpu-claim</code> ResourceClaim.</li>
 </ul></li>
 </ul></li>
 <li><p>Create the Job:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/dra/dra-example-job.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/dra/dra-example-job.yaml</code></pre></li>
 </ol>
 <p>Try the following troubleshooting steps:</p>
 <ol type="1">
@@ -355,14 +367,14 @@ check this.</li>
 follow these steps:</p>
 <ol type="1">
 <li><p>Delete the example Job:</p>
-<pre class="shell"><code>kubectl delete -f https://k8s.io/examples/dra/dra-example-job.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete -f https://k8s.io/examples/dra/dra-example-job.yaml</code></pre></li>
 <li><p>To delete your resource claims, run one of the following
 commands:</p>
 <ul>
 <li><p>Delete the ResourceClaimTemplate:</p>
-<pre class="shell"><code>kubectl delete -f https://k8s.io/examples/dra/resourceclaimtemplate.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete -f https://k8s.io/examples/dra/resourceclaimtemplate.yaml</code></pre></li>
 <li><p>Delete the ResourceClaim:</p>
-<pre class="shell"><code>kubectl delete -f https://k8s.io/examples/dra/resourceclaim.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete -f https://k8s.io/examples/dra/resourceclaim.yaml</code></pre></li>
 </ul></li>
 </ol>
 <h2 id="what-s-next">What's next</h2>
@@ -435,6 +447,7 @@ more about DRA</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -443,6 +456,8 @@ more about DRA</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

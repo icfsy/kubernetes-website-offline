@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -182,17 +197,16 @@ options reference</a>.</p>
 <p>To enable the Node authorizer, start the <a class="glossary-term" href="../glossary.html#term-kube-apiserver" title="Glossary: kube-apiserver">API server</a> with the
 <code>--authorization-config</code> flag set to a file that includes the
 <code>Node</code> authorizer; for example:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthorizationConfiguration</span></span>
-<span class="fu">authorizers</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Node</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AuthorizationConfiguration
+authorizers:
+  ...
+  - type: Node
+  ...</code></pre>
 <p>Or, start the <a class="glossary-term" href="../glossary.html#term-kube-apiserver" title="Glossary: kube-apiserver">API server</a> with the
 <code>--authorization-mode</code> flag set to a comma-separated list
 that includes <code>Node</code>; for example:</p>
-<pre class="shell"><code>kube-apiserver --authorization-mode=...,Node --other-options --more-options</code></pre>
+<pre class="shell"><code class="language-shell">kube-apiserver --authorization-mode=...,Node --other-options --more-options</code></pre>
 <p>To limit the API objects kubelets are able to write, enable the <a
 href="admission-controllers.html#noderestriction">NodeRestriction</a>
 admission plugin by starting the apiserver with
@@ -270,44 +284,41 @@ the <code>resourceNames</code> field controls which service accounts the
 rule applies to.</p>
 <p>For example, to allow the kubelet to request audience
 <code>my-registry-audience</code> for a specific service account:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-audience-my-registry</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;request-serviceaccounts-token-audience&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;my-registry-audience&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;my-service-account&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-audience-my-registry
+rules:
+- verbs: [&quot;request-serviceaccounts-token-audience&quot;]
+  apiGroups: [&quot;&quot;]
+  resources: [&quot;my-registry-audience&quot;]
+  resourceNames: [&quot;my-service-account&quot;]</code></pre>
 <p>Omitting <code>resourceNames</code> allows the audience for any
 service account. Using a wildcard (<code>"*"</code>) for
 <code>resources</code> allows any audience:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-audience-unrestricted</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;request-serviceaccounts-token-audience&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span><span class="at">  </span><span class="co"># any audience</span></span>
-<span class="at">  </span><span class="co"># no resourceNames: any service account</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-audience-unrestricted
+rules:
+- verbs: [&quot;request-serviceaccounts-token-audience&quot;]
+  apiGroups: [&quot;&quot;]
+  resources: [&quot;*&quot;]  # any audience
+  # no resourceNames: any service account</code></pre>
 <p>Bind the ClusterRole to the <code>system:nodes</code> group to apply
 it to all kubelets:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-audience-binding</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-audience-my-registry</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:nodes</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-audience-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-audience-my-registry
+subjects:
+- kind: Group
+  name: system:nodes
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -402,6 +413,7 @@ implementation would not consider that a node identity.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -410,6 +422,8 @@ implementation would not consider that a node identity.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

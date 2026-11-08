@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -196,7 +211,7 @@ other tools may or may not be installed. Cluster DNS may not work.</li>
 <p>Typically, there are several services which are started on a cluster
 by kube-system. Get a list of these with the
 <code>kubectl cluster-info</code> command:</p>
-<pre class="shell"><code>kubectl cluster-info</code></pre>
+<pre class="shell"><code class="language-shell">kubectl cluster-info</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Kubernetes master is running at https://192.0.2.1
 elasticsearch-logging is running at https://192.0.2.1/api/v1/namespaces/kube-system/services/elasticsearch-logging/proxy
@@ -254,19 +269,18 @@ to the specified port name or port number using https</li>
 <code>_cluster/health?pretty=true</code>, you would use:</p>
 <pre><code>https://192.0.2.1/api/v1/namespaces/kube-system/services/elasticsearch-logging/proxy/_cluster/health?pretty=true</code></pre>
 <p>The health information is similar to this:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;cluster_name&quot;</span> <span class="fu">:</span> <span class="st">&quot;kubernetes_logging&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span> <span class="fu">:</span> <span class="st">&quot;yellow&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;timed_out&quot;</span> <span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-  <span class="dt">&quot;number_of_nodes&quot;</span> <span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
-  <span class="dt">&quot;number_of_data_nodes&quot;</span> <span class="fu">:</span> <span class="dv">1</span><span class="fu">,</span></span>
-  <span class="dt">&quot;active_primary_shards&quot;</span> <span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
-  <span class="dt">&quot;active_shards&quot;</span> <span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
-  <span class="dt">&quot;relocating_shards&quot;</span> <span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
-  <span class="dt">&quot;initializing_shards&quot;</span> <span class="fu">:</span> <span class="dv">0</span><span class="fu">,</span></span>
-  <span class="dt">&quot;unassigned_shards&quot;</span> <span class="fu">:</span> <span class="dv">5</span></span>
-<span class="fu">}</span></span></code></pre></div></li>
+<pre class="json"><code class="language-json">{
+  &quot;cluster_name&quot; : &quot;kubernetes_logging&quot;,
+  &quot;status&quot; : &quot;yellow&quot;,
+  &quot;timed_out&quot; : false,
+  &quot;number_of_nodes&quot; : 1,
+  &quot;number_of_data_nodes&quot; : 1,
+  &quot;active_primary_shards&quot; : 5,
+  &quot;active_shards&quot; : 5,
+  &quot;relocating_shards&quot; : 0,
+  &quot;initializing_shards&quot; : 0,
+  &quot;unassigned_shards&quot; : 5
+}</code></pre></li>
 <li><p>To access the <em>https</em> Elasticsearch service health
 information <code>_cluster/health?pretty=true</code>, you would use:</p>
 <pre><code>https://192.0.2.1/api/v1/namespaces/kube-system/services/https:elasticsearch-logging:/proxy/_cluster/health?pretty=true</code></pre></li>
@@ -348,6 +362,7 @@ path prefix.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -356,6 +371,8 @@ path prefix.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

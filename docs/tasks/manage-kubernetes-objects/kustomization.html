@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -126,10 +141,10 @@ file</a>.</p>
 objects using a kustomization file. To view resources found in a
 directory containing a kustomization file, run the following
 command:</p>
-<pre class="shell"><code>kubectl kustomize &lt;kustomization_directory&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl kustomize &lt;kustomization_directory&gt;</code></pre>
 <p>To apply those resources, run <code>kubectl apply</code> with
 <code>--kustomize</code> or <code>-k</code> flag:</p>
-<pre class="shell"><code>kubectl apply -k &lt;kustomization_directory&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -k &lt;kustomization_directory&gt;</code></pre>
 <h2 id="before-you-begin">Before you begin</h2>
 <p>Install <a href="../tools.html"><code>kubectl</code></a>.</p>
 <p>You need to have a Kubernetes cluster, and the kubectl command-line
@@ -168,7 +183,7 @@ generate Secret and ConfigMap from files or literals.</p>
 <code>files</code> list in <code>configMapGenerator</code>. Here is an
 example of generating a ConfigMap with a data item from a
 <code>.properties</code> file:</p>
-<pre class="shell"><code># Create a application.properties file
+<pre class="shell"><code class="language-shell"># Create a application.properties file
 cat &lt;&lt;EOF &gt;application.properties
 FOO=Bar
 EOF
@@ -181,21 +196,20 @@ configMapGenerator:
 EOF</code></pre>
 <p>The generated ConfigMap can be examined with the following
 command:</p>
-<pre class="shell"><code>kubectl kustomize ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl kustomize ./</code></pre>
 <p>The generated ConfigMap is:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">application.properties</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    FOO=Bar</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-1-8mbdf7882g</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  application.properties: |
+    FOO=Bar
+kind: ConfigMap
+metadata:
+  name: example-configmap-1-8mbdf7882g</code></pre>
 <p>To generate a ConfigMap from an env file, add an entry to the
 <code>envs</code> list in <code>configMapGenerator</code>. Here is an
 example of generating a ConfigMap with a data item from a
 <code>.env</code> file:</p>
-<pre class="shell"><code># Create a .env file
+<pre class="shell"><code class="language-shell"># Create a .env file
 cat &lt;&lt;EOF &gt;.env
 FOO=Bar
 EOF
@@ -208,15 +222,14 @@ configMapGenerator:
 EOF</code></pre>
 <p>The generated ConfigMap can be examined with the following
 command:</p>
-<pre class="shell"><code>kubectl kustomize ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl kustomize ./</code></pre>
 <p>The generated ConfigMap is:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FOO</span><span class="kw">:</span><span class="at"> Bar</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-1-42cfbf598f</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  FOO: Bar
+kind: ConfigMap
+metadata:
+  name: example-configmap-1-42cfbf598f</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -230,112 +243,109 @@ example which embeds a file named <code>application.properties</code>
 generate a ConfigMap from a literal key-value pair, add an entry to the
 <code>literals</code> list in configMapGenerator. Here is an example of
 generating a ConfigMap with a data item from a key-value pair:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt;./kustomization.yaml
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt;./kustomization.yaml
 configMapGenerator:
 - name: example-configmap-2
   literals:
   - FOO=Bar
 EOF</code></pre>
 <p>The generated ConfigMap can be checked by the following command:</p>
-<pre class="shell"><code>kubectl kustomize ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl kustomize ./</code></pre>
 <p>The generated ConfigMap is:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FOO</span><span class="kw">:</span><span class="at"> Bar</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-2-g2hdhfc6tk</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  FOO: Bar
+kind: ConfigMap
+metadata:
+  name: example-configmap-2-g2hdhfc6tk</code></pre>
 <p>To use a generated ConfigMap in a Deployment, reference it by the
 name of the configMapGenerator. Kustomize will automatically replace
 this name with the generated name.</p>
 <p>This is an example deployment that uses a generated ConfigMap:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Create an application.properties file</span></span>
-<span class="at">cat &lt;&lt;EOF &gt;application.properties</span></span>
-<span class="at">FOO=Bar</span></span>
-<span class="at">EOF</span></span>
-</span>
-<span class="at">cat &lt;&lt;EOF &gt;deployment.yaml</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /config</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">        </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-1</span></span>
-<span class="at">EOF</span></span>
-</span>
-<span class="at">cat &lt;&lt;EOF &gt;./kustomization.yaml</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="at">deployment.yaml</span></span>
-<span class="fu">configMapGenerator</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-1</span></span>
-<span class="at">  </span><span class="fu">files</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">application.properties</span></span>
-<span class="at">EOF</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># Create an application.properties file
+cat &lt;&lt;EOF &gt;application.properties
+FOO=Bar
+EOF
+
+cat &lt;&lt;EOF &gt;deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  labels:
+    app: my-app
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: app
+        image: my-app
+        volumeMounts:
+        - name: config
+          mountPath: /config
+      volumes:
+      - name: config
+        configMap:
+          name: example-configmap-1
+EOF
+
+cat &lt;&lt;EOF &gt;./kustomization.yaml
+resources:
+- deployment.yaml
+configMapGenerator:
+- name: example-configmap-1
+  files:
+  - application.properties
+EOF</code></pre>
 <p>Generate the ConfigMap and Deployment:</p>
-<pre class="shell"><code>kubectl kustomize ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl kustomize ./</code></pre>
 <p>The generated Deployment will refer to the generated ConfigMap by
 name:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">application.properties</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    FOO=Bar</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-1-g4hk9g2ff8</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my-app</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /config</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-1-g4hk9g2ff8</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  application.properties: |
+    FOO=Bar
+kind: ConfigMap
+metadata:
+  name: example-configmap-1-g4hk9g2ff8
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: my-app
+  name: my-app
+spec:
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - image: my-app
+        name: app
+        volumeMounts:
+        - mountPath: /config
+          name: config
+      volumes:
+      - configMap:
+          name: example-configmap-1-g4hk9g2ff8
+        name: config</code></pre>
 <h4 id="secretgenerator">secretGenerator</h4>
 <p>You can generate Secrets from files or literal key-value pairs. To
 generate a Secret from a file, add an entry to the <code>files</code>
 list in <code>secretGenerator</code>. Here is an example of generating a
 Secret with a data item from a file:</p>
-<pre class="shell"><code># Create a password.txt file
+<pre class="shell"><code class="language-shell"># Create a password.txt file
 cat &lt;&lt;EOF &gt;./password.txt
 username=admin
 password=secret
@@ -348,19 +358,18 @@ secretGenerator:
   - password.txt
 EOF</code></pre>
 <p>The generated Secret is as follows:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">password.txt</span><span class="kw">:</span><span class="at"> dXNlcm5hbWU9YWRtaW4KcGFzc3dvcmQ9c2VjcmV0Cg==</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-secret-1-t2kt65hgtb</span></span>
-<span class="fu">type</span><span class="kw">:</span><span class="at"> Opaque</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  password.txt: dXNlcm5hbWU9YWRtaW4KcGFzc3dvcmQ9c2VjcmV0Cg==
+kind: Secret
+metadata:
+  name: example-secret-1-t2kt65hgtb
+type: Opaque</code></pre>
 <p>To generate a Secret from a literal key-value pair, add an entry to
 <code>literals</code> list in <code>secretGenerator</code>. Here is an
 example of generating a Secret with a data item from a key-value
 pair:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt;./kustomization.yaml
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt;./kustomization.yaml
 secretGenerator:
 - name: example-secret-2
   literals:
@@ -368,18 +377,17 @@ secretGenerator:
   - password=secret
 EOF</code></pre>
 <p>The generated Secret is as follows:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">password</span><span class="kw">:</span><span class="at"> c2VjcmV0</span></span>
-<span class="at">  </span><span class="fu">username</span><span class="kw">:</span><span class="at"> YWRtaW4=</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-secret-2-t52t6g96d8</span></span>
-<span class="fu">type</span><span class="kw">:</span><span class="at"> Opaque</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  password: c2VjcmV0
+  username: YWRtaW4=
+kind: Secret
+metadata:
+  name: example-secret-2-t52t6g96d8
+type: Opaque</code></pre>
 <p>Like ConfigMaps, generated Secrets can be used in Deployments by
 referring to the name of the secretGenerator:</p>
-<pre class="shell"><code># Create a password.txt file
+<pre class="shell"><code class="language-shell"># Create a password.txt file
 cat &lt;&lt;EOF &gt;./password.txt
 username=admin
 password=secret
@@ -428,7 +436,7 @@ the contents are changed. To disable the behavior of appending a suffix,
 one can use <code>generatorOptions</code>. Besides that, it is also
 possible to specify cross-cutting options for generated ConfigMaps and
 Secrets.</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt;./kustomization.yaml
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt;./kustomization.yaml
 configMapGenerator:
 - name: example-configmap-3
   literals:
@@ -442,17 +450,16 @@ generatorOptions:
 EOF</code></pre>
 <p>Run<code>kubectl kustomize ./</code> to view the generated
 ConfigMap:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">FOO</span><span class="kw">:</span><span class="at"> Bar</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">note</span><span class="kw">:</span><span class="at"> generated</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> generated</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-configmap-3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+data:
+  FOO: Bar
+kind: ConfigMap
+metadata:
+  annotations:
+    note: generated
+  labels:
+    type: generated
+  name: example-configmap-3</code></pre>
 <h3 id="setting-cross-cutting-fields">Setting cross-cutting fields</h3>
 <p>It is quite common to set cross-cutting fields for all Kubernetes
 resources in a project. Some use cases for setting cross-cutting
@@ -464,7 +471,7 @@ fields:</p>
 <li>adding the same set of annotations</li>
 </ul>
 <p>Here is an example:</p>
-<pre class="shell"><code># Create a deployment.yaml
+<pre class="shell"><code class="language-shell"># Create a deployment.yaml
 cat &lt;&lt;EOF &gt;./deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -501,30 +508,29 @@ resources:
 EOF</code></pre>
 <p>Run <code>kubectl kustomize ./</code> to view those fields are all
 set in the Deployment Resource:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">oncallPager</span><span class="kw">:</span><span class="at"> 800-555-1212</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> bingo</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dev-nginx-deployment-001</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> my-namespace</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> bingo</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">oncallPager</span><span class="kw">:</span><span class="at"> 800-555-1212</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> bingo</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    oncallPager: 800-555-1212
+  labels:
+    app: bingo
+  name: dev-nginx-deployment-001
+  namespace: my-namespace
+spec:
+  selector:
+    matchLabels:
+      app: bingo
+  template:
+    metadata:
+      annotations:
+        oncallPager: 800-555-1212
+      labels:
+        app: bingo
+    spec:
+      containers:
+      - image: nginx
+        name: nginx</code></pre>
 <h3 id="composing-and-customizing-resources">Composing and Customizing
 Resources</h3>
 <p>It is common to compose a set of resources in a project and manage
@@ -538,7 +544,7 @@ file, defines the list of resources to include in a configuration. Set
 the path to a resource's configuration file in the
 <code>resources</code> list. Here is an example of an NGINX application
 comprised of a Deployment and a Service:</p>
-<pre class="shell"><code># Create a deployment.yaml file
+<pre class="shell"><code class="language-shell"># Create a deployment.yaml file
 cat &lt;&lt;EOF &gt; deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -601,7 +607,7 @@ one patch for increasing the deployment replica number and another patch
 for setting the memory limit. The target resource is matched using
 <code>group</code>, <code>version</code>, <code>kind</code>, and
 <code>name</code> fields from the patch file.</p>
-<pre class="shell"><code># Create a deployment.yaml file
+<pre class="shell"><code class="language-shell"># Create a deployment.yaml file
 cat &lt;&lt;EOF &gt; deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -658,29 +664,28 @@ patches:
   - path: set_memory.yaml
 EOF</code></pre>
 <p>Run <code>kubectl kustomize ./</code> to view the Deployment:</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 512Mi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      run: my-nginx
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - image: nginx
+        name: my-nginx
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            memory: 512Mi</code></pre>
 <p>Not all resources or fields support <code>strategicMerge</code>
 patches. To support modifying arbitrary fields in arbitrary resources,
 Kustomize offers applying <a
@@ -693,7 +698,7 @@ also be done through <code>Json6902</code> patch. The target resource is
 matched using <code>group</code>, <code>version</code>,
 <code>kind</code>, and <code>name</code> from the <code>target</code>
 field.</p>
-<pre class="shell"><code># Create a deployment.yaml file
+<pre class="shell"><code class="language-shell"># Create a deployment.yaml file
 cat &lt;&lt;EOF &gt; deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -738,32 +743,31 @@ patches:
 EOF</code></pre>
 <p>Run <code>kubectl kustomize ./</code> to see the
 <code>replicas</code> field is updated:</p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      run: my-nginx
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - image: nginx
+        name: my-nginx
+        ports:
+        - containerPort: 80</code></pre>
 <p>In addition to patches, Kustomize also offers customizing container
 images or injecting field values from other objects into containers
 without creating patches. For example, you can change the image used
 inside containers by specifying the new image in the <code>images</code>
 field in <code>kustomization.yaml</code>.</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt; deployment.yaml
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt; deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -795,26 +799,25 @@ images:
 EOF</code></pre>
 <p>Run <code>kubectl kustomize ./</code> to see that the image being
 used is updated:</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> my.image.registry/nginx:1.4.0</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: my-nginx
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - image: my.image.registry/nginx:1.4.0
+        name: my-nginx
+        ports:
+        - containerPort: 80</code></pre>
 <p>Sometimes, the application running in a Pod may need to use
 configuration values from other objects. For example, a Pod from a
 Deployment object need to read the corresponding Service name from Env
@@ -824,7 +827,7 @@ or as a command argument. Since the Service name may change as
 the Service name in the command argument. For this usage, Kustomize can
 inject the Service name into containers through
 <code>replacements</code>.</p>
-<pre class="shell"><code># Create a deployment.yaml file (quoting the here doc delimiter)
+<pre class="shell"><code class="language-shell"># Create a deployment.yaml file (quoting the here doc delimiter)
 cat &lt;&lt;&#39;EOF&#39; &gt; deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -884,28 +887,27 @@ replacements:
 EOF</code></pre>
 <p>Run <code>kubectl kustomize ./</code> to see that the Service name
 injected into containers is <code>dev-my-nginx-001</code>:</p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dev-my-nginx-001</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">start</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">--host</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">dev-my-nginx-001</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-my-nginx-001
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      run: my-nginx
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - command:
+        - start
+        - --host
+        - dev-my-nginx-001
+        image: nginx
+        name: my-nginx</code></pre>
 <h2 id="bases-and-overlays">Bases and Overlays</h2>
 <p>Kustomize has the concepts of <strong>bases</strong> and
 <strong>overlays</strong>. A <strong>base</strong> is a directory with a
@@ -923,7 +925,7 @@ resources defined in these bases into a unified configuration.
 Additionally, it can apply customizations on top of these resources to
 meet specific requirements.</p>
 <p>Here is an example of a base:</p>
-<pre class="shell"><code># Create a directory to hold the base
+<pre class="shell"><code class="language-shell"># Create a directory to hold the base
 mkdir base
 # Create a base/deployment.yaml
 cat &lt;&lt;EOF &gt; base/deployment.yaml
@@ -970,7 +972,7 @@ EOF</code></pre>
 <p>This base can be used in multiple overlays. You can add different
 <code>namePrefix</code> or other cross-cutting fields in different
 overlays. Here are two overlays using the same base.</p>
-<pre class="shell"><code>mkdir dev
+<pre class="shell"><code class="language-shell">mkdir dev
 cat &lt;&lt;EOF &gt; dev/kustomization.yaml
 resources:
 - ../base
@@ -989,9 +991,9 @@ apply/view/delete objects using Kustomize</h2>
 <code>kubectl</code> commands to recognize resources managed by
 <code>kustomization.yaml</code>. Note that <code>-k</code> should point
 to a kustomization directory, such as</p>
-<pre class="shell"><code>kubectl apply -k &lt;kustomization directory&gt;/</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -k &lt;kustomization directory&gt;/</code></pre>
 <p>Given the following <code>kustomization.yaml</code>,</p>
-<pre class="shell"><code># Create a deployment.yaml file
+<pre class="shell"><code class="language-shell"># Create a deployment.yaml file
 cat &lt;&lt;EOF &gt; deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -1026,19 +1028,19 @@ resources:
 EOF</code></pre>
 <p>Run the following command to apply the Deployment object
 <code>dev-my-nginx</code>:</p>
-<pre class="shell"><code>&gt; kubectl apply -k ./
+<pre class="shell"><code class="language-shell">&gt; kubectl apply -k ./
 deployment.apps/dev-my-nginx created</code></pre>
 <p>Run one of the following commands to view the Deployment object
 <code>dev-my-nginx</code>:</p>
-<pre class="shell"><code>kubectl get -k ./</code></pre>
-<pre class="shell"><code>kubectl describe -k ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get -k ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe -k ./</code></pre>
 <p>Run the following command to compare the Deployment object
 <code>dev-my-nginx</code> against the state that the cluster would be in
 if the manifest was applied:</p>
-<pre class="shell"><code>kubectl diff -k ./</code></pre>
+<pre class="shell"><code class="language-shell">kubectl diff -k ./</code></pre>
 <p>Run the following command to delete the Deployment object
 <code>dev-my-nginx</code>:</p>
-<pre class="shell"><code>&gt; kubectl delete -k ./
+<pre class="shell"><code class="language-shell">&gt; kubectl delete -k ./
 deployment.apps &quot;dev-my-nginx&quot; deleted</code></pre>
 <h2 id="kustomize-feature-list">Kustomize Feature List</h2>
 <table>
@@ -1229,6 +1231,7 @@ API Reference</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1237,6 +1240,8 @@ API Reference</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -157,7 +172,7 @@ authorization, you need to account for those as well.</p>
 <h2 id="create-private-key">Create private key</h2>
 <p>In this step, you create a private key. You need to keep this private
 key secret; anyone who has it can impersonate the user.</p>
-<pre class="shell"><code># Create a private key
+<pre class="shell"><code class="language-shell"># Create a private key
 openssl genrsa -out myuser.key 3072</code></pre>
 <h2 id="create-x.509-certificatessigningrequest">Create an X.509
 certificate signing request</h2>
@@ -174,17 +189,17 @@ name of the user, and O is the group that this user will belong to. You
 can refer to <a
 href="../../reference/access-authn-authz/rbac.html">RBAC</a> for standard
 groups.</p>
-<pre class="shell"><code># Change the common name &quot;myuser&quot; to the actual username that you want to use
+<pre class="shell"><code class="language-shell"># Change the common name &quot;myuser&quot; to the actual username that you want to use
 openssl req -new -key myuser.key -out myuser.csr -subj &quot;/CN=myuser&quot;</code></pre>
 <h2 id="create-k8s-certificatessigningrequest">Create a Kubernetes
 CertificateSigningRequest</h2>
 <p>Encode the CSR document using this command:</p>
-<pre class="shell"><code>cat myuser.csr | base64 | tr -d &quot;\n&quot;</code></pre>
+<pre class="shell"><code class="language-shell">cat myuser.csr | base64 | tr -d &quot;\n&quot;</code></pre>
 <p>Create a <a
 href="https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/certificate-signing-request-v1/">CertificateSigningRequest</a>
 and submit it to a Kubernetes cluster via kubectl. Below is a snippet of
 shell that you can use to generate the CertificateSigningRequest.</p>
-<pre class="shell"><code>cat &lt;&lt;EOF | kubectl apply -f -
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
 metadata:
@@ -201,22 +216,20 @@ EOF</code></pre>
 <code>kubectl</code>:</p>
 <div class="code-sample">
 <p><code>tls/myuser.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CertificateSigningRequest</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myuser</span><span class="co"> # example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># This is an encoded CSR. Change this to the base64-encoded contents of myuser.csr</span></span>
-<span class="at">  </span><span class="fu">request</span><span class="kw">:</span><span class="at"> LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0dZVzVuWld4aE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTByczhJTHRHdTYxakx2dHhWTTJSVlRWMDNHWlJTWWw0dWluVWo4RElaWjBOCnR2MUZtRVFSd3VoaUZsOFEzcWl0Qm0wMUFSMkNJVXBGd2ZzSjZ4MXF3ckJzVkhZbGlBNVhwRVpZM3ExcGswSDQKM3Z3aGJlK1o2MVNrVHF5SVBYUUwrTWM5T1Nsbm0xb0R2N0NtSkZNMUlMRVI3QTVGZnZKOEdFRjJ6dHBoaUlFMwpub1dtdHNZb3JuT2wzc2lHQ2ZGZzR4Zmd4eW8ybmlneFNVekl1bXNnVm9PM2ttT0x1RVF6cXpkakJ3TFJXbWlECklmMXBMWnoyalVnald4UkhCM1gyWnVVV1d1T09PZnpXM01LaE8ybHEvZi9DdS8wYk83c0x0MCt3U2ZMSU91TFcKcW90blZtRmxMMytqTy82WDNDKzBERHk5aUtwbXJjVDBnWGZLemE1dHJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBR05WdmVIOGR4ZzNvK21VeVRkbmFjVmQ1N24zSkExdnZEU1JWREkyQTZ1eXN3ZFp1L1BVCkkwZXpZWFV0RVNnSk1IRmQycVVNMjNuNVJsSXJ3R0xuUXFISUh5VStWWHhsdnZsRnpNOVpEWllSTmU3QlJvYXgKQVlEdUI5STZXT3FYbkFvczFqRmxNUG5NbFpqdU5kSGxpT1BjTU1oNndLaTZzZFhpVStHYTJ2RUVLY01jSVUyRgpvU2djUWdMYTk0aEpacGk3ZnNMdm1OQUxoT045UHdNMGM1dVJVejV4T0dGMUtCbWRSeEgvbUNOS2JKYjFRQm1HCkkwYitEUEdaTktXTU0xMzhIQXdoV0tkNjVoVHdYOWl4V3ZHMkh4TG1WQzg0L1BHT0tWQW9FNkpsYWFHdTlQVmkKdjlOSjVaZlZrcXdCd0hKbzZXdk9xVlA3SVFjZmg3d0drWm89Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=</span></span>
-<span class="at">  </span><span class="fu">signerName</span><span class="kw">:</span><span class="at"> kubernetes.io/kube-apiserver-client</span></span>
-<span class="at">  </span><span class="fu">expirationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">86400</span><span class="co"> # one day</span></span>
-<span class="at">  </span><span class="fu">usages</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">client auth</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: myuser # example
+spec:
+  # This is an encoded CSR. Change this to the base64-encoded contents of myuser.csr
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0dZVzVuWld4aE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTByczhJTHRHdTYxakx2dHhWTTJSVlRWMDNHWlJTWWw0dWluVWo4RElaWjBOCnR2MUZtRVFSd3VoaUZsOFEzcWl0Qm0wMUFSMkNJVXBGd2ZzSjZ4MXF3ckJzVkhZbGlBNVhwRVpZM3ExcGswSDQKM3Z3aGJlK1o2MVNrVHF5SVBYUUwrTWM5T1Nsbm0xb0R2N0NtSkZNMUlMRVI3QTVGZnZKOEdFRjJ6dHBoaUlFMwpub1dtdHNZb3JuT2wzc2lHQ2ZGZzR4Zmd4eW8ybmlneFNVekl1bXNnVm9PM2ttT0x1RVF6cXpkakJ3TFJXbWlECklmMXBMWnoyalVnald4UkhCM1gyWnVVV1d1T09PZnpXM01LaE8ybHEvZi9DdS8wYk83c0x0MCt3U2ZMSU91TFcKcW90blZtRmxMMytqTy82WDNDKzBERHk5aUtwbXJjVDBnWGZLemE1dHJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBR05WdmVIOGR4ZzNvK21VeVRkbmFjVmQ1N24zSkExdnZEU1JWREkyQTZ1eXN3ZFp1L1BVCkkwZXpZWFV0RVNnSk1IRmQycVVNMjNuNVJsSXJ3R0xuUXFISUh5VStWWHhsdnZsRnpNOVpEWllSTmU3QlJvYXgKQVlEdUI5STZXT3FYbkFvczFqRmxNUG5NbFpqdU5kSGxpT1BjTU1oNndLaTZzZFhpVStHYTJ2RUVLY01jSVUyRgpvU2djUWdMYTk0aEpacGk3ZnNMdm1OQUxoT045UHdNMGM1dVJVejV4T0dGMUtCbWRSeEgvbUNOS2JKYjFRQm1HCkkwYitEUEdaTktXTU0xMzhIQXdoV0tkNjVoVHdYOWl4V3ZHMkh4TG1WQzg0L1BHT0tWQW9FNkpsYWFHdTlQVmkKdjlOSjVaZlZrcXdCd0hKbzZXdk9xVlA3SVFjZmg3d0drWm89Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400 # one day
+  usages:
+  - client auth</code></pre>
 </div>
 <p>Apply the manifest:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> apply <span class="at">-f</span> myuser.yaml <span class="at">--server-side</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl apply -f myuser.yaml --server-side</code></pre>
 <p>Some points to note:</p>
 <ul>
 <li><code>usages</code> has to be <code>client auth</code></li>
@@ -230,26 +243,26 @@ content.</li>
 CertificateSigningRequest</h2>
 <p>Use kubectl to find the CSR you made, and manually approve it.</p>
 <p>Get the list of CSRs:</p>
-<pre class="shell"><code>kubectl get csr</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get csr</code></pre>
 <p>Approve the CSR:</p>
-<pre class="shell"><code>kubectl certificate approve myuser</code></pre>
+<pre class="shell"><code class="language-shell">kubectl certificate approve myuser</code></pre>
 <h2 id="get-the-certificate">Get the certificate</h2>
 <p>Retrieve the certificate from the CSR to check that it looks OK.</p>
-<pre class="shell"><code>kubectl get csr/myuser -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get csr/myuser -o yaml</code></pre>
 <p>The certificate value is in Base64-encoded format under
 <code>.status.certificate</code>.</p>
 <p>Export the issued certificate from the CertificateSigningRequest.</p>
-<pre class="shell"><code>kubectl get csr myuser -o jsonpath=&#39;{.status.certificate}&#39;| base64 -d &gt; myuser.crt</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get csr myuser -o jsonpath=&#39;{.status.certificate}&#39;| base64 -d &gt; myuser.crt</code></pre>
 <h2 id="configure-the-certificate-into-kubeconfig">Configure the
 certificate into kubeconfig</h2>
 <p>The next step is to add this user to the kubeconfig file.</p>
 <p>First, you need to add new credentials:</p>
-<pre class="shell"><code>kubectl config set-credentials myuser --client-key=myuser.key --client-certificate=myuser.crt --embed-certs=true
+<pre class="shell"><code class="language-shell">kubectl config set-credentials myuser --client-key=myuser.key --client-certificate=myuser.crt --embed-certs=true
 </code></pre>
 <p>Then, you need to add the context:</p>
-<pre class="shell"><code>kubectl config set-context myuser --cluster=kubernetes --user=myuser</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config set-context myuser --cluster=kubernetes --user=myuser</code></pre>
 <p>To test it:</p>
-<pre class="shell"><code>kubectl --context myuser auth whoami</code></pre>
+<pre class="shell"><code class="language-shell">kubectl --context myuser auth whoami</code></pre>
 <p>You should see output confirming that you are “myuser“.</p>
 <h2 id="create-role-and-rolebinding">Create Role and RoleBinding</h2>
 <div class="admonition note">
@@ -263,39 +276,37 @@ actually uses.</p>
 <p>With the certificate created, it is time to define the Role and
 RoleBinding for this user to access Kubernetes cluster resources.</p>
 <p>This is a sample command to create a Role for this new user:</p>
-<pre class="shell"><code>kubectl create role developer --verb=create --verb=get --verb=list --verb=update --verb=delete --resource=pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create role developer --verb=create --verb=get --verb=list --verb=update --verb=delete --resource=pods</code></pre>
 <p>Equivalent YAML:</p>
 <div class="code-sample">
 <p><code>tls/role.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> developer</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: developer
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;create&quot;, &quot;get&quot;, &quot;list&quot;, &quot;update&quot;, &quot;delete&quot;]</code></pre>
 </div>
 <p>This is a sample command to create a RoleBinding for this new
 user:</p>
-<pre class="shell"><code>kubectl create rolebinding developer-binding-myuser --role=developer --user=myuser</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create rolebinding developer-binding-myuser --role=developer --user=myuser</code></pre>
 <p>Equivalent YAML:</p>
 <div class="code-sample">
 <p><code>tls/rolebinding.yaml</code></p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> developer-binding-myuser</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myuser</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> developer</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-binding-myuser
+subjects:
+- kind: User
+  name: myuser
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: developer
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 </div>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -374,6 +385,7 @@ href="../../reference/access-authn-authz/certificate-signing-requests.html#clust
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -382,6 +394,8 @@ href="../../reference/access-authn-authz/certificate-signing-requests.html#clust
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

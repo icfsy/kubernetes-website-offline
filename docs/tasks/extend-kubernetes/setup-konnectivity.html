@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -132,28 +147,27 @@ service</h2>
 <p>The following steps require an egress configuration, for example:</p>
 <div class="code-sample">
 <p><code>admin/konnectivity/egress-selector-configuration.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EgressSelectorConfiguration</span></span>
-<span class="fu">egressSelections</span><span class="kw">:</span></span>
-<span class="co"># Since we want to control the egress traffic to the cluster, we use the</span></span>
-<span class="co"># &quot;cluster&quot; as the name. Other supported values are &quot;etcd&quot;, and &quot;controlplane&quot;.</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cluster</span></span>
-<span class="at">  </span><span class="fu">connection</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># This controls the protocol between the API Server and the Konnectivity</span></span>
-<span class="at">    </span><span class="co"># server. Supported values are &quot;GRPC&quot; and &quot;HTTPConnect&quot;. There is no</span></span>
-<span class="at">    </span><span class="co"># end user visible difference between the two modes. You need to set the</span></span>
-<span class="at">    </span><span class="co"># Konnectivity server to work in the same mode.</span></span>
-<span class="at">    </span><span class="fu">proxyProtocol</span><span class="kw">:</span><span class="at"> GRPC</span></span>
-<span class="at">    </span><span class="fu">transport</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># This controls what transport the API Server uses to communicate with the</span></span>
-<span class="at">      </span><span class="co"># Konnectivity server. UDS is recommended if the Konnectivity server</span></span>
-<span class="at">      </span><span class="co"># locates on the same machine as the API Server. You need to configure the</span></span>
-<span class="at">      </span><span class="co"># Konnectivity server to listen on the same UDS socket.</span></span>
-<span class="at">      </span><span class="co"># The other supported transport is &quot;tcp&quot;. You will need to set up TLS </span></span>
-<span class="at">      </span><span class="co"># config to secure the TCP transport.</span></span>
-<span class="at">      </span><span class="fu">uds</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">udsName</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server/konnectivity-server.socket</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.k8s.io/v1beta1
+kind: EgressSelectorConfiguration
+egressSelections:
+# Since we want to control the egress traffic to the cluster, we use the
+# &quot;cluster&quot; as the name. Other supported values are &quot;etcd&quot;, and &quot;controlplane&quot;.
+- name: cluster
+  connection:
+    # This controls the protocol between the API Server and the Konnectivity
+    # server. Supported values are &quot;GRPC&quot; and &quot;HTTPConnect&quot;. There is no
+    # end user visible difference between the two modes. You need to set the
+    # Konnectivity server to work in the same mode.
+    proxyProtocol: GRPC
+    transport:
+      # This controls what transport the API Server uses to communicate with the
+      # Konnectivity server. UDS is recommended if the Konnectivity server
+      # locates on the same machine as the API Server. You need to configure the
+      # Konnectivity server to listen on the same UDS socket.
+      # The other supported transport is &quot;tcp&quot;. You will need to set up TLS 
+      # config to secure the TCP transport.
+      uds:
+        udsName: /etc/kubernetes/konnectivity-server/konnectivity-server.socket</code></pre>
 </div>
 <p>You need to configure the API Server to use the Konnectivity service
 and direct the network traffic to the cluster nodes:</p>
@@ -169,32 +183,30 @@ API Server to the path of your API Server egress configuration
 file.</p></li>
 <li><p>If you use UDS connection, add volumes config to the
 kube-apiserver:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-uds</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-uds</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DirectoryOrCreate</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">spec:
+  containers:
+    volumeMounts:
+    - name: konnectivity-uds
+      mountPath: /etc/kubernetes/konnectivity-server
+      readOnly: false
+  volumes:
+  - name: konnectivity-uds
+    hostPath:
+      path: /etc/kubernetes/konnectivity-server
+      type: DirectoryOrCreate</code></pre></li>
 </ol>
 <p>Generate or obtain a certificate and kubeconfig for
 konnectivity-server. For example, you can use the OpenSSL command line
 tool to issue a X.509 certificate, using the cluster CA certificate
 <code>/etc/kubernetes/pki/ca.crt</code> from a control-plane host.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">openssl</span> req <span class="at">-subj</span> <span class="st">&quot;/CN=system:konnectivity-server&quot;</span> <span class="at">-new</span> <span class="at">-newkey</span> rsa:2048 <span class="at">-noenc</span> <span class="at">-out</span> konnectivity.csr <span class="at">-keyout</span> konnectivity.key</span>
-<span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-in</span> konnectivity.csr <span class="at">-CA</span> /etc/kubernetes/pki/ca.crt <span class="at">-CAkey</span> /etc/kubernetes/pki/ca.key <span class="at">-CAcreateserial</span> <span class="at">-out</span> konnectivity.crt <span class="at">-days</span> 375 <span class="at">-sha256</span></span>
-<span class="va">SERVER</span><span class="op">=</span><span class="va">$(</span><span class="ex">kubectl</span> config view <span class="at">-o</span> jsonpath=<span class="st">&#39;{.clusters..server}&#39;</span><span class="va">)</span></span>
-<span class="ex">kubectl</span> <span class="at">--kubeconfig</span> /etc/kubernetes/konnectivity-server.conf config set-credentials system:konnectivity-server <span class="at">--client-certificate</span> konnectivity.crt <span class="at">--client-key</span> konnectivity.key <span class="at">--embed-certs</span><span class="op">=</span>true</span>
-<span class="ex">kubectl</span> <span class="at">--kubeconfig</span> /etc/kubernetes/konnectivity-server.conf config set-cluster kubernetes <span class="at">--server</span> <span class="st">&quot;</span><span class="va">$SERVER</span><span class="st">&quot;</span> <span class="at">--certificate-authority</span> /etc/kubernetes/pki/ca.crt <span class="at">--embed-certs</span><span class="op">=</span>true</span>
-<span class="ex">kubectl</span> <span class="at">--kubeconfig</span> /etc/kubernetes/konnectivity-server.conf config set-context system:konnectivity-server@kubernetes <span class="at">--cluster</span> kubernetes <span class="at">--user</span> system:konnectivity-server</span>
-<span class="ex">kubectl</span> <span class="at">--kubeconfig</span> /etc/kubernetes/konnectivity-server.conf config use-context system:konnectivity-server@kubernetes</span>
-<span class="fu">rm</span> <span class="at">-f</span> konnectivity.crt konnectivity.key konnectivity.csr</span></code></pre></div>
+<pre class="bash"><code class="language-bash">openssl req -subj &quot;/CN=system:konnectivity-server&quot; -new -newkey rsa:2048 -noenc -out konnectivity.csr -keyout konnectivity.key
+openssl x509 -req -in konnectivity.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out konnectivity.crt -days 375 -sha256
+SERVER=$(kubectl config view -o jsonpath=&#39;{.clusters..server}&#39;)
+kubectl --kubeconfig /etc/kubernetes/konnectivity-server.conf config set-credentials system:konnectivity-server --client-certificate konnectivity.crt --client-key konnectivity.key --embed-certs=true
+kubectl --kubeconfig /etc/kubernetes/konnectivity-server.conf config set-cluster kubernetes --server &quot;$SERVER&quot; --certificate-authority /etc/kubernetes/pki/ca.crt --embed-certs=true
+kubectl --kubeconfig /etc/kubernetes/konnectivity-server.conf config set-context system:konnectivity-server@kubernetes --cluster kubernetes --user system:konnectivity-server
+kubectl --kubeconfig /etc/kubernetes/konnectivity-server.conf config use-context system:konnectivity-server@kubernetes
+rm -f konnectivity.crt konnectivity.key konnectivity.csr</code></pre>
 <p>Next, you need to deploy the Konnectivity server and agents. <a
 href="https://github.com/kubernetes-sigs/apiserver-network-proxy">kubernetes-sigs/apiserver-network-proxy</a>
 is a reference implementation.</p>
@@ -204,170 +216,167 @@ Kubernetes components are deployed as a <a class="glossary-term" href="../../ref
 can deploy the Konnectivity server as a DaemonSet.</p>
 <div class="code-sample">
 <p><code>admin/konnectivity/konnectivity-server.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-server</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> system-cluster-critical</span></span>
-<span class="at">  </span><span class="fu">hostNetwork</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-server-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/kas-network-proxy/proxy-server:v0.0.37</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/proxy-server&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span></span>
-<span class="at">            </span><span class="st">&quot;--logtostderr=true&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="co"># This needs to be consistent with the value set in egressSelectorConfiguration.</span></span>
-<span class="at">            </span><span class="st">&quot;--uds-name=/etc/kubernetes/konnectivity-server/konnectivity-server.socket&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--delete-existing-uds-file&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="co"># The following two lines assume the Konnectivity server is</span></span>
-<span class="at">            </span><span class="co"># deployed on the same machine as the apiserver, and the certs and</span></span>
-<span class="at">            </span><span class="co"># key of the API Server are at the specified location.</span></span>
-<span class="at">            </span><span class="st">&quot;--cluster-cert=/etc/kubernetes/pki/apiserver.crt&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--cluster-key=/etc/kubernetes/pki/apiserver.key&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="co"># This needs to be consistent with the value set in egressSelectorConfiguration.</span></span>
-<span class="at">            </span><span class="st">&quot;--mode=grpc&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--server-port=0&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--agent-port=8132&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--admin-port=8133&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--health-port=8134&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--agent-namespace=kube-system&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--agent-service-account=konnectivity-agent&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--kubeconfig=/etc/kubernetes/konnectivity-server.conf&quot;</span><span class="kw">,</span></span>
-<span class="at">            </span><span class="st">&quot;--authentication-audience=system:konnectivity-server&quot;</span></span>
-<span class="at">            </span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">scheme</span><span class="kw">:</span><span class="at"> HTTP</span></span>
-<span class="at">        </span><span class="fu">host</span><span class="kw">:</span><span class="at"> 127.0.0.1</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8134</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span class="at">      </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> agentport</span></span>
-<span class="at">      </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8132</span></span>
-<span class="at">      </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8132</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> adminport</span></span>
-<span class="at">      </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8133</span></span>
-<span class="at">      </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8133</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> healthport</span></span>
-<span class="at">      </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8134</span></span>
-<span class="at">      </span><span class="fu">hostPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8134</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> k8s-certs</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubeconfig</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server.conf</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-uds</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> k8s-certs</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubeconfig</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server.conf</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> FileOrCreate</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-uds</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /etc/kubernetes/konnectivity-server</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DirectoryOrCreate</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: konnectivity-server
+  namespace: kube-system
+spec:
+  priorityClassName: system-cluster-critical
+  hostNetwork: true
+  containers:
+  - name: konnectivity-server-container
+    image: registry.k8s.io/kas-network-proxy/proxy-server:v0.0.37
+    command: [&quot;/proxy-server&quot;]
+    args: [
+            &quot;--logtostderr=true&quot;,
+            # This needs to be consistent with the value set in egressSelectorConfiguration.
+            &quot;--uds-name=/etc/kubernetes/konnectivity-server/konnectivity-server.socket&quot;,
+            &quot;--delete-existing-uds-file&quot;,
+            # The following two lines assume the Konnectivity server is
+            # deployed on the same machine as the apiserver, and the certs and
+            # key of the API Server are at the specified location.
+            &quot;--cluster-cert=/etc/kubernetes/pki/apiserver.crt&quot;,
+            &quot;--cluster-key=/etc/kubernetes/pki/apiserver.key&quot;,
+            # This needs to be consistent with the value set in egressSelectorConfiguration.
+            &quot;--mode=grpc&quot;,
+            &quot;--server-port=0&quot;,
+            &quot;--agent-port=8132&quot;,
+            &quot;--admin-port=8133&quot;,
+            &quot;--health-port=8134&quot;,
+            &quot;--agent-namespace=kube-system&quot;,
+            &quot;--agent-service-account=konnectivity-agent&quot;,
+            &quot;--kubeconfig=/etc/kubernetes/konnectivity-server.conf&quot;,
+            &quot;--authentication-audience=system:konnectivity-server&quot;
+            ]
+    livenessProbe:
+      httpGet:
+        scheme: HTTP
+        host: 127.0.0.1
+        port: 8134
+        path: /healthz
+      initialDelaySeconds: 30
+      timeoutSeconds: 60
+    ports:
+    - name: agentport
+      containerPort: 8132
+      hostPort: 8132
+    - name: adminport
+      containerPort: 8133
+      hostPort: 8133
+    - name: healthport
+      containerPort: 8134
+      hostPort: 8134
+    volumeMounts:
+    - name: k8s-certs
+      mountPath: /etc/kubernetes/pki
+      readOnly: true
+    - name: kubeconfig
+      mountPath: /etc/kubernetes/konnectivity-server.conf
+      readOnly: true
+    - name: konnectivity-uds
+      mountPath: /etc/kubernetes/konnectivity-server
+      readOnly: false
+  volumes:
+  - name: k8s-certs
+    hostPath:
+      path: /etc/kubernetes/pki
+  - name: kubeconfig
+    hostPath:
+      path: /etc/kubernetes/konnectivity-server.conf
+      type: FileOrCreate
+  - name: konnectivity-uds
+    hostPath:
+      path: /etc/kubernetes/konnectivity-server
+      type: DirectoryOrCreate</code></pre>
 </div>
 <p>Then deploy the Konnectivity agents in your cluster:</p>
 <div class="code-sample">
 <p><code>admin/konnectivity/konnectivity-agent.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="co"># Alternatively, you can deploy the agents as Deployments. It is not necessary</span></span>
-<span class="co"># to have an agent on each node.</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> DaemonSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">addonmanager.kubernetes.io/mode</span><span class="kw">:</span><span class="at"> Reconcile</span></span>
-<span class="at">    </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> system-cluster-critical</span></span>
-<span class="at">      </span><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;CriticalAddonsOnly&quot;</span></span>
-<span class="at">          </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.37</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="at">          </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/proxy-agent&quot;</span><span class="kw">]</span></span>
-<span class="at">          </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span></span>
-<span class="at">                  </span><span class="st">&quot;--logtostderr=true&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="st">&quot;--ca-cert=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="co"># Since the konnectivity server runs with hostNetwork=true,</span></span>
-<span class="at">                  </span><span class="co"># this is the IP address of the master machine.</span></span>
-<span class="at">                  </span><span class="st">&quot;--proxy-server-host=35.225.206.7&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="st">&quot;--proxy-server-port=8132&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="st">&quot;--admin-server-port=8133&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="st">&quot;--health-server-port=8134&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="st">&quot;--service-account-token-path=/var/run/secrets/tokens/konnectivity-agent-token&quot;</span></span>
-<span class="at">                  </span><span class="kw">]</span></span>
-<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/run/secrets/tokens</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-agent-token</span></span>
-<span class="at">          </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8134</span></span>
-<span class="at">              </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">            </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">            </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">      </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-agent-token</span></span>
-<span class="at">          </span><span class="fu">projected</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">sources</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="fu">serviceAccountToken</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> konnectivity-agent-token</span></span>
-<span class="at">                  </span><span class="fu">audience</span><span class="kw">:</span><span class="at"> system:konnectivity-server</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+# Alternatively, you can deploy the agents as Deployments. It is not necessary
+# to have an agent on each node.
+kind: DaemonSet
+metadata:
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    k8s-app: konnectivity-agent
+  namespace: kube-system
+  name: konnectivity-agent
+spec:
+  selector:
+    matchLabels:
+      k8s-app: konnectivity-agent
+  template:
+    metadata:
+      labels:
+        k8s-app: konnectivity-agent
+    spec:
+      priorityClassName: system-cluster-critical
+      tolerations:
+        - key: &quot;CriticalAddonsOnly&quot;
+          operator: &quot;Exists&quot;
+      containers:
+        - image: us.gcr.io/k8s-artifacts-prod/kas-network-proxy/proxy-agent:v0.0.37
+          name: konnectivity-agent
+          command: [&quot;/proxy-agent&quot;]
+          args: [
+                  &quot;--logtostderr=true&quot;,
+                  &quot;--ca-cert=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt&quot;,
+                  # Since the konnectivity server runs with hostNetwork=true,
+                  # this is the IP address of the master machine.
+                  &quot;--proxy-server-host=35.225.206.7&quot;,
+                  &quot;--proxy-server-port=8132&quot;,
+                  &quot;--admin-server-port=8133&quot;,
+                  &quot;--health-server-port=8134&quot;,
+                  &quot;--service-account-token-path=/var/run/secrets/tokens/konnectivity-agent-token&quot;
+                  ]
+          volumeMounts:
+            - mountPath: /var/run/secrets/tokens
+              name: konnectivity-agent-token
+          livenessProbe:
+            httpGet:
+              port: 8134
+              path: /healthz
+            initialDelaySeconds: 15
+            timeoutSeconds: 15
+      serviceAccountName: konnectivity-agent
+      volumes:
+        - name: konnectivity-agent-token
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: konnectivity-agent-token
+                  audience: system:konnectivity-server</code></pre>
 </div>
 <p>Last, if RBAC is enabled in your cluster, create the relevant RBAC
 rules:</p>
 <div class="code-sample">
 <p><code>admin/konnectivity/konnectivity-rbac.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:konnectivity-server</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/cluster-service</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">addonmanager.kubernetes.io/mode</span><span class="kw">:</span><span class="at"> Reconcile</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:auth-delegator</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:konnectivity-server</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> konnectivity-agent</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/cluster-service</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">addonmanager.kubernetes.io/mode</span><span class="kw">:</span><span class="at"> Reconcile</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: system:konnectivity-server
+  labels:
+    kubernetes.io/cluster-service: &quot;true&quot;
+    addonmanager.kubernetes.io/mode: Reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator
+subjects:
+  - apiGroup: rbac.authorization.k8s.io
+    kind: User
+    name: system:konnectivity-server
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: konnectivity-agent
+  namespace: kube-system
+  labels:
+    kubernetes.io/cluster-service: &quot;true&quot;
+    addonmanager.kubernetes.io/mode: Reconcile</code></pre>
 </div>
 
         </article>
@@ -433,6 +442,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -441,6 +451,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

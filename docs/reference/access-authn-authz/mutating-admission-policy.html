@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -194,42 +209,41 @@ mutates newly created Pods to have a sidecar container if it does not
 exist.</p>
 <div class="code-sample">
 <p><code>mutatingadmissionpolicy/applyconfiguration-example.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;sidecar-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">paramKind</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Sidecar</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> mutations.example.com/v1</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> does-not-already-have-sidecar</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!object.spec.initContainers.exists(ic, ic.name == </span><span class="sc">\&quot;</span><span class="st">mesh-proxy</span><span class="sc">\&quot;</span><span class="st">)&quot;</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">reinvocationPolicy</span><span class="kw">:</span><span class="at"> IfNeeded</span></span>
-<span class="at">  </span><span class="fu">mutations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">patchType</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ApplyConfiguration&quot;</span></span>
-<span class="at">      </span><span class="fu">applyConfiguration</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;</span></span>
-<span class="at">          Object{</span></span>
-<span class="at">            </span><span class="fu">spec</span><span class="kw">:</span><span class="at"> Object.spec{</span></span>
-<span class="at">              </span><span class="fu">initContainers</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span></span>
-<span class="at">                Object.spec.initContainers</span><span class="kw">{</span></span>
-<span class="at">                  </span><span class="fu">name</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;mesh-proxy&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="fu">image</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;mesh/proxy:v1.0.0&quot;</span><span class="kw">,</span></span>
-<span class="at">                  </span><span class="fu">args</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;proxy&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sidecar&quot;</span><span class="kw">],</span></span>
-<span class="at">                  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;Always&quot;</span></span>
-<span class="at">                </span><span class="kw">}</span></span>
-<span class="at">              </span><span class="kw">]</span></span>
-<span class="at">            </span><span class="er">}</span></span>
-<span class="at">          </span><span class="er">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: &quot;sidecar-policy.example.com&quot;
+spec:
+  paramKind:
+    kind: Sidecar
+    apiVersion: mutations.example.com/v1
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;]
+      resources:   [&quot;pods&quot;]
+  matchConditions:
+    - name: does-not-already-have-sidecar
+      expression: &quot;!object.spec.initContainers.exists(ic, ic.name == \&quot;mesh-proxy\&quot;)&quot;
+  failurePolicy: Fail
+  reinvocationPolicy: IfNeeded
+  mutations:
+    - patchType: &quot;ApplyConfiguration&quot;
+      applyConfiguration:
+        expression: &gt;
+          Object{
+            spec: Object.spec{
+              initContainers: [
+                Object.spec.initContainers{
+                  name: &quot;mesh-proxy&quot;,
+                  image: &quot;mesh/proxy:v1.0.0&quot;,
+                  args: [&quot;proxy&quot;, &quot;sidecar&quot;],
+                  restartPolicy: &quot;Always&quot;
+                }
+              ]
+            }
+          }</code></pre>
 </div>
 <p>The <code>.spec.mutations</code> field consists of a list of
 expressions that evaluate to resource patches. The emitted patches may
@@ -256,22 +270,21 @@ namespace labels, use a <code>namespaceSelector</code> in the policy's
 <code>matchResources</code>.</p>
 <p>In the example above, creating a Pod will add the
 <code>mesh-proxy</code> initContainer mutation:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mesh-proxy</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mesh/proxy:v1.0.0</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;proxy&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sidecar&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp-initializer</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> example/initializer:v1.0.0</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  ...
+  initContainers:
+  - name: mesh-proxy
+    image: mesh/proxy:v1.0.0
+    args: [&quot;proxy&quot;, &quot;sidecar&quot;]
+    restartPolicy: Always
+  - name: myapp-initializer
+    image: example/initializer:v1.0.0
+  ...</code></pre>
 <h4 id="parameter-resources">Parameter resources</h4>
 <p>Parameter resources allow a policy configuration to be separate from
 its definition. A policy can define <code>paramKind</code>, which
@@ -334,40 +347,39 @@ object. No other metadata properties are accessible.</p>
 href="https://jsonpatch.com/">JSON Patch</a> as follows:</p>
 <div class="code-sample">
 <p><code>mutatingadmissionpolicy/json-patch-example.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;sidecar-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">paramKind</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Sidecar</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> mutations.example.com/v1</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> does-not-already-have-sidecar</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!object.spec.initContainers.exists(ic, ic.name == </span><span class="sc">\&quot;</span><span class="st">mesh-proxy</span><span class="sc">\&quot;</span><span class="st">)&quot;</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">reinvocationPolicy</span><span class="kw">:</span><span class="at"> IfNeeded</span></span>
-<span class="at">  </span><span class="fu">mutations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">patchType</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;JSONPatch&quot;</span></span>
-<span class="at">      </span><span class="fu">jsonPatch</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;</span></span>
-<span class="at">          </span><span class="kw">[</span></span>
-<span class="at">            JSONPatch</span><span class="kw">{</span></span>
-<span class="at">              </span><span class="fu">op</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;add&quot;</span><span class="kw">,</span><span class="at"> </span><span class="fu">path</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;/spec/initContainers/-&quot;</span><span class="kw">,</span></span>
-<span class="at">              </span><span class="fu">value</span><span class="kw">:</span><span class="fu"> </span><span class="at">Object.spec.initContainers</span><span class="kw">{</span></span>
-<span class="at">                </span><span class="fu">name</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;mesh-proxy&quot;</span><span class="kw">,</span></span>
-<span class="at">                </span><span class="fu">image</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;mesh-proxy/v1.0.0&quot;</span><span class="kw">,</span></span>
-<span class="at">                </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;Always&quot;</span></span>
-<span class="at">              </span><span class="kw">}</span></span>
-<span class="at">            </span><span class="kw">}</span></span>
-<span class="at">          </span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: &quot;sidecar-policy.example.com&quot;
+spec:
+  paramKind:
+    kind: Sidecar
+    apiVersion: mutations.example.com/v1
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;]
+      resources:   [&quot;pods&quot;]
+  matchConditions:
+    - name: does-not-already-have-sidecar
+      expression: &quot;!object.spec.initContainers.exists(ic, ic.name == \&quot;mesh-proxy\&quot;)&quot;
+  failurePolicy: Fail
+  reinvocationPolicy: IfNeeded
+  mutations:
+    - patchType: &quot;JSONPatch&quot;
+      jsonPatch:
+        expression: &gt;
+          [
+            JSONPatch{
+              op: &quot;add&quot;, path: &quot;/spec/initContainers/-&quot;,
+              value: Object.spec.initContainers{
+                name: &quot;mesh-proxy&quot;,
+                image: &quot;mesh-proxy/v1.0.0&quot;,
+                restartPolicy: &quot;Always&quot;
+              }
+            }
+          ]</code></pre>
 </div>
 <p>The expression will be evaluated by CEL to create a <a
 href="https://jsonpatch.com/">JSON patch</a>. ref:
@@ -570,6 +582,7 @@ webhooks</a> also exclude these virtual resources by default.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -578,6 +591,8 @@ webhooks</a> also exclude these virtual resources by default.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

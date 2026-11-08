@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../../" href="../../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -166,8 +181,7 @@ setting the default subnet used by services.</p>
 <p>If you want your services to use the subnet <code>10.96.0.0/12</code>
 as the default for services, you can pass the
 <code>--service-cidr</code> parameter to kubeadm:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubeadm</span> init <span class="at">--service-cidr</span> 10.96.0.0/12</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubeadm init --service-cidr 10.96.0.0/12</code></pre>
 <p>Virtual IPs for services are now allocated from this subnet. You also
 need to set the DNS address used by the kubelet, using the
 <code>--cluster-dns</code> flag. This setting needs to be the same for
@@ -179,11 +193,10 @@ href="../../../../reference/config-api/kubelet-config.v1beta1.html"><code>Kubele
 The <code>KubeletConfiguration</code> allows the user to specify flags
 such as the cluster DNS IP addresses expressed as a list of values to a
 camelCased key, illustrated by the following example:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">clusterDNS</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="at">10.96.0.10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+clusterDNS:
+- 10.96.0.10</code></pre>
 <p>For more details on the <code>KubeletConfiguration</code> have a look
 at <a href="#configure-kubelets-using-kubeadm">this section</a>.</p>
 <h3 id="providing-instance-specific-configuration-details">Providing
@@ -250,14 +263,12 @@ instance-specific configuration details</a>, kubeadm writes an
 environment file to <code>/var/lib/kubelet/kubeadm-flags.env</code>,
 which contains a list of flags to pass to the kubelet when it starts.
 The flags are presented in the file like this:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="va">KUBELET_KUBEADM_ARGS</span><span class="op">=</span><span class="st">&quot;--flag1=value1 --flag2=value2 ...&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">KUBELET_KUBEADM_ARGS=&quot;--flag1=value1 --flag2=value2 ...&quot;</code></pre>
 <p>In addition to the flags used when starting the kubelet, the file
 also contains dynamic parameters such as the cgroup driver.</p>
 <p>After marshalling these two files to disk, kubeadm attempts to run
 the following two commands, if you are using systemd:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">systemctl</span> daemon-reload <span class="kw">&amp;&amp;</span> <span class="ex">systemctl</span> restart kubelet</span></code></pre></div>
+<pre class="bash"><code class="language-bash">systemctl daemon-reload &amp;&amp; systemctl restart kubelet</code></pre>
 <p>If the reload and restart are successful, the normal
 <code>kubeadm init</code> workflow continues.</p>
 <h3 id="workflow-when-using-kubeadm-join">Workflow when using
@@ -273,8 +284,7 @@ dynamic environment file is generated in exactly the same way as
 <code>kubeadm init</code>.</p>
 <p>Next, <code>kubeadm</code> runs the following two commands to load
 the new configuration into the kubelet:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">systemctl</span> daemon-reload <span class="kw">&amp;&amp;</span> <span class="ex">systemctl</span> restart kubelet</span></code></pre></div>
+<pre class="bash"><code class="language-bash">systemctl daemon-reload &amp;&amp; systemctl restart kubelet</code></pre>
 <p>After the kubelet loads the new configuration, kubeadm writes the
 <code>/etc/kubernetes/bootstrap-kubelet.conf</code> KubeConfig file,
 which contains a CA certificate and Bootstrap Token. These are used by
@@ -313,7 +323,7 @@ package manager follow the guide outlined in the (<a
 href="install-kubeadm.html">Without
 a package manager</a>) section.</p>
 </div>
-<pre class="none"><code>[Service]
+<pre class="none"><code class="language-none">[Service]
 Environment=&quot;KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf&quot;
 Environment=&quot;KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml&quot;
 # This is a file that &quot;kubeadm init&quot; and &quot;kubeadm join&quot; generate at runtime, populating
@@ -453,6 +463,7 @@ repository</a>.</td>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -461,6 +472,8 @@ repository</a>.</td>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../../assets/nav.js"></script>
 <script src="../../../../../assets/site.js"></script>
 </body>

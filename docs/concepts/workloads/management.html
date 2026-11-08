@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -129,46 +144,45 @@ simplified by grouping them together in the same file (separated by
 <code>---</code> in YAML). For example:</p>
 <div class="code-sample">
 <p><code>application/nginx-app.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx-svc</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx-svc
+  labels:
+    app: nginx
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+  labels:
+    app: nginx
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>Multiple resources can be created the same way as a single
 resource:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/nginx-app.yaml</code></pre>
-<pre class="none"><code>service/my-nginx-svc created
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/nginx-app.yaml</code></pre>
+<pre class="none"><code class="language-none">service/my-nginx-svc created
 deployment.apps/my-nginx created</code></pre>
 <p>The resources will be created in the order they appear in the
 manifest. Therefore, it's best to specify the Service first, since that
@@ -177,7 +191,7 @@ Service as they are created by the controller(s), such as
 Deployment.</p>
 <p><code>kubectl apply</code> also accepts multiple <code>-f</code>
 arguments:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/nginx/nginx-svc.yaml \
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/nginx/nginx-svc.yaml \
   -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml</code></pre>
 <p>It is a recommended practice to put resources related to the same
 microservice or application tier into the same file, and to group all of
@@ -186,8 +200,8 @@ tiers of your application bind to each other using DNS, you can deploy
 all of the components of your stack together.</p>
 <p>A URL can also be specified as a configuration source, which is handy
 for deploying directly from manifests in your source control system:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx created</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx created</code></pre>
 <p>If you need to define more manifests, such as adding a ConfigMap, you
 can do that too.</p>
 <h3 id="external-tools">External tools</h3>
@@ -219,26 +233,26 @@ feature</a> of kubectl.</p>
 can perform in bulk. It can also extract resource names from
 configuration files in order to perform other operations, in particular
 to delete the same resources you created:</p>
-<pre class="shell"><code>kubectl delete -f https://k8s.io/examples/application/nginx-app.yaml</code></pre>
-<pre class="none"><code>deployment.apps &quot;my-nginx&quot; deleted
+<pre class="shell"><code class="language-shell">kubectl delete -f https://k8s.io/examples/application/nginx-app.yaml</code></pre>
+<pre class="none"><code class="language-none">deployment.apps &quot;my-nginx&quot; deleted
 service &quot;my-nginx-svc&quot; deleted</code></pre>
 <p>In the case of two resources, you can specify both resources on the
 command line using the resource/name syntax:</p>
-<pre class="shell"><code>kubectl delete deployments/my-nginx services/my-nginx-svc</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployments/my-nginx services/my-nginx-svc</code></pre>
 <p>For larger numbers of resources, you'll find it easier to specify the
 selector (label query) specified using <code>-l</code> or
 <code>--selector</code>, to filter resources by their labels:</p>
-<pre class="shell"><code>kubectl delete deployment,services -l app=nginx</code></pre>
-<pre class="none"><code>deployment.apps &quot;my-nginx&quot; deleted
+<pre class="shell"><code class="language-shell">kubectl delete deployment,services -l app=nginx</code></pre>
+<pre class="none"><code class="language-none">deployment.apps &quot;my-nginx&quot; deleted
 service &quot;my-nginx-svc&quot; deleted</code></pre>
 <h3 id="chaining-and-filtering">Chaining and filtering</h3>
 <p>Because <code>kubectl</code> outputs resource names in the same
 syntax it accepts, you can chain operations using <code>$()</code> or
 <code>xargs</code>:</p>
-<pre class="shell"><code>kubectl get $(kubectl create -f docs/concepts/cluster-administration/nginx/ -o name | grep service/ )
+<pre class="shell"><code class="language-shell">kubectl get $(kubectl create -f docs/concepts/cluster-administration/nginx/ -o name | grep service/ )
 kubectl create -f docs/concepts/cluster-administration/nginx/ -o name | grep service/ | xargs -i kubectl get &#39;{}&#39;</code></pre>
 <p>The output might be similar to:</p>
-<pre class="none"><code>NAME           TYPE           CLUSTER-IP   EXTERNAL-IP   PORT(S)      AGE
+<pre class="none"><code class="language-none">NAME           TYPE           CLUSTER-IP   EXTERNAL-IP   PORT(S)      AGE
 my-nginx-svc   LoadBalancer   10.0.0.208   &lt;pending&gt;     80/TCP       0s</code></pre>
 <p>With the above commands, first you create resources under
 <code>docs/concepts/cluster-administration/nginx/</code> and print the
@@ -257,7 +271,7 @@ perform the operations on the subdirectories also, by specifying
 <code>project/k8s/development</code> that holds all of the <span
 class="glossary-term" data-term="manifest">manifests</span> needed for
 the development environment, organized by resource type:</p>
-<pre class="none"><code>project/k8s/development
+<pre class="none"><code class="language-none">project/k8s/development
 ├── configmap
 │   └── my-configmap.yaml
 ├── deployment
@@ -269,13 +283,13 @@ the development environment, organized by resource type:</p>
 directory, not processing any subdirectories. If you had tried to create
 the resources in this directory using the following command, we would
 have encountered an error:</p>
-<pre class="shell"><code>kubectl apply -f project/k8s/development</code></pre>
-<pre class="none"><code>error: you must provide one or more resources by argument or filename (.json|.yaml|.yml|stdin)</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f project/k8s/development</code></pre>
+<pre class="none"><code class="language-none">error: you must provide one or more resources by argument or filename (.json|.yaml|.yml|stdin)</code></pre>
 <p>Instead, specify the <code>--recursive</code> or <code>-R</code>
 command line argument along with the
 <code>--filename</code>/<code>-f</code> argument:</p>
-<pre class="shell"><code>kubectl apply -f project/k8s/development --recursive</code></pre>
-<pre class="none"><code>configmap/my-config created
+<pre class="shell"><code class="language-shell">kubectl apply -f project/k8s/development --recursive</code></pre>
+<pre class="none"><code class="language-none">configmap/my-config created
 deployment.apps/my-deployment created
 persistentvolumeclaim/my-pvc created</code></pre>
 <p>The <code>--recursive</code> argument works with any operation that
@@ -285,8 +299,8 @@ accepts the <code>--filename</code>/<code>-f</code> argument such as:
 <code>kubectl rollout</code>.</p>
 <p>The <code>--recursive</code> argument also works when multiple
 <code>-f</code> arguments are provided:</p>
-<pre class="shell"><code>kubectl apply -f project/k8s/namespaces -f project/k8s/development --recursive</code></pre>
-<pre class="none"><code>namespace/development created
+<pre class="shell"><code class="language-shell">kubectl apply -f project/k8s/namespaces -f project/k8s/development --recursive</code></pre>
+<pre class="none"><code class="language-none">namespace/development created
 namespace/staging created
 configmap/my-config created
 deployment.apps/my-deployment created
@@ -306,20 +320,20 @@ running Pods would have the new software.</p>
 <p>This section of the page guides you through how to create and update
 applications with Deployments.</p>
 <p>Let's say you were running version 1.14.2 of nginx:</p>
-<pre class="shell"><code>kubectl create deployment my-nginx --image=nginx:1.14.2</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx created</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create deployment my-nginx --image=nginx:1.14.2</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx created</code></pre>
 <p>Ensure that there is 1 replica:</p>
-<pre class="shell"><code>kubectl scale --replicas 1 deployments/my-nginx --subresource=&#39;scale&#39; --type=&#39;merge&#39; -p &#39;{&quot;spec&quot;:{&quot;replicas&quot;: 1}}&#39;</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx scaled</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale --replicas 1 deployments/my-nginx --subresource=&#39;scale&#39; --type=&#39;merge&#39; -p &#39;{&quot;spec&quot;:{&quot;replicas&quot;: 1}}&#39;</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx scaled</code></pre>
 <p>and allow Kubernetes to add more temporary replicas during a rollout,
 by setting a <em>surge maximum</em> of 100%:</p>
-<pre class="shell"><code>kubectl patch --type=&#39;merge&#39; -p &#39;{&quot;spec&quot;:{&quot;strategy&quot;:{&quot;rollingUpdate&quot;:{&quot;maxSurge&quot;: &quot;100%&quot; }}}}&#39;</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx patched</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch --type=&#39;merge&#39; -p &#39;{&quot;spec&quot;:{&quot;strategy&quot;:{&quot;rollingUpdate&quot;:{&quot;maxSurge&quot;: &quot;100%&quot; }}}}&#39;</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx patched</code></pre>
 <p>To update to version 1.16.1, change
 <code>.spec.template.spec.containers[0].image</code> from
 <code>nginx:1.14.2</code> to <code>nginx:1.16.1</code> using
 <code>kubectl edit</code>:</p>
-<pre class="shell"><code>kubectl edit deployment/my-nginx
+<pre class="shell"><code class="language-shell">kubectl edit deployment/my-nginx
 # Change the manifest to use the newer container image, then save your changes</code></pre>
 <p>That's it! The Deployment will declaratively update the deployed
 nginx application progressively behind the scene. It ensures that only a
@@ -335,12 +349,12 @@ StatefulSets.</p>
 href="../../reference/kubectl/generated/kubectl_rollout.html"><code>kubectl rollout</code></a>
 to manage a progressive update of an existing application.</p>
 <p>For example:</p>
-<pre class="shell"><code>kubectl apply -f my-deployment.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f my-deployment.yaml
 
 # wait for rollout to finish
 kubectl rollout status deployment/my-deployment --timeout 10m # 10 minute timeout</code></pre>
 <p>or</p>
-<pre class="shell"><code>kubectl apply -f backing-stateful-component.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f backing-stateful-component.yaml
 
 # don&#39;t wait for rollout to finish, just check the status
 kubectl rollout status statefulsets/backing-stateful-component --watch=false</code></pre>
@@ -358,7 +372,7 @@ live production traffic before fully rolling it out.</p>
 different releases.</p>
 <p>The primary, stable release would have a <code>track</code> label
 with value as <code>stable</code>:</p>
-<pre class="none"><code>name: frontend
+<pre class="none"><code class="language-none">name: frontend
 replicas: 3
 ...
 labels:
@@ -370,7 +384,7 @@ image: gb-frontend:v3</code></pre>
 <p>and then you can create a new release of the guestbook frontend that
 carries the <code>track</code> label with different value (i.e.
 <code>canary</code>), so that two sets of pods would not overlap:</p>
-<pre class="none"><code>name: frontend-canary
+<pre class="none"><code class="language-none">name: frontend-canary
 replicas: 1
 ...
 labels:
@@ -382,10 +396,9 @@ image: gb-frontend:v4</code></pre>
 <p>The frontend service would span both sets of replicas by selecting
 the common subset of their labels (i.e. omitting the <code>track</code>
 label), so that the traffic will be redirected to both applications:</p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="fu">app</span><span class="kw">:</span><span class="at"> guestbook</span></span>
-<span class="at">   </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">selector:
+   app: guestbook
+   tier: frontend</code></pre>
 <p>You can tweak the number of replicas of the stable and canary
 releases to determine the ratio of each release that will receive live
 production traffic (in this case, 3:1). Once you're confident, you can
@@ -399,9 +412,9 @@ a Release Using a Canary Deployment</a> tutorial.</p>
 Annotations are arbitrary non-identifying metadata for retrieval by API
 clients such as tools or libraries. This can be done with
 <code>kubectl annotate</code>. For example:</p>
-<pre class="shell"><code>kubectl annotate pods my-nginx-v4-9gw19 description=&#39;my frontend running nginx&#39;
+<pre class="shell"><code class="language-shell">kubectl annotate pods my-nginx-v4-9gw19 description=&#39;my frontend running nginx&#39;
 kubectl get pods my-nginx-v4-9gw19 -o yaml</code></pre>
-<pre class="shell"><code>apiVersion: v1
+<pre class="shell"><code class="language-shell">apiVersion: v1
 kind: pod
 metadata:
   annotations:
@@ -416,17 +429,17 @@ annotate</a>.</p>
 <p>When load on your application grows or shrinks, use
 <code>kubectl</code> to scale your application. For instance, to
 decrease the number of nginx replicas from 3 to 1, do:</p>
-<pre class="shell"><code>kubectl scale deployment/my-nginx --replicas=1</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx scaled</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployment/my-nginx --replicas=1</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx scaled</code></pre>
 <p>Now you only have one pod managed by the deployment.</p>
-<pre class="shell"><code>kubectl get pods -l app=my-nginx</code></pre>
-<pre class="none"><code>NAME                        READY     STATUS    RESTARTS   AGE
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=my-nginx</code></pre>
+<pre class="none"><code class="language-none">NAME                        READY     STATUS    RESTARTS   AGE
 my-nginx-2035384211-j5fhi   1/1       Running   0          30m</code></pre>
 <p>To have the system automatically choose the number of nginx replicas
 as needed, ranging from 1 to 3, do:</p>
-<pre class="shell"><code># This requires an existing source of container and Pod metrics
+<pre class="shell"><code class="language-shell"># This requires an existing source of container and Pod metrics
 kubectl autoscale deployment/my-nginx --min=1 --max=3</code></pre>
-<pre class="none"><code>horizontalpodautoscaler.autoscaling/my-nginx autoscaled</code></pre>
+<pre class="none"><code class="language-none">horizontalpodautoscaler.autoscaling/my-nginx autoscaled</code></pre>
 <p>Now your nginx replicas will be scaled up and down as needed,
 automatically.</p>
 <p>For more information, please see <a
@@ -452,19 +465,19 @@ to push your configuration changes to the cluster.</p>
 you're pushing with the previous version and apply the changes you've
 made, without overwriting any automated changes to properties you
 haven't specified.</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx configured</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx configured</code></pre>
 <p>To learn more about the underlying mechanism, read <a
 href="../../reference/using-api/server-side-apply.html">server-side
 apply</a>.</p>
 <h3 id="kubectl-edit">kubectl edit</h3>
 <p>Alternatively, you may also update resources with <a
 href="../../reference/kubectl/generated/kubectl_edit.html"><code>kubectl edit</code></a>:</p>
-<pre class="shell"><code>kubectl edit deployment/my-nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit deployment/my-nginx</code></pre>
 <p>This is equivalent to first <code>get</code> the resource, edit it in
 text editor, and then <code>apply</code> the resource with the updated
 version:</p>
-<pre class="shell"><code>kubectl get deployment my-nginx -o yaml &gt; /tmp/nginx.yaml
+<pre class="shell"><code class="language-shell">kubectl get deployment my-nginx -o yaml &gt; /tmp/nginx.yaml
 vi /tmp/nginx.yaml
 # do some edit, and then save the file
 
@@ -493,8 +506,8 @@ immediately, such as to fix broken pods created by a Deployment. To
 change such fields, use <code>replace --force</code>, which deletes and
 re-creates the resource. In this case, you can modify your original
 configuration file:</p>
-<pre class="shell"><code>kubectl replace -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml --force</code></pre>
-<pre class="none"><code>deployment.apps/my-nginx deleted
+<pre class="shell"><code class="language-shell">kubectl replace -f https://k8s.io/examples/application/nginx/nginx-deployment.yaml --force</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/my-nginx deleted
 deployment.apps/my-nginx replaced</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -567,6 +580,7 @@ debugging</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -575,6 +589,8 @@ debugging</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -151,53 +166,51 @@ manifest for that Pod specifies a command that runs when the container
 starts:</p>
 <div class="code-sample">
 <p><code>debug/termination.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> termination-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> termination-demo-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> debian</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sleep 10 &amp;&amp; echo Sleep expired &gt; /dev/termination-log&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: termination-demo
+spec:
+  containers:
+  - name: termination-demo-container
+    image: debian
+    command: [&quot;/bin/sh&quot;]
+    args: [&quot;-c&quot;, &quot;sleep 10 &amp;&amp; echo Sleep expired &gt; /dev/termination-log&quot;]</code></pre>
 </div>
 <ol type="1">
 <li><p>Create a Pod based on the YAML configuration file:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/debug/termination.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/debug/termination.yaml</code></pre>
 <p>In the YAML file, in the <code>command</code> and <code>args</code>
 fields, you can see that the container sleeps for 10 seconds and then
 writes "Sleep expired" to the <code>/dev/termination-log</code> file.
 After the container writes the "Sleep expired" message, it
 terminates.</p></li>
 <li><p>Display information about the Pod:</p>
-<pre class="shell"><code>kubectl get pod termination-demo</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod termination-demo</code></pre>
 <p>Repeat the preceding command until the Pod is no longer
 running.</p></li>
 <li><p>Display detailed information about the Pod:</p>
-<pre class="shell"><code>kubectl get pod termination-demo --output=yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod termination-demo --output=yaml</code></pre>
 <p>The output includes the "Sleep expired" message:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="co">...</span></span>
-<span class="er">    lastState:</span></span>
-<span class="er">      terminated:</span></span>
-<span class="er">        containerID: ...</span></span>
-<span class="er">        exitCode: 0</span></span>
-<span class="er">        finishedAt: ...</span></span>
-<span class="er">        message: |</span></span>
-<span class="er">          Sleep expired</span></span>
-<span class="er">        ...</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+...
+    lastState:
+      terminated:
+        containerID: ...
+        exitCode: 0
+        finishedAt: ...
+        message: |
+          Sleep expired
+        ...</code></pre></li>
 <li><p>Use a Go template to filter the output so that it includes only
 the termination message:</p>
-<pre class="shell"><code>kubectl get pod termination-demo -o go-template=&quot;{{range .status.containerStatuses}}{{.lastState.terminated.message}}{{end}}&quot;</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl get pod termination-demo -o go-template=&quot;{{range .status.containerStatuses}}{{.lastState.terminated.message}}{{end}}&quot;</code></pre></li>
 </ol>
 <p>If you are running a multi-container Pod, you can use a Go template
 to include the container's name. By doing so, you can discover which of
 the containers is failing:</p>
-<pre class="shell"><code>kubectl get pod multi-container-pod -o go-template=&#39;{{range .status.containerStatuses}}{{printf &quot;%s:\n%s\n\n&quot; .name .lastState.terminated.message}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod multi-container-pod -o go-template=&#39;{{range .status.containerStatuses}}{{printf &quot;%s:\n%s\n\n&quot; .name .lastState.terminated.message}}{{end}}&#39;</code></pre>
 <h2 id="customizing-the-termination-message">Customizing the termination
 message</h2>
 <p>Kubernetes retrieves termination messages from the termination
@@ -219,16 +232,15 @@ each has 1024 bytes of available termination message space.</p>
 message path after a Pod is launched.</p>
 <p>In the following example, the container writes termination messages
 to <code>/tmp/my-log</code> for Kubernetes to retrieve:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> msg-path-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> msg-path-demo-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> debian</span></span>
-<span class="at">    </span><span class="fu">terminationMessagePath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/tmp/my-log&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: msg-path-demo
+spec:
+  containers:
+  - name: msg-path-demo-container
+    image: debian
+    terminationMessagePath: &quot;/tmp/my-log&quot;</code></pre>
 <p>Moreover, users can set the <code>terminationMessagePolicy</code>
 field of a Container for further customization. This field defaults to
 "<code>File</code>" which means the termination messages are retrieved
@@ -323,6 +335,7 @@ states</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -331,6 +344,8 @@ states</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../../" href="../../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -136,19 +151,17 @@ kubeadm</a>.</p>
 <p>For each server that you want to use as a <a class="glossary-term" href="../../../../reference/glossary.html#term-node" title="Glossary: node">node</a>, make sure it allows IPv6 forwarding.</p>
 <h3 id="prerequisite-ipv6-forwarding">Enable IPv6 packet forwarding</h3>
 <p>To check if IPv6 packet forwarding is enabled:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">sysctl</span> net.ipv6.conf.all.forwarding</span></code></pre></div>
+<pre class="bash"><code class="language-bash">sysctl net.ipv6.conf.all.forwarding</code></pre>
 <p>If the output is <code>net.ipv6.conf.all.forwarding = 1</code> it is
 already enabled. Otherwise it is not enabled yet.</p>
 <p>To manually enable IPv6 packet forwarding:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># sysctl params required by setup, params persist across reboots</span></span>
-<span class="fu">cat</span> <span class="op">&lt;&lt;EOF</span> <span class="kw">|</span> <span class="fu">sudo</span> tee <span class="at">-a</span> /etc/sysctl.d/k8s.conf</span>
-<span class="st">net.ipv6.conf.all.forwarding = 1</span></span>
-<span class="op">EOF</span></span>
-</span>
-<span class="co"># Apply sysctl params without reboot</span></span>
-<span class="fu">sudo</span> sysctl <span class="at">--system</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash"># sysctl params required by setup, params persist across reboots
+cat &lt;&lt;EOF | sudo tee -a /etc/sysctl.d/k8s.conf
+net.ipv6.conf.all.forwarding = 1
+EOF
+
+# Apply sysctl params without reboot
+sudo sysctl --system</code></pre>
 <p>You need to have an IPv4 and IPv6 address range to use. Cluster
 operators typically use private address ranges for IPv4. For IPv6, a
 cluster operator typically chooses a global unicast address block from
@@ -169,36 +182,35 @@ CIDR”) nor to the cluster's Service address range (“Service CIDR”).</p>
 <h3 id="create-a-dual-stack-cluster">Create a dual-stack cluster</h3>
 <p>To create a dual-stack cluster with <code>kubeadm init</code> you can
 pass command line arguments similar to the following example:</p>
-<pre class="shell"><code># These address ranges are examples
+<pre class="shell"><code class="language-shell"># These address ranges are examples
 kubeadm init --pod-network-cidr=10.244.0.0/16,2001:db8:42:0::/56 --service-cidr=10.96.0.0/16,2001:db8:42:1::/112</code></pre>
 <p>To make things clearer, here is an example kubeadm <a
 href="../../../../reference/config-api/kubeadm-config.v1beta4.html">configuration
 file</a> <code>kubeadm-config.yaml</code> for the primary dual-stack
 control plane node.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">networking</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSubnet</span><span class="kw">:</span><span class="at"> 10.244.0.0/16,2001:db8:42:0::/56</span></span>
-<span class="at">  </span><span class="fu">serviceSubnet</span><span class="kw">:</span><span class="at"> 10.96.0.0/16,2001:db8:42:1::/112</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> InitConfiguration</span></span>
-<span class="fu">localAPIEndpoint</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">advertiseAddress</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10.100.0.1&quot;</span></span>
-<span class="at">  </span><span class="fu">bindPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">6443</span></span>
-<span class="fu">nodeRegistration</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;node-ip&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10.100.0.2,fd00:1:2:3::2&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+networking:
+  podSubnet: 10.244.0.0/16,2001:db8:42:0::/56
+  serviceSubnet: 10.96.0.0/16,2001:db8:42:1::/112
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: &quot;10.100.0.1&quot;
+  bindPort: 6443
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: &quot;node-ip&quot;
+    value: &quot;10.100.0.2,fd00:1:2:3::2&quot;</code></pre>
 <p><code>advertiseAddress</code> in InitConfiguration specifies the IP
 address that the API Server will advertise it is listening on. The value
 of <code>advertiseAddress</code> equals the
 <code>--apiserver-advertise-address</code> flag of
 <code>kubeadm init</code>.</p>
 <p>Run kubeadm to initiate the dual-stack control plane node:</p>
-<pre class="shell"><code>kubeadm init --config=kubeadm-config.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm init --config=kubeadm-config.yaml</code></pre>
 <p>The kube-controller-manager flags
 <code>--node-cidr-mask-size-ipv4|--node-cidr-mask-size-ipv6</code> are
 set with default values. See <a
@@ -219,48 +231,46 @@ network interface and allows IPv6 forwarding.</p>
 href="../../../../reference/config-api/kubeadm-config.v1beta4.html">configuration
 file</a> <code>kubeadm-config.yaml</code> for joining a worker node to
 the cluster.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> JoinConfiguration</span></span>
-<span class="fu">discovery</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">bootstrapToken</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiServerEndpoint</span><span class="kw">:</span><span class="at"> 10.100.0.1:6443</span></span>
-<span class="at">    </span><span class="fu">token</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;clvldh.vjjwg16ucnhp94qr&quot;</span></span>
-<span class="at">    </span><span class="fu">caCertHashes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;sha256:a4863cde706cfc580a439f842cc65d5ef112b7b2be31628513a9881cf0d9fe0e&quot;</span></span>
-<span class="at">    </span><span class="co"># change auth info above to match the actual token and CA certificate hash for your cluster</span></span>
-<span class="fu">nodeRegistration</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;node-ip&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10.100.0.2,fd00:1:2:3::3&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 10.100.0.1:6443
+    token: &quot;clvldh.vjjwg16ucnhp94qr&quot;
+    caCertHashes:
+    - &quot;sha256:a4863cde706cfc580a439f842cc65d5ef112b7b2be31628513a9881cf0d9fe0e&quot;
+    # change auth info above to match the actual token and CA certificate hash for your cluster
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: &quot;node-ip&quot;
+    value: &quot;10.100.0.2,fd00:1:2:3::3&quot;</code></pre>
 <p>Also, here is an example kubeadm <a
 href="../../../../reference/config-api/kubeadm-config.v1beta4.html">configuration
 file</a> <code>kubeadm-config.yaml</code> for joining another control
 plane node to the cluster.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> JoinConfiguration</span></span>
-<span class="fu">controlPlane</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">localAPIEndpoint</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">advertiseAddress</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10.100.0.2&quot;</span></span>
-<span class="at">    </span><span class="fu">bindPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">6443</span></span>
-<span class="fu">discovery</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">bootstrapToken</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiServerEndpoint</span><span class="kw">:</span><span class="at"> 10.100.0.1:6443</span></span>
-<span class="at">    </span><span class="fu">token</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;clvldh.vjjwg16ucnhp94qr&quot;</span></span>
-<span class="at">    </span><span class="fu">caCertHashes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="st">&quot;sha256:a4863cde706cfc580a439f842cc65d5ef112b7b2be31628513a9881cf0d9fe0e&quot;</span></span>
-<span class="at">    </span><span class="co"># change auth info above to match the actual token and CA certificate hash for your cluster</span></span>
-<span class="fu">nodeRegistration</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;node-ip&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10.100.0.2,fd00:1:2:3::4&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: JoinConfiguration
+controlPlane:
+  localAPIEndpoint:
+    advertiseAddress: &quot;10.100.0.2&quot;
+    bindPort: 6443
+discovery:
+  bootstrapToken:
+    apiServerEndpoint: 10.100.0.1:6443
+    token: &quot;clvldh.vjjwg16ucnhp94qr&quot;
+    caCertHashes:
+    - &quot;sha256:a4863cde706cfc580a439f842cc65d5ef112b7b2be31628513a9881cf0d9fe0e&quot;
+    # change auth info above to match the actual token and CA certificate hash for your cluster
+nodeRegistration:
+  kubeletExtraArgs:
+  - name: &quot;node-ip&quot;
+    value: &quot;10.100.0.2,fd00:1:2:3::4&quot;</code></pre>
 <p><code>advertiseAddress</code> in JoinConfiguration.controlPlane
 specifies the IP address that the API Server will advertise it is
 listening on. The value of <code>advertiseAddress</code> equals the
 <code>--apiserver-advertise-address</code> flag of
 <code>kubeadm join</code>.</p>
-<pre class="shell"><code>kubeadm join --config=kubeadm-config.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm join --config=kubeadm-config.yaml</code></pre>
 <h3 id="create-a-single-stack-cluster">Create a single-stack
 cluster</h3>
 <div class="admonition note">
@@ -275,12 +285,11 @@ dual-stack networking feature enabled.</p>
 href="../../../../reference/config-api/kubeadm-config.v1beta4.html">configuration
 file</a> <code>kubeadm-config.yaml</code> for the single-stack control
 plane node.</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">networking</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSubnet</span><span class="kw">:</span><span class="at"> 10.244.0.0/16</span></span>
-<span class="at">  </span><span class="fu">serviceSubnet</span><span class="kw">:</span><span class="at"> 10.96.0.0/16</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+networking:
+  podSubnet: 10.244.0.0/16
+  serviceSubnet: 10.96.0.0/16</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li><a href="../../../../tasks/network/validate-dual-stack.html">Validate
@@ -356,6 +365,7 @@ format</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -364,6 +374,8 @@ format</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../../assets/nav.js"></script>
 <script src="../../../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -194,7 +209,7 @@ takes a comma-delimited list of admission control plugins to invoke
 prior to modifying objects in the cluster. For example, the following
 command line enables the <code>NamespaceLifecycle</code> and the
 <code>LimitRanger</code> admission control plugins:</p>
-<pre class="shell"><code>kube-apiserver --enable-admission-plugins=NamespaceLifecycle,LimitRanger ...</code></pre>
+<pre class="shell"><code class="language-shell">kube-apiserver --enable-admission-plugins=NamespaceLifecycle,LimitRanger ...</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -212,13 +227,13 @@ admission controller?</h2>
 takes a comma-delimited list of admission control plugins to be
 disabled, even if they are in the list of plugins enabled by
 default.</p>
-<pre class="shell"><code>kube-apiserver --disable-admission-plugins=PodNodeSelector,AlwaysDeny ...</code></pre>
+<pre class="shell"><code class="language-shell">kube-apiserver --disable-admission-plugins=PodNodeSelector,AlwaysDeny ...</code></pre>
 <h2 id="which-plugins-are-enabled-by-default">Which plugins are enabled
 by default?</h2>
 <p>To see which admission plugins are enabled:</p>
-<pre class="shell"><code>kube-apiserver -h | grep enable-admission-plugins</code></pre>
+<pre class="shell"><code class="language-shell">kube-apiserver -h | grep enable-admission-plugins</code></pre>
 <p>In Kubernetes 1.37, the default ones are:</p>
-<pre class="shell"><code>CertificateApproval, CertificateSigning, CertificateSubjectRestriction, DefaultIngressClass, DefaultStorageClass, DefaultTolerationSeconds, LimitRanger, MutatingAdmissionPolicy, MutatingAdmissionWebhook, NamespaceLifecycle, PersistentVolumeClaimResize, PodSecurity, Priority, ResourceQuota, RuntimeClass, ServiceAccount, StorageObjectInUseProtection, TaintNodesByCondition, ValidatingAdmissionPolicy, ValidatingAdmissionWebhook</code></pre>
+<pre class="shell"><code class="language-shell">CertificateApproval, CertificateSigning, CertificateSubjectRestriction, DefaultIngressClass, DefaultStorageClass, DefaultTolerationSeconds, LimitRanger, MutatingAdmissionPolicy, MutatingAdmissionWebhook, NamespaceLifecycle, PersistentVolumeClaimResize, PodSecurity, Priority, ResourceQuota, RuntimeClass, ServiceAccount, StorageObjectInUseProtection, TaintNodesByCondition, ValidatingAdmissionPolicy, ValidatingAdmissionWebhook</code></pre>
 <h2 id="what-does-each-admission-controller-do">What does each admission
 controller do?</h2>
 <h3 id="alwaysadmit">AlwaysAdmit</h3>
@@ -374,13 +389,12 @@ specify event rate limits by:</p>
 the file provided to the API server's command line flag
 <code>--admission-control-config-file</code>:</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> EventRateLimit</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> eventconfig.yaml</span></span>
-<span class="co">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+  - name: EventRateLimit
+    path: eventconfig.yaml
+...</code></pre>
 <p>There are four types of limits that can be specified in the
 configuration:</p>
 <ul>
@@ -393,17 +407,16 @@ combination of source and involved object of the event.</li>
 </ul>
 <p>Below is a sample <code>eventconfig.yaml</code> for such a
 configuration:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> eventratelimit.admission.k8s.io/v1alpha1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Configuration</span></span>
-<span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Namespace</span></span>
-<span class="at">    </span><span class="fu">qps</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">    </span><span class="fu">burst</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">    </span><span class="fu">cacheSize</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> User</span></span>
-<span class="at">    </span><span class="fu">qps</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">    </span><span class="fu">burst</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: eventratelimit.admission.k8s.io/v1alpha1
+kind: Configuration
+limits:
+  - type: Namespace
+    qps: 50
+    burst: 100
+    cacheSize: 2000
+  - type: User
+    qps: 10
+    burst: 50</code></pre>
 <p>See the <a
 href="../config-api/apiserver-eventratelimit.v1alpha1.html">EventRateLimit
 Config API (v1alpha1)</a> for more details.</p>
@@ -428,41 +441,38 @@ to make admission decisions.</p>
 <p>ImagePolicyWebhook uses a configuration file to set options for the
 behavior of the backend. This file may be json or yaml and has the
 following format:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">imagePolicy</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kubeConfigFile</span><span class="kw">:</span><span class="at"> /path/to/kubeconfig/for/backend</span></span>
-<span class="at">  </span><span class="co"># time in s to cache approval</span></span>
-<span class="at">  </span><span class="fu">allowTTL</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">  </span><span class="co"># time in s to cache denial</span></span>
-<span class="at">  </span><span class="fu">denyTTL</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">  </span><span class="co"># time in ms to wait between retries</span></span>
-<span class="at">  </span><span class="fu">retryBackoff</span><span class="kw">:</span><span class="at"> </span><span class="dv">500</span></span>
-<span class="at">  </span><span class="co"># determines behavior if the webhook backend fails</span></span>
-<span class="at">  </span><span class="fu">defaultAllow</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">imagePolicy:
+  kubeConfigFile: /path/to/kubeconfig/for/backend
+  # time in s to cache approval
+  allowTTL: 50
+  # time in s to cache denial
+  denyTTL: 50
+  # time in ms to wait between retries
+  retryBackoff: 500
+  # determines behavior if the webhook backend fails
+  defaultAllow: true</code></pre>
 <p>Reference the ImagePolicyWebhook configuration file from the file
 provided to the API server's command line flag
 <code>--admission-control-config-file</code>:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ImagePolicyWebhook</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> imagepolicyconfig.yaml</span></span>
-<span class="co">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+  - name: ImagePolicyWebhook
+    path: imagepolicyconfig.yaml
+...</code></pre>
 <p>Alternatively, you can embed the configuration directly in the
 file:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ImagePolicyWebhook</span></span>
-<span class="at">    </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">imagePolicy</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">kubeConfigFile</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;path-to-kubeconfig-file&gt;</span></span>
-<span class="at">        </span><span class="fu">allowTTL</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">        </span><span class="fu">denyTTL</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">        </span><span class="fu">retryBackoff</span><span class="kw">:</span><span class="at"> </span><span class="dv">500</span></span>
-<span class="at">        </span><span class="fu">defaultAllow</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+  - name: ImagePolicyWebhook
+    configuration:
+      imagePolicy:
+        kubeConfigFile: &lt;path-to-kubeconfig-file&gt;
+        allowTTL: 50
+        denyTTL: 50
+        retryBackoff: 500
+        defaultAllow: true</code></pre>
 <p>The ImagePolicyWebhook config file must reference a <a
 href="../../tasks/access-application-cluster/configure-access-multiple-clusters.html">kubeconfig</a>
 formatted file which sets up the connection to the backend. It is
@@ -470,20 +480,19 @@ required that the backend communicate over TLS.</p>
 <p>The kubeconfig file's <code>cluster</code> field must point to the
 remote service, and the <code>user</code> field must contain the
 returned authorizer.</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># clusters refers to the remote service.</span></span>
-<span class="fu">clusters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-of-remote-imagepolicy-service</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">certificate-authority</span><span class="kw">:</span><span class="at"> /path/to/ca.pem    # CA for verifying the remote service.</span></span>
-<span class="at">      </span><span class="fu">server</span><span class="kw">:</span><span class="at"> https://images.example.com/policy</span><span class="co"> # URL of remote service to query. Must use &#39;https&#39;.</span></span>
-</span>
-<span class="co"># users refers to the API server&#39;s webhook configuration.</span></span>
-<span class="fu">users</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-of-api-server</span></span>
-<span class="at">    </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">client-certificate</span><span class="kw">:</span><span class="at"> /path/to/cert.pem</span><span class="co"> # cert for the webhook admission controller to use</span></span>
-<span class="at">      </span><span class="fu">client-key</span><span class="kw">:</span><span class="at"> /path/to/key.pem          # key matching the cert</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># clusters refers to the remote service.
+clusters:
+  - name: name-of-remote-imagepolicy-service
+    cluster:
+      certificate-authority: /path/to/ca.pem    # CA for verifying the remote service.
+      server: https://images.example.com/policy # URL of remote service to query. Must use &#39;https&#39;.
+
+# users refers to the API server&#39;s webhook configuration.
+users:
+  - name: name-of-api-server
+    user:
+      client-certificate: /path/to/cert.pem # cert for the webhook admission controller to use
+      client-key: /path/to/key.pem          # key matching the cert</code></pre>
 <p>For additional HTTP configuration, refer to the <a
 href="../../tasks/access-application-cluster/configure-access-multiple-clusters.html">kubeconfig</a>
 documentation.</p>
@@ -506,47 +515,44 @@ deserialization. Additionally, the API Server must enable the
 (<code>--runtime-config=imagepolicy.k8s.io/v1alpha1=true</code>).</p>
 </div>
 <p>An example request body:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;imagepolicy.k8s.io/v1alpha1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ImageReview&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;containers&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-      <span class="fu">{</span></span>
-        <span class="dt">&quot;image&quot;</span><span class="fu">:</span> <span class="st">&quot;myrepo/myimage:v1&quot;</span></span>
-      <span class="fu">}</span><span class="ot">,</span></span>
-      <span class="fu">{</span></span>
-        <span class="dt">&quot;image&quot;</span><span class="fu">:</span> <span class="st">&quot;myrepo/myimage@sha256:beb6bd6a68f114c1dc2ea4b28db81bdf91de202a9014972bec5e4d9171d90ed&quot;</span></span>
-      <span class="fu">}</span></span>
-    <span class="ot">]</span><span class="fu">,</span></span>
-    <span class="dt">&quot;annotations&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;mycluster.image-policy.k8s.io/ticket-1234&quot;</span><span class="fu">:</span> <span class="st">&quot;break-glass&quot;</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;namespace&quot;</span><span class="fu">:</span> <span class="st">&quot;mynamespace&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;imagepolicy.k8s.io/v1alpha1&quot;,
+  &quot;kind&quot;: &quot;ImageReview&quot;,
+  &quot;spec&quot;: {
+    &quot;containers&quot;: [
+      {
+        &quot;image&quot;: &quot;myrepo/myimage:v1&quot;
+      },
+      {
+        &quot;image&quot;: &quot;myrepo/myimage@sha256:beb6bd6a68f114c1dc2ea4b28db81bdf91de202a9014972bec5e4d9171d90ed&quot;
+      }
+    ],
+    &quot;annotations&quot;: {
+      &quot;mycluster.image-policy.k8s.io/ticket-1234&quot;: &quot;break-glass&quot;
+    },
+    &quot;namespace&quot;: &quot;mynamespace&quot;
+  }
+}</code></pre>
 <p>The remote service is expected to fill the <code>status</code> field
 of the request and respond to either allow or disallow access. The
 response body's <code>spec</code> field is ignored, and may be omitted.
 A permissive response would return:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;imagepolicy.k8s.io/v1alpha1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ImageReview&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;allowed&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;imagepolicy.k8s.io/v1alpha1&quot;,
+  &quot;kind&quot;: &quot;ImageReview&quot;,
+  &quot;status&quot;: {
+    &quot;allowed&quot;: true
+  }
+}</code></pre>
 <p>To disallow access, the service would return:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;imagepolicy.k8s.io/v1alpha1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ImageReview&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;allowed&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
-    <span class="dt">&quot;reason&quot;</span><span class="fu">:</span> <span class="st">&quot;image currently blacklisted&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;imagepolicy.k8s.io/v1alpha1&quot;,
+  &quot;kind&quot;: &quot;ImageReview&quot;,
+  &quot;status&quot;: {
+    &quot;allowed&quot;: false,
+    &quot;reason&quot;: &quot;image currently blacklisted&quot;
+  }
+}</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -781,18 +787,17 @@ explicitly enables resizing by setting <code>allowVolumeExpansion</code>
 to <code>true</code>.</p>
 <p>For example: all <code>PersistentVolumeClaim</code>s created from the
 following <code>StorageClass</code> support volume expansion:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gluster-vol-default</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> kubernetes.io/glusterfs</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resturl</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;http://192.168.10.100:8080&quot;</span></span>
-<span class="at">  </span><span class="fu">restuser</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">secretNamespace</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="fu">allowVolumeExpansion</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: gluster-vol-default
+provisioner: kubernetes.io/glusterfs
+parameters:
+  resturl: &quot;http://192.168.10.100:8080&quot;
+  restuser: &quot;&quot;
+  secretNamespace: &quot;&quot;
+  secretName: &quot;&quot;
+allowVolumeExpansion: true</code></pre>
 <p>For more information about persistent volume claims, see <a
 href="../../concepts/storage/persistent-volumes.html#persistentvolumeclaims">PersistentVolumeClaims</a>.</p>
 <h3 id="podnodeselector">PodNodeSelector</h3>
@@ -812,33 +817,30 @@ global configuration.</p>
 for the behavior of the backend. Note that the configuration file format
 will move to a versioned file in a future release. This file may be json
 or yaml and has the following format:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">podNodeSelectorPluginConfig</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">clusterDefaultNodeSelector</span><span class="kw">:</span><span class="at"> name-of-node-selector</span></span>
-<span class="at">  </span><span class="fu">namespace1</span><span class="kw">:</span><span class="at"> name-of-node-selector</span></span>
-<span class="at">  </span><span class="fu">namespace2</span><span class="kw">:</span><span class="at"> name-of-node-selector</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">podNodeSelectorPluginConfig:
+  clusterDefaultNodeSelector: name-of-node-selector
+  namespace1: name-of-node-selector
+  namespace2: name-of-node-selector</code></pre>
 <p>Reference the <code>PodNodeSelector</code> configuration file from
 the file provided to the API server's command line flag
 <code>--admission-control-config-file</code>:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> PodNodeSelector</span></span>
-<span class="at">  </span><span class="fu">path</span><span class="kw">:</span><span class="at"> podnodeselector.yaml</span></span>
-<span class="co">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: PodNodeSelector
+  path: podnodeselector.yaml
+...</code></pre>
 <h4 id="configuration-annotation-format">Configuration Annotation
 Format</h4>
 <p><code>PodNodeSelector</code> uses the annotation key
 <code>scheduler.alpha.kubernetes.io/node-selector</code> to assign node
 selectors to namespaces.</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Namespace</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">scheduler.alpha.kubernetes.io/node-selector</span><span class="kw">:</span><span class="at"> name-of-node-selector</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> namespace3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    scheduler.alpha.kubernetes.io/node-selector: name-of-node-selector
+  name: namespace3</code></pre>
 <h4 id="internal-behavior">Internal Behavior</h4>
 <p>This admission controller has the following behavior:</p>
 <ol type="1">
@@ -906,14 +908,13 @@ key. The list of allowed tolerations can be added via the
 <code>scheduler.alpha.kubernetes.io/tolerationsWhitelist</code>
 annotation key.</p>
 <p>Example for namespace annotations:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Namespace</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> apps-that-need-nodes-exclusively</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">scheduler.alpha.kubernetes.io/defaultTolerations</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;[{&quot;operator&quot;: &quot;Exists&quot;, &quot;effect&quot;: &quot;NoSchedule&quot;, &quot;key&quot;: &quot;dedicated-node&quot;}]&#39;</span></span>
-<span class="at">    </span><span class="fu">scheduler.alpha.kubernetes.io/tolerationsWhitelist</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;[{&quot;operator&quot;: &quot;Exists&quot;, &quot;effect&quot;: &quot;NoSchedule&quot;, &quot;key&quot;: &quot;dedicated-node&quot;}]&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Namespace
+metadata:
+  name: apps-that-need-nodes-exclusively
+  annotations:
+    scheduler.alpha.kubernetes.io/defaultTolerations: &#39;[{&quot;operator&quot;: &quot;Exists&quot;, &quot;effect&quot;: &quot;NoSchedule&quot;, &quot;key&quot;: &quot;dedicated-node&quot;}]&#39;
+    scheduler.alpha.kubernetes.io/tolerationsWhitelist: &#39;[{&quot;operator&quot;: &quot;Exists&quot;, &quot;effect&quot;: &quot;NoSchedule&quot;, &quot;key&quot;: &quot;dedicated-node&quot;}]&#39;</code></pre>
 <p>This admission controller is disabled by default.</p>
 <h3 id="podtopologylabels">PodTopologyLabels</h3>
 <div class="admonition feature-state">
@@ -1104,6 +1105,7 @@ matter</strong>).</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1112,6 +1114,8 @@ matter</strong>).</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

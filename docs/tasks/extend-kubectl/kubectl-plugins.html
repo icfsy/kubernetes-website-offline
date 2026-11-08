@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -188,42 +203,40 @@ wishes to implement based on its name. For example, a plugin named
 You must install the plugin executable somewhere in your
 <code>PATH</code>.</p>
 <h3 id="example-plugin">Example plugin</h3>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
-</span>
-<span class="co"># optional argument handling</span></span>
-<span class="cf">if</span> <span class="kw">[[</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;version&quot;</span> <span class="kw">]]</span></span>
-<span class="cf">then</span></span>
-    <span class="bu">echo</span> <span class="st">&quot;1.0.0&quot;</span></span>
-    <span class="bu">exit</span> 0</span>
-<span class="cf">fi</span></span>
-</span>
-<span class="co"># optional argument handling</span></span>
-<span class="cf">if</span> <span class="kw">[[</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;config&quot;</span> <span class="kw">]]</span></span>
-<span class="cf">then</span></span>
-    <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$KUBECONFIG</span><span class="st">&quot;</span></span>
-    <span class="bu">exit</span> 0</span>
-<span class="cf">fi</span></span>
-</span>
-<span class="bu">echo</span> <span class="st">&quot;I am a plugin named kubectl-foo&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">#!/bin/bash
+
+# optional argument handling
+if [[ &quot;$1&quot; == &quot;version&quot; ]]
+then
+    echo &quot;1.0.0&quot;
+    exit 0
+fi
+
+# optional argument handling
+if [[ &quot;$1&quot; == &quot;config&quot; ]]
+then
+    echo &quot;$KUBECONFIG&quot;
+    exit 0
+fi
+
+echo &quot;I am a plugin named kubectl-foo&quot;</code></pre>
 <h3 id="using-a-plugin">Using a plugin</h3>
 <p>To use a plugin, make the plugin executable:</p>
-<pre class="shell"><code>sudo chmod +x ./kubectl-foo</code></pre>
+<pre class="shell"><code class="language-shell">sudo chmod +x ./kubectl-foo</code></pre>
 <p>and place it anywhere in your <code>PATH</code>:</p>
-<pre class="shell"><code>sudo mv ./kubectl-foo /usr/local/bin</code></pre>
+<pre class="shell"><code class="language-shell">sudo mv ./kubectl-foo /usr/local/bin</code></pre>
 <p>You may now invoke your plugin as a <code>kubectl</code> command:</p>
-<pre class="shell"><code>kubectl foo</code></pre>
+<pre class="shell"><code class="language-shell">kubectl foo</code></pre>
 <pre><code>I am a plugin named kubectl-foo</code></pre>
 <p>All args and flags are passed as-is to the executable:</p>
-<pre class="shell"><code>kubectl foo version</code></pre>
+<pre class="shell"><code class="language-shell">kubectl foo version</code></pre>
 <pre><code>1.0.0</code></pre>
 <p>All environment variables are also passed as-is to the
 executable:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="bu">export</span> <span class="va">KUBECONFIG</span><span class="op">=</span>~/.kube/config</span>
-<span class="ex">kubectl</span> foo config</span></code></pre></div>
+<pre class="bash"><code class="language-bash">export KUBECONFIG=~/.kube/config
+kubectl foo config</code></pre>
 <pre><code>/home/&lt;user&gt;/.kube/config</code></pre>
-<pre class="shell"><code>KUBECONFIG=/etc/kube/config kubectl foo config</code></pre>
+<pre class="shell"><code class="language-shell">KUBECONFIG=/etc/kube/config kubectl foo config</code></pre>
 <pre><code>/etc/kube/config</code></pre>
 <p>Additionally, the first argument that is passed to a plugin will
 always be the full path to the location where it was invoked
@@ -266,16 +279,15 @@ plugin with this name, kubectl then invokes that plugin, passing all
 args and flags after the plugin's name as arguments to the plugin
 process.</p>
 <p>Example:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># create a plugin</span></span>
-<span class="bu">echo</span> <span class="at">-e</span> <span class="st">&#39;#!/bin/bash\n\necho &quot;My first command-line argument was $1&quot;&#39;</span> <span class="op">&gt;</span> kubectl-foo-bar-baz</span>
-<span class="fu">sudo</span> chmod +x ./kubectl-foo-bar-baz</span>
-</span>
-<span class="co"># &quot;install&quot; your plugin by moving it to a directory in your $PATH</span></span>
-<span class="fu">sudo</span> mv ./kubectl-foo-bar-baz /usr/local/bin</span>
-</span>
-<span class="co"># check that kubectl recognizes your plugin</span></span>
-<span class="ex">kubectl</span> plugin list</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># create a plugin
+echo -e &#39;#!/bin/bash\n\necho &quot;My first command-line argument was $1&quot;&#39; &gt; kubectl-foo-bar-baz
+sudo chmod +x ./kubectl-foo-bar-baz
+
+# &quot;install&quot; your plugin by moving it to a directory in your $PATH
+sudo mv ./kubectl-foo-bar-baz /usr/local/bin
+
+# check that kubectl recognizes your plugin
+kubectl plugin list</code></pre>
 <pre><code>The following kubectl-compatible plugins are available:
 
 /usr/local/bin/kubectl-foo-bar-baz</code></pre>
@@ -296,29 +308,26 @@ sub-commands processed by the plugin, it is still possible to create a
 plugin command containing dashes in its commandline invocation by using
 underscores (<code>_</code>) in its filename.</p>
 <p>Example:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># create a plugin containing an underscore in its filename</span></span>
-<span class="bu">echo</span> <span class="at">-e</span> <span class="st">&#39;#!/bin/bash\n\necho &quot;I am a plugin with a dash in my name&quot;&#39;</span> <span class="op">&gt;</span> ./kubectl-foo_bar</span>
-<span class="fu">sudo</span> chmod +x ./kubectl-foo_bar</span>
-</span>
-<span class="co"># move the plugin into your $PATH</span></span>
-<span class="fu">sudo</span> mv ./kubectl-foo_bar /usr/local/bin</span>
-</span>
-<span class="co"># You can now invoke your plugin via kubectl:</span></span>
-<span class="ex">kubectl</span> foo-bar</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># create a plugin containing an underscore in its filename
+echo -e &#39;#!/bin/bash\n\necho &quot;I am a plugin with a dash in my name&quot;&#39; &gt; ./kubectl-foo_bar
+sudo chmod +x ./kubectl-foo_bar
+
+# move the plugin into your $PATH
+sudo mv ./kubectl-foo_bar /usr/local/bin
+
+# You can now invoke your plugin via kubectl:
+kubectl foo-bar</code></pre>
 <pre><code>I am a plugin with a dash in my name</code></pre>
 <p>Note that the introduction of underscores to a plugin filename does
 not prevent you from having commands such as
 <code>kubectl foo_bar</code>. The command from the above example, can be
 invoked using either a dash (<code>-</code>) or an underscore
 (<code>_</code>):</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># You can invoke your custom command with a dash</span></span>
-<span class="ex">kubectl</span> foo-bar</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># You can invoke your custom command with a dash
+kubectl foo-bar</code></pre>
 <pre><code>I am a plugin with a dash in my name</code></pre>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># You can also invoke your custom command with an underscore</span></span>
-<span class="ex">kubectl</span> foo_bar</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># You can also invoke your custom command with an underscore
+kubectl foo_bar</code></pre>
 <pre><code>I am a plugin with a dash in my name</code></pre>
 <h4 id="name-conflicts-and-overshadowing">Name conflicts and
 overshadowing</h4>
@@ -330,8 +339,7 @@ copy of plugin <code>kubectl-foo</code> could exist in
 <code>/usr/local/bin/plugins</code> and
 <code>/usr/local/bin/moreplugins</code>, such that the output of the
 <code>kubectl plugin list</code> command is:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="va">PATH</span><span class="op">=</span>/usr/local/bin/plugins:/usr/local/bin/moreplugins <span class="ex">kubectl</span> plugin list</span></code></pre></div>
+<pre class="bash"><code class="language-bash">PATH=/usr/local/bin/plugins:/usr/local/bin/moreplugins kubectl plugin list</code></pre>
 <pre><code>The following kubectl-compatible plugins are available:
 
 /usr/local/bin/plugins/kubectl-foo
@@ -360,24 +368,19 @@ filenames. Given two plugins present in a user's <code>PATH</code>:
 <code>kubectl</code> plugin mechanism will always choose the longest
 possible plugin name for a given user command. Some examples below,
 clarify this further:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># for a given kubectl command, the plugin with the longest possible filename will always be preferred</span></span>
-<span class="ex">kubectl</span> foo bar baz</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># for a given kubectl command, the plugin with the longest possible filename will always be preferred
+kubectl foo bar baz</code></pre>
 <pre><code>Plugin kubectl-foo-bar-baz is executed</code></pre>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> foo bar</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl foo bar</code></pre>
 <pre><code>Plugin kubectl-foo-bar is executed</code></pre>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> foo bar baz buz</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl foo bar baz buz</code></pre>
 <pre><code>Plugin kubectl-foo-bar-baz is executed, with &quot;buz&quot; as its first argument</code></pre>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> foo bar buz</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl foo bar buz</code></pre>
 <pre><code>Plugin kubectl-foo-bar is executed, with &quot;buz&quot; as its first argument</code></pre>
 <p>This design choice ensures that plugin sub-commands can be
 implemented across multiple files, if needed, and that these
 sub-commands can be nested under a "parent" plugin command:</p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">ls</span> ./plugin_command_tree</span></code></pre></div>
+<pre class="bash"><code class="language-bash">ls ./plugin_command_tree</code></pre>
 <pre><code>kubectl-parent
 kubectl-parent-subcommand
 kubectl-parent-subcommand-subsubcommand</code></pre>
@@ -386,8 +389,7 @@ kubectl-parent-subcommand-subsubcommand</code></pre>
 command to ensure that your plugin is visible by <code>kubectl</code>,
 and verify that there are no warnings preventing it from being called as
 a <code>kubectl</code> command.</p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> plugin list</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl plugin list</code></pre>
 <pre><code>The following kubectl-compatible plugins are available:
 
 test/fixtures/pkg/kubectl/plugins/kubectl-foo
@@ -511,6 +513,7 @@ for kubectl plugins.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -519,6 +522,8 @@ for kubectl plugins.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

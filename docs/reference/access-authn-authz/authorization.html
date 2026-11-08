@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -426,118 +441,117 @@ capabilities (for example: multiple webhooks, webhook failure policy,
 and pre-filter rules) are only available if you use an authorization
 configuration file.</p>
 <h4 id="authz-config-example">Example configuration</h4>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co">#</span></span>
-<span class="co"># DO NOT USE THE CONFIG AS IS. THIS IS AN EXAMPLE.</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthorizationConfiguration</span></span>
-<span class="fu">authorizers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Webhook</span></span>
-<span class="at">    </span><span class="co"># Name used to describe the authorizer</span></span>
-<span class="at">    </span><span class="co"># This is explicitly used in monitoring machinery for metrics</span></span>
-<span class="at">    </span><span class="co"># Note:</span></span>
-<span class="at">    </span><span class="co">#   - Validation for this field is similar to how K8s labels are validated today.</span></span>
-<span class="at">    </span><span class="co"># Required, with no default</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> webhook</span></span>
-<span class="at">    </span><span class="fu">webhook</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># The duration to cache &#39;authorized&#39; responses from the webhook</span></span>
-<span class="at">      </span><span class="co"># authorizer.</span></span>
-<span class="at">      </span><span class="co"># Same as setting `--authorization-webhook-cache-authorized-ttl` flag</span></span>
-<span class="at">      </span><span class="co"># Default: 5m0s</span></span>
-<span class="at">      </span><span class="fu">authorizedTTL</span><span class="kw">:</span><span class="at"> 30s</span></span>
-<span class="at">      </span><span class="co"># If set to false, &#39;authorized&#39; responses from the webhook are not cached</span></span>
-<span class="at">      </span><span class="co"># and the specified authorizedTTL is ignored/has no effect.</span></span>
-<span class="at">      </span><span class="co"># Same as setting `--authorization-webhook-cache-authorized-ttl` flag to `0`.</span></span>
-<span class="at">      </span><span class="co"># Note: Setting authorizedTTL to `0` results in its default value being used.</span></span>
-<span class="at">      </span><span class="co"># Default: true</span></span>
-<span class="at">      </span><span class="fu">cacheAuthorizedRequests</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="co"># The duration to cache &#39;unauthorized&#39; responses from the webhook</span></span>
-<span class="at">      </span><span class="co"># authorizer.</span></span>
-<span class="at">      </span><span class="co"># Same as setting `--authorization-webhook-cache-unauthorized-ttl` flag</span></span>
-<span class="at">      </span><span class="co"># Default: 30s</span></span>
-<span class="at">      </span><span class="fu">unauthorizedTTL</span><span class="kw">:</span><span class="at"> 30s</span></span>
-<span class="at">      </span><span class="co"># If set to false, &#39;unauthorized&#39; responses from the webhook are not cached</span></span>
-<span class="at">      </span><span class="co"># and the specified unauthorizedTTL is ignored/has no effect.</span></span>
-<span class="at">      </span><span class="co"># Same as setting `--authorization-webhook-cache-unauthorized-ttl` flag to `0`.</span></span>
-<span class="at">      </span><span class="co"># Note: Setting unauthorizedTTL to `0` results in its default value being used.</span></span>
-<span class="at">      </span><span class="co"># Default: true</span></span>
-<span class="at">      </span><span class="fu">cacheUnauthorizedRequests</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="co"># Timeout for the webhook request</span></span>
-<span class="at">      </span><span class="co"># Maximum allowed is 30s.</span></span>
-<span class="at">      </span><span class="co"># Required, with no default.</span></span>
-<span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span>
-<span class="at">      </span><span class="co"># The API version of the authorization.k8s.io SubjectAccessReview to</span></span>
-<span class="at">      </span><span class="co"># send to and expect from the webhook.</span></span>
-<span class="at">      </span><span class="co"># Same as setting `--authorization-webhook-version` flag</span></span>
-<span class="at">      </span><span class="co"># Required, with no default</span></span>
-<span class="at">      </span><span class="co"># Valid values: v1beta1, v1</span></span>
-<span class="at">      </span><span class="fu">subjectAccessReviewVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="co"># MatchConditionSubjectAccessReviewVersion specifies the SubjectAccessReview</span></span>
-<span class="at">      </span><span class="co"># version the CEL expressions are evaluated against</span></span>
-<span class="at">      </span><span class="co"># Valid values: v1</span></span>
-<span class="at">      </span><span class="co"># Required, no default value</span></span>
-<span class="at">      </span><span class="fu">matchConditionSubjectAccessReviewVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="co"># Controls the authorization decision when a webhook request fails to</span></span>
-<span class="at">      </span><span class="co"># complete or returns a malformed response or errors evaluating</span></span>
-<span class="at">      </span><span class="co"># matchConditions.</span></span>
-<span class="at">      </span><span class="co"># Valid values:</span></span>
-<span class="at">      </span><span class="co">#   - NoOpinion: continue to subsequent authorizers to see if one of</span></span>
-<span class="at">      </span><span class="co">#     them allows the request</span></span>
-<span class="at">      </span><span class="co">#   - Deny: reject the request without consulting subsequent authorizers</span></span>
-<span class="at">      </span><span class="co"># Required, with no default.</span></span>
-<span class="at">      </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Deny</span></span>
-<span class="at">      </span><span class="fu">connectionInfo</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># Controls how the webhook should communicate with the server.</span></span>
-<span class="at">        </span><span class="co"># Valid values:</span></span>
-<span class="at">        </span><span class="co"># - KubeConfigFile: use the file specified in kubeConfigFile to locate the</span></span>
-<span class="at">        </span><span class="co">#   server.</span></span>
-<span class="at">        </span><span class="co"># - InClusterConfig: use the in-cluster configuration to call the</span></span>
-<span class="at">        </span><span class="co">#   SubjectAccessReview API hosted by kube-apiserver. This mode is not</span></span>
-<span class="at">        </span><span class="co">#   allowed for kube-apiserver.</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> KubeConfigFile</span></span>
-<span class="at">        </span><span class="co"># Path to KubeConfigFile for connection info</span></span>
-<span class="at">        </span><span class="co"># Required, if connectionInfo.Type is KubeConfigFile</span></span>
-<span class="at">        </span><span class="fu">kubeConfigFile</span><span class="kw">:</span><span class="at"> /kube-system-authz-webhook.yaml</span></span>
-<span class="at">        </span><span class="co"># matchConditions is a list of conditions that must be met for a request to be sent to this</span></span>
-<span class="at">        </span><span class="co"># webhook. An empty list of matchConditions matches all requests.</span></span>
-<span class="at">        </span><span class="co"># There are a maximum of 64 match conditions allowed.</span></span>
-<span class="at">        </span><span class="co">#</span></span>
-<span class="at">        </span><span class="co"># The exact matching logic is (in order):</span></span>
-<span class="at">        </span><span class="co">#   1. If at least one matchCondition evaluates to FALSE, then the webhook is skipped.</span></span>
-<span class="at">        </span><span class="co">#   2. If ALL matchConditions evaluate to TRUE, then the webhook is called.</span></span>
-<span class="at">        </span><span class="co">#   3. If at least one matchCondition evaluates to an error (but none are FALSE):</span></span>
-<span class="at">        </span><span class="co">#      - If failurePolicy=Deny, then the webhook rejects the request</span></span>
-<span class="at">        </span><span class="co">#      - If failurePolicy=NoOpinion, then the error is ignored and the webhook is skipped</span></span>
-<span class="at">      </span><span class="fu">matchConditions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># expression represents the expression which will be evaluated by CEL. Must evaluate to bool.</span></span>
-<span class="at">      </span><span class="co"># CEL expressions have access to the contents of the SubjectAccessReview in v1 version.</span></span>
-<span class="at">      </span><span class="co"># If version specified by subjectAccessReviewVersion in the request variable is v1beta1,</span></span>
-<span class="at">      </span><span class="co"># the contents would be converted to the v1 version before evaluating the CEL expression.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># Documentation on CEL: https://kubernetes.io/docs/reference/using-api/cel/</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># only send resource requests to the webhook</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> has(request.resourceAttributes)</span></span>
-<span class="at">      </span><span class="co"># only intercept requests to kube-system</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> request.resourceAttributes.namespace == &#39;kube-system&#39;</span></span>
-<span class="at">      </span><span class="co"># don&#39;t intercept requests from kube-system service accounts</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!(&#39;system:serviceaccounts:kube-system&#39; in request.groups)&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Node</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RBAC</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rbac</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Webhook</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> in-cluster-authorizer</span></span>
-<span class="at">    </span><span class="fu">webhook</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">authorizedTTL</span><span class="kw">:</span><span class="at"> 5m</span></span>
-<span class="at">      </span><span class="fu">unauthorizedTTL</span><span class="kw">:</span><span class="at"> 30s</span></span>
-<span class="at">      </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span>
-<span class="at">      </span><span class="fu">subjectAccessReviewVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">      </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> NoOpinion</span></span>
-<span class="at">      </span><span class="fu">connectionInfo</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> InClusterConfig</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+#
+# DO NOT USE THE CONFIG AS IS. THIS IS AN EXAMPLE.
+#
+apiVersion: apiserver.config.k8s.io/v1
+kind: AuthorizationConfiguration
+authorizers:
+  - type: Webhook
+    # Name used to describe the authorizer
+    # This is explicitly used in monitoring machinery for metrics
+    # Note:
+    #   - Validation for this field is similar to how K8s labels are validated today.
+    # Required, with no default
+    name: webhook
+    webhook:
+      # The duration to cache &#39;authorized&#39; responses from the webhook
+      # authorizer.
+      # Same as setting `--authorization-webhook-cache-authorized-ttl` flag
+      # Default: 5m0s
+      authorizedTTL: 30s
+      # If set to false, &#39;authorized&#39; responses from the webhook are not cached
+      # and the specified authorizedTTL is ignored/has no effect.
+      # Same as setting `--authorization-webhook-cache-authorized-ttl` flag to `0`.
+      # Note: Setting authorizedTTL to `0` results in its default value being used.
+      # Default: true
+      cacheAuthorizedRequests: true
+      # The duration to cache &#39;unauthorized&#39; responses from the webhook
+      # authorizer.
+      # Same as setting `--authorization-webhook-cache-unauthorized-ttl` flag
+      # Default: 30s
+      unauthorizedTTL: 30s
+      # If set to false, &#39;unauthorized&#39; responses from the webhook are not cached
+      # and the specified unauthorizedTTL is ignored/has no effect.
+      # Same as setting `--authorization-webhook-cache-unauthorized-ttl` flag to `0`.
+      # Note: Setting unauthorizedTTL to `0` results in its default value being used.
+      # Default: true
+      cacheUnauthorizedRequests: true
+      # Timeout for the webhook request
+      # Maximum allowed is 30s.
+      # Required, with no default.
+      timeout: 3s
+      # The API version of the authorization.k8s.io SubjectAccessReview to
+      # send to and expect from the webhook.
+      # Same as setting `--authorization-webhook-version` flag
+      # Required, with no default
+      # Valid values: v1beta1, v1
+      subjectAccessReviewVersion: v1
+      # MatchConditionSubjectAccessReviewVersion specifies the SubjectAccessReview
+      # version the CEL expressions are evaluated against
+      # Valid values: v1
+      # Required, no default value
+      matchConditionSubjectAccessReviewVersion: v1
+      # Controls the authorization decision when a webhook request fails to
+      # complete or returns a malformed response or errors evaluating
+      # matchConditions.
+      # Valid values:
+      #   - NoOpinion: continue to subsequent authorizers to see if one of
+      #     them allows the request
+      #   - Deny: reject the request without consulting subsequent authorizers
+      # Required, with no default.
+      failurePolicy: Deny
+      connectionInfo:
+        # Controls how the webhook should communicate with the server.
+        # Valid values:
+        # - KubeConfigFile: use the file specified in kubeConfigFile to locate the
+        #   server.
+        # - InClusterConfig: use the in-cluster configuration to call the
+        #   SubjectAccessReview API hosted by kube-apiserver. This mode is not
+        #   allowed for kube-apiserver.
+        type: KubeConfigFile
+        # Path to KubeConfigFile for connection info
+        # Required, if connectionInfo.Type is KubeConfigFile
+        kubeConfigFile: /kube-system-authz-webhook.yaml
+        # matchConditions is a list of conditions that must be met for a request to be sent to this
+        # webhook. An empty list of matchConditions matches all requests.
+        # There are a maximum of 64 match conditions allowed.
+        #
+        # The exact matching logic is (in order):
+        #   1. If at least one matchCondition evaluates to FALSE, then the webhook is skipped.
+        #   2. If ALL matchConditions evaluate to TRUE, then the webhook is called.
+        #   3. If at least one matchCondition evaluates to an error (but none are FALSE):
+        #      - If failurePolicy=Deny, then the webhook rejects the request
+        #      - If failurePolicy=NoOpinion, then the error is ignored and the webhook is skipped
+      matchConditions:
+      # expression represents the expression which will be evaluated by CEL. Must evaluate to bool.
+      # CEL expressions have access to the contents of the SubjectAccessReview in v1 version.
+      # If version specified by subjectAccessReviewVersion in the request variable is v1beta1,
+      # the contents would be converted to the v1 version before evaluating the CEL expression.
+      #
+      # Documentation on CEL: https://kubernetes.io/docs/reference/using-api/cel/
+      #
+      # only send resource requests to the webhook
+      - expression: has(request.resourceAttributes)
+      # only intercept requests to kube-system
+      - expression: request.resourceAttributes.namespace == &#39;kube-system&#39;
+      # don&#39;t intercept requests from kube-system service accounts
+      - expression: &quot;!(&#39;system:serviceaccounts:kube-system&#39; in request.groups)&quot;
+  - type: Node
+    name: node
+  - type: RBAC
+    name: rbac
+  - type: Webhook
+    name: in-cluster-authorizer
+    webhook:
+      authorizedTTL: 5m
+      unauthorizedTTL: 30s
+      timeout: 3s
+      subjectAccessReviewVersion: v1
+      failurePolicy: NoOpinion
+      connectionInfo:
+        type: InClusterConfig</code></pre>
 <p>When configuring the authorizer chain using a configuration file,
 make sure all the control plane nodes have the same file contents. Take
 a note of the API server configuration when upgrading / downgrading your
@@ -656,27 +670,24 @@ for quickly querying the API authorization layer. The command uses the
 <code>SelfSubjectAccessReview</code> API to determine if the current
 user can perform a given action, and works regardless of the
 authorization mode used.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> auth can-i create deployments <span class="at">--namespace</span> dev</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl auth can-i create deployments --namespace dev</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>yes</code></pre>
-<pre class="shell"><code>kubectl auth can-i create deployments --namespace prod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl auth can-i create deployments --namespace prod</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>no</code></pre>
 <p>Administrators can combine this with <a
 href="authentication.html#user-impersonation">user
 impersonation</a> to determine what action other users can perform.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> auth can-i list secrets <span class="at">--namespace</span> dev <span class="at">--as</span> dave</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl auth can-i list secrets --namespace dev --as dave</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>no</code></pre>
 <p>Similarly, to check whether a ServiceAccount named
 <code>dev-sa</code> in Namespace <code>dev</code> can list Pods in the
 Namespace <code>target</code>:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> auth can-i list pods <span class="dt">\</span></span>
-    <span class="at">--namespace</span> target <span class="dt">\</span></span>
-    <span class="at">--as</span> system:serviceaccount:dev:dev-sa</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl auth can-i list pods \
+    --namespace target \
+    --as system:serviceaccount:dev:dev-sa</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>yes</code></pre>
 <p>SelfSubjectAccessReview is part of the
@@ -705,32 +716,30 @@ for UIs to hide/show actions.
 <p>These APIs can be queried by creating normal Kubernetes resources,
 where the response <code>status</code> field of the returned object is
 the result of the query. For example:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> create <span class="at">-f</span> <span class="at">-</span> <span class="at">-o</span> yaml <span class="op">&lt;&lt; EOF</span></span>
-<span class="st">apiVersion: authorization.k8s.io/v1</span></span>
-<span class="st">kind: SelfSubjectAccessReview</span></span>
-<span class="st">spec:</span></span>
-<span class="st">  resourceAttributes:</span></span>
-<span class="st">    group: apps</span></span>
-<span class="st">    resource: deployments</span></span>
-<span class="st">    verb: create</span></span>
-<span class="st">    namespace: dev</span></span>
-<span class="op">EOF</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl create -f - -o yaml &lt;&lt; EOF
+apiVersion: authorization.k8s.io/v1
+kind: SelfSubjectAccessReview
+spec:
+  resourceAttributes:
+    group: apps
+    resource: deployments
+    verb: create
+    namespace: dev
+EOF</code></pre>
 <p>The generated SelfSubjectAccessReview is similar to:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> SelfSubjectAccessReview</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resourceAttributes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> apps</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> deployments</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> dev</span></span>
-<span class="at">    </span><span class="fu">verb</span><span class="kw">:</span><span class="at"> create</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">allowed</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">denied</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: authorization.k8s.io/v1
+kind: SelfSubjectAccessReview
+metadata:
+  creationTimestamp: null
+spec:
+  resourceAttributes:
+    group: apps
+    resource: deployments
+    namespace: dev
+    verb: create
+status:
+  allowed: true
+  denied: false</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>To learn more about Authentication, see <a
@@ -808,6 +817,7 @@ Expression Language in Kubernetes</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -816,6 +826,8 @@ Expression Language in Kubernetes</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -201,18 +216,17 @@ port 9376 and are labelled as <code>app.kubernetes.io/name=MyApp</code>.
 You can define a Service to publish that TCP listener:</p>
 <div class="code-sample">
 <p><code>service/simple-service.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376</code></pre>
 </div>
 <p>Applying this manifest creates a new Service named "my-service" with
 the default ClusterIP <a
@@ -244,34 +258,33 @@ href="../overview/working-with-objects/names.html">RFC
 names in the <code>targetPort</code> attribute of a Service. For
 example, we can bind the <code>targetPort</code> of the Service to the
 Pod port in the following way:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> proxy</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-of-service-port</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> http-web-svc</span></span>
-</span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> proxy</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:stable</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http-web-svc</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app.kubernetes.io/name: proxy
+  ports:
+  - name: name-of-service-port
+    protocol: TCP
+    port: 80
+    targetPort: http-web-svc
+
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    app.kubernetes.io/name: proxy
+spec:
+  containers:
+  - name: nginx
+    image: nginx:stable
+    ports:
+      - containerPort: 80
+        name: http-web-svc</code></pre>
 <p>This works even if there is a mixture of Pods in the Service using a
 single configured name, with the same network protocol available via
 different port numbers. This offers a lot of flexibility for deploying
@@ -305,42 +318,40 @@ approach, you run only a portion of your backends in Kubernetes.</li>
 </ul>
 <p>In any of these scenarios you can define a Service <em>without</em>
 specifying a selector to match Pods. For example:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
-<span class="at">      </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9376</code></pre>
 <p>Because this Service has no selector, the corresponding EndpointSlice
 objects are not created automatically. You can map the Service to the
 network address and port where it's running, by adding an EndpointSlice
 object manually. For example:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> discovery.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EndpointSlice</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service-1</span><span class="co"> # by convention, use the name of the Service</span></span>
-<span class="at">                     </span><span class="co"># as a prefix for the name of the EndpointSlice</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># You should set the &quot;kubernetes.io/service-name&quot; label.</span></span>
-<span class="at">    </span><span class="co"># Set its value to match the name of the Service</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/service-name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">addressType</span><span class="kw">:</span><span class="at"> IPv4</span></span>
-<span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span><span class="co"> # should match with the name of the service port defined above</span></span>
-<span class="at">    </span><span class="fu">appProtocol</span><span class="kw">:</span><span class="at"> http</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span>
-<span class="fu">endpoints</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">addresses</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;10.4.5.6&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">addresses</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;10.1.2.3&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: discovery.k8s.io/v1
+kind: EndpointSlice
+metadata:
+  name: my-service-1 # by convention, use the name of the Service
+                     # as a prefix for the name of the EndpointSlice
+  labels:
+    # You should set the &quot;kubernetes.io/service-name&quot; label.
+    # Set its value to match the name of the Service
+    kubernetes.io/service-name: my-service
+addressType: IPv4
+ports:
+  - name: http # should match with the name of the service port defined above
+    appProtocol: http
+    protocol: TCP
+    port: 9376
+endpoints:
+  - addresses:
+      - &quot;10.4.5.6&quot;
+  - addresses:
+      - &quot;10.1.2.3&quot;</code></pre>
 <h4 id="custom-endpointslices">Custom EndpointSlices</h4>
 <p>When you create an <a href="#endpointslices">EndpointSlice</a> object
 for a Service, you can use any name for the EndpointSlice. Each
@@ -508,23 +519,22 @@ href="https://www.rfc-editor.org/rfc/rfc6455">RFC 6455</a></td>
 lets you configure multiple port definitions on a Service object. When
 using multiple ports for a Service, you must give all of your ports
 names so that these are unambiguous. For example:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
-<span class="at">      </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> https</span></span>
-<span class="at">      </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">443</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9377</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9376
+    - name: https
+      protocol: TCP
+      port: 443
+      targetPort: 9377</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -634,24 +644,23 @@ NodePort use.</p>
 <p>Here is an example manifest for a Service of
 <code>type: NodePort</code> that specifies a NodePort value (30007, in
 this example):</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NodePort</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="co"># By default and for convenience, the `targetPort` is set to</span></span>
-<span class="at">      </span><span class="co"># the same value as the `port` field.</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="co"># Optional field</span></span>
-<span class="at">      </span><span class="co"># By default and for convenience, the Kubernetes control plane</span></span>
-<span class="at">      </span><span class="co"># will allocate a port from a range (default: 30000-32767)</span></span>
-<span class="at">      </span><span class="fu">nodePort</span><span class="kw">:</span><span class="at"> </span><span class="dv">30007</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - port: 80
+      # By default and for convenience, the `targetPort` is set to
+      # the same value as the `port` field.
+      targetPort: 80
+      # Optional field
+      # By default and for convenience, the Kubernetes control plane
+      # will allocate a port from a range (default: 30000-32767)
+      nodePort: 30007</code></pre>
 <h4 id="avoid-nodeport-collisions">Reserve Nodeport ranges to avoid
 collisions</h4>
 <p>The policy for assigning ports to NodePort services applies to both
@@ -750,24 +759,23 @@ balancer for your Service. The actual creation of the load balancer
 happens asynchronously, and information about the provisioned balancer
 is published in the Service's <code>.status.loadBalancer</code> field.
 For example:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> 10.0.171.239</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">loadBalancer</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">ip</span><span class="kw">:</span><span class="at"> 192.0.2.127</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 9376
+  clusterIP: 10.0.171.239
+  type: LoadBalancer
+status:
+  loadBalancer:
+    ingress:
+    - ip: 192.0.2.127</code></pre>
 <p>Traffic from the external load balancer is directed at the backend
 Pods. The cloud provider decides how it is load balanced.</p>
 <p>To implement a Service of <code>type: LoadBalancer</code>, Kubernetes
@@ -922,73 +930,64 @@ you're using:</p>
 <div class="tab-label">
 <p>GCP</p>
 </div>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">networking.gke.io/load-balancer-type</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Internal&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    networking.gke.io/load-balancer-type: &quot;Internal&quot;</code></pre>
 <div class="tab-label">
 <p>AWS</p>
 </div>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.beta.kubernetes.io/aws-load-balancer-scheme</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;internal&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: &quot;internal&quot;</code></pre>
 <div class="tab-label">
 <p>Azure</p>
 </div>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.beta.kubernetes.io/azure-load-balancer-internal</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: &quot;true&quot;</code></pre>
 <div class="tab-label">
 <p>IBM Cloud</p>
 </div>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.kubernetes.io/ibm-load-balancer-cloud-provider-ip-type</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;private&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    service.kubernetes.io/ibm-load-balancer-cloud-provider-ip-type: &quot;private&quot;</code></pre>
 <div class="tab-label">
 <p>OpenStack</p>
 </div>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.beta.kubernetes.io/openstack-internal-load-balancer</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    service.beta.kubernetes.io/openstack-internal-load-balancer: &quot;true&quot;</code></pre>
 <div class="tab-label">
 <p>Baidu Cloud</p>
 </div>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.beta.kubernetes.io/cce-load-balancer-internal-vpc</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    service.beta.kubernetes.io/cce-load-balancer-internal-vpc: &quot;true&quot;</code></pre>
 <div class="tab-label">
 <p>Tencent Cloud</p>
 </div>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.kubernetes.io/qcloud-loadbalancer-internal-subnetid</span><span class="kw">:</span><span class="at"> subnet-xxxxx</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  annotations:
+    service.kubernetes.io/qcloud-loadbalancer-internal-subnetid: subnet-xxxxx</code></pre>
 <div class="tab-label">
 <p>Alibaba Cloud</p>
 </div>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;intranet&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  annotations:
+    service.beta.kubernetes.io/alibaba-cloud-loadbalancer-address-type: &quot;intranet&quot;</code></pre>
 <div class="tab-label">
 <p>OCI</p>
 </div>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service.beta.kubernetes.io/oci-load-balancer-internal</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">metadata:
+  name: my-service
+  annotations:
+    service.beta.kubernetes.io/oci-load-balancer-internal: true</code></pre>
 </div>
 <h3 id="externalname"><code>type: ExternalName</code></h3>
 <p>Services of type ExternalName map a Service to a DNS name, not to a
@@ -998,15 +997,14 @@ typical selector such as <code>my-service</code> or
 <p>This Service definition, for example, maps the
 <code>my-service</code> Service in the <code>prod</code> namespace to
 <code>my.database.example.com</code>:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> prod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ExternalName</span></span>
-<span class="at">  </span><span class="fu">externalName</span><span class="kw">:</span><span class="at"> my.database.example.com</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: prod
+spec:
+  type: ExternalName
+  externalName: my.database.example.com</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1102,7 +1100,7 @@ upper-cased and dashes are converted to underscores.</p>
 <p>For example, the Service <code>redis-primary</code> which exposes TCP
 port 6379 and has been allocated cluster IP address 10.0.0.11, produces
 the following environment variables:</p>
-<pre class="shell"><code>REDIS_PRIMARY_SERVICE_HOST=10.0.0.11
+<pre class="shell"><code class="language-shell">REDIS_PRIMARY_SERVICE_HOST=10.0.0.11
 REDIS_PRIMARY_SERVICE_PORT=6379
 REDIS_PRIMARY_PORT=tcp://10.0.0.11:6379
 REDIS_PRIMARY_PORT_6379_TCP=tcp://10.0.0.11:6379
@@ -1229,21 +1227,20 @@ In the example below, the Service named <code>"my-service"</code> can be
 accessed by clients using TCP, on <code>"198.51.100.32:80"</code>
 (calculated from <code>.spec.externalIPs[]</code> and
 <code>.spec.ports[].port</code>).</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> MyApp</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
-<span class="at">      </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">49152</span></span>
-<span class="at">  </span><span class="fu">externalIPs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">198.51.100.32</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+spec:
+  selector:
+    app.kubernetes.io/name: MyApp
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 49152
+  externalIPs:
+    - 198.51.100.32</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1351,6 +1348,7 @@ API reference (legacy)</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1359,6 +1357,8 @@ API reference (legacy)</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

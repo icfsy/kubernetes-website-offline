@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -156,44 +171,43 @@ and you project Pod-level fields into the running container as files.
 Here is the manifest for the Pod:</p>
 <div class="code-sample">
 <p><code>pods/inject/dapi-volume.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubernetes-downwardapi-volume-example</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">zone</span><span class="kw">:</span><span class="at"> us-est-coast</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span><span class="at"> test-cluster1</span></span>
-<span class="at">    </span><span class="fu">rack</span><span class="kw">:</span><span class="at"> rack-22</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">build</span><span class="kw">:</span><span class="at"> two</span></span>
-<span class="at">    </span><span class="fu">builder</span><span class="kw">:</span><span class="at"> john-doe</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> client-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">while true; do</span></span>
-<span class="at">          if [[ -e /etc/podinfo/labels ]]; then</span></span>
-<span class="at">            echo -en &#39;\n\n&#39;; cat /etc/podinfo/labels; fi;</span></span>
-<span class="at">          if [[ -e /etc/podinfo/annotations ]]; then</span></span>
-<span class="at">            echo -en &#39;\n\n&#39;; cat /etc/podinfo/annotations; fi;</span></span>
-<span class="at">          sleep 5;</span></span>
-<span class="at">        done;</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> podinfo</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/podinfo</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> podinfo</span></span>
-<span class="at">      </span><span class="fu">downwardAPI</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;labels&quot;</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.labels</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;annotations&quot;</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.annotations</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes-downwardapi-volume-example
+  labels:
+    zone: us-est-coast
+    cluster: test-cluster1
+    rack: rack-22
+  annotations:
+    build: two
+    builder: john-doe
+spec:
+  containers:
+    - name: client-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [&quot;sh&quot;, &quot;-c&quot;]
+      args:
+      - while true; do
+          if [[ -e /etc/podinfo/labels ]]; then
+            echo -en &#39;\n\n&#39;; cat /etc/podinfo/labels; fi;
+          if [[ -e /etc/podinfo/annotations ]]; then
+            echo -en &#39;\n\n&#39;; cat /etc/podinfo/annotations; fi;
+          sleep 5;
+        done;
+      volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+  volumes:
+    - name: podinfo
+      downwardAPI:
+        items:
+          - path: &quot;labels&quot;
+            fieldRef:
+              fieldPath: metadata.labels
+          - path: &quot;annotations&quot;
+            fieldRef:
+              fieldPath: metadata.annotations</code></pre>
 </div>
 <p>In the manifest, you can see that the Pod has a
 <code>downwardAPI</code> Volume, and the container mounts the volume at
@@ -213,11 +227,11 @@ Pod's <code>annotations</code> field should be stored in a file named
 container in the Pod.</p>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/inject/dapi-volume.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/inject/dapi-volume.yaml</code></pre>
 <p>Verify that the container in the Pod is running:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>View the container's logs:</p>
-<pre class="shell"><code>kubectl logs kubernetes-downwardapi-volume-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs kubernetes-downwardapi-volume-example</code></pre>
 <p>The output shows the contents of the <code>labels</code> file and the
 <code>annotations</code> file:</p>
 <pre><code>cluster=&quot;test-cluster1&quot;
@@ -227,18 +241,18 @@ zone=&quot;us-est-coast&quot;
 build=&quot;two&quot;
 builder=&quot;john-doe&quot;</code></pre>
 <p>Get a shell into the container that is running in your Pod:</p>
-<pre class="shell"><code>kubectl exec -it kubernetes-downwardapi-volume-example -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it kubernetes-downwardapi-volume-example -- sh</code></pre>
 <p>In your shell, view the <code>labels</code> file:</p>
-<pre class="shell"><code>/# cat /etc/podinfo/labels</code></pre>
+<pre class="shell"><code class="language-shell">/# cat /etc/podinfo/labels</code></pre>
 <p>The output shows that all of the Pod's labels have been written to
 the <code>labels</code> file:</p>
-<pre class="shell"><code>cluster=&quot;test-cluster1&quot;
+<pre class="shell"><code class="language-shell">cluster=&quot;test-cluster1&quot;
 rack=&quot;rack-22&quot;
 zone=&quot;us-est-coast&quot;</code></pre>
 <p>Similarly, view the <code>annotations</code> file:</p>
-<pre class="shell"><code>/# cat /etc/podinfo/annotations</code></pre>
+<pre class="shell"><code class="language-shell">/# cat /etc/podinfo/annotations</code></pre>
 <p>View the files in the <code>/etc/podinfo</code> directory:</p>
-<pre class="shell"><code>/# ls -laR /etc/podinfo</code></pre>
+<pre class="shell"><code class="language-shell">/# ls -laR /etc/podinfo</code></pre>
 <p>In the output, you can see that the <code>labels</code> and
 <code>annotations</code> files are in a temporary subdirectory: in this
 example, <code>..2982_06_02_21_47_53.299460680</code>. In the
@@ -268,7 +282,7 @@ href="../../concepts/storage/volumes.html#using-subpath">subPath</a> volume
 mount will not receive Downward API updates.</p>
 </div>
 <p>Exit the shell:</p>
-<pre class="shell"><code>/# exit</code></pre>
+<pre class="shell"><code class="language-shell">/# exit</code></pre>
 <h2 id="store-container-fields">Store container fields</h2>
 <p>The preceding exercise, you made Pod-level fields accessible using
 the downward API. In this next exercise, you are going to pass fields
@@ -278,63 +292,62 @@ rather than from the Pod overall. Here is a manifest for a Pod that
 again has just one container:</p>
 <div class="code-sample">
 <p><code>pods/inject/dapi-volume-resources.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubernetes-downwardapi-volume-example-2</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> client-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">while true; do</span></span>
-<span class="at">          echo -en &#39;\n&#39;;</span></span>
-<span class="at">          if [[ -e /etc/podinfo/cpu_limit ]]; then</span></span>
-<span class="at">            echo -en &#39;\n&#39;; cat /etc/podinfo/cpu_limit; fi;</span></span>
-<span class="at">          if [[ -e /etc/podinfo/cpu_request ]]; then</span></span>
-<span class="at">            echo -en &#39;\n&#39;; cat /etc/podinfo/cpu_request; fi;</span></span>
-<span class="at">          if [[ -e /etc/podinfo/mem_limit ]]; then</span></span>
-<span class="at">            echo -en &#39;\n&#39;; cat /etc/podinfo/mem_limit; fi;</span></span>
-<span class="at">          if [[ -e /etc/podinfo/mem_request ]]; then</span></span>
-<span class="at">            echo -en &#39;\n&#39;; cat /etc/podinfo/mem_request; fi;</span></span>
-<span class="at">          sleep 5;</span></span>
-<span class="at">        done;</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;32Mi&quot;</span></span>
-<span class="at">          </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;125m&quot;</span></span>
-<span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
-<span class="at">          </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> podinfo</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/podinfo</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> podinfo</span></span>
-<span class="at">      </span><span class="fu">downwardAPI</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cpu_limit&quot;</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> client-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> limits.cpu</span></span>
-<span class="at">              </span><span class="fu">divisor</span><span class="kw">:</span><span class="at"> 1m</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cpu_request&quot;</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> client-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> requests.cpu</span></span>
-<span class="at">              </span><span class="fu">divisor</span><span class="kw">:</span><span class="at"> 1m</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;mem_limit&quot;</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> client-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> limits.memory</span></span>
-<span class="at">              </span><span class="fu">divisor</span><span class="kw">:</span><span class="at"> 1Mi</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;mem_request&quot;</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> client-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> requests.memory</span></span>
-<span class="at">              </span><span class="fu">divisor</span><span class="kw">:</span><span class="at"> 1Mi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: kubernetes-downwardapi-volume-example-2
+spec:
+  containers:
+    - name: client-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [&quot;sh&quot;, &quot;-c&quot;]
+      args:
+      - while true; do
+          echo -en &#39;\n&#39;;
+          if [[ -e /etc/podinfo/cpu_limit ]]; then
+            echo -en &#39;\n&#39;; cat /etc/podinfo/cpu_limit; fi;
+          if [[ -e /etc/podinfo/cpu_request ]]; then
+            echo -en &#39;\n&#39;; cat /etc/podinfo/cpu_request; fi;
+          if [[ -e /etc/podinfo/mem_limit ]]; then
+            echo -en &#39;\n&#39;; cat /etc/podinfo/mem_limit; fi;
+          if [[ -e /etc/podinfo/mem_request ]]; then
+            echo -en &#39;\n&#39;; cat /etc/podinfo/mem_request; fi;
+          sleep 5;
+        done;
+      resources:
+        requests:
+          memory: &quot;32Mi&quot;
+          cpu: &quot;125m&quot;
+        limits:
+          memory: &quot;64Mi&quot;
+          cpu: &quot;250m&quot;
+      volumeMounts:
+        - name: podinfo
+          mountPath: /etc/podinfo
+  volumes:
+    - name: podinfo
+      downwardAPI:
+        items:
+          - path: &quot;cpu_limit&quot;
+            resourceFieldRef:
+              containerName: client-container
+              resource: limits.cpu
+              divisor: 1m
+          - path: &quot;cpu_request&quot;
+            resourceFieldRef:
+              containerName: client-container
+              resource: requests.cpu
+              divisor: 1m
+          - path: &quot;mem_limit&quot;
+            resourceFieldRef:
+              containerName: client-container
+              resource: limits.memory
+              divisor: 1Mi
+          - path: &quot;mem_request&quot;
+            resourceFieldRef:
+              containerName: client-container
+              resource: requests.memory
+              divisor: 1Mi</code></pre>
 </div>
 <p>In the manifest, you can see that the Pod has a <a
 href="../../concepts/storage/volumes.html#downwardapi"><code>downwardAPI</code>
@@ -350,11 +363,11 @@ optional and has the default value of <code>1</code>. A divisor of 1
 means cores for <code>cpu</code> resources, or bytes for
 <code>memory</code> resources.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/inject/dapi-volume-resources.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/inject/dapi-volume-resources.yaml</code></pre>
 <p>Get a shell into the container that is running in your Pod:</p>
-<pre class="shell"><code>kubectl exec -it kubernetes-downwardapi-volume-example-2 -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it kubernetes-downwardapi-volume-example-2 -- sh</code></pre>
 <p>In your shell, view the <code>cpu_limit</code> file:</p>
-<pre class="shell"><code># Run this in a shell inside the container
+<pre class="shell"><code class="language-shell"># Run this in a shell inside the container
 cat /etc/podinfo/cpu_limit</code></pre>
 <p>You can use similar commands to view the <code>cpu_request</code>,
 <code>mem_limit</code> and <code>mem_request</code> files.</p>
@@ -456,6 +469,7 @@ format.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -464,6 +478,8 @@ format.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

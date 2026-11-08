@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -148,7 +163,7 @@ guide</a>, or someone else set up the cluster and provided you with
 credentials and a location.</p>
 <p>Check the location and credentials that kubectl knows about with this
 command:</p>
-<pre class="shell"><code>kubectl config view</code></pre>
+<pre class="shell"><code class="language-shell">kubectl config view</code></pre>
 <p>Many of the <a
 href="https://github.com/kubernetes/examples/tree/master/">examples</a>
 provide an introduction to using kubectl. Complete documentation is
@@ -176,31 +191,30 @@ proxy mode.</p>
 reverse proxy. It handles locating the API server and
 authenticating.</p>
 <p>Run it like this:</p>
-<pre class="shell"><code>kubectl proxy --port=8080 &amp;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl proxy --port=8080 &amp;</code></pre>
 <p>See <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#proxy">kubectl
 proxy</a> for more details.</p>
 <p>Then you can explore the API with curl, wget, or a browser, like
 so:</p>
-<pre class="shell"><code>curl http://localhost:8080/api/</code></pre>
+<pre class="shell"><code class="language-shell">curl http://localhost:8080/api/</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;versions&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="st">&quot;v1&quot;</span></span>
-  <span class="ot">]</span><span class="fu">,</span></span>
-  <span class="dt">&quot;serverAddressByClientCIDRs&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;clientCIDR&quot;</span><span class="fu">:</span> <span class="st">&quot;0.0.0.0/0&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;serverAddress&quot;</span><span class="fu">:</span> <span class="st">&quot;10.0.1.149:443&quot;</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;versions&quot;: [
+    &quot;v1&quot;
+  ],
+  &quot;serverAddressByClientCIDRs&quot;: [
+    {
+      &quot;clientCIDR&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;serverAddress&quot;: &quot;10.0.1.149:443&quot;
+    }
+  ]
+}</code></pre>
 <h4 id="without-kubectl-proxy">Without kubectl proxy</h4>
 <p>It is possible to avoid using kubectl proxy by passing an
 authentication token directly to the API server, like this:</p>
 <p>Using <code>grep/cut</code> approach:</p>
-<pre class="shell"><code># Check all possible clusters, as your .KUBECONFIG may have multiple contexts:
+<pre class="shell"><code class="language-shell"># Check all possible clusters, as your .KUBECONFIG may have multiple contexts:
 kubectl config view -o jsonpath=&#39;{&quot;Cluster name\tServer\n&quot;}{range .clusters[*]}{.name}{&quot;\t&quot;}{.cluster.server}{&quot;\n&quot;}{end}&#39;
 
 # Select name of cluster you want to interact with from above output:
@@ -232,19 +246,18 @@ TOKEN=$(kubectl get secret default-token -o jsonpath=&#39;{.data.token}&#39; | b
 # Explore the API with TOKEN
 curl -X GET $APISERVER/api --header &quot;Authorization: Bearer $TOKEN&quot; --insecure</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;APIVersions&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;versions&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="st">&quot;v1&quot;</span></span>
-  <span class="ot">]</span><span class="fu">,</span></span>
-  <span class="dt">&quot;serverAddressByClientCIDRs&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;clientCIDR&quot;</span><span class="fu">:</span> <span class="st">&quot;0.0.0.0/0&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;serverAddress&quot;</span><span class="fu">:</span> <span class="st">&quot;10.0.1.149:443&quot;</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;APIVersions&quot;,
+  &quot;versions&quot;: [
+    &quot;v1&quot;
+  ],
+  &quot;serverAddressByClientCIDRs&quot;: [
+    {
+      &quot;clientCIDR&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;serverAddress&quot;: &quot;10.0.1.149:443&quot;
+    }
+  ]
+}</code></pre>
 <p>The above example uses the <code>--insecure</code> flag. This leaves
 it subject to MITM attacks. When kubectl accesses the cluster it uses a
 stored root certificate and client certificates to access the server.
@@ -291,7 +304,7 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file</a> as the kubectl CLI does to locate and authenticate to the API
 server. See this <a
 href="https://git.k8s.io/client-go/examples/out-of-cluster-client-configuration/main.go">example</a>:</p>
-<pre class="golang"><code>package main
+<pre class="golang"><code class="language-golang">package main
 
 import (
   &quot;context&quot;
@@ -325,21 +338,20 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file</a> as the kubectl CLI does to locate and authenticate to the API
 server. See this <a
 href="https://github.com/kubernetes-client/python/blob/master/examples/out_of_cluster_config.py">example</a>:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode python"><code class="sourceCode python"><span class="im">from</span> kubernetes <span class="im">import</span> client, config</span>
-</span>
-config.load_kube_config()</span>
-</span>
-v1<span class="op">=</span>client.CoreV1Api()</span>
-<span class="bu">print</span>(<span class="st">&quot;Listing pods with their IPs:&quot;</span>)</span>
-ret <span class="op">=</span> v1.list_pod_for_all_namespaces(watch<span class="op">=</span><span class="va">False</span>)</span>
-<span class="cf">for</span> i <span class="kw">in</span> ret.items:</span>
-    <span class="bu">print</span>(<span class="st">&quot;</span><span class="sc">%s</span><span class="ch">\t</span><span class="sc">%s</span><span class="ch">\t</span><span class="sc">%s</span><span class="st">&quot;</span> <span class="op">%</span> (i.status.pod_ip, i.metadata.namespace, i.metadata.name))</span></code></pre></div>
+<pre class="python"><code class="language-python">from kubernetes import client, config
+
+config.load_kube_config()
+
+v1=client.CoreV1Api()
+print(&quot;Listing pods with their IPs:&quot;)
+ret = v1.list_pod_for_all_namespaces(watch=False)
+for i in ret.items:
+    print(&quot;%s\t%s\t%s&quot; % (i.status.pod_ip, i.metadata.namespace, i.metadata.name))</code></pre>
 <h4 id="java-client">Java client</h4>
 <p>To install the <a
 href="https://github.com/kubernetes-client/java">Java Client</a>,
 run:</p>
-<pre class="shell"><code># Clone java library
+<pre class="shell"><code class="language-shell"># Clone java library
 git clone --recursive https://github.com/kubernetes-client/java
 
 # Installing project artifacts, POM etc:
@@ -353,51 +365,50 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file</a> as the kubectl CLI does to locate and authenticate to the API
 server. See this <a
 href="https://github.com/kubernetes-client/java/blob/master/examples/examples-release-latest/src/main/java/io/kubernetes/client/examples/KubeConfigFileClientExample.java">example</a>:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode java"><code class="sourceCode java"><span class="kw">package</span><span class="im"> io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">examples</span><span class="op">;</span></span>
-</span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">ApiClient</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">ApiException</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">Configuration</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">apis</span><span class="op">.</span><span class="im">CoreV1Api</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">models</span><span class="op">.</span><span class="im">V1Pod</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">models</span><span class="op">.</span><span class="im">V1PodList</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">ClientBuilder</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">KubeConfig</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">io</span><span class="op">.</span><span class="im">FileReader</span><span class="op">;</span></span>
-<span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">io</span><span class="op">.</span><span class="im">IOException</span><span class="op">;</span></span>
-</span>
-<span class="co">/**</span></span>
- <span class="co">*</span> A simple example of how to use the Java API from an application outside a kubernetes cluster</span>
- <span class="co">*</span></span>
- <span class="co">*</span> <span class="dt">&lt;</span><span class="kw">p</span><span class="dt">&gt;</span>Easiest way to run this<span class="co">:</span> mvn exec<span class="co">:</span>java</span>
- <span class="co">*</span> <span class="co">-</span>Dexec<span class="co">.</span>mainClass<span class="co">=&quot;</span>io<span class="co">.</span>kubernetes<span class="co">.</span>client<span class="co">.</span>examples<span class="co">.</span>KubeConfigFileClientExample<span class="co">&quot;</span></span>
- <span class="co">*</span></span>
- <span class="co">*/</span></span>
-<span class="kw">public</span> <span class="kw">class</span> KubeConfigFileClientExample <span class="op">{</span></span>
-  <span class="kw">public</span> <span class="dt">static</span> <span class="dt">void</span> <span class="fu">main</span><span class="op">(</span><span class="bu">String</span><span class="op">[]</span> args<span class="op">)</span> <span class="kw">throws</span> <span class="bu">IOException</span><span class="op">,</span> ApiException <span class="op">{</span></span>
-</span>
-    <span class="co">// file path to your KubeConfig</span></span>
-    <span class="bu">String</span> kubeConfigPath <span class="op">=</span> <span class="st">&quot;~/.kube/config&quot;</span><span class="op">;</span></span>
-</span>
-    <span class="co">// loading the out-of-cluster config, a kubeconfig from file-system</span></span>
-    ApiClient client <span class="op">=</span></span>
-        ClientBuilder<span class="op">.</span><span class="fu">kubeconfig</span><span class="op">(</span>KubeConfig<span class="op">.</span><span class="fu">loadKubeConfig</span><span class="op">(</span><span class="kw">new</span> <span class="bu">FileReader</span><span class="op">(</span>kubeConfigPath<span class="op">))).</span><span class="fu">build</span><span class="op">();</span></span>
-</span>
-    <span class="co">// set the global default api-client to the in-cluster one from above</span></span>
-    <span class="bu">Configuration</span><span class="op">.</span><span class="fu">setDefaultApiClient</span><span class="op">(</span>client<span class="op">);</span></span>
-</span>
-    <span class="co">// the CoreV1Api loads default api-client from global configuration.</span></span>
-    CoreV1Api api <span class="op">=</span> <span class="kw">new</span> <span class="fu">CoreV1Api</span><span class="op">();</span></span>
-</span>
-    <span class="co">// invokes the CoreV1Api client</span></span>
-    V1PodList list <span class="op">=</span> api<span class="op">.</span><span class="fu">listPodForAllNamespaces</span><span class="op">(</span><span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">);</span></span>
-    <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span><span class="st">&quot;Listing all pods: &quot;</span><span class="op">);</span></span>
-    <span class="cf">for</span> <span class="op">(</span>V1Pod item <span class="op">:</span> list<span class="op">.</span><span class="fu">getItems</span><span class="op">())</span> <span class="op">{</span></span>
-      <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span>item<span class="op">.</span><span class="fu">getMetadata</span><span class="op">().</span><span class="fu">getName</span><span class="op">());</span></span>
-    <span class="op">}</span></span>
-  <span class="op">}</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="java"><code class="language-java">package io.kubernetes.client.examples;
+
+import io.kubernetes.client.ApiClient;
+import io.kubernetes.client.ApiException;
+import io.kubernetes.client.Configuration;
+import io.kubernetes.client.apis.CoreV1Api;
+import io.kubernetes.client.models.V1Pod;
+import io.kubernetes.client.models.V1PodList;
+import io.kubernetes.client.util.ClientBuilder;
+import io.kubernetes.client.util.KubeConfig;
+import java.io.FileReader;
+import java.io.IOException;
+
+/**
+ * A simple example of how to use the Java API from an application outside a kubernetes cluster
+ *
+ * &lt;p&gt;Easiest way to run this: mvn exec:java
+ * -Dexec.mainClass=&quot;io.kubernetes.client.examples.KubeConfigFileClientExample&quot;
+ *
+ */
+public class KubeConfigFileClientExample {
+  public static void main(String[] args) throws IOException, ApiException {
+
+    // file path to your KubeConfig
+    String kubeConfigPath = &quot;~/.kube/config&quot;;
+
+    // loading the out-of-cluster config, a kubeconfig from file-system
+    ApiClient client =
+        ClientBuilder.kubeconfig(KubeConfig.loadKubeConfig(new FileReader(kubeConfigPath))).build();
+
+    // set the global default api-client to the in-cluster one from above
+    Configuration.setDefaultApiClient(client);
+
+    // the CoreV1Api loads default api-client from global configuration.
+    CoreV1Api api = new CoreV1Api();
+
+    // invokes the CoreV1Api client
+    V1PodList list = api.listPodForAllNamespaces(null, null, null, null, null, null, null, null, null);
+    System.out.println(&quot;Listing all pods: &quot;);
+    for (V1Pod item : list.getItems()) {
+      System.out.println(item.getMetadata().getName());
+    }
+  }
+}</code></pre>
 <h4 id="dotnet-client">dotnet client</h4>
 <p>To use <a target="_blank" rel="noopener" href="https://github.com/kubernetes-client/csharp">dotnet
 client</a>, run the following command:
@@ -411,32 +422,31 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file</a> as the kubectl CLI does to locate and authenticate to the API
 server. See this <a
 href="https://github.com/kubernetes-client/csharp/blob/master/examples/simple/PodList.cs">example</a>:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">using</span> System<span class="op">;</span></span>
-<span class="kw">using</span> k8s<span class="op">;</span></span>
-</span>
-<span class="kw">namespace</span> simple</span>
-<span class="op">{</span></span>
-    <span class="kw">internal</span> <span class="kw">class</span> PodList</span>
-    <span class="op">{</span></span>
-        <span class="kw">private</span> <span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span><span class="op">(</span><span class="dt">string</span><span class="op">[]</span> args<span class="op">)</span></span>
-        <span class="op">{</span></span>
-            <span class="dt">var</span> config <span class="op">=</span> KubernetesClientConfiguration<span class="op">.</span><span class="fu">BuildDefaultConfig</span><span class="op">();</span></span>
-            IKubernetes client <span class="op">=</span> <span class="kw">new</span> <span class="fu">Kubernetes</span><span class="op">(</span>config<span class="op">);</span></span>
-            Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="st">&quot;Starting Request!&quot;</span><span class="op">);</span></span>
-</span>
-            <span class="dt">var</span> list <span class="op">=</span> client<span class="op">.</span><span class="fu">ListNamespacedPod</span><span class="op">(</span><span class="st">&quot;default&quot;</span><span class="op">);</span></span>
-            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> item <span class="kw">in</span> list<span class="op">.</span><span class="fu">Items</span><span class="op">)</span></span>
-            <span class="op">{</span></span>
-                Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span>item<span class="op">.</span><span class="fu">Metadata</span><span class="op">.</span><span class="fu">Name</span><span class="op">);</span></span>
-            <span class="op">}</span></span>
-            <span class="kw">if</span> <span class="op">(</span>list<span class="op">.</span><span class="fu">Items</span><span class="op">.</span><span class="fu">Count</span> <span class="op">==</span> <span class="dv">0</span><span class="op">)</span></span>
-            <span class="op">{</span></span>
-                Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="st">&quot;Empty!&quot;</span><span class="op">);</span></span>
-            <span class="op">}</span></span>
-        <span class="op">}</span></span>
-    <span class="op">}</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="csharp"><code class="language-csharp">using System;
+using k8s;
+
+namespace simple
+{
+    internal class PodList
+    {
+        private static void Main(string[] args)
+        {
+            var config = KubernetesClientConfiguration.BuildDefaultConfig();
+            IKubernetes client = new Kubernetes(config);
+            Console.WriteLine(&quot;Starting Request!&quot;);
+
+            var list = client.ListNamespacedPod(&quot;default&quot;);
+            foreach (var item in list.Items)
+            {
+                Console.WriteLine(item.Metadata.Name);
+            }
+            if (list.Items.Count == 0)
+            {
+                Console.WriteLine(&quot;Empty!&quot;);
+            }
+        }
+    }
+}</code></pre>
 <h4 id="javascript-client">JavaScript client</h4>
 <p>To install <a
 href="https://github.com/kubernetes-client/javascript">JavaScript
@@ -449,17 +459,16 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file</a> as the kubectl CLI does to locate and authenticate to the API
 server. See this <a
 href="https://github.com/kubernetes-client/javascript/blob/master/examples/example.js">example</a>:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">const</span> k8s <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;@kubernetes/client-node&#39;</span>)<span class="op">;</span></span>
-</span>
-<span class="kw">const</span> kc <span class="op">=</span> <span class="kw">new</span> k8s<span class="op">.</span><span class="fu">KubeConfig</span>()<span class="op">;</span></span>
-kc<span class="op">.</span><span class="fu">loadFromDefault</span>()<span class="op">;</span></span>
-</span>
-<span class="kw">const</span> k8sApi <span class="op">=</span> kc<span class="op">.</span><span class="fu">makeApiClient</span>(k8s<span class="op">.</span><span class="at">CoreV1Api</span>)<span class="op">;</span></span>
-</span>
-k8sApi<span class="op">.</span><span class="fu">listNamespacedPod</span>({ <span class="dt">namespace</span><span class="op">:</span> <span class="st">&#39;default&#39;</span> })<span class="op">.</span><span class="fu">then</span>((res) <span class="kw">=&gt;</span> {</span>
-    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(res)<span class="op">;</span></span>
-})<span class="op">;</span></span></code></pre></div>
+<pre class="javascript"><code class="language-javascript">const k8s = require(&#39;@kubernetes/client-node&#39;);
+
+const kc = new k8s.KubeConfig();
+kc.loadFromDefault();
+
+const k8sApi = kc.makeApiClient(k8s.CoreV1Api);
+
+k8sApi.listNamespacedPod({ namespace: &#39;default&#39; }).then((res) =&gt; {
+    console.log(res);
+});</code></pre>
 <h4 id="haskell-client">Haskell client</h4>
 <p>See <a
 href="https://github.com/kubernetes-client/haskell/releases">https://github.com/kubernetes-client/haskell/releases</a>
@@ -470,16 +479,15 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file</a> as the kubectl CLI does to locate and authenticate to the API
 server. See this <a
 href="https://github.com/kubernetes-client/haskell/blob/master/kubernetes-client/example/App.hs">example</a>:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">exampleWithKubeConfig ::</span> <span class="dt">IO</span> ()</span>
-exampleWithKubeConfig <span class="ot">=</span> <span class="kw">do</span></span>
-    oidcCache <span class="ot">&lt;-</span> atomically <span class="op">$</span> newTVar <span class="op">$</span> Map.fromList []</span>
-    (mgr, kcfg) <span class="ot">&lt;-</span> mkKubeClientConfig oidcCache <span class="op">$</span> <span class="dt">KubeConfigFile</span> <span class="st">&quot;/path/to/kubeconfig&quot;</span></span>
-    dispatchMime</span>
-            mgr</span>
-            kcfg</span>
-            (CoreV1.listPodForAllNamespaces (<span class="dt">Accept</span> <span class="dt">MimeJSON</span>))</span>
-        <span class="op">&gt;&gt;=</span> <span class="fu">print</span></span></code></pre></div>
+<pre class="haskell"><code class="language-haskell">exampleWithKubeConfig :: IO ()
+exampleWithKubeConfig = do
+    oidcCache &lt;- atomically $ newTVar $ Map.fromList []
+    (mgr, kcfg) &lt;- mkKubeClientConfig oidcCache $ KubeConfigFile &quot;/path/to/kubeconfig&quot;
+    dispatchMime
+            mgr
+            kcfg
+            (CoreV1.listPodForAllNamespaces (Accept MimeJSON))
+        &gt;&gt;= print</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li><a
@@ -551,6 +559,7 @@ Kubernetes API from a Pod</a>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -559,6 +568,8 @@ Kubernetes API from a Pod</a>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

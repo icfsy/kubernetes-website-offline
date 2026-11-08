@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -152,35 +167,34 @@ variables from files, projecting these values into the running
 container.</p>
 <div class="code-sample">
 <p><code>pods/inject/envars-file-container.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> envfile-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> setup-envfile</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at">  nginx</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;echo </span><span class="sc">\&quot;</span><span class="st">DB_ADDRESS=</span><span class="er">\</span><span class="st">&#39;address</span><span class="er">\</span><span class="st">&#39;</span><span class="sc">\n</span><span class="st">REST_ENDPOINT=</span><span class="er">\</span><span class="st">&#39;endpoint</span><span class="er">\</span><span class="st">&#39;</span><span class="sc">\&quot;</span><span class="st"> &gt; /data/config.env&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> use-envfile</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> DB_ADDRESS</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fileKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">path</span><span class="kw">:</span><span class="at"> config.env</span></span>
-<span class="at">              </span><span class="fu">volumeName</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> DB_ADDRESS</span></span>
-<span class="at">              </span><span class="fu">optional</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">      </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: envfile-test-pod
+spec:
+  initContainers:
+    - name: setup-envfile
+      image:  nginx
+      command: [&#39;sh&#39;, &#39;-c&#39;, &quot;echo \&quot;DB_ADDRESS=\&#39;address\&#39;\nREST_ENDPOINT=\&#39;endpoint\&#39;\&quot; &gt; /data/config.env&quot;]
+      volumeMounts:
+        - name: config
+          mountPath: /data
+  containers:
+    - name: use-envfile
+      image: nginx
+      command: [ &quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot; ]
+      env:
+        - name: DB_ADDRESS
+          valueFrom:
+            fileKeyRef:
+              path: config.env
+              volumeName: config
+              key: DB_ADDRESS
+              optional: false
+  restartPolicy: Never
+  volumes:
+    - name: config
+      emptyDir: {}</code></pre>
 </div>
 <p>In this manifest, you can see the <code>initContainer</code> mounts
 an <code>emptyDir</code> volume and writes environment variables to a
@@ -212,12 +226,12 @@ environment variables to containers through this feature is not
 considered a security best practice.</p>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/inject/envars-file-container.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/inject/envars-file-container.yaml</code></pre>
 <p>Verify that the container in the Pod is running:</p>
-<pre class="shell"><code># If the new Pod isn&#39;t yet healthy, rerun this command a few times.
+<pre class="shell"><code class="language-shell"># If the new Pod isn&#39;t yet healthy, rerun this command a few times.
 kubectl get pods</code></pre>
 <p>Check container logs for environment variables:</p>
-<pre class="shell"><code>kubectl logs envfile-test-pod -c use-envfile | grep DB_ADDRESS</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs envfile-test-pod -c use-envfile | grep DB_ADDRESS</code></pre>
 <p>The output shows the values of selected environment variables:</p>
 <pre><code>DB_ADDRESS=address</code></pre>
 <h2 id="env-file-syntax">Env file syntax</h2>
@@ -353,6 +367,7 @@ Pod Information to Containers Through Environment Variables</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -361,6 +376,8 @@ Pod Information to Containers Through Environment Variables</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

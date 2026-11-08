@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -144,24 +159,23 @@ node score.</p>
 <code>NodeResourcesFit</code> plugin, use a <a
 href="../../reference/scheduling/config.html">scheduler configuration</a>
 similar to the following:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">pluginConfig</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">scoringStrategy</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intel.com/foo</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intel.com/bar</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> MostAllocated</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NodeResourcesFit</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+- pluginConfig:
+  - args:
+      scoringStrategy:
+        resources:
+        - name: cpu
+          weight: 1
+        - name: memory
+          weight: 1
+        - name: intel.com/foo
+          weight: 3
+        - name: intel.com/bar
+          weight: 3
+        type: MostAllocated
+    name: NodeResourcesFit</code></pre>
 <p>With this configuration, nodes are scored using a weighted average of
 utilization across all four resources. Because
 <code>intel.com/foo</code> and <code>intel.com/bar</code> each carry a
@@ -197,26 +211,25 @@ the resource to be considered during scoring and its corresponding
 for extended resources <code>intel.com/foo</code> and
 <code>intel.com/bar</code> using the
 <code>requestedToCapacityRatio</code> field.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">pluginConfig</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">scoringStrategy</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intel.com/foo</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intel.com/bar</span></span>
-<span class="at">          </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">        </span><span class="fu">requestedToCapacityRatio</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">shape</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">utilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">            </span><span class="fu">score</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">utilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">            </span><span class="fu">score</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RequestedToCapacityRatio</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NodeResourcesFit</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+- pluginConfig:
+  - args:
+      scoringStrategy:
+        resources:
+        - name: intel.com/foo
+          weight: 3
+        - name: intel.com/bar
+          weight: 3
+        requestedToCapacityRatio:
+          shape:
+          - utilization: 0
+            score: 0
+          - utilization: 100
+            score: 10
+        type: RequestedToCapacityRatio
+    name: NodeResourcesFit</code></pre>
 <p>In this example, only the extended resources
 <code>intel.com/foo</code> and <code>intel.com/bar</code> are listed in
 <code>resources</code>. The <code>NodeResourcesFit</code> plugin
@@ -241,39 +254,35 @@ href="../../reference/config-api/kube-scheduler-config.v1.html#kubescheduler-con
 <h3 id="tuning-the-score-function">Tuning the score function</h3>
 <p><code>shape</code> is used to specify the behavior of the
 <code>RequestedToCapacityRatio</code> function.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">shape</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">utilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">    </span><span class="fu">score</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">utilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">    </span><span class="fu">score</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">shape:
+  - utilization: 0
+    score: 0
+  - utilization: 100
+    score: 10</code></pre>
 <p>The above arguments give the node a <code>score</code> of 0 if
 <code>utilization</code> is 0% and 10 for <code>utilization</code> 100%,
 thus enabling bin packing behavior. To enable least requested the score
 value must be reversed as follows.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">shape</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">utilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">    </span><span class="fu">score</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">utilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">    </span><span class="fu">score</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">shape:
+  - utilization: 0
+    score: 10
+  - utilization: 100
+    score: 0</code></pre>
 <p><code>resources</code> is an optional parameter which defaults
 to:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">    </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory</span></span>
-<span class="at">    </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">resources:
+  - name: cpu
+    weight: 1
+  - name: memory
+    weight: 1</code></pre>
 <p>It can be used to add extended resources as follows:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intel.com/foo</span></span>
-<span class="at">    </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">    </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory</span></span>
-<span class="at">    </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">resources:
+  - name: intel.com/foo
+    weight: 5
+  - name: cpu
+    weight: 3
+  - name: memory
+    weight: 1</code></pre>
 <p>The <code>weight</code> parameter is optional and is set to 1 if not
 specified. Also, the <code>weight</code> cannot be set to a negative
 value.</p>
@@ -428,6 +437,7 @@ configuration</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -436,6 +446,8 @@ configuration</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

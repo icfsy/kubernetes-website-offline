@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -144,46 +159,45 @@ a service for an application running in five pods</h2>
 <li><p>Run a Hello World application in your cluster:</p>
 <div class="code-sample">
 <p><code>service/load-balancer-example.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> load-balancer-example</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello-world</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> load-balancer-example</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> load-balancer-example</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello-world</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: load-balancer-example
+  name: hello-world
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: load-balancer-example
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: load-balancer-example
+    spec:
+      containers:
+      - image: gcr.io/google-samples/hello-app:2.0
+        name: hello-world
+        ports:
+        - containerPort: 8080</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/service/load-balancer-example.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/service/load-balancer-example.yaml</code></pre>
 <p>The preceding command creates a <a class="glossary-term" href="../../reference/glossary.html#term-deployment" title="Glossary: deployment">Deployment</a> and an associated <span
 class="glossary-term" data-term="replica-set">ReplicaSet</span>. The
 ReplicaSet has five <a class="glossary-term" href="../../reference/glossary.html#term-pod" title="Glossary: pod">Pods</a> each of which runs the Hello World
 application.</p></li>
 <li><p>Display information about the Deployment:</p>
-<pre class="shell"><code>kubectl get deployments hello-world
+<pre class="shell"><code class="language-shell">kubectl get deployments hello-world
 kubectl describe deployments hello-world</code></pre></li>
 <li><p>Display information about your ReplicaSet objects:</p>
-<pre class="shell"><code>kubectl get replicasets
+<pre class="shell"><code class="language-shell">kubectl get replicasets
 kubectl describe replicasets</code></pre></li>
 <li><p>Create a Service object that exposes the deployment:</p>
-<pre class="shell"><code>kubectl expose deployment hello-world --type=LoadBalancer --name=my-service</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl expose deployment hello-world --type=LoadBalancer --name=my-service</code></pre></li>
 <li><p>Display information about the Service:</p>
-<pre class="shell"><code>kubectl get services my-service</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get services my-service</code></pre>
 <p>The output is similar to:</p>
-<pre class="console"><code>NAME         TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)    AGE
+<pre class="console"><code class="language-console">NAME         TYPE           CLUSTER-IP     EXTERNAL-IP      PORT(S)    AGE
 my-service   LoadBalancer   10.3.245.137   104.198.205.71   8080/TCP   54s</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
@@ -204,9 +218,9 @@ details.</p>
 minute and enter the same command again.</p>
 </div></li>
 <li><p>Display detailed information about the Service:</p>
-<pre class="shell"><code>kubectl describe services my-service</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe services my-service</code></pre>
 <p>The output is similar to:</p>
-<pre class="console"><code>Name:           my-service
+<pre class="console"><code class="language-console">Name:           my-service
 Namespace:      default
 Labels:         app.kubernetes.io/name=load-balancer-example
 Annotations:    &lt;none&gt;
@@ -229,9 +243,9 @@ of <code>Port</code> and <code>NodePort</code>. In this example, the
 endpoints: 10.0.0.6:8080,10.0.1.6:8080,10.0.1.7:8080 + 2 more. These are
 internal addresses of the pods that are running the Hello World
 application. To verify these are pod addresses, enter this command:</p>
-<pre class="shell"><code>kubectl get pods --output=wide</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods --output=wide</code></pre>
 <p>The output is similar to:</p>
-<pre class="console"><code>NAME                         ...  IP         NODE
+<pre class="console"><code class="language-console">NAME                         ...  IP         NODE
 hello-world-2895499144-1jaz9 ...  10.0.1.6   gke-cluster-1-default-pool-e0b8d269-1afc
 hello-world-2895499144-2e5uh ...  10.0.1.8   gke-cluster-1-default-pool-e0b8d269-1afc
 hello-world-2895499144-9m4h1 ...  10.0.0.6   gke-cluster-1-default-pool-e0b8d269-5v7a
@@ -239,7 +253,7 @@ hello-world-2895499144-o4z13 ...  10.0.1.7   gke-cluster-1-default-pool-e0b8d269
 hello-world-2895499144-segjf ...  10.0.2.5   gke-cluster-1-default-pool-e0b8d269-cpuc</code></pre></li>
 <li><p>Use the external IP address (<code>LoadBalancer Ingress</code>)
 to access the Hello World application:</p>
-<pre class="shell"><code>curl http://&lt;external-ip&gt;:&lt;port&gt;</code></pre>
+<pre class="shell"><code class="language-shell">curl http://&lt;external-ip&gt;:&lt;port&gt;</code></pre>
 <p>where <code>&lt;external-ip&gt;</code> is the external IP
 address (<code>LoadBalancer Ingress</code>) of your Service, and
 <code>&lt;port&gt;</code> is the value of <code>Port</code> in
@@ -247,16 +261,16 @@ your Service description. If you are using minikube, typing
 <code>minikube service my-service</code> will automatically open the
 Hello World application in a browser.</p>
 <p>The response to a successful request is a hello message:</p>
-<pre class="console"><code>Hello, world!
+<pre class="console"><code class="language-console">Hello, world!
 Version: 2.0.0
 Hostname: 0bd46b45f32f</code></pre></li>
 </ol>
 <h2 id="cleaning-up">Cleaning up</h2>
 <p>To delete the Service, enter this command:</p>
-<pre class="shell"><code>kubectl delete services my-service</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete services my-service</code></pre>
 <p>To delete the Deployment, the ReplicaSet, and the Pods that are
 running the Hello World application, enter this command:</p>
-<pre class="shell"><code>kubectl delete deployment hello-world</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployment hello-world</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <p>Learn more about <a
 href="../services/connect-applications-service.html">connecting
@@ -328,6 +342,7 @@ versions in production.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -336,6 +351,8 @@ versions in production.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

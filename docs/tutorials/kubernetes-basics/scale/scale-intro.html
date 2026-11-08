@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -169,7 +184,7 @@ href="../expose/expose-intro.html">the
 previous section</a>, first delete that Service and then run the
 following command to create a new Service with its <code>type</code> set
 to <code>LoadBalancer</code>:</p>
-<pre class="shell"><code>kubectl expose deployment/kubernetes-bootcamp --type=&quot;LoadBalancer&quot; --port 8080</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment/kubernetes-bootcamp --type=&quot;LoadBalancer&quot; --port 8080</code></pre>
 </div>
 <h2 id="scaling-overview">Scaling overview</h2>
 <div class="carousel">
@@ -205,7 +220,7 @@ our application.</p>
 <h3 id="scaling-a-deployment">Scaling a Deployment</h3>
 <p>To list your Deployments, use the <code>get deployments</code>
 subcommand:</p>
-<pre class="shell"><code>kubectl get deployments</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployments</code></pre>
 <p>The output should be similar to:</p>
 <pre><code>NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
 kubernetes-bootcamp   1/1     1            1           11m</code></pre>
@@ -222,7 +237,7 @@ available to your users.</li>
 been running.</li>
 </ul>
 <p>To see the ReplicaSet created by the Deployment, run:</p>
-<pre class="shell"><code>kubectl get rs</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get rs</code></pre>
 <p>Notice that the name of the ReplicaSet is always formatted as <span
 style="white-space:nowrap">[DEPLOYMENT-NAME]-[RANDOM-STRING]</span>. The
 random string is randomly generated and uses the pod-template-hash as a
@@ -238,31 +253,31 @@ running.</li>
 <p>Next, let’s scale the Deployment to 4 replicas. We’ll use the
 <code>kubectl scale</code> command, followed by the Deployment type,
 name and desired number of instances:</p>
-<pre class="shell"><code>kubectl scale deployments/kubernetes-bootcamp --replicas=4</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployments/kubernetes-bootcamp --replicas=4</code></pre>
 <p>To list your Deployments once again, use
 <code>get deployments</code>:</p>
-<pre class="shell"><code>kubectl get deployments</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployments</code></pre>
 <p>The change was applied, and we have 4 instances of the application
 available. Next, let’s check if the number of Pods changed:</p>
-<pre class="shell"><code>kubectl get pods -o wide</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -o wide</code></pre>
 <p>There are 4 Pods now, with different IP addresses. The change was
 registered in the Deployment events log. To check that, use the
 <code>describe</code> subcommand:</p>
-<pre class="shell"><code>kubectl describe deployments/kubernetes-bootcamp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe deployments/kubernetes-bootcamp</code></pre>
 <p>You can also view in the output of this command that there are 4
 replicas now.</p>
 <h3 id="load-balancing">Load Balancing</h3>
 <p>Let's check that the Service is load-balancing the traffic. To find
 out the exposed IP and Port we can use <code>describe service</code> as
 we learned in the previous part of the tutorial:</p>
-<pre class="shell"><code>kubectl describe services/kubernetes-bootcamp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe services/kubernetes-bootcamp</code></pre>
 <p>Create an environment variable called NODE_PORT that has a value as
 the Node port:</p>
-<pre class="shell"><code>export NODE_PORT=&quot;$(kubectl get services/kubernetes-bootcamp -o go-template=&#39;{{(index .spec.ports 0).nodePort}}&#39;)&quot;
+<pre class="shell"><code class="language-shell">export NODE_PORT=&quot;$(kubectl get services/kubernetes-bootcamp -o go-template=&#39;{{(index .spec.ports 0).nodePort}}&#39;)&quot;
 echo NODE_PORT=$NODE_PORT</code></pre>
 <p>Next, we’ll do a <code>curl</code> to the exposed IP address and
 port. Execute the command multiple times:</p>
-<pre class="shell"><code>curl http://&quot;$(minikube ip):$NODE_PORT&quot;</code></pre>
+<pre class="shell"><code class="language-shell">curl http://&quot;$(minikube ip):$NODE_PORT&quot;</code></pre>
 <p>We hit a different Pod with every request. This demonstrates that the
 load-balancing is working.</p>
 <p>The output should be similar to:</p>
@@ -279,23 +294,23 @@ Hello Kubernetes bootcamp! | Running on: kubernetes-bootcamp-644c5687f4-4hjvf | 
 driver, a minikube tunnel is needed. This is because containers inside
 Docker Desktop are isolated from your host computer.</p>
 <p>In a separate terminal window, execute:</p>
-<pre class="shell"><code>minikube service kubernetes-bootcamp --url</code></pre>
+<pre class="shell"><code class="language-shell">minikube service kubernetes-bootcamp --url</code></pre>
 <p>The output looks like this:</p>
 <pre><code>http://127.0.0.1:51082
 !  Because you are using a Docker driver on darwin, the terminal needs to be open to run it.</code></pre>
 <p>Then use the given URL to access the app:</p>
-<pre class="shell"><code>curl 127.0.0.1:51082</code></pre>
+<pre class="shell"><code class="language-shell">curl 127.0.0.1:51082</code></pre>
 </div>
 <h3 id="scale-down">Scale Down</h3>
 <p>To scale down the Deployment to 2 replicas, run again the
 <code>scale</code> subcommand:</p>
-<pre class="shell"><code>kubectl scale deployments/kubernetes-bootcamp --replicas=2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployments/kubernetes-bootcamp --replicas=2</code></pre>
 <p>List the Deployments to check if the change was applied with the
 <code>get deployments</code> subcommand:</p>
-<pre class="shell"><code>kubectl get deployments</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployments</code></pre>
 <p>The number of replicas decreased to 2. List the number of Pods, with
 <code>get pods</code>:</p>
-<pre class="shell"><code>kubectl get pods -o wide</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -o wide</code></pre>
 <p>This confirms that 2 Pods were terminated.</p>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -371,6 +386,7 @@ href="../../../concepts/workloads/autoscaling.html">Autoscaling</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -379,6 +395,8 @@ href="../../../concepts/workloads/autoscaling.html">Autoscaling</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

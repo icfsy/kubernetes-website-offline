@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -342,7 +357,7 @@ specify: you must always assign whole numbers of bytes, or sometimes
 larger chunks such as multiples of 1 gibibyte.</p>
 <p>Here are some examples of memory quantities that represent roughly
 the same value:</p>
-<pre class="shell"><code>128974848, 129e6, 129M,  128974848000m, 123Mi</code></pre>
+<pre class="shell"><code class="language-shell">128974848, 129e6, 129M,  128974848000m, 123Mi</code></pre>
 <p>Pay attention to the case of the suffixes. "M" means megabytes, while
 "m" means millibytes. If you request <code>400m</code> of memory, this
 is a request for 0.4 bytes. Someone who types that probably meant to ask
@@ -354,32 +369,31 @@ with a request for 0.25 CPU and 64MiB (2<sup>26</sup> bytes) of memory.
 Each container has a limit of 0.5 CPU and 128MiB of memory. You can say
 the Pod has a request of 0.5 CPU and 128 MiB of memory, and a limit of 1
 CPU and 256MiB of memory.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> images.my-company.example/app:v4</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> log-aggregator</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> images.my-company.example/log-aggregator:v6</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend
+spec:
+  containers:
+  - name: app
+    image: images.my-company.example/app:v4
+    resources:
+      requests:
+        memory: &quot;64Mi&quot;
+        cpu: &quot;250m&quot;
+      limits:
+        memory: &quot;128Mi&quot;
+        cpu: &quot;500m&quot;
+  - name: log-aggregator
+    image: images.my-company.example/log-aggregator:v6
+    resources:
+      requests:
+        memory: &quot;64Mi&quot;
+        cpu: &quot;250m&quot;
+      limits:
+        memory: &quot;128Mi&quot;
+        cpu: &quot;500m&quot;</code></pre>
 <h2 id="example-2">Pod resources example</h2>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -400,35 +414,34 @@ resource boundaries, as it does not have explicit requests and limits
 set.</p>
 <div class="code-sample">
 <p><code>pods/resource/pod-level-resources.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-resources-demo</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> pod-resources-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-resources-demo-ctr-1</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.5&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.5&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;50Mi&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-resources-demo-ctr-2</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> fedora</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">sleep</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">inf</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-resources-demo
+  namespace: pod-resources-example
+spec:
+  resources:
+    limits:
+      cpu: &quot;1&quot;
+      memory: &quot;200Mi&quot;
+    requests:
+      cpu: &quot;1&quot;
+      memory: &quot;100Mi&quot;
+  containers:
+  - name: pod-resources-demo-ctr-1
+    image: nginx
+    resources:
+      limits:
+        cpu: &quot;0.5&quot;
+        memory: &quot;100Mi&quot;
+      requests:
+        cpu: &quot;0.5&quot;
+        memory: &quot;50Mi&quot;
+  - name: pod-resources-demo-ctr-2
+    image: fedora
+    command:
+    - sleep
+    - inf</code></pre>
 </div>
 <h2 id="how-pods-with-resource-requests-are-scheduled">How Pods with
 resource requests are scheduled</h2>
@@ -688,7 +701,7 @@ node.</p>
 <p>Here is an example showing how to use <code>curl</code> to form an
 HTTP request that advertises five "example.com/foo" resources on node
 <code>k8s-node-1</code> whose master is <code>k8s-master</code>.</p>
-<pre class="shell"><code>curl --header &quot;Content-Type: application/json-patch+json&quot; \
+<pre class="shell"><code class="language-shell">curl --header &quot;Content-Type: application/json-patch+json&quot; \
 --request PATCH \
 --data &#39;[{&quot;op&quot;: &quot;add&quot;, &quot;path&quot;: &quot;/status/capacity/example.com~1foo&quot;, &quot;value&quot;: &quot;5&quot;}]&#39; \
 http://k8s-master:8080/api/v1/nodes/k8s-node-1/status</code></pre>
@@ -722,23 +735,22 @@ requests "example.com/foo".</li>
 scheduler does not check the "example.com/foo" resource in its
 <code>PodFitsResources</code> predicate.</li>
 </ul>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;Policy&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;extenders&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;urlPrefix&quot;</span><span class="fu">:</span><span class="st">&quot;&lt;extender-endpoint&gt;&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;bindVerb&quot;</span><span class="fu">:</span> <span class="st">&quot;bind&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;managedResources&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-        <span class="fu">{</span></span>
-          <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;example.com/foo&quot;</span><span class="fu">,</span></span>
-          <span class="dt">&quot;ignoredByScheduler&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
-        <span class="fu">}</span></span>
-      <span class="ot">]</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;Policy&quot;,
+  &quot;apiVersion&quot;: &quot;v1&quot;,
+  &quot;extenders&quot;: [
+    {
+      &quot;urlPrefix&quot;:&quot;&lt;extender-endpoint&gt;&quot;,
+      &quot;bindVerb&quot;: &quot;bind&quot;,
+      &quot;managedResources&quot;: [
+        {
+          &quot;name&quot;: &quot;example.com/foo&quot;,
+          &quot;ignoredByScheduler&quot;: true
+        }
+      ]
+    }
+  ]
+}</code></pre>
 <h4 id="extended-resources-allocation-by-dra">Extended resources
 allocation by DRA</h4>
 <p>Extended resources allocation by DRA allows cluster administrators to
@@ -781,21 +793,20 @@ request cannot be satisfied.</p>
 <p><strong>Example:</strong></p>
 <p>The Pod below requests 2 CPUs and 1 "example.com/foo" (an extended
 resource).</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> myimage</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">        </span><span class="fu">example.com/foo</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">example.com/foo</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+spec:
+  containers:
+  - name: my-container
+    image: myimage
+    resources:
+      requests:
+        cpu: 2
+        example.com/foo: 1
+      limits:
+        example.com/foo: 1</code></pre>
 <h2 id="pid-limiting">PID limiting</h2>
 <p>Process ID (PID) limits allow for the configuration of a kubelet to
 limit the number of PIDs that a given Pod can consume. See <a
@@ -810,7 +821,7 @@ href="https://kubernetes.io/docs/reference/kubernetes-api/cluster-resources/even
 is produced each time the scheduler fails to find a place for the Pod.
 You can use <code>kubectl</code> to view the events for a Pod; for
 example:</p>
-<pre class="shell"><code>kubectl describe pod frontend | grep -A 9999999999 Events</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod frontend | grep -A 9999999999 Events</code></pre>
 <pre><code>Events:
   Type     Reason            Age   From               Message
   ----     ------            ----  ----               -------
@@ -832,7 +843,7 @@ placements onto the remaining nodes that don't have that taint.</li>
 </ul>
 <p>You can check node capacities and amounts allocated with the
 <code>kubectl describe nodes</code> command. For example:</p>
-<pre class="shell"><code>kubectl describe nodes e2e-test-node-pool-4lw4</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe nodes e2e-test-node-pool-4lw4</code></pre>
 <pre><code>Name:            e2e-test-node-pool-4lw4
 [ ... lines removed for clarity ...]
 Capacity:
@@ -892,7 +903,7 @@ ResourceQuota.</p>
 To check whether a container is being killed because it is hitting a
 resource limit, call <code>kubectl describe pod</code> on the Pod of
 interest:</p>
-<pre class="shell"><code>kubectl describe pod simmemleak-hra99</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod simmemleak-hra99</code></pre>
 <p>The output is similar to:</p>
 <pre><code>Name:                           simmemleak-hra99
 Namespace:                      default
@@ -1028,6 +1039,7 @@ Resource allocation by DRA</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1036,6 +1048,8 @@ Resource allocation by DRA</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

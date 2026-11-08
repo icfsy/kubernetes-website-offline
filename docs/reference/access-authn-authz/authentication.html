@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -218,20 +233,19 @@ authentication configuration file is that in addition to enabling and
 disabling anonymous authentication you can also configure which
 endpoints support anonymous authentication.</p>
 <p>A sample authentication configuration file is below:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co">#</span></span>
-<span class="co"># </span><span class="al">CAUTION</span><span class="co">: this is an example configuration.</span></span>
-<span class="co">#          Do not use this as-is for your own cluster!</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthenticationConfiguration</span></span>
-<span class="fu">anonymous</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /livez</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /readyz</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+#
+# CAUTION: this is an example configuration.
+#          Do not use this as-is for your own cluster!
+#
+apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+anonymous:
+  enabled: true
+  conditions:
+  - path: /livez
+  - path: /readyz
+  - path: /healthz</code></pre>
 <p>In the configuration above, only the <code>/livez</code>,
 <code>/readyz</code> and <code>/healthz</code> endpoints are reachable
 by anonymous requests. Any other endpoints will not be reachable
@@ -380,9 +394,8 @@ data-term="service-account">ServiceAccounts</span>.</p>
 <h4 id="x509-client-certificates-example">Example</h4>
 <p>You could use the <code>openssl</code> command line tool to generate
 a certificate signing request:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># This example assumes that you already have a private key alovelace.pem</span></span>
-<span class="ex">openssl</span> req <span class="at">-new</span> <span class="at">-key</span> alovelace.pem <span class="at">-out</span> alovelace-csr.pem <span class="at">-subj</span> <span class="st">&quot;/CN=alovelace/O=app1/O=app2&quot;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash"># This example assumes that you already have a private key alovelace.pem
+openssl req -new -key alovelace.pem -out alovelace-csr.pem -subj &quot;/CN=alovelace/O=app1/O=app2&quot;</code></pre>
 <p>This would create a signing request for the username "alovelace",
 belonging to two groups, "app1" and "app2". You could then have that
 signing request be signed by your cluster's client trust certificate
@@ -404,7 +417,7 @@ controller that deletes bootstrap tokens as they expire.</p>
 <p>The tokens are of the form <code>[a-z0-9]{6}.[a-z0-9]{16}</code>. The
 first component is a Token ID and the second component is the Token
 Secret. You specify the token in an HTTP header as follows:</p>
-<pre class="http"><code>Authorization: Bearer 781292.db7bc3a58fc5f07e</code></pre>
+<pre class="http"><code class="language-http">Authorization: Bearer 781292.db7bc3a58fc5f07e</code></pre>
 <p>You must enable the Bootstrap Token Authenticator with the
 <code>--enable-bootstrap-token-auth</code> flag on the API Server. You
 must enable the TokenCleaner controller via the
@@ -433,7 +446,7 @@ character sequence that can be put in an HTTP header value using no more
 than the encoding and quoting facilities of HTTP. For example: if the
 bearer token is <code>31ada4fd-adec-460c-809a-9e56ceb75269</code> then
 it would appear in an HTTP header as shown below.</p>
-<pre class="http"><code>Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269</code></pre>
+<pre class="http"><code class="language-http">Authorization: Bearer 31ada4fd-adec-460c-809a-9e56ceb75269</code></pre>
 <h3 id="service-account-tokens">Service account tokens</h3>
 <p>A service account is an automatically enabled authenticator that uses
 signed bearer tokens to verify requests. The plugin takes two optional
@@ -462,34 +475,31 @@ Accounts may be explicitly associated with pods using the
 <p><code>serviceAccountName</code> is usually omitted because this is
 done automatically.</p>
 </div>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span><span class="co"> # this apiVersion is relevant as of Kubernetes 1.9</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> bob-the-bot</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1 # this apiVersion is relevant as of Kubernetes 1.9
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  namespace: default
+spec:
+  replicas: 3
+  template:
+    metadata:
+    # ...
+    spec:
+      serviceAccountName: bob-the-bot
+      containers:
+      - name: nginx
+        image: nginx:1.14.2</code></pre>
 <p>Service account bearer tokens are perfectly valid to use outside the
 cluster and can be used to create identities for long standing jobs that
 wish to talk to the Kubernetes API. To manually create a service
 account, use the <code>kubectl create serviceaccount (NAME)</code>
 command. This creates a service account in the current namespace.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> create serviceaccount jenkins</span></code></pre></div>
-<pre class="none"><code>serviceaccount/jenkins created</code></pre>
+<pre class="bash"><code class="language-bash">kubectl create serviceaccount jenkins</code></pre>
+<pre class="none"><code class="language-none">serviceaccount/jenkins created</code></pre>
 <p>You can manually create an associated token:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> create token jenkins</span></code></pre></div>
-<pre class="none"><code>eyJhbGciOiJSUzI1NiIsImtp...</code></pre>
+<pre class="bash"><code class="language-bash">kubectl create token jenkins</code></pre>
+<pre class="none"><code class="language-none">eyJhbGciOiJSUzI1NiIsImtp...</code></pre>
 <p>The created token is a signed <a
 href="https://www.rfc-editor.org/rfc/rfc7519">JSON Web Token</a>
 (JWT).</p>
@@ -544,13 +554,12 @@ public key to verify the signature is discovered from the issuer's
 public endpoint using OIDC discovery.</p>
 <p>The minimum valid JWT payload <strong>must</strong> contain the
 following claims:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode javascript"><code class="sourceCode javascript">{</span>
-  <span class="st">&quot;iss&quot;</span><span class="op">:</span> <span class="st">&quot;https://example.com&quot;</span><span class="op">,</span>   <span class="co">// must match the issuer.url</span></span>
-  <span class="st">&quot;aud&quot;</span><span class="op">:</span> [<span class="st">&quot;my-app&quot;</span>]<span class="op">,</span>              <span class="co">// at least one of the entries in issuer.audiences must match the &quot;aud&quot; claim in presented JWTs.</span></span>
-  <span class="st">&quot;exp&quot;</span><span class="op">:</span> <span class="dv">1234567890</span><span class="op">,</span>              <span class="co">// token expiration as Unix time (the number of seconds elapsed since January 1, 1970 UTC)</span></span>
-  <span class="st">&quot;&lt;username-claim&gt;&quot;</span><span class="op">:</span> <span class="st">&quot;user&quot;</span>      <span class="co">// this is the username claim configured in the claimMappings.username.claim or claimMappings.username.expression</span></span>
-}</span></code></pre></div>
+<pre class="javascript"><code class="language-javascript">{
+  &quot;iss&quot;: &quot;https://example.com&quot;,   // must match the issuer.url
+  &quot;aud&quot;: [&quot;my-app&quot;],              // at least one of the entries in issuer.audiences must match the &quot;aud&quot; claim in presented JWTs.
+  &quot;exp&quot;: 1234567890,              // token expiration as Unix time (the number of seconds elapsed since January 1, 1970 UTC)
+  &quot;&lt;username-claim&gt;&quot;: &quot;user&quot;      // this is the username claim configured in the claimMappings.username.claim or claimMappings.username.expression
+}</code></pre>
 <h4 id="jwt-egress-selector-type">JWT egress selector type</h4>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -762,125 +771,124 @@ authentication configuration, you have to remove the
 <code>--oidc-*</code> command line arguments, and use the configuration
 file instead.</p>
 </div>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co">#</span></span>
-<span class="co"># </span><span class="al">CAUTION</span><span class="co">: this is an example configuration.</span></span>
-<span class="co">#          Do not use this for your own cluster!</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthenticationConfiguration</span></span>
-<span class="co"># list of authenticators to authenticate Kubernetes users using JWT compliant tokens.</span></span>
-<span class="co"># the maximum number of allowed authenticators is 64.</span></span>
-<span class="fu">jwt</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">issuer</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># url must be unique across all authenticators.</span></span>
-<span class="at">    </span><span class="co"># url must not conflict with issuer configured in --service-account-issuer.</span></span>
-<span class="at">    </span><span class="fu">url</span><span class="kw">:</span><span class="at"> https://example.com</span><span class="co"> # Same as --oidc-issuer-url.</span></span>
-<span class="at">    </span><span class="co"># discoveryURL, if specified, overrides the URL used to fetch discovery</span></span>
-<span class="at">    </span><span class="co"># information instead of using &quot;{url}/.well-known/openid-configuration&quot;.</span></span>
-<span class="at">    </span><span class="co"># The exact value specified is used, so &quot;/.well-known/openid-configuration&quot;</span></span>
-<span class="at">    </span><span class="co"># must be included in discoveryURL if needed.</span></span>
-<span class="at">    </span><span class="co">#</span></span>
-<span class="at">    </span><span class="co"># The &quot;issuer&quot; field in the fetched discovery information must match the &quot;issuer.url&quot; field</span></span>
-<span class="at">    </span><span class="co"># in the AuthenticationConfiguration and will be used to validate the &quot;iss&quot; claim in the presented JWT.</span></span>
-<span class="at">    </span><span class="co"># This is for scenarios where the well-known and jwks endpoints are hosted at a different</span></span>
-<span class="at">    </span><span class="co"># location than the issuer (such as locally in the cluster).</span></span>
-<span class="at">    </span><span class="co"># discoveryURL must be different from url if specified and must be unique across all authenticators.</span></span>
-<span class="at">    </span><span class="fu">discoveryURL</span><span class="kw">:</span><span class="at"> https://discovery.example.com/.well-known/openid-configuration</span></span>
-<span class="at">    </span><span class="co"># PEM encoded CA certificates used to validate the connection when fetching</span></span>
-<span class="at">    </span><span class="co"># discovery information. If not set, the system verifier will be used.</span></span>
-<span class="at">    </span><span class="co"># Same value as the content of the file referenced by the --oidc-ca-file command line argument.</span></span>
-<span class="at">    </span><span class="fu">certificateAuthority</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;PEM</span><span class="at"> encoded CA certificates&gt;    </span></span>
-<span class="at">    </span><span class="co"># audiences is the set of acceptable audiences the JWT must be issued to.</span></span>
-<span class="at">    </span><span class="co"># At least one of the entries must match the &quot;aud&quot; claim in presented JWTs.</span></span>
-<span class="at">    </span><span class="fu">audiences</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">my-app</span><span class="co"> # Same as --oidc-client-id.</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">my-other-app</span></span>
-<span class="at">    </span><span class="co"># this is required to be set to &quot;MatchAny&quot; when multiple audiences are specified.</span></span>
-<span class="at">    </span><span class="fu">audienceMatchPolicy</span><span class="kw">:</span><span class="at"> MatchAny</span></span>
-<span class="at">    </span><span class="co"># egressSelectorType is an indicator of which egress selection should be used for sending all traffic related</span></span>
-<span class="at">    </span><span class="co"># to this issuer (discovery, JWKS, distributed claims, etc).  If unspecified, no custom dialer is used.</span></span>
-<span class="at">    </span><span class="co"># The StructuredAuthenticationConfigurationEgressSelector feature gate must be enabled</span></span>
-<span class="at">    </span><span class="co"># before you can use the egressSelectorType field.</span></span>
-<span class="at">    </span><span class="co"># When specified, the valid choices are &quot;controlplane&quot; and &quot;cluster&quot;.  These correspond to the associated</span></span>
-<span class="at">    </span><span class="co"># values in the --egress-selector-config-file.</span></span>
-<span class="at">    </span><span class="co"># - controlplane: for traffic intended to go to the control plane.</span></span>
-<span class="at">    </span><span class="co"># - cluster: for traffic intended to go to the system being managed by Kubernetes.</span></span>
-<span class="at">    </span><span class="fu">egressSelectorType</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;egress-selector-type&gt;</span></span>
-<span class="at">  </span><span class="co"># rules applied to validate token claims to authenticate users.</span></span>
-<span class="at">  </span><span class="fu">claimValidationRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># Same as --oidc-required-claim key=value.</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">claim</span><span class="kw">:</span><span class="at"> hd</span></span>
-<span class="at">    </span><span class="fu">requiredValue</span><span class="kw">:</span><span class="at"> example.com</span></span>
-<span class="at">    </span><span class="co"># Instead of claim and requiredValue, you can use expression to validate the claim.</span></span>
-<span class="at">    </span><span class="co"># expression is a CEL expression that evaluates to a boolean.</span></span>
-<span class="at">    </span><span class="co"># all the expressions must evaluate to true for validation to succeed.</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.hd == &quot;example.com&quot;&#39;</span></span>
-<span class="at">    </span><span class="co"># Message customizes the error message seen in the API server logs when the validation fails.</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> the hd claim must be set to example.com</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.exp - claims.nbf &lt;= 86400&#39;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> total token lifetime must not exceed 24 hours</span></span>
-<span class="at">  </span><span class="fu">claimMappings</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># username represents an option for the username attribute.</span></span>
-<span class="at">    </span><span class="co"># This is the only required attribute.</span></span>
-<span class="at">    </span><span class="fu">username</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Same as --oidc-username-claim. Mutually exclusive with username.expression.</span></span>
-<span class="at">      </span><span class="fu">claim</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;sub&quot;</span></span>
-<span class="at">      </span><span class="co"># Same as --oidc-username-prefix. Mutually exclusive with username.expression.</span></span>
-<span class="at">      </span><span class="co"># if username.claim is set, username.prefix is required.</span></span>
-<span class="at">      </span><span class="co"># Explicitly set it to &quot;&quot; if no prefix is desired.</span></span>
-<span class="at">      </span><span class="fu">prefix</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">      </span><span class="co"># Mutually exclusive with username.claim and username.prefix.</span></span>
-<span class="at">      </span><span class="co"># expression is a CEL expression that evaluates to a string.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># 1.  If username.expression uses &#39;claims.email&#39;, then &#39;claims.email_verified&#39; must be used in</span></span>
-<span class="at">      </span><span class="co">#     username.expression or extra[*].valueExpression or claimValidationRules[*].expression.</span></span>
-<span class="at">      </span><span class="co">#     An example claim validation rule expression that matches the validation automatically</span></span>
-<span class="at">      </span><span class="co">#     applied when username.claim is set to &#39;email&#39; is &#39;claims.?email_verified.orValue(true) == true&#39;.</span></span>
-<span class="at">      </span><span class="co">#     By explicitly comparing the value to true, we let type-checking see the result will be a boolean, and</span></span>
-<span class="at">      </span><span class="co">#     to make sure a non-boolean email_verified claim will be caught at runtime.</span></span>
-<span class="at">      </span><span class="co"># 2.  If the username asserted based on username.expression is the empty string, the authentication</span></span>
-<span class="at">      </span><span class="co">#     request will fail.</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.username + &quot;:external-user&quot;&#39;</span></span>
-<span class="at">    </span><span class="co"># groups represents an option for the groups attribute.</span></span>
-<span class="at">    </span><span class="fu">groups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Same as --oidc-groups-claim. Mutually exclusive with groups.expression.</span></span>
-<span class="at">      </span><span class="fu">claim</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;sub&quot;</span></span>
-<span class="at">      </span><span class="co"># Same as --oidc-groups-prefix. Mutually exclusive with groups.expression.</span></span>
-<span class="at">      </span><span class="co"># if groups.claim is set, groups.prefix is required.</span></span>
-<span class="at">      </span><span class="co"># Explicitly set it to &quot;&quot; if no prefix is desired.</span></span>
-<span class="at">      </span><span class="fu">prefix</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">      </span><span class="co"># Mutually exclusive with groups.claim and groups.prefix.</span></span>
-<span class="at">      </span><span class="co"># expression is a CEL expression that evaluates to a string or a list of strings.</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.roles.split(&quot;,&quot;)&#39;</span></span>
-<span class="at">    </span><span class="co"># uid represents an option for the uid attribute.</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Mutually exclusive with uid.expression.</span></span>
-<span class="at">      </span><span class="fu">claim</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;sub&#39;</span></span>
-<span class="at">      </span><span class="co"># Mutually exclusive with uid.claim</span></span>
-<span class="at">      </span><span class="co"># expression is a CEL expression that evaluates to a string.</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.sub&#39;</span></span>
-<span class="at">    </span><span class="co"># extra attributes to be added to the UserInfo object. Keys must be domain-prefix path and must be unique.</span></span>
-<span class="at">    </span><span class="fu">extra</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># key is a string to use as the extra attribute key.</span></span>
-<span class="at">      </span><span class="co"># key must be a domain-prefix path (e.g. example.org/foo). All characters before the first &quot;/&quot; must be a valid</span></span>
-<span class="at">      </span><span class="co"># subdomain as defined by RFC 1123. All characters trailing the first &quot;/&quot; must</span></span>
-<span class="at">      </span><span class="co"># be valid HTTP Path characters as defined by RFC 3986.</span></span>
-<span class="at">      </span><span class="co"># k8s.io, kubernetes.io and their subdomains are reserved for Kubernetes use and cannot be used.</span></span>
-<span class="at">      </span><span class="co"># key must be lowercase and unique across all extra attributes.</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;example.com/tenant&#39;</span></span>
-<span class="at">      </span><span class="co"># valueExpression is a CEL expression that evaluates to a string or a list of strings.</span></span>
-<span class="at">      </span><span class="fu">valueExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.tenant&#39;</span></span>
-<span class="at">  </span><span class="co"># validation rules applied to the final user object.</span></span>
-<span class="at">  </span><span class="fu">userValidationRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># expression is a CEL expression that evaluates to a boolean.</span></span>
-<span class="at">    </span><span class="co"># all the expressions must evaluate to true for the user to be valid.</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!user.username.startsWith(&#39;system:&#39;)&quot;</span></span>
-<span class="at">    </span><span class="co"># Message customizes the error message seen in the API server logs when the validation fails.</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;username cannot used reserved system: prefix&#39;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;user.groups.all(group, !group.startsWith(&#39;system:&#39;))&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;groups cannot used reserved system: prefix&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+#
+# CAUTION: this is an example configuration.
+#          Do not use this for your own cluster!
+#
+apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+# list of authenticators to authenticate Kubernetes users using JWT compliant tokens.
+# the maximum number of allowed authenticators is 64.
+jwt:
+- issuer:
+    # url must be unique across all authenticators.
+    # url must not conflict with issuer configured in --service-account-issuer.
+    url: https://example.com # Same as --oidc-issuer-url.
+    # discoveryURL, if specified, overrides the URL used to fetch discovery
+    # information instead of using &quot;{url}/.well-known/openid-configuration&quot;.
+    # The exact value specified is used, so &quot;/.well-known/openid-configuration&quot;
+    # must be included in discoveryURL if needed.
+    #
+    # The &quot;issuer&quot; field in the fetched discovery information must match the &quot;issuer.url&quot; field
+    # in the AuthenticationConfiguration and will be used to validate the &quot;iss&quot; claim in the presented JWT.
+    # This is for scenarios where the well-known and jwks endpoints are hosted at a different
+    # location than the issuer (such as locally in the cluster).
+    # discoveryURL must be different from url if specified and must be unique across all authenticators.
+    discoveryURL: https://discovery.example.com/.well-known/openid-configuration
+    # PEM encoded CA certificates used to validate the connection when fetching
+    # discovery information. If not set, the system verifier will be used.
+    # Same value as the content of the file referenced by the --oidc-ca-file command line argument.
+    certificateAuthority: &lt;PEM encoded CA certificates&gt;    
+    # audiences is the set of acceptable audiences the JWT must be issued to.
+    # At least one of the entries must match the &quot;aud&quot; claim in presented JWTs.
+    audiences:
+    - my-app # Same as --oidc-client-id.
+    - my-other-app
+    # this is required to be set to &quot;MatchAny&quot; when multiple audiences are specified.
+    audienceMatchPolicy: MatchAny
+    # egressSelectorType is an indicator of which egress selection should be used for sending all traffic related
+    # to this issuer (discovery, JWKS, distributed claims, etc).  If unspecified, no custom dialer is used.
+    # The StructuredAuthenticationConfigurationEgressSelector feature gate must be enabled
+    # before you can use the egressSelectorType field.
+    # When specified, the valid choices are &quot;controlplane&quot; and &quot;cluster&quot;.  These correspond to the associated
+    # values in the --egress-selector-config-file.
+    # - controlplane: for traffic intended to go to the control plane.
+    # - cluster: for traffic intended to go to the system being managed by Kubernetes.
+    egressSelectorType: &lt;egress-selector-type&gt;
+  # rules applied to validate token claims to authenticate users.
+  claimValidationRules:
+    # Same as --oidc-required-claim key=value.
+  - claim: hd
+    requiredValue: example.com
+    # Instead of claim and requiredValue, you can use expression to validate the claim.
+    # expression is a CEL expression that evaluates to a boolean.
+    # all the expressions must evaluate to true for validation to succeed.
+  - expression: &#39;claims.hd == &quot;example.com&quot;&#39;
+    # Message customizes the error message seen in the API server logs when the validation fails.
+    message: the hd claim must be set to example.com
+  - expression: &#39;claims.exp - claims.nbf &lt;= 86400&#39;
+    message: total token lifetime must not exceed 24 hours
+  claimMappings:
+    # username represents an option for the username attribute.
+    # This is the only required attribute.
+    username:
+      # Same as --oidc-username-claim. Mutually exclusive with username.expression.
+      claim: &quot;sub&quot;
+      # Same as --oidc-username-prefix. Mutually exclusive with username.expression.
+      # if username.claim is set, username.prefix is required.
+      # Explicitly set it to &quot;&quot; if no prefix is desired.
+      prefix: &quot;&quot;
+      # Mutually exclusive with username.claim and username.prefix.
+      # expression is a CEL expression that evaluates to a string.
+      #
+      # 1.  If username.expression uses &#39;claims.email&#39;, then &#39;claims.email_verified&#39; must be used in
+      #     username.expression or extra[*].valueExpression or claimValidationRules[*].expression.
+      #     An example claim validation rule expression that matches the validation automatically
+      #     applied when username.claim is set to &#39;email&#39; is &#39;claims.?email_verified.orValue(true) == true&#39;.
+      #     By explicitly comparing the value to true, we let type-checking see the result will be a boolean, and
+      #     to make sure a non-boolean email_verified claim will be caught at runtime.
+      # 2.  If the username asserted based on username.expression is the empty string, the authentication
+      #     request will fail.
+      expression: &#39;claims.username + &quot;:external-user&quot;&#39;
+    # groups represents an option for the groups attribute.
+    groups:
+      # Same as --oidc-groups-claim. Mutually exclusive with groups.expression.
+      claim: &quot;sub&quot;
+      # Same as --oidc-groups-prefix. Mutually exclusive with groups.expression.
+      # if groups.claim is set, groups.prefix is required.
+      # Explicitly set it to &quot;&quot; if no prefix is desired.
+      prefix: &quot;&quot;
+      # Mutually exclusive with groups.claim and groups.prefix.
+      # expression is a CEL expression that evaluates to a string or a list of strings.
+      expression: &#39;claims.roles.split(&quot;,&quot;)&#39;
+    # uid represents an option for the uid attribute.
+    uid:
+      # Mutually exclusive with uid.expression.
+      claim: &#39;sub&#39;
+      # Mutually exclusive with uid.claim
+      # expression is a CEL expression that evaluates to a string.
+      expression: &#39;claims.sub&#39;
+    # extra attributes to be added to the UserInfo object. Keys must be domain-prefix path and must be unique.
+    extra:
+      # key is a string to use as the extra attribute key.
+      # key must be a domain-prefix path (e.g. example.org/foo). All characters before the first &quot;/&quot; must be a valid
+      # subdomain as defined by RFC 1123. All characters trailing the first &quot;/&quot; must
+      # be valid HTTP Path characters as defined by RFC 3986.
+      # k8s.io, kubernetes.io and their subdomains are reserved for Kubernetes use and cannot be used.
+      # key must be lowercase and unique across all extra attributes.
+    - key: &#39;example.com/tenant&#39;
+      # valueExpression is a CEL expression that evaluates to a string or a list of strings.
+      valueExpression: &#39;claims.tenant&#39;
+  # validation rules applied to the final user object.
+  userValidationRules:
+    # expression is a CEL expression that evaluates to a boolean.
+    # all the expressions must evaluate to true for the user to be valid.
+  - expression: &quot;!user.username.startsWith(&#39;system:&#39;)&quot;
+    # Message customizes the error message seen in the API server logs when the validation fails.
+    message: &#39;username cannot used reserved system: prefix&#39;
+  - expression: &quot;user.groups.all(group, !group.startsWith(&#39;system:&#39;))&quot;
+    message: &#39;groups cannot used reserved system: prefix&#39;</code></pre>
 <ul>
 <li><p>Claim validation rule expression</p>
 <p><code>jwt.claimValidationRules[i].expression</code> represents the
@@ -912,101 +920,94 @@ with different token payloads.</p>
 <div class="tab-label">
 <p>Valid token</p>
 </div>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthenticationConfiguration</span></span>
-<span class="fu">jwt</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">issuer</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">url</span><span class="kw">:</span><span class="at"> https://example.com</span></span>
-<span class="at">    </span><span class="fu">audiences</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">my-app</span></span>
-<span class="at">  </span><span class="fu">claimMappings</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">username</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.username + &quot;:external-user&quot;&#39;</span></span>
-<span class="at">    </span><span class="fu">groups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.roles.split(&quot;,&quot;)&#39;</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.sub&#39;</span></span>
-<span class="at">    </span><span class="fu">extra</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;example.com/tenant&#39;</span></span>
-<span class="at">      </span><span class="fu">valueExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.tenant&#39;</span></span>
-<span class="at">  </span><span class="fu">userValidationRules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!user.username.startsWith(&#39;system:&#39;)&quot;</span><span class="at"> </span><span class="co"># the expression will evaluate to true, so validation will succeed.</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;username cannot used reserved system: prefix&#39;</span></span></code></pre></div>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="va">TOKEN</span><span class="op">=</span>eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3dF9tOEROWmFTQk1oWGw5QXZTWGhBUC04Y0JmZ0JVbFVpTG5oQkgxdXMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNzAzMjMyOTQ5LCJpYXQiOjE3MDExMDcyMzMsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJqdGkiOiI3YzMzNzk0MjgwN2U3M2NhYTJjMzBjODY4YWMwY2U5MTBiY2UwMmRkY2JmZWJlOGMyM2I4YjVmMjdhZDYyODczIiwibmJmIjoxNzAxMTA3MjMzLCJyb2xlcyI6InVzZXIsYWRtaW4iLCJzdWIiOiJhdXRoIiwidGVuYW50IjoiNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjRhIiwidXNlcm5hbWUiOiJmb28ifQ.TBWF2RkQHm4QQz85AYPcwLxSk-VLvQW-mNDHx7SEOSv9LVwcPYPuPajJpuQn9C_gKq1R94QKSQ5F6UgHMILz8OfmPKmX_00wpwwNVGeevJ79ieX2V-__W56iNR5gJ-i9nn6FYk5pwfVREB0l4HSlpTOmu80gbPWAXY5hLW0ZtcE1JTEEmefORHV2ge8e3jp1xGafNy6LdJWabYuKiw8d7Qga__HxtKB-t0kRMNzLRS7rka_SfQg0dSYektuxhLbiDkqhmRffGlQKXGVzUsuvFw7IGM5ZWnZgEMDzCI357obHeM3tRqpn5WRjtB8oM7JgnCymaJi-P3iCd88iu1xnzA</span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+jwt:
+- issuer:
+    url: https://example.com
+    audiences:
+    - my-app
+  claimMappings:
+    username:
+      expression: &#39;claims.username + &quot;:external-user&quot;&#39;
+    groups:
+      expression: &#39;claims.roles.split(&quot;,&quot;)&#39;
+    uid:
+      expression: &#39;claims.sub&#39;
+    extra:
+    - key: &#39;example.com/tenant&#39;
+      valueExpression: &#39;claims.tenant&#39;
+  userValidationRules:
+  - expression: &quot;!user.username.startsWith(&#39;system:&#39;)&quot; # the expression will evaluate to true, so validation will succeed.
+    message: &#39;username cannot used reserved system: prefix&#39;</code></pre>
+<pre class="bash"><code class="language-bash">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3dF9tOEROWmFTQk1oWGw5QXZTWGhBUC04Y0JmZ0JVbFVpTG5oQkgxdXMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNzAzMjMyOTQ5LCJpYXQiOjE3MDExMDcyMzMsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJqdGkiOiI3YzMzNzk0MjgwN2U3M2NhYTJjMzBjODY4YWMwY2U5MTBiY2UwMmRkY2JmZWJlOGMyM2I4YjVmMjdhZDYyODczIiwibmJmIjoxNzAxMTA3MjMzLCJyb2xlcyI6InVzZXIsYWRtaW4iLCJzdWIiOiJhdXRoIiwidGVuYW50IjoiNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjRhIiwidXNlcm5hbWUiOiJmb28ifQ.TBWF2RkQHm4QQz85AYPcwLxSk-VLvQW-mNDHx7SEOSv9LVwcPYPuPajJpuQn9C_gKq1R94QKSQ5F6UgHMILz8OfmPKmX_00wpwwNVGeevJ79ieX2V-__W56iNR5gJ-i9nn6FYk5pwfVREB0l4HSlpTOmu80gbPWAXY5hLW0ZtcE1JTEEmefORHV2ge8e3jp1xGafNy6LdJWabYuKiw8d7Qga__HxtKB-t0kRMNzLRS7rka_SfQg0dSYektuxhLbiDkqhmRffGlQKXGVzUsuvFw7IGM5ZWnZgEMDzCI357obHeM3tRqpn5WRjtB8oM7JgnCymaJi-P3iCd88iu1xnzA</code></pre>
 <p>where the token payload is:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode json"><code class="sourceCode json">  <span class="fu">{</span></span>
-    <span class="dt">&quot;aud&quot;</span><span class="fu">:</span> <span class="st">&quot;kubernetes&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;exp&quot;</span><span class="fu">:</span> <span class="dv">1703232949</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iat&quot;</span><span class="fu">:</span> <span class="dv">1701107233</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iss&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;jti&quot;</span><span class="fu">:</span> <span class="st">&quot;7c337942807e73caa2c30c868ac0ce910bce02ddcbfebe8c23b8b5f27ad62873&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nbf&quot;</span><span class="fu">:</span> <span class="dv">1701107233</span><span class="fu">,</span></span>
-    <span class="dt">&quot;roles&quot;</span><span class="fu">:</span> <span class="st">&quot;user,admin&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;sub&quot;</span><span class="fu">:</span> <span class="st">&quot;auth&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;tenant&quot;</span><span class="fu">:</span> <span class="st">&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;foo&quot;</span></span>
-  <span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">  {
+    &quot;aud&quot;: &quot;kubernetes&quot;,
+    &quot;exp&quot;: 1703232949,
+    &quot;iat&quot;: 1701107233,
+    &quot;iss&quot;: &quot;https://example.com&quot;,
+    &quot;jti&quot;: &quot;7c337942807e73caa2c30c868ac0ce910bce02ddcbfebe8c23b8b5f27ad62873&quot;,
+    &quot;nbf&quot;: 1701107233,
+    &quot;roles&quot;: &quot;user,admin&quot;,
+    &quot;sub&quot;: &quot;auth&quot;,
+    &quot;tenant&quot;: &quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;,
+    &quot;username&quot;: &quot;foo&quot;
+  }</code></pre>
 <p>The token with the above <code>AuthenticationConfiguration</code>
 will produce the following <code>UserInfo</code> object and successfully
 authenticate the user.</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;foo:external-user&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;uid&quot;</span><span class="fu">:</span> <span class="st">&quot;auth&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;groups&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-        <span class="st">&quot;user&quot;</span><span class="ot">,</span></span>
-        <span class="st">&quot;admin&quot;</span></span>
-    <span class="ot">]</span><span class="fu">,</span></span>
-    <span class="dt">&quot;extra&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;example.com/tenant&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;</span><span class="ot">]</span></span>
-    <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+    &quot;username&quot;: &quot;foo:external-user&quot;,
+    &quot;uid&quot;: &quot;auth&quot;,
+    &quot;groups&quot;: [
+        &quot;user&quot;,
+        &quot;admin&quot;
+    ],
+    &quot;extra&quot;: {
+        &quot;example.com/tenant&quot;: [&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;]
+    }
+}</code></pre>
 <div class="tab-label">
 <p>Fails claim validation</p>
 </div>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthenticationConfiguration</span></span>
-<span class="fu">jwt</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">issuer</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">url</span><span class="kw">:</span><span class="at"> https://example.com</span></span>
-<span class="at">    </span><span class="fu">audiences</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">my-app</span></span>
-<span class="at">  </span><span class="fu">claimValidationRules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.hd == &quot;example.com&quot;&#39;</span><span class="at"> </span><span class="co"># the token below does not have this claim, so validation will fail.</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> the hd claim must be set to example.com</span></span>
-<span class="at">  </span><span class="fu">claimMappings</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">username</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.username + &quot;:external-user&quot;&#39;</span></span>
-<span class="at">    </span><span class="fu">groups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.roles.split(&quot;,&quot;)&#39;</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.sub&#39;</span></span>
-<span class="at">    </span><span class="fu">extra</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;example.com/tenant&#39;</span></span>
-<span class="at">      </span><span class="fu">valueExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.tenant&#39;</span></span>
-<span class="at">  </span><span class="fu">userValidationRules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!user.username.startsWith(&#39;system:&#39;)&quot;</span><span class="at"> </span><span class="co"># the expression will evaluate to true, so validation will succeed.</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;username cannot used reserved system: prefix&#39;</span></span></code></pre></div>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="va">TOKEN</span><span class="op">=</span>eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3dF9tOEROWmFTQk1oWGw5QXZTWGhBUC04Y0JmZ0JVbFVpTG5oQkgxdXMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNzAzMjMyOTQ5LCJpYXQiOjE3MDExMDcyMzMsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJqdGkiOiI3YzMzNzk0MjgwN2U3M2NhYTJjMzBjODY4YWMwY2U5MTBiY2UwMmRkY2JmZWJlOGMyM2I4YjVmMjdhZDYyODczIiwibmJmIjoxNzAxMTA3MjMzLCJyb2xlcyI6InVzZXIsYWRtaW4iLCJzdWIiOiJhdXRoIiwidGVuYW50IjoiNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjRhIiwidXNlcm5hbWUiOiJmb28ifQ.TBWF2RkQHm4QQz85AYPcwLxSk-VLvQW-mNDHx7SEOSv9LVwcPYPuPajJpuQn9C_gKq1R94QKSQ5F6UgHMILz8OfmPKmX_00wpwwNVGeevJ79ieX2V-__W56iNR5gJ-i9nn6FYk5pwfVREB0l4HSlpTOmu80gbPWAXY5hLW0ZtcE1JTEEmefORHV2ge8e3jp1xGafNy6LdJWabYuKiw8d7Qga__HxtKB-t0kRMNzLRS7rka_SfQg0dSYektuxhLbiDkqhmRffGlQKXGVzUsuvFw7IGM5ZWnZgEMDzCI357obHeM3tRqpn5WRjtB8oM7JgnCymaJi-P3iCd88iu1xnzA</span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+jwt:
+- issuer:
+    url: https://example.com
+    audiences:
+    - my-app
+  claimValidationRules:
+  - expression: &#39;claims.hd == &quot;example.com&quot;&#39; # the token below does not have this claim, so validation will fail.
+    message: the hd claim must be set to example.com
+  claimMappings:
+    username:
+      expression: &#39;claims.username + &quot;:external-user&quot;&#39;
+    groups:
+      expression: &#39;claims.roles.split(&quot;,&quot;)&#39;
+    uid:
+      expression: &#39;claims.sub&#39;
+    extra:
+    - key: &#39;example.com/tenant&#39;
+      valueExpression: &#39;claims.tenant&#39;
+  userValidationRules:
+  - expression: &quot;!user.username.startsWith(&#39;system:&#39;)&quot; # the expression will evaluate to true, so validation will succeed.
+    message: &#39;username cannot used reserved system: prefix&#39;</code></pre>
+<pre class="bash"><code class="language-bash">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3dF9tOEROWmFTQk1oWGw5QXZTWGhBUC04Y0JmZ0JVbFVpTG5oQkgxdXMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNzAzMjMyOTQ5LCJpYXQiOjE3MDExMDcyMzMsImlzcyI6Imh0dHBzOi8vZXhhbXBsZS5jb20iLCJqdGkiOiI3YzMzNzk0MjgwN2U3M2NhYTJjMzBjODY4YWMwY2U5MTBiY2UwMmRkY2JmZWJlOGMyM2I4YjVmMjdhZDYyODczIiwibmJmIjoxNzAxMTA3MjMzLCJyb2xlcyI6InVzZXIsYWRtaW4iLCJzdWIiOiJhdXRoIiwidGVuYW50IjoiNzJmOTg4YmYtODZmMS00MWFmLTkxYWItMmQ3Y2QwMTFkYjRhIiwidXNlcm5hbWUiOiJmb28ifQ.TBWF2RkQHm4QQz85AYPcwLxSk-VLvQW-mNDHx7SEOSv9LVwcPYPuPajJpuQn9C_gKq1R94QKSQ5F6UgHMILz8OfmPKmX_00wpwwNVGeevJ79ieX2V-__W56iNR5gJ-i9nn6FYk5pwfVREB0l4HSlpTOmu80gbPWAXY5hLW0ZtcE1JTEEmefORHV2ge8e3jp1xGafNy6LdJWabYuKiw8d7Qga__HxtKB-t0kRMNzLRS7rka_SfQg0dSYektuxhLbiDkqhmRffGlQKXGVzUsuvFw7IGM5ZWnZgEMDzCI357obHeM3tRqpn5WRjtB8oM7JgnCymaJi-P3iCd88iu1xnzA</code></pre>
 <p>where the token payload is:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode json"><code class="sourceCode json">  <span class="fu">{</span></span>
-    <span class="dt">&quot;aud&quot;</span><span class="fu">:</span> <span class="st">&quot;kubernetes&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;exp&quot;</span><span class="fu">:</span> <span class="dv">1703232949</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iat&quot;</span><span class="fu">:</span> <span class="dv">1701107233</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iss&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;jti&quot;</span><span class="fu">:</span> <span class="st">&quot;7c337942807e73caa2c30c868ac0ce910bce02ddcbfebe8c23b8b5f27ad62873&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nbf&quot;</span><span class="fu">:</span> <span class="dv">1701107233</span><span class="fu">,</span></span>
-    <span class="dt">&quot;roles&quot;</span><span class="fu">:</span> <span class="st">&quot;user,admin&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;sub&quot;</span><span class="fu">:</span> <span class="st">&quot;auth&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;tenant&quot;</span><span class="fu">:</span> <span class="st">&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;foo&quot;</span></span>
-  <span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">  {
+    &quot;aud&quot;: &quot;kubernetes&quot;,
+    &quot;exp&quot;: 1703232949,
+    &quot;iat&quot;: 1701107233,
+    &quot;iss&quot;: &quot;https://example.com&quot;,
+    &quot;jti&quot;: &quot;7c337942807e73caa2c30c868ac0ce910bce02ddcbfebe8c23b8b5f27ad62873&quot;,
+    &quot;nbf&quot;: 1701107233,
+    &quot;roles&quot;: &quot;user,admin&quot;,
+    &quot;sub&quot;: &quot;auth&quot;,
+    &quot;tenant&quot;: &quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;,
+    &quot;username&quot;: &quot;foo&quot;
+  }</code></pre>
 <p>The token with the above <code>AuthenticationConfiguration</code>
 will fail to authenticate because the <code>hd</code> claim is not set
 to <code>example.com</code>. The API server will return
@@ -1014,61 +1015,57 @@ to <code>example.com</code>. The API server will return
 <div class="tab-label">
 <p>Fails user validation</p>
 </div>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthenticationConfiguration</span></span>
-<span class="fu">jwt</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">issuer</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">url</span><span class="kw">:</span><span class="at"> https://example.com</span></span>
-<span class="at">    </span><span class="fu">audiences</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">my-app</span></span>
-<span class="at">  </span><span class="fu">claimValidationRules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.hd == &quot;example.com&quot;&#39;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> the hd claim must be set to example.com</span></span>
-<span class="at">  </span><span class="fu">claimMappings</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">username</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;&quot;system:&quot; + claims.username&#39;</span><span class="at"> </span><span class="co"># this will prefix the username with &quot;system:&quot; and will fail user validation.</span></span>
-<span class="at">    </span><span class="fu">groups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.roles.split(&quot;,&quot;)&#39;</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.sub&#39;</span></span>
-<span class="at">    </span><span class="fu">extra</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;example.com/tenant&#39;</span></span>
-<span class="at">      </span><span class="fu">valueExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;claims.tenant&#39;</span></span>
-<span class="at">  </span><span class="fu">userValidationRules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!user.username.startsWith(&#39;system:&#39;)&quot;</span><span class="at"> </span><span class="co"># the username will be system:foo and expression will evaluate to false, so validation will fail.</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;username cannot used reserved system: prefix&#39;</span></span></code></pre></div>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="va">TOKEN</span><span class="op">=</span>eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3dF9tOEROWmFTQk1oWGw5QXZTWGhBUC04Y0JmZ0JVbFVpTG5oQkgxdXMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNzAzMjMyOTQ5LCJoZCI6ImV4YW1wbGUuY29tIiwiaWF0IjoxNzAxMTEzMTAxLCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwianRpIjoiYjViMDY1MjM3MmNkMjBlMzQ1YjZmZGZmY2RjMjE4MWY0YWZkNmYyNTlhYWI0YjdlMzU4ODEyMzdkMjkyMjBiYyIsIm5iZiI6MTcwMTExMzEwMSwicm9sZXMiOiJ1c2VyLGFkbWluIiwic3ViIjoiYXV0aCIsInRlbmFudCI6IjcyZjk4OGJmLTg2ZjEtNDFhZi05MWFiLTJkN2NkMDExZGI0YSIsInVzZXJuYW1lIjoiZm9vIn0.FgPJBYLobo9jnbHreooBlvpgEcSPWnKfX6dc0IvdlRB-F0dCcgy91oCJeK_aBk-8zH5AKUXoFTlInfLCkPivMOJqMECA1YTrMUwt_IVqwb116AqihfByUYIIqzMjvUbthtbpIeHQm2fF0HbrUqa_Q0uaYwgy8mD807h7sBcUMjNd215ff_nFIHss-9zegH8GI1d9fiBf-g6zjkR1j987EP748khpQh9IxPjMJbSgG_uH5x80YFuqgEWwq-aYJPQxXX6FatP96a2EAn7wfPpGlPRt0HcBOvq5pCnudgCgfVgiOJiLr_7robQu4T1bis0W75VPEvwWtgFcLnvcQx0JWg</span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+jwt:
+- issuer:
+    url: https://example.com
+    audiences:
+    - my-app
+  claimValidationRules:
+  - expression: &#39;claims.hd == &quot;example.com&quot;&#39;
+    message: the hd claim must be set to example.com
+  claimMappings:
+    username:
+      expression: &#39;&quot;system:&quot; + claims.username&#39; # this will prefix the username with &quot;system:&quot; and will fail user validation.
+    groups:
+      expression: &#39;claims.roles.split(&quot;,&quot;)&#39;
+    uid:
+      expression: &#39;claims.sub&#39;
+    extra:
+    - key: &#39;example.com/tenant&#39;
+      valueExpression: &#39;claims.tenant&#39;
+  userValidationRules:
+  - expression: &quot;!user.username.startsWith(&#39;system:&#39;)&quot; # the username will be system:foo and expression will evaluate to false, so validation will fail.
+    message: &#39;username cannot used reserved system: prefix&#39;</code></pre>
+<pre class="bash"><code class="language-bash">TOKEN=eyJhbGciOiJSUzI1NiIsImtpZCI6ImY3dF9tOEROWmFTQk1oWGw5QXZTWGhBUC04Y0JmZ0JVbFVpTG5oQkgxdXMiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNzAzMjMyOTQ5LCJoZCI6ImV4YW1wbGUuY29tIiwiaWF0IjoxNzAxMTEzMTAxLCJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwianRpIjoiYjViMDY1MjM3MmNkMjBlMzQ1YjZmZGZmY2RjMjE4MWY0YWZkNmYyNTlhYWI0YjdlMzU4ODEyMzdkMjkyMjBiYyIsIm5iZiI6MTcwMTExMzEwMSwicm9sZXMiOiJ1c2VyLGFkbWluIiwic3ViIjoiYXV0aCIsInRlbmFudCI6IjcyZjk4OGJmLTg2ZjEtNDFhZi05MWFiLTJkN2NkMDExZGI0YSIsInVzZXJuYW1lIjoiZm9vIn0.FgPJBYLobo9jnbHreooBlvpgEcSPWnKfX6dc0IvdlRB-F0dCcgy91oCJeK_aBk-8zH5AKUXoFTlInfLCkPivMOJqMECA1YTrMUwt_IVqwb116AqihfByUYIIqzMjvUbthtbpIeHQm2fF0HbrUqa_Q0uaYwgy8mD807h7sBcUMjNd215ff_nFIHss-9zegH8GI1d9fiBf-g6zjkR1j987EP748khpQh9IxPjMJbSgG_uH5x80YFuqgEWwq-aYJPQxXX6FatP96a2EAn7wfPpGlPRt0HcBOvq5pCnudgCgfVgiOJiLr_7robQu4T1bis0W75VPEvwWtgFcLnvcQx0JWg</code></pre>
 <p>where the token payload is:</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode json"><code class="sourceCode json">  <span class="fu">{</span></span>
-    <span class="dt">&quot;aud&quot;</span><span class="fu">:</span> <span class="st">&quot;kubernetes&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;exp&quot;</span><span class="fu">:</span> <span class="dv">1703232949</span><span class="fu">,</span></span>
-    <span class="dt">&quot;hd&quot;</span><span class="fu">:</span> <span class="st">&quot;example.com&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iat&quot;</span><span class="fu">:</span> <span class="dv">1701113101</span><span class="fu">,</span></span>
-    <span class="dt">&quot;iss&quot;</span><span class="fu">:</span> <span class="st">&quot;https://example.com&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;jti&quot;</span><span class="fu">:</span> <span class="st">&quot;b5b0652372cd20e345b6fdffcdc2181f4afd6f259aab4b7e35881237d29220bc&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;nbf&quot;</span><span class="fu">:</span> <span class="dv">1701113101</span><span class="fu">,</span></span>
-    <span class="dt">&quot;roles&quot;</span><span class="fu">:</span> <span class="st">&quot;user,admin&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;sub&quot;</span><span class="fu">:</span> <span class="st">&quot;auth&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;tenant&quot;</span><span class="fu">:</span> <span class="st">&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;foo&quot;</span></span>
-  <span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">  {
+    &quot;aud&quot;: &quot;kubernetes&quot;,
+    &quot;exp&quot;: 1703232949,
+    &quot;hd&quot;: &quot;example.com&quot;,
+    &quot;iat&quot;: 1701113101,
+    &quot;iss&quot;: &quot;https://example.com&quot;,
+    &quot;jti&quot;: &quot;b5b0652372cd20e345b6fdffcdc2181f4afd6f259aab4b7e35881237d29220bc&quot;,
+    &quot;nbf&quot;: 1701113101,
+    &quot;roles&quot;: &quot;user,admin&quot;,
+    &quot;sub&quot;: &quot;auth&quot;,
+    &quot;tenant&quot;: &quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;,
+    &quot;username&quot;: &quot;foo&quot;
+  }</code></pre>
 <p>The token with the above <code>AuthenticationConfiguration</code>
 will produce the following <code>UserInfo</code> object:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;system:foo&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;uid&quot;</span><span class="fu">:</span> <span class="st">&quot;auth&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;groups&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-        <span class="st">&quot;user&quot;</span><span class="ot">,</span></span>
-        <span class="st">&quot;admin&quot;</span></span>
-    <span class="ot">]</span><span class="fu">,</span></span>
-    <span class="dt">&quot;extra&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;example.com/tenant&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;</span><span class="ot">]</span></span>
-    <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+    &quot;username&quot;: &quot;system:foo&quot;,
+    &quot;uid&quot;: &quot;auth&quot;,
+    &quot;groups&quot;: [
+        &quot;user&quot;,
+        &quot;admin&quot;
+    ],
+    &quot;extra&quot;: {
+        &quot;example.com/tenant&quot;: [&quot;72f988bf-86f1-41af-91ab-2d7cd011db4a&quot;]
+    }
+}</code></pre>
 <p>which will fail user validation because the username starts with
 <code>system:</code>. The API server will return
 <code>401 Unauthorized</code> error.</p>
@@ -1119,40 +1116,37 @@ plugin.</p>
 refresh token response aren't supported by this plugin and should use <a
 href="#option-2-use-the-token-option">Option 2</a> (specifying
 <code>--token</code>).</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> config set-credentials USER_NAME <span class="dt">\</span></span>
-   <span class="at">--auth-provider</span><span class="op">=</span>oidc <span class="dt">\</span></span>
-   <span class="at">--auth-provider-arg</span><span class="op">=</span>idp-issuer-url=<span class="er">(</span> <span class="ex">issuer</span> url <span class="kw">)</span> <span class="dt">\</span></span>
-   <span class="ex">--auth-provider-arg=client-id=</span><span class="er">(</span> <span class="ex">your</span> client id <span class="kw">)</span> <span class="dt">\</span></span>
-   <span class="ex">--auth-provider-arg=client-secret=</span><span class="er">(</span> <span class="ex">your</span> client secret <span class="kw">)</span> <span class="dt">\</span></span>
-   <span class="ex">--auth-provider-arg=refresh-token=</span><span class="er">(</span> <span class="ex">your</span> refresh token <span class="kw">)</span> <span class="dt">\</span></span>
-   <span class="ex">--auth-provider-arg=idp-certificate-authority=</span><span class="er">(</span> <span class="ex">path</span> to your ca certificate <span class="kw">)</span> <span class="dt">\</span></span>
-   <span class="ex">--auth-provider-arg=id-token=</span><span class="er">(</span> <span class="ex">your</span> id_token <span class="kw">)</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl config set-credentials USER_NAME \
+   --auth-provider=oidc \
+   --auth-provider-arg=idp-issuer-url=( issuer url ) \
+   --auth-provider-arg=client-id=( your client id ) \
+   --auth-provider-arg=client-secret=( your client secret ) \
+   --auth-provider-arg=refresh-token=( your refresh token ) \
+   --auth-provider-arg=idp-certificate-authority=( path to your ca certificate ) \
+   --auth-provider-arg=id-token=( your id_token )</code></pre>
 <p>As an example, running the below command after authenticating to your
 identity provider:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> config set-credentials mmosley  <span class="dt">\</span></span>
-        <span class="at">--auth-provider</span><span class="op">=</span>oidc  <span class="dt">\</span></span>
-        <span class="at">--auth-provider-arg</span><span class="op">=</span>idp-issuer-url=https://oidcidp.tremolo.lan:8443/auth/idp/OidcIdP  <span class="dt">\</span></span>
-        <span class="at">--auth-provider-arg</span><span class="op">=</span>client-id=kubernetes  <span class="dt">\</span></span>
-        <span class="at">--auth-provider-arg</span><span class="op">=</span>client-secret=1db158f6-177d-4d9c-8a8b-d36869918ec5  <span class="dt">\</span></span>
-        <span class="at">--auth-provider-arg</span><span class="op">=</span>refresh-token=q1bKLFOyUiosTfawzA93TzZIDzH2TNa2SMm0zEiPKTUwME6BkEo6Sql5yUWVBSWpKUGphaWpxSVAfekBOZbBhaEW+VlFUeVRGcluyVF5JT4+haZmPsluFoFu5XkpXk5BXqHega4GAXlF+ma+vmYpFcHe5eZR+slBFpZKtQA= <span class="dt">\</span></span>
-        <span class="at">--auth-provider-arg</span><span class="op">=</span>idp-certificate-authority=/root/ca.pem <span class="dt">\</span></span>
-        <span class="at">--auth-provider-arg</span><span class="op">=</span>id-token=eyJraWQiOiJDTj1vaWRjaWRwLnRyZW1vbG8ubGFuLCBPVT1EZW1vLCBPPVRybWVvbG8gU2VjdXJpdHksIEw9QXJsaW5ndG9uLCBTVD1WaXJnaW5pYSwgQz1VUy1DTj1rdWJlLWNhLTEyMDIxNDc5MjEwMzYwNzMyMTUyIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJodHRwczovL29pZGNpZHAudHJlbW9sby5sYW46ODQ0My9hdXRoL2lkcC9PaWRjSWRQIiwiYXVkIjoia3ViZXJuZXRlcyIsImV4cCI6MTQ4MzU0OTUxMSwianRpIjoiMm96US15TXdFcHV4WDlHZUhQdy1hZyIsImlhdCI6MTQ4MzU0OTQ1MSwibmJmIjoxNDgzNTQ5MzMxLCJzdWIiOiI0YWViMzdiYS1iNjQ1LTQ4ZmQtYWIzMC0xYTAxZWU0MWUyMTgifQ.w6p4J_6qQ1HzTG9nrEOrubxIMb9K5hzcMPxc9IxPx2K4xO9l-oFiUw93daH3m5pluP6K7eOE6txBuRVfEcpJSwlelsOsW8gb8VJcnzMS9EnZpeA0tW_p-mnkFc3VcfyXuhe5R3G7aa5d8uHv70yJ9Y3-UhjiN9EhpMdfPAoEB9fYKKkJRzF7utTTIPGrSaSU6d2pcpfYKaxIwePzEkT4DfcQthoZdy9ucNvvLoi1DIC-UocFD8HLs8LYKEqSxQvOcvnThbObJ9af71EwmuE21fO5KzMW20KtAeget1gnldOosPtz1G5EwvaQ401-RPQzPGMVBld0_zMCAwZttJ4knw</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl config set-credentials mmosley  \
+        --auth-provider=oidc  \
+        --auth-provider-arg=idp-issuer-url=https://oidcidp.tremolo.lan:8443/auth/idp/OidcIdP  \
+        --auth-provider-arg=client-id=kubernetes  \
+        --auth-provider-arg=client-secret=1db158f6-177d-4d9c-8a8b-d36869918ec5  \
+        --auth-provider-arg=refresh-token=q1bKLFOyUiosTfawzA93TzZIDzH2TNa2SMm0zEiPKTUwME6BkEo6Sql5yUWVBSWpKUGphaWpxSVAfekBOZbBhaEW+VlFUeVRGcluyVF5JT4+haZmPsluFoFu5XkpXk5BXqHega4GAXlF+ma+vmYpFcHe5eZR+slBFpZKtQA= \
+        --auth-provider-arg=idp-certificate-authority=/root/ca.pem \
+        --auth-provider-arg=id-token=eyJraWQiOiJDTj1vaWRjaWRwLnRyZW1vbG8ubGFuLCBPVT1EZW1vLCBPPVRybWVvbG8gU2VjdXJpdHksIEw9QXJsaW5ndG9uLCBTVD1WaXJnaW5pYSwgQz1VUy1DTj1rdWJlLWNhLTEyMDIxNDc5MjEwMzYwNzMyMTUyIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJodHRwczovL29pZGNpZHAudHJlbW9sby5sYW46ODQ0My9hdXRoL2lkcC9PaWRjSWRQIiwiYXVkIjoia3ViZXJuZXRlcyIsImV4cCI6MTQ4MzU0OTUxMSwianRpIjoiMm96US15TXdFcHV4WDlHZUhQdy1hZyIsImlhdCI6MTQ4MzU0OTQ1MSwibmJmIjoxNDgzNTQ5MzMxLCJzdWIiOiI0YWViMzdiYS1iNjQ1LTQ4ZmQtYWIzMC0xYTAxZWU0MWUyMTgifQ.w6p4J_6qQ1HzTG9nrEOrubxIMb9K5hzcMPxc9IxPx2K4xO9l-oFiUw93daH3m5pluP6K7eOE6txBuRVfEcpJSwlelsOsW8gb8VJcnzMS9EnZpeA0tW_p-mnkFc3VcfyXuhe5R3G7aa5d8uHv70yJ9Y3-UhjiN9EhpMdfPAoEB9fYKKkJRzF7utTTIPGrSaSU6d2pcpfYKaxIwePzEkT4DfcQthoZdy9ucNvvLoi1DIC-UocFD8HLs8LYKEqSxQvOcvnThbObJ9af71EwmuE21fO5KzMW20KtAeget1gnldOosPtz1G5EwvaQ401-RPQzPGMVBld0_zMCAwZttJ4knw</code></pre>
 <p>Which would produce the below configuration:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">users</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mmosley</span></span>
-<span class="at">  </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">auth-provider</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">config</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">client-id</span><span class="kw">:</span><span class="at"> kubernetes</span></span>
-<span class="at">        </span><span class="fu">client-secret</span><span class="kw">:</span><span class="at"> 1db158f6-177d-4d9c-8a8b-d36869918ec5</span></span>
-<span class="at">        </span><span class="fu">id-token</span><span class="kw">:</span><span class="at"> eyJraWQiOiJDTj1vaWRjaWRwLnRyZW1vbG8ubGFuLCBPVT1EZW1vLCBPPVRybWVvbG8gU2VjdXJpdHksIEw9QXJsaW5ndG9uLCBTVD1WaXJnaW5pYSwgQz1VUy1DTj1rdWJlLWNhLTEyMDIxNDc5MjEwMzYwNzMyMTUyIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJodHRwczovL29pZGNpZHAudHJlbW9sby5sYW46ODQ0My9hdXRoL2lkcC9PaWRjSWRQIiwiYXVkIjoia3ViZXJuZXRlcyIsImV4cCI6MTQ4MzU0OTUxMSwianRpIjoiMm96US15TXdFcHV4WDlHZUhQdy1hZyIsImlhdCI6MTQ4MzU0OTQ1MSwibmJmIjoxNDgzNTQ5MzMxLCJzdWIiOiI0YWViMzdiYS1iNjQ1LTQ4ZmQtYWIzMC0xYTAxZWU0MWUyMTgifQ.w6p4J_6qQ1HzTG9nrEOrubxIMb9K5hzcMPxc9IxPx2K4xO9l-oFiUw93daH3m5pluP6K7eOE6txBuRVfEcpJSwlelsOsW8gb8VJcnzMS9EnZpeA0tW_p-mnkFc3VcfyXuhe5R3G7aa5d8uHv70yJ9Y3-UhjiN9EhpMdfPAoEB9fYKKkJRzF7utTTIPGrSaSU6d2pcpfYKaxIwePzEkT4DfcQthoZdy9ucNvvLoi1DIC-UocFD8HLs8LYKEqSxQvOcvnThbObJ9af71EwmuE21fO5KzMW20KtAeget1gnldOosPtz1G5EwvaQ401-RPQzPGMVBld0_zMCAwZttJ4knw</span></span>
-<span class="at">        </span><span class="fu">idp-certificate-authority</span><span class="kw">:</span><span class="at"> /root/ca.pem</span></span>
-<span class="at">        </span><span class="fu">idp-issuer-url</span><span class="kw">:</span><span class="at"> https://oidcidp.tremolo.lan:8443/auth/idp/OidcIdP</span></span>
-<span class="at">        </span><span class="fu">refresh-token</span><span class="kw">:</span><span class="at"> q1bKLFOyUiosTfawzA93TzZIDzH2TNa2SMm0zEiPKTUwME6BkEo6Sql5yUWVBSWpKUGphaWpxSVAfekBOZbBhaEW+VlFUeVRGcluyVF5JT4+haZmPsluFoFu5XkpXk5BXq</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> oidc</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">users:
+- name: mmosley
+  user:
+    auth-provider:
+      config:
+        client-id: kubernetes
+        client-secret: 1db158f6-177d-4d9c-8a8b-d36869918ec5
+        id-token: eyJraWQiOiJDTj1vaWRjaWRwLnRyZW1vbG8ubGFuLCBPVT1EZW1vLCBPPVRybWVvbG8gU2VjdXJpdHksIEw9QXJsaW5ndG9uLCBTVD1WaXJnaW5pYSwgQz1VUy1DTj1rdWJlLWNhLTEyMDIxNDc5MjEwMzYwNzMyMTUyIiwiYWxnIjoiUlMyNTYifQ.eyJpc3MiOiJodHRwczovL29pZGNpZHAudHJlbW9sby5sYW46ODQ0My9hdXRoL2lkcC9PaWRjSWRQIiwiYXVkIjoia3ViZXJuZXRlcyIsImV4cCI6MTQ4MzU0OTUxMSwianRpIjoiMm96US15TXdFcHV4WDlHZUhQdy1hZyIsImlhdCI6MTQ4MzU0OTQ1MSwibmJmIjoxNDgzNTQ5MzMxLCJzdWIiOiI0YWViMzdiYS1iNjQ1LTQ4ZmQtYWIzMC0xYTAxZWU0MWUyMTgifQ.w6p4J_6qQ1HzTG9nrEOrubxIMb9K5hzcMPxc9IxPx2K4xO9l-oFiUw93daH3m5pluP6K7eOE6txBuRVfEcpJSwlelsOsW8gb8VJcnzMS9EnZpeA0tW_p-mnkFc3VcfyXuhe5R3G7aa5d8uHv70yJ9Y3-UhjiN9EhpMdfPAoEB9fYKKkJRzF7utTTIPGrSaSU6d2pcpfYKaxIwePzEkT4DfcQthoZdy9ucNvvLoi1DIC-UocFD8HLs8LYKEqSxQvOcvnThbObJ9af71EwmuE21fO5KzMW20KtAeget1gnldOosPtz1G5EwvaQ401-RPQzPGMVBld0_zMCAwZttJ4knw
+        idp-certificate-authority: /root/ca.pem
+        idp-issuer-url: https://oidcidp.tremolo.lan:8443/auth/idp/OidcIdP
+        refresh-token: q1bKLFOyUiosTfawzA93TzZIDzH2TNa2SMm0zEiPKTUwME6BkEo6Sql5yUWVBSWpKUGphaWpxSVAfekBOZbBhaEW+VlFUeVRGcluyVF5JT4+haZmPsluFoFu5XkpXk5BXq
+      name: oidc</code></pre>
 <p>Once your <code>id_token</code> expires, <code>kubectl</code> will
 attempt to refresh your <code>id_token</code> using your
 <code>refresh_token</code> and <code>client_secret</code> storing the
@@ -1163,8 +1157,7 @@ in your <code>.kube/config</code>.</p>
 <p>The <code>kubectl</code> command lets you pass in a token using the
 <code>--token</code> command line argument. Copy and paste the
 <code>id_token</code> into this option:</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> <span class="at">--token</span><span class="op">=</span>eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL21sYi50cmVtb2xvLmxhbjo4MDQzL2F1dGgvaWRwL29pZGMiLCJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNDc0NTk2NjY5LCJqdGkiOiI2RDUzNXoxUEpFNjJOR3QxaWVyYm9RIiwiaWF0IjoxNDc0NTk2MzY5LCJuYmYiOjE0NzQ1OTYyNDksInN1YiI6Im13aW5kdSIsInVzZXJfcm9sZSI6WyJ1c2VycyIsIm5ldy1uYW1lc3BhY2Utdmlld2VyIl0sImVtYWlsIjoibXdpbmR1QG5vbW9yZWplZGkuY29tIn0.f2As579n9VNoaKzoF-dOQGmXkFKf1FMyNV0-va_B63jn-_n9LGSCca_6IVMP8pO-Zb4KvRqGyTP0r3HkHxYy5c81AnIh8ijarruczl-TK_yF5akjSTHFZD-0gRzlevBDiH8Q79NAr-ky0P4iIXS8lY9Vnjch5MF74Zx0c3alKJHJUnnpjIACByfF2SCaYzbWFMUNat-K1PaUk5-ujMBG7yYnr95xD-63n8CO8teGUAAEMx6zRjzfhnhbzX-ajwZLGwGUBT4WqjMs70-6a7_8gZmLZb2az1cZynkFRj2BaCkVT3A2RrjeEwZEtGXlMqKJ1_I2ulrOVsYx01_yD35-rw get nodes</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl --token=eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJodHRwczovL21sYi50cmVtb2xvLmxhbjo4MDQzL2F1dGgvaWRwL29pZGMiLCJhdWQiOiJrdWJlcm5ldGVzIiwiZXhwIjoxNDc0NTk2NjY5LCJqdGkiOiI2RDUzNXoxUEpFNjJOR3QxaWVyYm9RIiwiaWF0IjoxNDc0NTk2MzY5LCJuYmYiOjE0NzQ1OTYyNDksInN1YiI6Im13aW5kdSIsInVzZXJfcm9sZSI6WyJ1c2VycyIsIm5ldy1uYW1lc3BhY2Utdmlld2VyIl0sImVtYWlsIjoibXdpbmR1QG5vbW9yZWplZGkuY29tIn0.f2As579n9VNoaKzoF-dOQGmXkFKf1FMyNV0-va_B63jn-_n9LGSCca_6IVMP8pO-Zb4KvRqGyTP0r3HkHxYy5c81AnIh8ijarruczl-TK_yF5akjSTHFZD-0gRzlevBDiH8Q79NAr-ky0P4iIXS8lY9Vnjch5MF74Zx0c3alKJHJUnnpjIACByfF2SCaYzbWFMUNat-K1PaUk5-ujMBG7yYnr95xD-63n8CO8teGUAAEMx6zRjzfhnhbzX-ajwZLGwGUBT4WqjMs70-6a7_8gZmLZb2az1cZynkFRj2BaCkVT3A2RrjeEwZEtGXlMqKJ1_I2ulrOVsYx01_yD35-rw get nodes</code></pre>
 <h3 id="webhook-token-authentication">Webhook token authentication</h3>
 <p>Kubernetes <em>webhook authentication</em> is a mechanism to make an
 HTTP callout for verifying bearer tokens.</p>
@@ -1186,32 +1179,31 @@ href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kube
 file format. Within the file, <code>clusters</code> refers to the remote
 service and <code>users</code> refers to the API server webhook. An
 example would be:</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Kubernetes API version</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="co"># kind of the API object</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Config</span></span>
-<span class="co"># clusters refers to the remote service.</span></span>
-<span class="fu">clusters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-of-remote-authn-service</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">certificate-authority</span><span class="kw">:</span><span class="at"> /path/to/ca.pem         # CA for verifying the remote service.</span></span>
-<span class="at">      </span><span class="fu">server</span><span class="kw">:</span><span class="at"> https://authn.example.com/authenticate</span><span class="co"> # URL of remote service to query. &#39;https&#39; recommended for production.</span></span>
-</span>
-<span class="co"># users refers to the API server&#39;s webhook configuration.</span></span>
-<span class="fu">users</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-of-api-server</span></span>
-<span class="at">    </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">client-certificate</span><span class="kw">:</span><span class="at"> /path/to/cert.pem</span><span class="co"> # cert for the webhook plugin to use</span></span>
-<span class="at">      </span><span class="fu">client-key</span><span class="kw">:</span><span class="at"> /path/to/key.pem          # key matching the cert</span></span>
-</span>
-<span class="co"># kubeconfig files require a context. Provide one for the API server.</span></span>
-<span class="fu">current-context</span><span class="kw">:</span><span class="at"> webhook</span></span>
-<span class="fu">contexts</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">context</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span><span class="at"> name-of-remote-authn-service</span></span>
-<span class="at">    </span><span class="fu">user</span><span class="kw">:</span><span class="at"> name-of-api-server</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> webhook</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># Kubernetes API version
+apiVersion: v1
+# kind of the API object
+kind: Config
+# clusters refers to the remote service.
+clusters:
+  - name: name-of-remote-authn-service
+    cluster:
+      certificate-authority: /path/to/ca.pem         # CA for verifying the remote service.
+      server: https://authn.example.com/authenticate # URL of remote service to query. &#39;https&#39; recommended for production.
+
+# users refers to the API server&#39;s webhook configuration.
+users:
+  - name: name-of-api-server
+    user:
+      client-certificate: /path/to/cert.pem # cert for the webhook plugin to use
+      client-key: /path/to/key.pem          # key matching the cert
+
+# kubeconfig files require a context. Provide one for the API server.
+current-context: webhook
+contexts:
+- context:
+    cluster: name-of-remote-authn-service
+    user: name-of-api-server
+  name: webhook</code></pre>
 <p>When a client attempts to authenticate with the API server using a
 bearer token as discussed <a
 href="#putting-a-bearer-token-in-a-request">above</a>, the
@@ -1238,43 +1230,41 @@ compatibility. To opt into receiving
 be started with
 <code>--authentication-token-webhook-version=v1</code>.</p>
 </div>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;TokenReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;spec&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="co"># Opaque bearer token sent to the API server</span></span>
-<span class="at">    </span><span class="fu">&quot;token&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;014fbff9a07c...&quot;</span><span class="kw">,</span></span>
-</span>
-<span class="at">    </span><span class="co"># Optional list of the audience identifiers for the server the token was presented to.</span></span>
-<span class="at">    </span><span class="co"># Audience-aware token authenticators (for example, OIDC token authenticators)</span></span>
-<span class="at">    </span><span class="co"># should verify the token was intended for at least one of the audiences in this list,</span></span>
-<span class="at">    </span><span class="co"># and return the intersection of this list and the valid audiences for the token in the response status.</span></span>
-<span class="at">    </span><span class="co"># This ensures the token is valid to authenticate to the server it was presented to.</span></span>
-<span class="at">    </span><span class="co"># If no audiences are provided, the token should be validated to authenticate to the Kubernetes API server.</span></span>
-<span class="at">    </span><span class="fu">&quot;audiences&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;https://myserver.example.com&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;https://myserver.internal.example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;TokenReview&quot;,
+  &quot;spec&quot;: {
+    # Opaque bearer token sent to the API server
+    &quot;token&quot;: &quot;014fbff9a07c...&quot;,
+
+    # Optional list of the audience identifiers for the server the token was presented to.
+    # Audience-aware token authenticators (for example, OIDC token authenticators)
+    # should verify the token was intended for at least one of the audiences in this list,
+    # and return the intersection of this list and the valid audiences for the token in the response status.
+    # This ensures the token is valid to authenticate to the server it was presented to.
+    # If no audiences are provided, the token should be validated to authenticate to the Kubernetes API server.
+    &quot;audiences&quot;: [&quot;https://myserver.example.com&quot;, &quot;https://myserver.internal.example.com&quot;]
+  }
+}</code></pre>
 <div class="tab-label">
 <p>authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1beta1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;TokenReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;spec&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="co"># Opaque bearer token sent to the API server</span></span>
-<span class="at">    </span><span class="fu">&quot;token&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;014fbff9a07c...&quot;</span><span class="kw">,</span></span>
-</span>
-<span class="at">    </span><span class="co"># Optional list of the audience identifiers for the server the token was presented to.</span></span>
-<span class="at">    </span><span class="co"># Audience-aware token authenticators (for example, OIDC token authenticators)</span></span>
-<span class="at">    </span><span class="co"># should verify the token was intended for at least one of the audiences in this list,</span></span>
-<span class="at">    </span><span class="co"># and return the intersection of this list and the valid audiences for the token in the response status.</span></span>
-<span class="at">    </span><span class="co"># This ensures the token is valid to authenticate to the server it was presented to.</span></span>
-<span class="at">    </span><span class="co"># If no audiences are provided, the token should be validated to authenticate to the Kubernetes API server.</span></span>
-<span class="at">    </span><span class="fu">&quot;audiences&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;https://myserver.example.com&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;https://myserver.internal.example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;TokenReview&quot;,
+  &quot;spec&quot;: {
+    # Opaque bearer token sent to the API server
+    &quot;token&quot;: &quot;014fbff9a07c...&quot;,
+
+    # Optional list of the audience identifiers for the server the token was presented to.
+    # Audience-aware token authenticators (for example, OIDC token authenticators)
+    # should verify the token was intended for at least one of the audiences in this list,
+    # and return the intersection of this list and the valid audiences for the token in the response status.
+    # This ensures the token is valid to authenticate to the server it was presented to.
+    # If no audiences are provided, the token should be validated to authenticate to the Kubernetes API server.
+    &quot;audiences&quot;: [&quot;https://myserver.example.com&quot;, &quot;https://myserver.internal.example.com&quot;]
+  }
+}</code></pre>
 </div>
 <p>The remote service is expected to fill the <code>status</code> field
 of the request to indicate the success of the login. The response body's
@@ -1286,100 +1276,96 @@ token would return:</p>
 <div class="tab-label">
 <p>authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;TokenReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;status&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;authenticated&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="ch">true</span><span class="kw">,</span></span>
-<span class="at">    </span><span class="fu">&quot;user&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">      </span><span class="co"># Required</span></span>
-<span class="at">      </span><span class="fu">&quot;username&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;janedoe@example.com&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="co"># Optional</span></span>
-<span class="at">      </span><span class="fu">&quot;uid&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;42&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="co"># Optional group memberships</span></span>
-<span class="at">      </span><span class="fu">&quot;groups&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;developers&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;qa&quot;</span><span class="kw">],</span></span>
-<span class="at">      </span><span class="co"># Optional additional information provided by the authenticator.</span></span>
-<span class="at">      </span><span class="co"># This should not contain confidential data, as it can be recorded in logs</span></span>
-<span class="at">      </span><span class="co"># or API objects, and is made available to admission webhooks.</span></span>
-<span class="at">      </span><span class="fu">&quot;extra&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">        </span><span class="fu">&quot;extrafield1&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">          </span><span class="st">&quot;extravalue1&quot;</span><span class="kw">,</span></span>
-<span class="at">          </span><span class="st">&quot;extravalue2&quot;</span></span>
-<span class="at">        </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="kw">}</span></span>
-<span class="at">    </span><span class="kw">},</span></span>
-<span class="at">    </span><span class="co"># Optional list audience-aware token authenticators can return,</span></span>
-<span class="at">    </span><span class="co"># containing the audiences from the `spec.audiences` list for which the provided token was valid.</span></span>
-<span class="at">    </span><span class="co"># If this is omitted, the token is considered to be valid to authenticate to the Kubernetes API server.</span></span>
-<span class="at">    </span><span class="fu">&quot;audiences&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;https://myserver.example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;TokenReview&quot;,
+  &quot;status&quot;: {
+    &quot;authenticated&quot;: true,
+    &quot;user&quot;: {
+      # Required
+      &quot;username&quot;: &quot;janedoe@example.com&quot;,
+      # Optional
+      &quot;uid&quot;: &quot;42&quot;,
+      # Optional group memberships
+      &quot;groups&quot;: [&quot;developers&quot;, &quot;qa&quot;],
+      # Optional additional information provided by the authenticator.
+      # This should not contain confidential data, as it can be recorded in logs
+      # or API objects, and is made available to admission webhooks.
+      &quot;extra&quot;: {
+        &quot;extrafield1&quot;: [
+          &quot;extravalue1&quot;,
+          &quot;extravalue2&quot;
+        ]
+      }
+    },
+    # Optional list audience-aware token authenticators can return,
+    # containing the audiences from the `spec.audiences` list for which the provided token was valid.
+    # If this is omitted, the token is considered to be valid to authenticate to the Kubernetes API server.
+    &quot;audiences&quot;: [&quot;https://myserver.example.com&quot;]
+  }
+}</code></pre>
 <div class="tab-label">
 <p>authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1beta1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;TokenReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;status&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;authenticated&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="ch">true</span><span class="kw">,</span></span>
-<span class="at">    </span><span class="fu">&quot;user&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">      </span><span class="co"># Required</span></span>
-<span class="at">      </span><span class="fu">&quot;username&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;janedoe@example.com&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="co"># Optional</span></span>
-<span class="at">      </span><span class="fu">&quot;uid&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;42&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="co"># Optional group memberships</span></span>
-<span class="at">      </span><span class="fu">&quot;groups&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;developers&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;qa&quot;</span><span class="kw">],</span></span>
-<span class="at">      </span><span class="co"># Optional additional information provided by the authenticator.</span></span>
-<span class="at">      </span><span class="co"># This should not contain confidential data, as it can be recorded in logs</span></span>
-<span class="at">      </span><span class="co"># or API objects, and is made available to admission webhooks.</span></span>
-<span class="at">      </span><span class="fu">&quot;extra&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">        </span><span class="fu">&quot;extrafield1&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">          </span><span class="st">&quot;extravalue1&quot;</span><span class="kw">,</span></span>
-<span class="at">          </span><span class="st">&quot;extravalue2&quot;</span></span>
-<span class="at">        </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="kw">}</span></span>
-<span class="at">    </span><span class="kw">},</span></span>
-<span class="at">    </span><span class="co"># Optional list audience-aware token authenticators can return,</span></span>
-<span class="at">    </span><span class="co"># containing the audiences from the `spec.audiences` list for which the provided token was valid.</span></span>
-<span class="at">    </span><span class="co"># If this is omitted, the token is considered to be valid to authenticate to the Kubernetes API server.</span></span>
-<span class="at">    </span><span class="fu">&quot;audiences&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="st">&quot;https://myserver.example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;TokenReview&quot;,
+  &quot;status&quot;: {
+    &quot;authenticated&quot;: true,
+    &quot;user&quot;: {
+      # Required
+      &quot;username&quot;: &quot;janedoe@example.com&quot;,
+      # Optional
+      &quot;uid&quot;: &quot;42&quot;,
+      # Optional group memberships
+      &quot;groups&quot;: [&quot;developers&quot;, &quot;qa&quot;],
+      # Optional additional information provided by the authenticator.
+      # This should not contain confidential data, as it can be recorded in logs
+      # or API objects, and is made available to admission webhooks.
+      &quot;extra&quot;: {
+        &quot;extrafield1&quot;: [
+          &quot;extravalue1&quot;,
+          &quot;extravalue2&quot;
+        ]
+      }
+    },
+    # Optional list audience-aware token authenticators can return,
+    # containing the audiences from the `spec.audiences` list for which the provided token was valid.
+    # If this is omitted, the token is considered to be valid to authenticate to the Kubernetes API server.
+    &quot;audiences&quot;: [&quot;https://myserver.example.com&quot;]
+  }
+}</code></pre>
 </div>
 <p>An unsuccessful request would return:</p>
 <div class="tabset">
 <div class="tab-label">
 <p>authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;TokenReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;status&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;authenticated&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="ch">false</span><span class="kw">,</span></span>
-<span class="at">    </span><span class="co"># Optionally include details about why authentication failed.</span></span>
-<span class="at">    </span><span class="co"># If no error is provided, the API will return a generic Unauthorized message.</span></span>
-<span class="at">    </span><span class="co"># The error field is ignored when authenticated=true.</span></span>
-<span class="at">    </span><span class="fu">&quot;error&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;Credentials are expired&quot;</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;TokenReview&quot;,
+  &quot;status&quot;: {
+    &quot;authenticated&quot;: false,
+    # Optionally include details about why authentication failed.
+    # If no error is provided, the API will return a generic Unauthorized message.
+    # The error field is ignored when authenticated=true.
+    &quot;error&quot;: &quot;Credentials are expired&quot;
+  }
+}</code></pre>
 <div class="tab-label">
 <p>authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1beta1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;TokenReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;status&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;authenticated&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="ch">false</span><span class="kw">,</span></span>
-<span class="at">    </span><span class="co"># Optionally include details about why authentication failed.</span></span>
-<span class="at">    </span><span class="co"># If no error is provided, the API will return a generic Unauthorized message.</span></span>
-<span class="at">    </span><span class="co"># The error field is ignored when authenticated=true.</span></span>
-<span class="at">    </span><span class="fu">&quot;error&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;Credentials are expired&quot;</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;TokenReview&quot;,
+  &quot;status&quot;: {
+    &quot;authenticated&quot;: false,
+    # Optionally include details about why authentication failed.
+    # If no error is provided, the API will return a generic Unauthorized message.
+    # The error field is ignored when authenticated=true.
+    &quot;error&quot;: &quot;Credentials are expired&quot;
+  }
+}</code></pre>
 </div>
 <h3 id="authenticating-proxy">Authenticating reverse proxy</h3>
 <div class="admonition warning">
@@ -1411,7 +1397,7 @@ line arguments.</p>
 --requestheader-group-headers=X-Remote-Group
 --requestheader-extra-headers-prefix=X-Remote-Extra-</code></pre>
 <p>this request:</p>
-<pre class="http"><code>GET / HTTP/1.1
+<pre class="http"><code class="language-http">GET / HTTP/1.1
 X-Remote-User: fido
 X-Remote-Group: dogs
 X-Remote-Group: dachshunds
@@ -1419,17 +1405,16 @@ X-Remote-Extra-Acme.com%2Fproject: some-project
 X-Remote-Extra-Scopes: openid
 X-Remote-Extra-Scopes: profile</code></pre>
 <p>would result in this user info:</p>
-<div class="sourceCode" id="cb36"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">name</span><span class="kw">:</span><span class="at"> fido</span></span>
-<span class="fu">groups</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="at">dogs</span></span>
-<span class="kw">- </span><span class="at">dachshunds</span></span>
-<span class="fu">extra</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">acme.com/project</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">some-project</span></span>
-<span class="at">  </span><span class="fu">scopes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">openid</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">profile</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">name: fido
+groups:
+- dogs
+- dachshunds
+extra:
+  acme.com/project:
+  - some-project
+  scopes:
+  - openid
+  - profile</code></pre>
 <h4 id="reverse-proxy-client-certificate">Client certificate</h4>
 <p>In order to prevent header spoofing, the authenticating proxy is
 required to present a valid client certificate to the API server for
@@ -1454,8 +1439,7 @@ names.</p>
 </div>
 <p>If you have more than one group, the column must be double quoted
 e.g.</p>
-<div class="sourceCode" id="cb37"><pre
-class="sourceCode conf"><code class="sourceCode toml"><span class="dt">token</span><span class="er">,</span><span class="dt">user</span><span class="er">,</span><span class="dt">uid</span><span class="er">,</span><span class="dt">&quot;group1,group2,group3&quot;</span></span></code></pre></div>
+<pre class="conf"><code class="language-conf">token,user,uid,&quot;group1,group2,group3&quot;</code></pre>
 </div>
 <p>Using a static token file is appropriate for tokens that by their
 nature are long-lived, static, and perhaps may never be rotated. It is
@@ -1763,16 +1747,15 @@ configuration file</a>.
 <h4 id="api-server-authn-config-file-example">Example</h4>
 <p>Here is an example of a Kubernetes (structured) authentication
 configuration file:</p>
-<div class="sourceCode" id="cb38"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co">#</span></span>
-<span class="co"># </span><span class="al">CAUTION</span><span class="co">: this is an example configuration.</span></span>
-<span class="co">#          Check and amend this before you use it in your own cluster!</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AuthenticationConfiguration</span></span>
-<span class="fu">anonymous</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+#
+# CAUTION: this is an example configuration.
+#          Check and amend this before you use it in your own cluster!
+#
+apiVersion: apiserver.config.k8s.io/v1
+kind: AuthenticationConfiguration
+anonymous:
+  enabled: false</code></pre>
 <h2 id="client-go-credential-plugins">client-go credential plugins</h2>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -1826,150 +1809,148 @@ config files</a> as part of the user fields.</p>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb39"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Config</span></span>
-<span class="fu">users</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-user</span></span>
-<span class="at">  </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Command to execute. Required.</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-client-go-exec-plugin&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># API version to use when decoding the ExecCredentials resource. Required.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># The API version returned by the plugin MUST match the version listed here.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># To integrate with tools that support multiple versions (such as client.authentication.k8s.io/v1beta1),</span></span>
-<span class="at">      </span><span class="co"># set an environment variable, pass an argument to the tool that indicates which version the exec plugin expects,</span></span>
-<span class="at">      </span><span class="co"># or read the version from the ExecCredential object in the KUBERNETES_EXEC_INFO environment variable.</span></span>
-<span class="at">      </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;client.authentication.k8s.io/v1&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Environment variables to set when executing the plugin. Optional.</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;FOO&quot;</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;bar&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Arguments to pass when executing the plugin. Optional.</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;arg1&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;arg2&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Text shown to the user when the executable doesn&#39;t seem to be present. Optional.</span></span>
-<span class="at">      </span><span class="fu">installHint</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">        example-client-go-exec-plugin is required to authenticate</span></span>
-<span class="at">        </span><span class="fu">to the current cluster.  It can be installed</span><span class="kw">:</span></span>
-</span>
-<span class="at">        </span><span class="fu">On macOS</span><span class="kw">:</span><span class="at"> brew install example-client-go-exec-plugin</span></span>
-</span>
-<span class="at">        </span><span class="fu">On Ubuntu</span><span class="kw">:</span><span class="at"> apt-get install example-client-go-exec-plugin</span></span>
-</span>
-<span class="at">        </span><span class="fu">On Fedora</span><span class="kw">:</span><span class="at"> dnf install example-client-go-exec-plugin</span></span>
-</span>
-<span class="at">        ...</span></span>
-</span>
-<span class="at">      </span><span class="co"># Whether or not to provide cluster information, which could potentially contain</span></span>
-<span class="at">      </span><span class="co"># very large CA data, to this exec plugin as a part of the KUBERNETES_EXEC_INFO</span></span>
-<span class="at">      </span><span class="co"># environment variable.</span></span>
-<span class="at">      </span><span class="fu">provideClusterInfo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-</span>
-<span class="at">      </span><span class="co"># The contract between the exec plugin and the standard input I/O stream. If the</span></span>
-<span class="at">      </span><span class="co"># contract cannot be satisfied, this plugin will not be run and an error will be</span></span>
-<span class="at">      </span><span class="co"># returned. Valid values are &quot;Never&quot; (this exec plugin never uses standard input),</span></span>
-<span class="at">      </span><span class="co"># &quot;IfAvailable&quot; (this exec plugin wants to use standard input if it is available),</span></span>
-<span class="at">      </span><span class="co"># or &quot;Always&quot; (this exec plugin requires standard input to function). Required.</span></span>
-<span class="at">      </span><span class="fu">interactiveMode</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="fu">clusters</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-cluster</span></span>
-<span class="at">  </span><span class="fu">cluster</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://172.17.4.100:6443&quot;</span></span>
-<span class="at">    </span><span class="fu">certificate-authority</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/ca.pem&quot;</span></span>
-<span class="at">    </span><span class="fu">extensions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> client.authentication.k8s.io/exec</span><span class="co"> # reserved extension name for per cluster exec config</span></span>
-<span class="at">      </span><span class="fu">extension</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">arbitrary</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">        </span><span class="fu">this</span><span class="kw">:</span><span class="at"> can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo</span></span>
-<span class="at">        </span><span class="fu">you</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;can&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;put&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;anything&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="kw">]</span></span>
-<span class="fu">contexts</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-cluster</span></span>
-<span class="at">  </span><span class="fu">context</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span><span class="at"> my-cluster</span></span>
-<span class="at">    </span><span class="fu">user</span><span class="kw">:</span><span class="at"> my-user</span></span>
-<span class="fu">current-context</span><span class="kw">:</span><span class="at"> my-cluster</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Config
+users:
+- name: my-user
+  user:
+    exec:
+      # Command to execute. Required.
+      command: &quot;example-client-go-exec-plugin&quot;
+
+      # API version to use when decoding the ExecCredentials resource. Required.
+      #
+      # The API version returned by the plugin MUST match the version listed here.
+      #
+      # To integrate with tools that support multiple versions (such as client.authentication.k8s.io/v1beta1),
+      # set an environment variable, pass an argument to the tool that indicates which version the exec plugin expects,
+      # or read the version from the ExecCredential object in the KUBERNETES_EXEC_INFO environment variable.
+      apiVersion: &quot;client.authentication.k8s.io/v1&quot;
+
+      # Environment variables to set when executing the plugin. Optional.
+      env:
+      - name: &quot;FOO&quot;
+        value: &quot;bar&quot;
+
+      # Arguments to pass when executing the plugin. Optional.
+      args:
+      - &quot;arg1&quot;
+      - &quot;arg2&quot;
+
+      # Text shown to the user when the executable doesn&#39;t seem to be present. Optional.
+      installHint: |
+        example-client-go-exec-plugin is required to authenticate
+        to the current cluster.  It can be installed:
+
+        On macOS: brew install example-client-go-exec-plugin
+
+        On Ubuntu: apt-get install example-client-go-exec-plugin
+
+        On Fedora: dnf install example-client-go-exec-plugin
+
+        ...
+
+      # Whether or not to provide cluster information, which could potentially contain
+      # very large CA data, to this exec plugin as a part of the KUBERNETES_EXEC_INFO
+      # environment variable.
+      provideClusterInfo: true
+
+      # The contract between the exec plugin and the standard input I/O stream. If the
+      # contract cannot be satisfied, this plugin will not be run and an error will be
+      # returned. Valid values are &quot;Never&quot; (this exec plugin never uses standard input),
+      # &quot;IfAvailable&quot; (this exec plugin wants to use standard input if it is available),
+      # or &quot;Always&quot; (this exec plugin requires standard input to function). Required.
+      interactiveMode: Never
+clusters:
+- name: my-cluster
+  cluster:
+    server: &quot;https://172.17.4.100:6443&quot;
+    certificate-authority: &quot;/etc/kubernetes/ca.pem&quot;
+    extensions:
+    - name: client.authentication.k8s.io/exec # reserved extension name for per cluster exec config
+      extension:
+        arbitrary: config
+        this: can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo
+        you: [&quot;can&quot;, &quot;put&quot;, &quot;anything&quot;, &quot;here&quot;]
+contexts:
+- name: my-cluster
+  context:
+    cluster: my-cluster
+    user: my-user
+current-context: my-cluster</code></pre>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb40"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Config</span></span>
-<span class="fu">users</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-user</span></span>
-<span class="at">  </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Command to execute. Required.</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-client-go-exec-plugin&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># API version to use when decoding the ExecCredentials resource. Required.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># The API version returned by the plugin MUST match the version listed here.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="co"># To integrate with tools that support multiple versions (such as client.authentication.k8s.io/v1),</span></span>
-<span class="at">      </span><span class="co"># set an environment variable, pass an argument to the tool that indicates which version the exec plugin expects,</span></span>
-<span class="at">      </span><span class="co"># or read the version from the ExecCredential object in the KUBERNETES_EXEC_INFO environment variable.</span></span>
-<span class="at">      </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;client.authentication.k8s.io/v1beta1&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Environment variables to set when executing the plugin. Optional.</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;FOO&quot;</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;bar&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Arguments to pass when executing the plugin. Optional.</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;arg1&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;arg2&quot;</span></span>
-</span>
-<span class="at">      </span><span class="co"># Text shown to the user when the executable doesn&#39;t seem to be present. Optional.</span></span>
-<span class="at">      </span><span class="fu">installHint</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">        example-client-go-exec-plugin is required to authenticate</span></span>
-<span class="at">        </span><span class="fu">to the current cluster.  It can be installed</span><span class="kw">:</span></span>
-</span>
-<span class="at">        </span><span class="fu">On macOS</span><span class="kw">:</span><span class="at"> brew install example-client-go-exec-plugin</span></span>
-</span>
-<span class="at">        </span><span class="fu">On Ubuntu</span><span class="kw">:</span><span class="at"> apt-get install example-client-go-exec-plugin</span></span>
-</span>
-<span class="at">        </span><span class="fu">On Fedora</span><span class="kw">:</span><span class="at"> dnf install example-client-go-exec-plugin</span></span>
-</span>
-<span class="at">        ...</span></span>
-</span>
-<span class="at">      </span><span class="co"># Whether or not to provide cluster information, which could potentially contain</span></span>
-<span class="at">      </span><span class="co"># very large CA data, to this exec plugin as a part of the KUBERNETES_EXEC_INFO</span></span>
-<span class="at">      </span><span class="co"># environment variable.</span></span>
-<span class="at">      </span><span class="fu">provideClusterInfo</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-</span>
-<span class="at">      </span><span class="co"># The contract between the exec plugin and the standard input I/O stream. If the</span></span>
-<span class="at">      </span><span class="co"># contract cannot be satisfied, this plugin will not be run and an error will be</span></span>
-<span class="at">      </span><span class="co"># returned. Valid values are &quot;Never&quot; (this exec plugin never uses standard input),</span></span>
-<span class="at">      </span><span class="co"># &quot;IfAvailable&quot; (this exec plugin wants to use standard input if it is available),</span></span>
-<span class="at">      </span><span class="co"># or &quot;Always&quot; (this exec plugin requires standard input to function). Optional.</span></span>
-<span class="at">      </span><span class="co"># Defaults to &quot;IfAvailable&quot;.</span></span>
-<span class="at">      </span><span class="fu">interactiveMode</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="fu">clusters</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-cluster</span></span>
-<span class="at">  </span><span class="fu">cluster</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://172.17.4.100:6443&quot;</span></span>
-<span class="at">    </span><span class="fu">certificate-authority</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/ca.pem&quot;</span></span>
-<span class="at">    </span><span class="fu">extensions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> client.authentication.k8s.io/exec</span><span class="co"> # reserved extension name for per cluster exec config</span></span>
-<span class="at">      </span><span class="fu">extension</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">arbitrary</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">        </span><span class="fu">this</span><span class="kw">:</span><span class="at"> can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo</span></span>
-<span class="at">        </span><span class="fu">you</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;can&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;put&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;anything&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;here&quot;</span><span class="kw">]</span></span>
-<span class="fu">contexts</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-cluster</span></span>
-<span class="at">  </span><span class="fu">context</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span><span class="at"> my-cluster</span></span>
-<span class="at">    </span><span class="fu">user</span><span class="kw">:</span><span class="at"> my-user</span></span>
-<span class="fu">current-context</span><span class="kw">:</span><span class="at"> my-cluster</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Config
+users:
+- name: my-user
+  user:
+    exec:
+      # Command to execute. Required.
+      command: &quot;example-client-go-exec-plugin&quot;
+
+      # API version to use when decoding the ExecCredentials resource. Required.
+      #
+      # The API version returned by the plugin MUST match the version listed here.
+      #
+      # To integrate with tools that support multiple versions (such as client.authentication.k8s.io/v1),
+      # set an environment variable, pass an argument to the tool that indicates which version the exec plugin expects,
+      # or read the version from the ExecCredential object in the KUBERNETES_EXEC_INFO environment variable.
+      apiVersion: &quot;client.authentication.k8s.io/v1beta1&quot;
+
+      # Environment variables to set when executing the plugin. Optional.
+      env:
+      - name: &quot;FOO&quot;
+        value: &quot;bar&quot;
+
+      # Arguments to pass when executing the plugin. Optional.
+      args:
+      - &quot;arg1&quot;
+      - &quot;arg2&quot;
+
+      # Text shown to the user when the executable doesn&#39;t seem to be present. Optional.
+      installHint: |
+        example-client-go-exec-plugin is required to authenticate
+        to the current cluster.  It can be installed:
+
+        On macOS: brew install example-client-go-exec-plugin
+
+        On Ubuntu: apt-get install example-client-go-exec-plugin
+
+        On Fedora: dnf install example-client-go-exec-plugin
+
+        ...
+
+      # Whether or not to provide cluster information, which could potentially contain
+      # very large CA data, to this exec plugin as a part of the KUBERNETES_EXEC_INFO
+      # environment variable.
+      provideClusterInfo: true
+
+      # The contract between the exec plugin and the standard input I/O stream. If the
+      # contract cannot be satisfied, this plugin will not be run and an error will be
+      # returned. Valid values are &quot;Never&quot; (this exec plugin never uses standard input),
+      # &quot;IfAvailable&quot; (this exec plugin wants to use standard input if it is available),
+      # or &quot;Always&quot; (this exec plugin requires standard input to function). Optional.
+      # Defaults to &quot;IfAvailable&quot;.
+      interactiveMode: Never
+clusters:
+- name: my-cluster
+  cluster:
+    server: &quot;https://172.17.4.100:6443&quot;
+    certificate-authority: &quot;/etc/kubernetes/ca.pem&quot;
+    extensions:
+    - name: client.authentication.k8s.io/exec # reserved extension name for per cluster exec config
+      extension:
+        arbitrary: config
+        this: can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo
+        you: [&quot;can&quot;, &quot;put&quot;, &quot;anything&quot;, &quot;here&quot;]
+contexts:
+- name: my-cluster
+  context:
+    cluster: my-cluster
+    user: my-user
+current-context: my-cluster</code></pre>
 </div>
 <p>Relative command paths are interpreted as relative to the directory
 of the config file. If KUBECONFIG is set to
@@ -1977,14 +1958,13 @@ of the config file. If KUBECONFIG is set to
 <code>./bin/example-client-go-exec-plugin</code>, the binary
 <code>/home/jane/bin/example-client-go-exec-plugin</code> is
 executed.</p>
-<div class="sourceCode" id="cb41"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-user</span></span>
-<span class="at">  </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Path relative to the directory of the kubeconfig</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;./bin/example-client-go-exec-plugin&quot;</span></span>
-<span class="at">      </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;client.authentication.k8s.io/v1&quot;</span></span>
-<span class="at">      </span><span class="fu">interactiveMode</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">- name: my-user
+  user:
+    exec:
+      # Path relative to the directory of the kubeconfig
+      command: &quot;./bin/example-client-go-exec-plugin&quot;
+      apiVersion: &quot;client.authentication.k8s.io/v1&quot;
+      interactiveMode: Never</code></pre>
 <h3 id="input-and-output-formats">Input and output formats</h3>
 <p>The executed command prints an <code>ExecCredential</code> object to
 <code>stdout</code>. <code>k8s.io/client-go</code> authenticates against
@@ -2053,25 +2033,23 @@ href="../config-api/client-authentication.v1beta1.html#client-authentication-k8s
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb42"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;token&quot;</span><span class="fu">:</span> <span class="st">&quot;my-bearer-token&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;status&quot;: {
+    &quot;token&quot;: &quot;my-bearer-token&quot;
+  }
+}</code></pre>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb43"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1beta1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;token&quot;</span><span class="fu">:</span> <span class="st">&quot;my-bearer-token&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;status&quot;: {
+    &quot;token&quot;: &quot;my-bearer-token&quot;
+  }
+}</code></pre>
 </div>
 <p>Alternatively, a PEM-encoded client certificate and key can be
 returned to use TLS client auth. If the plugin returns a different
@@ -2086,27 +2064,25 @@ intermediate certificates to send to the server.</p>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb44"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;clientCertificateData&quot;</span><span class="fu">:</span> <span class="st">&quot;-----BEGIN CERTIFICATE-----</span><span class="ch">\n</span><span class="st">...</span><span class="ch">\n</span><span class="st">-----END CERTIFICATE-----&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;clientKeyData&quot;</span><span class="fu">:</span> <span class="st">&quot;-----BEGIN RSA PRIVATE KEY-----</span><span class="ch">\n</span><span class="st">...</span><span class="ch">\n</span><span class="st">-----END RSA PRIVATE KEY-----&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;status&quot;: {
+    &quot;clientCertificateData&quot;: &quot;-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----&quot;,
+    &quot;clientKeyData&quot;: &quot;-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----&quot;
+  }
+}</code></pre>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb45"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1beta1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;clientCertificateData&quot;</span><span class="fu">:</span> <span class="st">&quot;-----BEGIN CERTIFICATE-----</span><span class="ch">\n</span><span class="st">...</span><span class="ch">\n</span><span class="st">-----END CERTIFICATE-----&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;clientKeyData&quot;</span><span class="fu">:</span> <span class="st">&quot;-----BEGIN RSA PRIVATE KEY-----</span><span class="ch">\n</span><span class="st">...</span><span class="ch">\n</span><span class="st">-----END RSA PRIVATE KEY-----&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;status&quot;: {
+    &quot;clientCertificateData&quot;: &quot;-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----&quot;,
+    &quot;clientKeyData&quot;: &quot;-----BEGIN RSA PRIVATE KEY-----\n...\n-----END RSA PRIVATE KEY-----&quot;
+  }
+}</code></pre>
 </div>
 <p>Optionally, the response can include the expiry of the credential
 formatted as a <a
@@ -2125,27 +2101,25 @@ the process exits.</li>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb46"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;token&quot;</span><span class="fu">:</span> <span class="st">&quot;my-bearer-token&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;expirationTimestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2018-03-05T17:30:20-08:00&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;status&quot;: {
+    &quot;token&quot;: &quot;my-bearer-token&quot;,
+    &quot;expirationTimestamp&quot;: &quot;2018-03-05T17:30:20-08:00&quot;
+  }
+}</code></pre>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb47"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1beta1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;token&quot;</span><span class="fu">:</span> <span class="st">&quot;my-bearer-token&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;expirationTimestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2018-03-05T17:30:20-08:00&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;status&quot;: {
+    &quot;token&quot;: &quot;my-bearer-token&quot;,
+    &quot;expirationTimestamp&quot;: &quot;2018-03-05T17:30:20-08:00&quot;
+  }
+}</code></pre>
 </div>
 <p>To enable the exec plugin to obtain cluster-specific information, set
 <code>provideClusterInfo</code> on the <code>user.exec</code> field in
@@ -2160,43 +2134,41 @@ manifest describes a cluster information sample.</p>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1</p>
 </div>
-<div class="sourceCode" id="cb48"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;cluster&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;server&quot;</span><span class="fu">:</span> <span class="st">&quot;https://172.17.4.100:6443&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;certificate-authority-data&quot;</span><span class="fu">:</span> <span class="st">&quot;LS0t...&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;config&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;arbitrary&quot;</span><span class="fu">:</span> <span class="st">&quot;config&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;this&quot;</span><span class="fu">:</span> <span class="st">&quot;can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;you&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;can&quot;</span><span class="ot">,</span> <span class="st">&quot;put&quot;</span><span class="ot">,</span> <span class="st">&quot;anything&quot;</span><span class="ot">,</span> <span class="st">&quot;here&quot;</span><span class="ot">]</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;interactive&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;spec&quot;: {
+    &quot;cluster&quot;: {
+      &quot;server&quot;: &quot;https://172.17.4.100:6443&quot;,
+      &quot;certificate-authority-data&quot;: &quot;LS0t...&quot;,
+      &quot;config&quot;: {
+        &quot;arbitrary&quot;: &quot;config&quot;,
+        &quot;this&quot;: &quot;can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo&quot;,
+        &quot;you&quot;: [&quot;can&quot;, &quot;put&quot;, &quot;anything&quot;, &quot;here&quot;]
+      }
+    },
+    &quot;interactive&quot;: true
+  }
+}</code></pre>
 <div class="tab-label">
 <p>client.authentication.k8s.io/v1beta1</p>
 </div>
-<div class="sourceCode" id="cb49"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;client.authentication.k8s.io/v1beta1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;ExecCredential&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;cluster&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;server&quot;</span><span class="fu">:</span> <span class="st">&quot;https://172.17.4.100:6443&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;certificate-authority-data&quot;</span><span class="fu">:</span> <span class="st">&quot;LS0t...&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;config&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;arbitrary&quot;</span><span class="fu">:</span> <span class="st">&quot;config&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;this&quot;</span><span class="fu">:</span> <span class="st">&quot;can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;you&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;can&quot;</span><span class="ot">,</span> <span class="st">&quot;put&quot;</span><span class="ot">,</span> <span class="st">&quot;anything&quot;</span><span class="ot">,</span> <span class="st">&quot;here&quot;</span><span class="ot">]</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;interactive&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;client.authentication.k8s.io/v1beta1&quot;,
+  &quot;kind&quot;: &quot;ExecCredential&quot;,
+  &quot;spec&quot;: {
+    &quot;cluster&quot;: {
+      &quot;server&quot;: &quot;https://172.17.4.100:6443&quot;,
+      &quot;certificate-authority-data&quot;: &quot;LS0t...&quot;,
+      &quot;config&quot;: {
+        &quot;arbitrary&quot;: &quot;config&quot;,
+        &quot;this&quot;: &quot;can be provided via the KUBERNETES_EXEC_INFO environment variable upon setting provideClusterInfo&quot;,
+        &quot;you&quot;: [&quot;can&quot;, &quot;put&quot;, &quot;anything&quot;, &quot;here&quot;]
+      }
+    },
+    &quot;interactive&quot;: true
+  }
+}</code></pre>
 </div>
 <h2 id="self-subject-review">API access to authentication information
 for a client</h2>
@@ -2233,28 +2205,26 @@ persist a named resource into your cluster: you cannot fetch the
 SelfSubjectReview, and it is discarded once your <code>POST</code>
 request has completed.</p>
 <p>Request example (the body would be a SelfSubjectReview):</p>
-<pre class="http"><code>POST /apis/authentication.k8s.io/v1/selfsubjectreviews</code></pre>
-<div class="sourceCode" id="cb51"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;SelfSubjectReview&quot;</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="http"><code class="language-http">POST /apis/authentication.k8s.io/v1/selfsubjectreviews</code></pre>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;SelfSubjectReview&quot;
+}</code></pre>
 <p>Response example:</p>
-<div class="sourceCode" id="cb52"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;SelfSubjectReview&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;userInfo&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;janedoe@example.com&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;groups&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-        <span class="st">&quot;viewers&quot;</span><span class="ot">,</span></span>
-        <span class="st">&quot;editors&quot;</span><span class="ot">,</span></span>
-        <span class="st">&quot;system:authenticated&quot;</span></span>
-      <span class="ot">]</span></span>
-    <span class="fu">}</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;SelfSubjectReview&quot;,
+  &quot;status&quot;: {
+    &quot;userInfo&quot;: {
+      &quot;username&quot;: &quot;janedoe@example.com&quot;,
+      &quot;groups&quot;: [
+        &quot;viewers&quot;,
+        &quot;editors&quot;,
+        &quot;system:authenticated&quot;
+      ]
+    }
+  }
+}</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -2272,34 +2242,33 @@ href="https://kubernetes.io/docs/reference/kubernetes-api/authentication-resourc
 API reference</a> to see which fields are available.</p>
 <p>Here is another example that also includes the <code>uid</code> and
 <code>extra</code> fields:</p>
-<div class="sourceCode" id="cb53"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">{</span></span>
-<span class="at">  </span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;SelfSubjectReview&quot;</span><span class="kw">,</span></span>
-<span class="at">  </span><span class="fu">&quot;status&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">    </span><span class="fu">&quot;userInfo&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">      </span><span class="fu">&quot;username&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;janedoe@example.com&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;groups&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">        </span><span class="st">&quot;viewers&quot;</span><span class="kw">,</span></span>
-<span class="at">        </span><span class="st">&quot;editors&quot;</span><span class="kw">,</span></span>
-<span class="at">        </span><span class="st">&quot;system:authenticated&quot;</span></span>
-<span class="at">      </span><span class="kw">],</span></span>
-<span class="at">      </span><span class="fu">&quot;uid&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;000042&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;extra&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
-<span class="at">        </span><span class="fu">&quot;firstName&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">          </span><span class="st">&quot;Jane&quot;</span></span>
-<span class="at">        </span><span class="kw">],</span></span>
-<span class="at">        </span><span class="fu">&quot;familyName&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">          </span><span class="st">&quot;Doe&quot;</span></span>
-<span class="at">        </span><span class="kw">],</span></span>
-<span class="at">        </span><span class="fu">&quot;projectAssignments&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span></span>
-<span class="at">          </span><span class="st">&quot;web-frontend&quot;</span><span class="kw">,</span></span>
-<span class="at">          </span><span class="st">&quot;ai-training-proof-of-concept&quot;</span></span>
-<span class="at">        </span><span class="kw">],</span></span>
-<span class="at">      </span><span class="kw">}</span></span>
-<span class="at">    </span><span class="kw">}</span></span>
-<span class="at">  </span><span class="kw">}</span></span>
-<span class="kw">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;SelfSubjectReview&quot;,
+  &quot;status&quot;: {
+    &quot;userInfo&quot;: {
+      &quot;username&quot;: &quot;janedoe@example.com&quot;,
+      &quot;groups&quot;: [
+        &quot;viewers&quot;,
+        &quot;editors&quot;,
+        &quot;system:authenticated&quot;
+      ],
+      &quot;uid&quot;: &quot;000042&quot;,
+      &quot;extra&quot;: {
+        &quot;firstName&quot;: [
+          &quot;Jane&quot;
+        ],
+        &quot;familyName&quot;: [
+          &quot;Doe&quot;
+        ],
+        &quot;projectAssignments&quot;: [
+          &quot;web-frontend&quot;,
+          &quot;ai-training-proof-of-concept&quot;
+        ],
+      }
+    }
+  }
+}</code></pre>
 <p>The data in these optional fields come from your authentication
 integration or from the user database that it uses. The username, UID,
 extra information, and all groups with names that don't start
@@ -2311,7 +2280,7 @@ example:</p>
 <div class="tab-label">
 <p>JSON</p>
 </div>
-<pre class="http"><code>POST /apis/authentication.k8s.io/v1/selfsubjectreviews HTTP/1.1
+<pre class="http"><code class="language-http">POST /apis/authentication.k8s.io/v1/selfsubjectreviews HTTP/1.1
 Accept: application/json;q=1.0
 Content-Type: application/json
 …other request headers
@@ -2322,36 +2291,35 @@ Content-Type: application/json
 }
 </code></pre>
 <hr />
-<div class="sourceCode" id="cb55"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;authentication.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;SelfSubjectReview&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;userInfo&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;jane.doe&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;uid&quot;</span><span class="fu">:</span> <span class="st">&quot;b79dbf30-0c6a-11ed-861d-0242ac120002&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;groups&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-        <span class="st">&quot;students&quot;</span><span class="ot">,</span></span>
-        <span class="st">&quot;teachers&quot;</span><span class="ot">,</span></span>
-        <span class="st">&quot;system:authenticated&quot;</span></span>
-      <span class="ot">]</span><span class="fu">,</span></span>
-      <span class="dt">&quot;extra&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;skills&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-          <span class="st">&quot;reading&quot;</span><span class="ot">,</span></span>
-          <span class="st">&quot;learning&quot;</span></span>
-        <span class="ot">]</span><span class="fu">,</span></span>
-        <span class="dt">&quot;subjects&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-          <span class="st">&quot;math&quot;</span><span class="ot">,</span></span>
-          <span class="st">&quot;sports&quot;</span></span>
-        <span class="ot">]</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;apiVersion&quot;: &quot;authentication.k8s.io/v1&quot;,
+  &quot;kind&quot;: &quot;SelfSubjectReview&quot;,
+  &quot;status&quot;: {
+    &quot;userInfo&quot;: {
+      &quot;username&quot;: &quot;jane.doe&quot;,
+      &quot;uid&quot;: &quot;b79dbf30-0c6a-11ed-861d-0242ac120002&quot;,
+      &quot;groups&quot;: [
+        &quot;students&quot;,
+        &quot;teachers&quot;,
+        &quot;system:authenticated&quot;
+      ],
+      &quot;extra&quot;: {
+        &quot;skills&quot;: [
+          &quot;reading&quot;,
+          &quot;learning&quot;
+        ],
+        &quot;subjects&quot;: [
+          &quot;math&quot;,
+          &quot;sports&quot;
+        ]
+      }
+    }
+  }
+}</code></pre>
 <div class="tab-label">
 <p>YAML</p>
 </div>
-<pre class="http"><code>POST /apis/authentication.k8s.io/v1/selfsubjectreviews HTTP/1.1
+<pre class="http"><code class="language-http">POST /apis/authentication.k8s.io/v1/selfsubjectreviews HTTP/1.1
 Accept: application/yaml;q=1.0
 Content-Type: application/json
 …other request headers
@@ -2362,32 +2330,31 @@ Content-Type: application/json
 }
 </code></pre>
 <hr />
-<div class="sourceCode" id="cb57"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> authentication.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> SelfSubjectReview</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">userInfo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">username</span><span class="kw">:</span><span class="at"> jane.doe</span></span>
-<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> b79dbf30-0c6a-11ed-861d-0242ac120002</span></span>
-<span class="at">    </span><span class="fu">groups</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">students</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">teachers</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">system:authenticated</span></span>
-<span class="at">    </span><span class="fu">extra</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">skills</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">reading</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">learning</span></span>
-<span class="at">      </span><span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">math</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">sports</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: authentication.k8s.io/v1
+kind: SelfSubjectReview
+status:
+  userInfo:
+    username: jane.doe
+    uid: b79dbf30-0c6a-11ed-861d-0242ac120002
+    groups:
+    - students
+    - teachers
+    - system:authenticated
+    extra:
+      skills:
+      - reading
+      - learning
+      subjects:
+      - math
+      - sports</code></pre>
 </div>
 <h3 id="self-subject-review-cli">CLI access to authentication
 information</h3>
 <p>For convenience, the <code>kubectl auth whoami</code> subcommand is
 also available:</p>
-<pre class="shell"><code>kubectl auth whoami</code></pre>
+<pre class="shell"><code class="language-shell">kubectl auth whoami</code></pre>
 <p>The output is similar to:</p>
-<pre class="console"><code>  ATTRIBUTE         VALUE
+<pre class="console"><code class="language-console">  ATTRIBUTE         VALUE
   Username          george.boole
   Groups            [system:authenticated]</code></pre>
 <p>See <a
@@ -2470,6 +2437,7 @@ authentication reference (v1beta1)</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -2478,6 +2446,8 @@ authentication reference (v1beta1)</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

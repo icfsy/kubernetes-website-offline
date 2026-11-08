@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -209,14 +224,13 @@ the deleted PriorityClass remain unchanged, but you cannot create more
 Pods that use the name of the deleted PriorityClass.</p></li>
 </ul>
 <h3 id="example-priorityclass">Example PriorityClass</h3>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
-<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000000</span></span>
-<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class should be used for XYZ service pods only.&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 1000000
+globalDefault: false
+description: &quot;This priority class should be used for XYZ service pods only.&quot;</code></pre>
 <h2 id="non-preempting-priority-class">Non-preempting PriorityClass</h2>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -248,15 +262,14 @@ ahead of other queued pods, as soon as sufficient cluster resources
 "naturally" become free.</p>
 <h3 id="example-non-preempting-priorityclass">Example Non-preempting
 PriorityClass</h3>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority-nonpreempting</span></span>
-<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000000</span></span>
-<span class="fu">preemptionPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class will not cause other pods to be preempted.&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority-nonpreempting
+value: 1000000
+preemptionPolicy: Never
+globalDefault: false
+description: &quot;This priority class will not cause other pods to be preempted.&quot;</code></pre>
 <h2 id="pod-priority">Pod priority</h2>
 <p>After you have one or more PriorityClasses, you can create Pods that
 specify one of those PriorityClass names in their specifications. The
@@ -270,19 +283,18 @@ to</p>
 <ol start="1000000" type="1">
 <li></li>
 </ol>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">env</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> high-priority</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  priorityClassName: high-priority</code></pre>
 <h3 id="effect-of-pod-priority-on-scheduling-order">Effect of Pod
 priority on scheduling order</h3>
 <p>When Pod priority is enabled, the scheduler orders pending Pods by
@@ -519,16 +531,15 @@ preemption is disabled on that node, and <code>kube-scheduler</code>
 will skip preemption attempts for any deferred resizes running on that
 node.</p>
 <p>Here is an example Node configuration:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Node</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> resizable-node</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podPreemptionPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">disableResizePreemption</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">autoscaling.k8s.io/cluster-autoscaler</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">autoscaling.k8s.io/vpa-updater</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Node
+metadata:
+  name: resizable-node
+spec:
+  podPreemptionPolicy:
+    disableResizePreemption:
+      - autoscaling.k8s.io/cluster-autoscaler
+      - autoscaling.k8s.io/vpa-updater</code></pre>
 <p>Constraints and validation rules:</p>
 <ul>
 <li><strong>Label format</strong>: Each entry in the
@@ -704,6 +715,7 @@ Eviction</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -712,6 +724,8 @@ Eviction</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

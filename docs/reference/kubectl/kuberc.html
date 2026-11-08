@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -154,15 +169,14 @@ optionally with preset command line arguments and flags.</p>
 <p>This next example defines a <code>kubectl getn</code> alias for the
 <code>kubectl get</code> subcommand, additionally specifying JSON output
 format: <code>--output=json</code>.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">aliases</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> getn</span></span>
-<span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> get</span></span>
-<span class="at">  </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">   </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> output</span></span>
-<span class="at">     </span><span class="fu">default</span><span class="kw">:</span><span class="at"> json</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+aliases:
+- name: getn
+  command: get
+  options:
+   - name: output
+     default: json</code></pre>
 <p>In this example, the following settings were used:</p>
 <ol type="1">
 <li><code>name</code> - Alias name must not collide with the built-in
@@ -186,17 +200,16 @@ href="../config-api/kuberc.v1beta1.html">here</a>.</p>
 <code>prependArgs</code> section, which allows inserting arbitrary
 arguments immediately after the kubectl command and its subcommand (if
 any).</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">aliases</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> getn</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> get</span></span>
-<span class="at">    </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> output</span></span>
-<span class="at">        </span><span class="fu">default</span><span class="kw">:</span><span class="at"> json</span></span>
-<span class="at">    </span><span class="fu">prependArgs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">namespace</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+aliases:
+  - name: getn
+    command: get
+    options:
+      - name: output
+        default: json
+    prependArgs:
+      - namespace</code></pre>
 <p>In this example, the following settings were used:</p>
 <ol type="1">
 <li><code>name</code> - Alias name must not collide with the built-in
@@ -216,20 +229,19 @@ placed right after the command. Here, this will be translated to
 <p>This next example, will introduce a mechanism similar to prepending
 arguments, this time, though, we will append arguments to the end of the
 kubectl command.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">aliases</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> runx</span></span>
-<span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> run</span></span>
-<span class="at">  </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> image</span></span>
-<span class="at">      </span><span class="fu">default</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> namespace</span></span>
-<span class="at">      </span><span class="fu">default</span><span class="kw">:</span><span class="at"> test-ns</span></span>
-<span class="at">  </span><span class="fu">appendArgs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">--</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">custom-arg</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+aliases:
+- name: runx
+  command: run
+  options:
+    - name: image
+      default: busybox
+    - name: namespace
+      default: test-ns
+  appendArgs:
+    - --
+    - custom-arg</code></pre>
 <p>In this example, the following settings were used:</p>
 <ol type="1">
 <li><code>name</code> - Alias name must not collide with the built-in
@@ -250,14 +262,13 @@ placed at the end of the command. Here, this will be translated to
 section lets you specify default values for command line arguments.</p>
 <p>This next example makes the interactive removal the default mode for
 invoking <code>kubectl delete</code>:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">defaults</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> delete</span></span>
-<span class="at">  </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> interactive</span></span>
-<span class="at">      </span><span class="fu">default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+defaults:
+- command: delete
+  options:
+    - name: interactive
+      default: &quot;true&quot;</code></pre>
 <p>In this example, the following settings were used:</p>
 <ol type="1">
 <li><code>command</code> - Built-in command, this includes support for
@@ -332,14 +343,13 @@ application of the allowlist to plugin <code>my-binary-plugin</code> is
 the <em>logical OR</em> of the decisions rendered by each item in the
 list.</p>
 <p>As an example, consider the following allowlist configuration:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">credentialPluginPolicy</span><span class="kw">:</span><span class="at"> Allowlist</span></span>
-<span class="fu">credentialPluginAllowlist</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> bar</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> baz</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+credentialPluginPolicy: Allowlist
+credentialPluginAllowlist:
+  - command: foo
+  - command: bar
+  - command: baz</code></pre>
 <p>In the above example, the allowlist will allow plugins that have the
 command "foo", "bar", <em>OR</em> "baz".</p>
 <div class="admonition note">
@@ -356,12 +366,11 @@ scenarios where the user misspells the
 <code>credentialPluginAllowlist</code> key -- thinking they have
 specified an allowlist when they actually haven't.</p>
 <p>For example, the following is invalid:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">credentialPluginPolicy</span><span class="kw">:</span><span class="at"> Allowlist</span></span>
-<span class="fu">credentialPluginAllowlist</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+credentialPluginPolicy: Allowlist
+credentialPluginAllowlist:
+  - command: &quot;&quot;</code></pre>
 </div>
 <h5 id="command">command</h5>
 <p><code>command</code> names a credential plugin which may be executed.
@@ -417,23 +426,21 @@ its allowlist:</p>
 <div class="tab-label">
 <p>POSIX</p>
 </div>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">credentialPluginPolicy</span><span class="kw">:</span><span class="at"> Allowlist</span></span>
-<span class="fu">credentialPluginAllowlist</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> my-trusted-binary</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> /usr/local/bin/my-other-trusted-binary</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+credentialPluginPolicy: Allowlist
+credentialPluginAllowlist:
+  - command: my-trusted-binary
+  - command: /usr/local/bin/my-other-trusted-binary</code></pre>
 <div class="tab-label">
 <p>Windows</p>
 </div>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">credentialPluginPolicy</span><span class="kw">:</span><span class="at"> Allowlist</span></span>
-<span class="fu">credentialPluginAllowlist</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> my-trusted-binary</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;C:</span><span class="er">\</span><span class="st">my-other-trusted-binary&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+credentialPluginPolicy: Allowlist
+credentialPluginAllowlist:
+  - command: my-trusted-binary
+  - command: &quot;C:\my-other-trusted-binary&quot;</code></pre>
 </div>
 <h3
 id="managing-credential-plugin-policy-with-kubectl-kuberc-set">Managing
@@ -441,7 +448,7 @@ credential plugin policy with <code>kubectl kuberc set</code></h3>
 <p>Rather than editing the kuberc file directly, you can use
 <code>kubectl kuberc set</code> to configure the credential plugin
 policy from the command line.</p>
-<pre class="shell"><code># Set the policy to deny all credential plugins
+<pre class="shell"><code class="language-shell"># Set the policy to deny all credential plugins
 kubectl kuberc set --section credentialplugin --policy DenyAll
 
 # Set the policy to allow all credential plugins
@@ -487,24 +494,23 @@ and add the necessary plugins in the <a
 href="#">credentialPluginAllowlist</a>
 field.</p>
 </div>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubectl.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Preference</span></span>
-<span class="fu">defaults</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># (1) default server-side apply</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> apply</span></span>
-<span class="at">    </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> server-side</span></span>
-<span class="at">        </span><span class="fu">default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-</span>
-<span class="at">  </span><span class="co"># (2) default interactive deletion</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span><span class="at"> delete</span></span>
-<span class="at">    </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> interactive</span></span>
-<span class="at">        </span><span class="fu">default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-</span>
-<span class="co"># See the above note about managed providers before selecting DenyAll</span></span>
-<span class="fu">credentialPluginPolicy</span><span class="kw">:</span><span class="at"> DenyAll</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubectl.config.k8s.io/v1beta1
+kind: Preference
+defaults:
+  # (1) default server-side apply
+  - command: apply
+    options:
+      - name: server-side
+        default: &quot;true&quot;
+
+  # (2) default interactive deletion
+  - command: delete
+    options:
+      - name: interactive
+        default: &quot;true&quot;
+
+# See the above note about managed providers before selecting DenyAll
+credentialPluginPolicy: DenyAll</code></pre>
 <p>In this example, the following settings are enforced:</p>
 <ol type="1">
 <li>Defaults to using <a
@@ -519,9 +525,9 @@ from the cluster.</li>
 <p>To temporarily disable the <code>kuberc</code> functionality, set
 (and export) the environment variable <code>KUBERC</code> with the value
 <code>off</code>:</p>
-<pre class="shell"><code>export KUBERC=off</code></pre>
+<pre class="shell"><code class="language-shell">export KUBERC=off</code></pre>
 <p>or disable the feature gate:</p>
-<pre class="shell"><code>export KUBECTL_KUBERC=false</code></pre>
+<pre class="shell"><code class="language-shell">export KUBECTL_KUBERC=false</code></pre>
 <p>This might be useful for troubleshooting whether your
 <code>kuberc</code> is causing a problem.</p>
 
@@ -588,6 +594,7 @@ from the cluster.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -596,6 +603,8 @@ from the cluster.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

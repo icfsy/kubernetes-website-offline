@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -129,14 +144,14 @@ cluster.</p>
 <ol type="1">
 <li><p>Download, unpack, and initialize the patched version of
 <code>easyrsa3</code>.</p>
-<pre class="shell"><code>curl -LO https://dl.k8s.io/easy-rsa/easy-rsa.tar.gz
+<pre class="shell"><code class="language-shell">curl -LO https://dl.k8s.io/easy-rsa/easy-rsa.tar.gz
 tar xzf easy-rsa.tar.gz
 cd easy-rsa-master/easyrsa3
 ./easyrsa init-pki</code></pre></li>
 <li><p>Generate a new certificate authority (CA). <code>--batch</code>
 sets automatic mode; <code>--req-cn</code> specifies the Common Name
 (CN) for the CA's new root certificate.</p>
-<pre class="shell"><code>./easyrsa --batch &quot;--req-cn=${MASTER_IP}@`date +%s`&quot; build-ca nopass</code></pre></li>
+<pre class="shell"><code class="language-shell">./easyrsa --batch &quot;--req-cn=${MASTER_IP}@`date +%s`&quot; build-ca nopass</code></pre></li>
 <li><p>Generate server certificate and key.</p>
 <p>The argument <code>--subject-alt-name</code> sets the possible IPs
 and DNS names the API server will be accessed with. The
@@ -146,7 +161,7 @@ argument for both the API server and the controller manager component.
 The argument <code>--days</code> is used to set the number of days after
 which the certificate expires. The sample below also assumes that you
 are using <code>cluster.local</code> as the default DNS domain name.</p>
-<pre class="shell"><code>./easyrsa --subject-alt-name=&quot;IP:${MASTER_IP},&quot;\
+<pre class="shell"><code class="language-shell">./easyrsa --subject-alt-name=&quot;IP:${MASTER_IP},&quot;\
 &quot;IP:${MASTER_CLUSTER_IP},&quot;\
 &quot;DNS:kubernetes,&quot;\
 &quot;DNS:kubernetes.default,&quot;\
@@ -159,7 +174,7 @@ build-server-full server nopass</code></pre></li>
 and <code>pki/private/server.key</code> to your directory.</p></li>
 <li><p>Fill in and add the following parameters into the API server
 start parameters:</p>
-<pre class="shell"><code>--client-ca-file=/yourdirectory/ca.crt
+<pre class="shell"><code class="language-shell">--client-ca-file=/yourdirectory/ca.crt
 --tls-cert-file=/yourdirectory/server.crt
 --tls-private-key-file=/yourdirectory/server.key</code></pre></li>
 </ol>
@@ -168,12 +183,12 @@ start parameters:</p>
 cluster.</p>
 <ol type="1">
 <li><p>Generate a ca.key with 2048bit:</p>
-<pre class="shell"><code>openssl genrsa -out ca.key 2048</code></pre></li>
+<pre class="shell"><code class="language-shell">openssl genrsa -out ca.key 2048</code></pre></li>
 <li><p>According to the ca.key generate a ca.crt (use <code>-days</code>
 to set the certificate effective time):</p>
-<pre class="shell"><code>openssl req -x509 -new -noenc -key ca.key -subj &quot;/CN=${MASTER_IP}&quot; -days 10000 -out ca.crt</code></pre></li>
+<pre class="shell"><code class="language-shell">openssl req -x509 -new -noenc -key ca.key -subj &quot;/CN=${MASTER_IP}&quot; -days 10000 -out ca.crt</code></pre></li>
 <li><p>Generate a server.key with 2048bit:</p>
-<pre class="shell"><code>openssl genrsa -out server.key 2048</code></pre></li>
+<pre class="shell"><code class="language-shell">openssl genrsa -out server.key 2048</code></pre></li>
 <li><p>Create a config file for generating a Certificate Signing Request
 (CSR).</p>
 <p>Be sure to substitute the values marked with angle brackets (e.g.
@@ -183,55 +198,54 @@ file (e.g. <code>csr.conf</code>). Note that the value for
 server as described in previous subsection. The sample below also
 assumes that you are using <code>cluster.local</code> as the default DNS
 domain name.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode ini"><code class="sourceCode ini"><span class="kw">[ req ]</span></span>
-<span class="dt">default_bits </span><span class="ot">=</span><span class="st"> </span><span class="dv">2048</span></span>
-<span class="dt">prompt </span><span class="ot">=</span><span class="st"> </span><span class="kw">no</span></span>
-<span class="dt">default_md </span><span class="ot">=</span><span class="st"> sha256</span></span>
-<span class="dt">req_extensions </span><span class="ot">=</span><span class="st"> req_ext</span></span>
-<span class="dt">distinguished_name </span><span class="ot">=</span><span class="st"> dn</span></span>
-</span>
-<span class="kw">[ dn ]</span></span>
-<span class="dt">C </span><span class="ot">=</span><span class="st"> &lt;country&gt;</span></span>
-<span class="dt">ST </span><span class="ot">=</span><span class="st"> &lt;state&gt;</span></span>
-<span class="dt">L </span><span class="ot">=</span><span class="st"> &lt;city&gt;</span></span>
-<span class="dt">O </span><span class="ot">=</span><span class="st"> &lt;organization&gt;</span></span>
-<span class="dt">OU </span><span class="ot">=</span><span class="st"> &lt;organization unit&gt;</span></span>
-<span class="dt">CN </span><span class="ot">=</span><span class="st"> &lt;MASTER_IP&gt;</span></span>
-</span>
-<span class="kw">[ req_ext ]</span></span>
-<span class="dt">subjectAltName </span><span class="ot">=</span><span class="st"> @alt_names</span></span>
-</span>
-<span class="kw">[ alt_names ]</span></span>
-<span class="dt">DNS.1 </span><span class="ot">=</span><span class="st"> kubernetes</span></span>
-<span class="dt">DNS.2 </span><span class="ot">=</span><span class="st"> kubernetes.default</span></span>
-<span class="dt">DNS.3 </span><span class="ot">=</span><span class="st"> kubernetes.default.svc</span></span>
-<span class="dt">DNS.4 </span><span class="ot">=</span><span class="st"> kubernetes.default.svc.cluster</span></span>
-<span class="dt">DNS.5 </span><span class="ot">=</span><span class="st"> kubernetes.default.svc.cluster.local</span></span>
-<span class="dt">IP.1 </span><span class="ot">=</span><span class="st"> &lt;MASTER_IP&gt;</span></span>
-<span class="dt">IP.2 </span><span class="ot">=</span><span class="st"> &lt;MASTER_CLUSTER_IP&gt;</span></span>
-</span>
-<span class="kw">[ v3_ext ]</span></span>
-<span class="dt">authorityKeyIdentifier</span><span class="ot">=</span><span class="st">keyid,issuer:always</span></span>
-<span class="dt">basicConstraints</span><span class="ot">=</span><span class="st">CA:FALSE</span></span>
-<span class="dt">keyUsage</span><span class="ot">=</span><span class="st">keyEncipherment,dataEncipherment</span></span>
-<span class="dt">extendedKeyUsage</span><span class="ot">=</span><span class="st">serverAuth,clientAuth</span></span>
-<span class="dt">subjectAltName</span><span class="ot">=</span><span class="st">@alt_names</span></span></code></pre></div></li>
+<pre class="ini"><code class="language-ini">[ req ]
+default_bits = 2048
+prompt = no
+default_md = sha256
+req_extensions = req_ext
+distinguished_name = dn
+
+[ dn ]
+C = &lt;country&gt;
+ST = &lt;state&gt;
+L = &lt;city&gt;
+O = &lt;organization&gt;
+OU = &lt;organization unit&gt;
+CN = &lt;MASTER_IP&gt;
+
+[ req_ext ]
+subjectAltName = @alt_names
+
+[ alt_names ]
+DNS.1 = kubernetes
+DNS.2 = kubernetes.default
+DNS.3 = kubernetes.default.svc
+DNS.4 = kubernetes.default.svc.cluster
+DNS.5 = kubernetes.default.svc.cluster.local
+IP.1 = &lt;MASTER_IP&gt;
+IP.2 = &lt;MASTER_CLUSTER_IP&gt;
+
+[ v3_ext ]
+authorityKeyIdentifier=keyid,issuer:always
+basicConstraints=CA:FALSE
+keyUsage=keyEncipherment,dataEncipherment
+extendedKeyUsage=serverAuth,clientAuth
+subjectAltName=@alt_names</code></pre></li>
 <li><p>Generate the certificate signing request based on the config
 file:</p>
-<pre class="shell"><code>openssl req -new -key server.key -out server.csr -config csr.conf</code></pre></li>
+<pre class="shell"><code class="language-shell">openssl req -new -key server.key -out server.csr -config csr.conf</code></pre></li>
 <li><p>Generate the server certificate using the ca.key, ca.crt and
 server.csr:</p>
-<pre class="shell"><code>openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
+<pre class="shell"><code class="language-shell">openssl x509 -req -in server.csr -CA ca.crt -CAkey ca.key \
     -CAcreateserial -out server.crt -days 10000 \
     -extensions v3_ext -extfile csr.conf -sha256</code></pre></li>
 <li><p>View the certificate signing request:</p>
-<pre class="shell"><code>openssl req  -noout -text -in ./server.csr</code></pre></li>
+<pre class="shell"><code class="language-shell">openssl req  -noout -text -in ./server.csr</code></pre></li>
 <li><p>View the certificate:</p>
-<pre class="shell"><code>openssl x509  -noout -text -in ./server.crt</code></pre></li>
+<pre class="shell"><code class="language-shell">openssl x509  -noout -text -in ./server.crt</code></pre></li>
 <li><p>Fill in and add the following parameters into the API server
 start parameters:</p>
-<pre class="shell"><code>--client-ca-file=/yourdirectory/ca.crt
+<pre class="shell"><code class="language-shell">--client-ca-file=/yourdirectory/ca.crt
 --tls-cert-file=/yourdirectory/server.crt
 --tls-private-key-file=/yourdirectory/server.key</code></pre></li>
 </ol>
@@ -243,7 +257,7 @@ generation.</p>
 below.</p>
 <p>Note that you may need to adapt the sample commands based on the
 hardware architecture and cfssl version you are using.</p>
-<pre class="shell"><code>curl -L https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64 -o cfssl
+<pre class="shell"><code class="language-shell">curl -L https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl_1.5.0_linux_amd64 -o cfssl
 chmod +x cfssl
 curl -L https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssljson_1.5.0_linux_amd64 -o cfssljson
 chmod +x cfssljson
@@ -251,52 +265,50 @@ curl -L https://github.com/cloudflare/cfssl/releases/download/v1.5.0/cfssl-certi
 chmod +x cfssl-certinfo</code></pre></li>
 <li><p>Create a directory to hold the artifacts and initialize
 cfssl:</p>
-<pre class="shell"><code>mkdir cert
+<pre class="shell"><code class="language-shell">mkdir cert
 cd cert
 ../cfssl print-defaults config &gt; config.json
 ../cfssl print-defaults csr &gt; csr.json</code></pre></li>
 <li><p>Create a JSON config file for generating the CA file, for
 example, <code>ca-config.json</code>:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;signing&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;default&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;expiry&quot;</span><span class="fu">:</span> <span class="st">&quot;8760h&quot;</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;profiles&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-      <span class="dt">&quot;kubernetes&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;usages&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-          <span class="st">&quot;signing&quot;</span><span class="ot">,</span></span>
-          <span class="st">&quot;key encipherment&quot;</span><span class="ot">,</span></span>
-          <span class="st">&quot;server auth&quot;</span><span class="ot">,</span></span>
-          <span class="st">&quot;client auth&quot;</span></span>
-        <span class="ot">]</span><span class="fu">,</span></span>
-        <span class="dt">&quot;expiry&quot;</span><span class="fu">:</span> <span class="st">&quot;8760h&quot;</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div></li>
+<pre class="json"><code class="language-json">{
+  &quot;signing&quot;: {
+    &quot;default&quot;: {
+      &quot;expiry&quot;: &quot;8760h&quot;
+    },
+    &quot;profiles&quot;: {
+      &quot;kubernetes&quot;: {
+        &quot;usages&quot;: [
+          &quot;signing&quot;,
+          &quot;key encipherment&quot;,
+          &quot;server auth&quot;,
+          &quot;client auth&quot;
+        ],
+        &quot;expiry&quot;: &quot;8760h&quot;
+      }
+    }
+  }
+}</code></pre></li>
 <li><p>Create a JSON config file for CA certificate signing request
 (CSR), for example, <code>ca-csr.json</code>. Be sure to replace the
 values marked with angle brackets with real values you want to use.</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;CN&quot;</span><span class="fu">:</span> <span class="st">&quot;kubernetes&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;key&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;algo&quot;</span><span class="fu">:</span> <span class="st">&quot;rsa&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;size&quot;</span><span class="fu">:</span> <span class="dv">2048</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;names&quot;</span><span class="fu">:</span><span class="ot">[</span><span class="fu">{</span></span>
-    <span class="dt">&quot;C&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;country&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;ST&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;state&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;L&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;city&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;O&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;organization&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;OU&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;organization unit&gt;&quot;</span></span>
-  <span class="fu">}</span><span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div></li>
+<pre class="json"><code class="language-json">{
+  &quot;CN&quot;: &quot;kubernetes&quot;,
+  &quot;key&quot;: {
+    &quot;algo&quot;: &quot;rsa&quot;,
+    &quot;size&quot;: 2048
+  },
+  &quot;names&quot;:[{
+    &quot;C&quot;: &quot;&lt;country&gt;&quot;,
+    &quot;ST&quot;: &quot;&lt;state&gt;&quot;,
+    &quot;L&quot;: &quot;&lt;city&gt;&quot;,
+    &quot;O&quot;: &quot;&lt;organization&gt;&quot;,
+    &quot;OU&quot;: &quot;&lt;organization unit&gt;&quot;
+  }]
+}</code></pre></li>
 <li><p>Generate CA key (<code>ca-key.pem</code>) and certificate
 (<code>ca.pem</code>):</p>
-<pre class="shell"><code>../cfssl gencert -initca ca-csr.json | ../cfssljson -bare ca</code></pre></li>
+<pre class="shell"><code class="language-shell">../cfssl gencert -initca ca-csr.json | ../cfssljson -bare ca</code></pre></li>
 <li><p>Create a JSON config file for generating keys and certificates
 for the API server, for example, <code>server-csr.json</code>. Be sure
 to replace the values in angle brackets with real values you want to
@@ -304,35 +316,34 @@ use. The <code>&lt;MASTER_CLUSTER_IP&gt;</code> is the service cluster
 IP for the API server as described in previous subsection. The sample
 below also assumes that you are using <code>cluster.local</code> as the
 default DNS domain name.</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;CN&quot;</span><span class="fu">:</span> <span class="st">&quot;kubernetes&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;hosts&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-    <span class="st">&quot;127.0.0.1&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;&lt;MASTER_IP&gt;&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;&lt;MASTER_CLUSTER_IP&gt;&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;kubernetes&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;kubernetes.default&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;kubernetes.default.svc&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;kubernetes.default.svc.cluster&quot;</span><span class="ot">,</span></span>
-    <span class="st">&quot;kubernetes.default.svc.cluster.local&quot;</span></span>
-  <span class="ot">]</span><span class="fu">,</span></span>
-  <span class="dt">&quot;key&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;algo&quot;</span><span class="fu">:</span> <span class="st">&quot;rsa&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;size&quot;</span><span class="fu">:</span> <span class="dv">2048</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;names&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="fu">{</span></span>
-    <span class="dt">&quot;C&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;country&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;ST&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;state&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;L&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;city&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;O&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;organization&gt;&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;OU&quot;</span><span class="fu">:</span> <span class="st">&quot;&lt;organization unit&gt;&quot;</span></span>
-  <span class="fu">}</span><span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div></li>
+<pre class="json"><code class="language-json">{
+  &quot;CN&quot;: &quot;kubernetes&quot;,
+  &quot;hosts&quot;: [
+    &quot;127.0.0.1&quot;,
+    &quot;&lt;MASTER_IP&gt;&quot;,
+    &quot;&lt;MASTER_CLUSTER_IP&gt;&quot;,
+    &quot;kubernetes&quot;,
+    &quot;kubernetes.default&quot;,
+    &quot;kubernetes.default.svc&quot;,
+    &quot;kubernetes.default.svc.cluster&quot;,
+    &quot;kubernetes.default.svc.cluster.local&quot;
+  ],
+  &quot;key&quot;: {
+    &quot;algo&quot;: &quot;rsa&quot;,
+    &quot;size&quot;: 2048
+  },
+  &quot;names&quot;: [{
+    &quot;C&quot;: &quot;&lt;country&gt;&quot;,
+    &quot;ST&quot;: &quot;&lt;state&gt;&quot;,
+    &quot;L&quot;: &quot;&lt;city&gt;&quot;,
+    &quot;O&quot;: &quot;&lt;organization&gt;&quot;,
+    &quot;OU&quot;: &quot;&lt;organization unit&gt;&quot;
+  }]
+}</code></pre></li>
 <li><p>Generate the key and certificate for the API server, which are by
 default saved into file <code>server-key.pem</code> and
 <code>server.pem</code> respectively:</p>
-<pre class="shell"><code>../cfssl gencert -ca=ca.pem -ca-key=ca-key.pem \
+<pre class="shell"><code class="language-shell">../cfssl gencert -ca=ca.pem -ca-key=ca-key.pem \
      --config=ca-config.json -profile=kubernetes \
      server-csr.json | ../cfssljson -bare server</code></pre></li>
 </ol>
@@ -344,9 +355,9 @@ behind a company firewall, you can distribute a self-signed CA
 certificate to all clients and refresh the local list for valid
 certificates.</p>
 <p>On each client, perform the following operations:</p>
-<pre class="shell"><code>sudo cp ca.crt /usr/local/share/ca-certificates/kubernetes.crt
+<pre class="shell"><code class="language-shell">sudo cp ca.crt /usr/local/share/ca-certificates/kubernetes.crt
 sudo update-ca-certificates</code></pre>
-<pre class="none"><code>Updating certificates in /etc/ssl/certs...
+<pre class="none"><code class="language-none">Updating certificates in /etc/ssl/certs...
 1 added, 0 removed; done.
 Running hooks in /etc/ca-certificates/update.d....
 done.</code></pre>
@@ -419,6 +430,7 @@ cluster</a> task page.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -427,6 +439,8 @@ cluster</a> task page.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

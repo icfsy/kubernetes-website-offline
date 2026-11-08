@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -233,34 +248,33 @@ each admission plugin that should load manifests from disk. Each plugin
 requires its own directory.</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/admission-configuration.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># This is an example AdmissionConfiguration that configures all four admission</span></span>
-<span class="co"># plugins to load manifest-based admission control from static files on disk.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ValidatingAdmissionWebhook</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> WebhookAdmissionConfiguration</span></span>
-<span class="at">    </span><span class="fu">kubeConfigFile</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&lt;path-to-kubeconfig&gt;&quot;</span></span>
-<span class="at">    </span><span class="fu">staticManifestsDir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/admission/validating-webhooks/&quot;</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MutatingAdmissionWebhook</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> WebhookAdmissionConfiguration</span></span>
-<span class="at">    </span><span class="fu">kubeConfigFile</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&lt;path-to-kubeconfig&gt;&quot;</span></span>
-<span class="at">    </span><span class="fu">staticManifestsDir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/admission/mutating-webhooks/&quot;</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyConfiguration</span></span>
-<span class="at">    </span><span class="fu">staticManifestsDir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/admission/validating-policies/&quot;</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicy</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicyConfiguration</span></span>
-<span class="at">    </span><span class="fu">staticManifestsDir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/admission/mutating-policies/&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># This is an example AdmissionConfiguration that configures all four admission
+# plugins to load manifest-based admission control from static files on disk.
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: ValidatingAdmissionWebhook
+  configuration:
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: WebhookAdmissionConfiguration
+    kubeConfigFile: &quot;&lt;path-to-kubeconfig&gt;&quot;
+    staticManifestsDir: &quot;/etc/kubernetes/admission/validating-webhooks/&quot;
+- name: MutatingAdmissionWebhook
+  configuration:
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: WebhookAdmissionConfiguration
+    kubeConfigFile: &quot;&lt;path-to-kubeconfig&gt;&quot;
+    staticManifestsDir: &quot;/etc/kubernetes/admission/mutating-webhooks/&quot;
+- name: ValidatingAdmissionPolicy
+  configuration:
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: ValidatingAdmissionPolicyConfiguration
+    staticManifestsDir: &quot;/etc/kubernetes/admission/validating-policies/&quot;
+- name: MutatingAdmissionPolicy
+  configuration:
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: MutatingAdmissionPolicyConfiguration
+    staticManifestsDir: &quot;/etc/kubernetes/admission/mutating-policies/&quot;</code></pre>
 </div>
 <p>The <code>staticManifestsDir</code> field accepts an absolute path to
 a directory. All direct-children files with <code>.yaml</code>,
@@ -371,47 +385,46 @@ resources that carry the
 <code>platform.example.com/protected: "true"</code> label:</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/protect-admission-resources.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># This is an example ValidatingAdmissionPolicy that prevents deletion or</span></span>
-<span class="co"># modification of API-based admission resources with the</span></span>
-<span class="co"># &quot;platform.example.com/protected: true&quot; label.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-protect-admission-resources.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Prevent modification or deletion of protected admission resources&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;admissionregistration.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;DELETE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;validatingadmissionpolicies&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;validatingadmissionpolicybindings&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;mutatingadmissionpolicies&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;mutatingadmissionpolicybindings&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;validatingwebhookconfigurations&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;mutatingwebhookconfigurations&quot;</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;-</span></span>
-<span class="at">      </span><span class="ot">!has(old</span><span class="at">Object.metadata.labels) ||</span></span>
-<span class="at">      </span><span class="ot">!(&#39;platform.example.com/protected&#39;</span><span class="at"> in oldObject.metadata.labels) ||</span></span>
-<span class="at">      oldObject.metadata.labels[&#39;platform.example.com/protected&#39;] != &#39;true&#39;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Protected admission resources cannot be modified or deleted&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-protect-admission-resources-binding.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Bind protect-admission-resources policy to all admission resources&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-protect-admission-resources.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Deny</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># This is an example ValidatingAdmissionPolicy that prevents deletion or
+# modification of API-based admission resources with the
+# &quot;platform.example.com/protected: true&quot; label.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;example-protect-admission-resources.static.k8s.io&quot;
+  annotations:
+    kubernetes.io/description: &quot;Prevent modification or deletion of protected admission resources&quot;
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [&quot;admissionregistration.k8s.io&quot;]
+      apiVersions: [&quot;*&quot;]
+      operations: [&quot;DELETE&quot;, &quot;UPDATE&quot;]
+      resources:
+      - &quot;validatingadmissionpolicies&quot;
+      - &quot;validatingadmissionpolicybindings&quot;
+      - &quot;mutatingadmissionpolicies&quot;
+      - &quot;mutatingadmissionpolicybindings&quot;
+      - &quot;validatingwebhookconfigurations&quot;
+      - &quot;mutatingwebhookconfigurations&quot;
+  validations:
+  - expression: &gt;-
+      !has(oldObject.metadata.labels) ||
+      !(&#39;platform.example.com/protected&#39; in oldObject.metadata.labels) ||
+      oldObject.metadata.labels[&#39;platform.example.com/protected&#39;] != &#39;true&#39;
+    message: &quot;Protected admission resources cannot be modified or deleted&quot;
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: &quot;example-protect-admission-resources-binding.static.k8s.io&quot;
+  annotations:
+    kubernetes.io/description: &quot;Bind protect-admission-resources policy to all admission resources&quot;
+spec:
+  policyName: &quot;example-protect-admission-resources.static.k8s.io&quot;
+  validationActions:
+  - Deny</code></pre>
 </div>
 <h3 id="enforcing-a-validatingadmissionpolicy-from-disk">Enforcing a
 ValidatingAdmissionPolicy from disk</h3>
@@ -419,52 +432,51 @@ ValidatingAdmissionPolicy from disk</h3>
 containers in all namespaces except <code>kube-system</code>:</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/deny-privileged-policy.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># This is an example ValidatingAdmissionPolicy that denies privileged containers</span></span>
-<span class="co"># in all namespaces except kube-system.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-deny-privileged.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Deny privileged containers outside kube-system&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">variables</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allContainers</span></span>
-<span class="at">    </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;-</span></span>
-<span class="at">      object.spec.containers +</span></span>
-<span class="at">      </span><span class="fu">(has(object.spec.initContainers) ? object.spec.initContainers </span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span><span class="at">) +</span></span>
-<span class="at">      </span><span class="fu">(has(object.spec.ephemeralContainers) ? object.spec.ephemeralContainers </span><span class="kw">:</span><span class="at"> </span><span class="kw">[]</span><span class="at">)</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;-</span></span>
-<span class="at">      </span><span class="ot">!variables.all</span><span class="at">Containers.exists(c,</span></span>
-<span class="at">      has(c.securityContext) &amp;&amp; has(c.securityContext.privileged) &amp;&amp;</span></span>
-<span class="at">      c.securityContext.privileged == true)</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Privileged containers are not allowed&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-deny-privileged-binding.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Bind deny-privileged policy to all namespaces except kube-system&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-deny-privileged.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Deny</span></span>
-<span class="at">  </span><span class="fu">matchResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/metadata.name&quot;</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> NotIn</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;kube-system&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># This is an example ValidatingAdmissionPolicy that denies privileged containers
+# in all namespaces except kube-system.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;example-deny-privileged.static.k8s.io&quot;
+  annotations:
+    kubernetes.io/description: &quot;Deny privileged containers outside kube-system&quot;
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups: [&quot;&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations: [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources: [&quot;pods&quot;]
+  variables:
+  - name: allContainers
+    expression: &gt;-
+      object.spec.containers +
+      (has(object.spec.initContainers) ? object.spec.initContainers : []) +
+      (has(object.spec.ephemeralContainers) ? object.spec.ephemeralContainers : [])
+  validations:
+  - expression: &gt;-
+      !variables.allContainers.exists(c,
+      has(c.securityContext) &amp;&amp; has(c.securityContext.privileged) &amp;&amp;
+      c.securityContext.privileged == true)
+    message: &quot;Privileged containers are not allowed&quot;
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: &quot;example-deny-privileged-binding.static.k8s.io&quot;
+  annotations:
+    kubernetes.io/description: &quot;Bind deny-privileged policy to all namespaces except kube-system&quot;
+spec:
+  policyName: &quot;example-deny-privileged.static.k8s.io&quot;
+  validationActions:
+  - Deny
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: &quot;kubernetes.io/metadata.name&quot;
+        operator: NotIn
+        values: [&quot;kube-system&quot;]</code></pre>
 </div>
 <p>Place this file in the directory configured as
 <code>staticManifestsDir</code> for the
@@ -477,28 +489,27 @@ a ValidatingWebhookConfiguration from disk</h3>
 external URL:</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/validating-webhook.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># This is an example ValidatingWebhookConfiguration that calls an external</span></span>
-<span class="co"># URL-based webhook endpoint to validate pod creation and updates.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingWebhookConfiguration</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-security-webhook.static.k8s.io&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Validate pod creation and updates via external webhook&quot;</span></span>
-<span class="fu">webhooks</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;security.platform.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">clientConfig</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">url</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;https://security-webhook.platform.example.com:443/validate&quot;</span></span>
-<span class="at">    </span><span class="fu">caBundle</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&lt;base64-encoded-CA-bundle&gt;&quot;</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">operations</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">admissionReviewVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">sideEffects</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># This is an example ValidatingWebhookConfiguration that calls an external
+# URL-based webhook endpoint to validate pod creation and updates.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: &quot;example-security-webhook.static.k8s.io&quot;
+  annotations:
+    kubernetes.io/description: &quot;Validate pod creation and updates via external webhook&quot;
+webhooks:
+- name: &quot;security.platform.example.com&quot;
+  clientConfig:
+    url: &quot;https://security-webhook.platform.example.com:443/validate&quot;
+    caBundle: &quot;&lt;base64-encoded-CA-bundle&gt;&quot;
+  rules:
+  - apiGroups: [&quot;&quot;]
+    apiVersions: [&quot;v1&quot;]
+    operations: [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+    resources: [&quot;pods&quot;]
+  admissionReviewVersions: [&quot;v1&quot;]
+  sideEffects: None
+  failurePolicy: Fail</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -513,47 +524,46 @@ allowed in manifest-based webhook configurations.</p>
 in a single document:</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/list-format-policy.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># This is an example of using the v1.List format to group a</span></span>
-<span class="co"># ValidatingAdmissionPolicy and its binding in a single document.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> List</span></span>
-<span class="fu">items</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-require-labels.static.k8s.io&quot;</span></span>
-<span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Require app.kubernetes.io/name label on all pods&quot;</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">    </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">operations</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="ch">&gt;-</span></span>
-<span class="at">        has(object.metadata.labels) &amp;&amp;</span></span>
-<span class="at">        </span><span class="st">&#39;app.kubernetes.io/name&#39;</span><span class="at"> in object.metadata.labels</span></span>
-<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;All pods must have the &#39;app.kubernetes.io/name&#39; label&quot;</span></span>
-<span class="kw">- </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-require-labels-binding.static.k8s.io&quot;</span></span>
-<span class="at">    </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Bind require-labels policy to all namespaces except kube-system&quot;</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-require-labels.static.k8s.io&quot;</span></span>
-<span class="at">    </span><span class="fu">validationActions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">Deny</span></span>
-<span class="at">    </span><span class="fu">matchResources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/metadata.name&quot;</span></span>
-<span class="at">          </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> NotIn</span></span>
-<span class="at">          </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;kube-system&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># This is an example of using the v1.List format to group a
+# ValidatingAdmissionPolicy and its binding in a single document.
+apiVersion: v1
+kind: List
+items:
+- apiVersion: admissionregistration.k8s.io/v1
+  kind: ValidatingAdmissionPolicy
+  metadata:
+    name: &quot;example-require-labels.static.k8s.io&quot;
+    annotations:
+      kubernetes.io/description: &quot;Require app.kubernetes.io/name label on all pods&quot;
+  spec:
+    failurePolicy: Fail
+    matchConstraints:
+      resourceRules:
+      - apiGroups: [&quot;&quot;]
+        apiVersions: [&quot;v1&quot;]
+        operations: [&quot;CREATE&quot;]
+        resources: [&quot;pods&quot;]
+    validations:
+    - expression: &gt;-
+        has(object.metadata.labels) &amp;&amp;
+        &#39;app.kubernetes.io/name&#39; in object.metadata.labels
+      message: &quot;All pods must have the &#39;app.kubernetes.io/name&#39; label&quot;
+- apiVersion: admissionregistration.k8s.io/v1
+  kind: ValidatingAdmissionPolicyBinding
+  metadata:
+    name: &quot;example-require-labels-binding.static.k8s.io&quot;
+    annotations:
+      kubernetes.io/description: &quot;Bind require-labels policy to all namespaces except kube-system&quot;
+  spec:
+    policyName: &quot;example-require-labels.static.k8s.io&quot;
+    validationActions:
+    - Deny
+    matchResources:
+      namespaceSelector:
+        matchExpressions:
+        - key: &quot;kubernetes.io/metadata.name&quot;
+          operator: NotIn
+          values: [&quot;kube-system&quot;]</code></pre>
 </div>
 <h2 id="evaluation-order">Evaluation order</h2>
 <p>Manifest-based configurations are evaluated before API-based
@@ -849,6 +859,7 @@ design document.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -857,6 +868,8 @@ design document.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

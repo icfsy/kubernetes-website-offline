@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -174,50 +189,49 @@ the device metadata files appear inside the container at:</p>
 <li><p>Review the following example manifest:</p>
 <div class="code-sample">
 <p><code>dra/dra-device-metadata-pod.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-claim</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">      </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-metadata-reader</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-gpu</span></span>
-<span class="at">    </span><span class="fu">resourceClaimName</span><span class="kw">:</span><span class="at"> gpu-claim</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workload</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu:24.04</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">claims</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-gpu</span></span>
-<span class="at">        </span><span class="fu">request</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">sh</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">      echo &quot;=== DRA device metadata ===&quot;</span></span>
-<span class="at">      find /var/run/kubernetes.io/dra-device-attributes -name &#39;*-metadata.json&#39; -print -exec cat {} \;</span></span>
-<span class="at">      sleep 3600</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaim
+metadata:
+  name: gpu-claim
+spec:
+  devices:
+    requests:
+    - name: gpu
+      exactly:
+        deviceClassName: gpu.example.com
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-metadata-reader
+spec:
+  resourceClaims:
+  - name: my-gpu
+    resourceClaimName: gpu-claim
+  containers:
+  - name: workload
+    image: ubuntu:24.04
+    resources:
+      claims:
+      - name: my-gpu
+        request: gpu
+    command:
+    - sh
+    - -c
+    - |
+      echo &quot;=== DRA device metadata ===&quot;
+      find /var/run/kubernetes.io/dra-device-attributes -name &#39;*-metadata.json&#39; -print -exec cat {} \;
+      sleep 3600
+  restartPolicy: Never</code></pre>
 </div>
 <p>This manifest creates a ResourceClaim named <code>gpu-claim</code>
 that requests a device from the <code>gpu.example.com</code>
 DeviceClass, and a Pod that reads the device metadata.</p></li>
 <li><p>Create the ResourceClaim and Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/dra/dra-device-metadata-pod.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/dra/dra-device-metadata-pod.yaml</code></pre></li>
 <li><p>After the Pod is running, view the container logs to see the
 metadata:</p>
-<pre class="shell"><code>kubectl logs gpu-metadata-reader</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs gpu-metadata-reader</code></pre>
 <p>The output is similar to:</p>
 <pre><code>=== DRA device metadata ===
 /var/run/kubernetes.io/dra-device-attributes/resourceclaims/gpu-claim/gpu/gpu.example.com-metadata.json
@@ -227,7 +241,7 @@ metadata:</p>
   ...
 }</code></pre></li>
 <li><p>To inspect the full metadata file, exec into the container:</p>
-<pre class="shell"><code>kubectl exec gpu-metadata-reader -- \
+<pre class="shell"><code class="language-shell">kubectl exec gpu-metadata-reader -- \
   cat /var/run/kubernetes.io/dra-device-attributes/resourceclaims/gpu-claim/gpu/gpu.example.com-metadata.json</code></pre>
 <p>A metadata file is a JSON stream. It contains one object for each API
 version selected by the driver, in the order configured by the driver.
@@ -255,50 +269,49 @@ that records this mapping.</p>
 <li><p>Review the following example manifest:</p>
 <div class="code-sample">
 <p><code>dra/dra-device-metadata-template-pod.yaml</code></p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaimTemplate</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-claim-template</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">        </span><span class="fu">exactly</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">deviceClassName</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-metadata-template-reader</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resourceClaims</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-gpu</span></span>
-<span class="at">    </span><span class="fu">resourceClaimTemplateName</span><span class="kw">:</span><span class="at"> gpu-claim-template</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workload</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu:24.04</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">claims</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-gpu</span></span>
-<span class="at">        </span><span class="fu">request</span><span class="kw">:</span><span class="at"> gpu</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">sh</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">      echo &quot;=== DRA device metadata (from template) ===&quot;</span></span>
-<span class="at">      find /var/run/kubernetes.io/dra-device-attributes -name &#39;*-metadata.json&#39; -print -exec cat {} \;</span></span>
-<span class="at">      sleep 3600</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceClaimTemplate
+metadata:
+  name: gpu-claim-template
+spec:
+  spec:
+    devices:
+      requests:
+      - name: gpu
+        exactly:
+          deviceClassName: gpu.example.com
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: gpu-metadata-template-reader
+spec:
+  resourceClaims:
+  - name: my-gpu
+    resourceClaimTemplateName: gpu-claim-template
+  containers:
+  - name: workload
+    image: ubuntu:24.04
+    resources:
+      claims:
+      - name: my-gpu
+        request: gpu
+    command:
+    - sh
+    - -c
+    - |
+      echo &quot;=== DRA device metadata (from template) ===&quot;
+      find /var/run/kubernetes.io/dra-device-attributes -name &#39;*-metadata.json&#39; -print -exec cat {} \;
+      sleep 3600
+  restartPolicy: Never</code></pre>
 </div>
 <p>This manifest creates a ResourceClaimTemplate and a Pod. Each Pod
 gets its own generated ResourceClaim. The metadata path uses the Pod's
 claim reference name <code>my-gpu</code>.</p></li>
 <li><p>Create the ResourceClaimTemplate and Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/dra/dra-device-metadata-template-pod.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/dra/dra-device-metadata-template-pod.yaml</code></pre></li>
 <li><p>After the Pod is running, view the metadata:</p>
-<pre class="shell"><code>kubectl exec gpu-metadata-template-reader -- \
+<pre class="shell"><code class="language-shell">kubectl exec gpu-metadata-template-reader -- \
   cat /var/run/kubernetes.io/dra-device-attributes/resourceclaimtemplates/my-gpu/gpu/gpu.example.com-metadata.json</code></pre></li>
 </ol>
 <h2 id="read-metadata-application">Read metadata in your
@@ -312,18 +325,15 @@ metadata stream and converting it to internal types so your code works
 across schema versions without manual version checks. They skip objects
 with unknown API versions and return the first compatible object.</p>
 <p>For a directly referenced ResourceClaim:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">import</span> <span class="st">&quot;k8s.io/dynamic-resource-allocation/devicemetadata&quot;</span></span>
-</span>
-dm<span class="op">,</span> err <span class="op">:=</span> devicemetadata<span class="op">.</span>ReadResourceClaimMetadata<span class="op">(</span><span class="st">&quot;gpu-claim&quot;</span><span class="op">,</span> <span class="st">&quot;gpu&quot;</span><span class="op">)</span></span></code></pre></div>
+<pre class="go"><code class="language-go">import &quot;k8s.io/dynamic-resource-allocation/devicemetadata&quot;
+
+dm, err := devicemetadata.ReadResourceClaimMetadata(&quot;gpu-claim&quot;, &quot;gpu&quot;)</code></pre>
 <p>For a template-generated claim (using the Pod's claim reference
 name):</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode go"><code class="sourceCode go">dm<span class="op">,</span> err <span class="op">:=</span> devicemetadata<span class="op">.</span>ReadResourceClaimTemplateMetadata<span class="op">(</span><span class="st">&quot;my-gpu&quot;</span><span class="op">,</span> <span class="st">&quot;gpu&quot;</span><span class="op">)</span></span></code></pre></div>
+<pre class="go"><code class="language-go">dm, err := devicemetadata.ReadResourceClaimTemplateMetadata(&quot;my-gpu&quot;, &quot;gpu&quot;)</code></pre>
 <p>If you know the specific driver name, you can read a single driver's
 metadata file:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode go"><code class="sourceCode go">dm<span class="op">,</span> err <span class="op">:=</span> devicemetadata<span class="op">.</span>ReadResourceClaimMetadataWithDriverName<span class="op">(</span><span class="st">&quot;gpu.example.com&quot;</span><span class="op">,</span> <span class="st">&quot;gpu-claim&quot;</span><span class="op">,</span> <span class="st">&quot;gpu&quot;</span><span class="op">)</span></span></code></pre></div>
+<pre class="go"><code class="language-go">dm, err := devicemetadata.ReadResourceClaimMetadataWithDriverName(&quot;gpu.example.com&quot;, &quot;gpu-claim&quot;, &quot;gpu&quot;)</code></pre>
 <p>The functions that read all drivers return a
 <code>*metadata.DeviceMetadata</code> with merged requests and
 per-device attributes. The functions that accept a driver name return
@@ -331,37 +341,36 @@ the complete metadata object from that driver's file.</p>
 <p>The read helper functions decode metadata without validating it. To
 opt in to validation, open the file and use <a
 href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/devicemetadata#DecodeMetadataFromStream"><code>DecodeMetadataFromStream</code></a>:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">import</span> <span class="op">(</span></span>
-    <span class="st">&quot;encoding/json&quot;</span></span>
-    <span class="st">&quot;os&quot;</span></span>
-</span>
-    <span class="st">&quot;k8s.io/dynamic-resource-allocation/api/metadata&quot;</span></span>
-    <span class="st">&quot;k8s.io/dynamic-resource-allocation/devicemetadata&quot;</span></span>
-<span class="op">)</span></span>
-</span>
-<span class="kw">func</span> readMetadata<span class="op">(</span>path <span class="dt">string</span><span class="op">)</span> <span class="op">(*</span>metadata<span class="op">.</span>DeviceMetadata<span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
-    file<span class="op">,</span> err <span class="op">:=</span> os<span class="op">.</span>Open<span class="op">(</span>path<span class="op">)</span></span>
-    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-        <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> err</span>
-    <span class="op">}</span></span>
-    <span class="cf">defer</span> file<span class="op">.</span>Close<span class="op">()</span></span>
-</span>
-    <span class="kw">var</span> deviceMetadata metadata<span class="op">.</span>DeviceMetadata</span>
-    <span class="kw">var</span> validationErr <span class="dt">error</span></span>
-    err <span class="op">=</span> devicemetadata<span class="op">.</span>DecodeMetadataFromStream<span class="op">(</span></span>
-        json<span class="op">.</span>NewDecoder<span class="op">(</span>file<span class="op">),</span></span>
-        <span class="op">&amp;</span>deviceMetadata<span class="op">,</span></span>
-        devicemetadata<span class="op">.</span>DecodeMetadataWithValidationResult<span class="op">(&amp;</span>validationErr<span class="op">),</span></span>
-    <span class="op">)</span></span>
-    <span class="cf">if</span> err <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-        <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> err</span>
-    <span class="op">}</span></span>
-    <span class="cf">if</span> validationErr <span class="op">!=</span> <span class="ot">nil</span> <span class="op">{</span></span>
-        <span class="cf">return</span> <span class="ot">nil</span><span class="op">,</span> validationErr</span>
-    <span class="op">}</span></span>
-    <span class="cf">return</span> <span class="op">&amp;</span>deviceMetadata<span class="op">,</span> <span class="ot">nil</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">import (
+    &quot;encoding/json&quot;
+    &quot;os&quot;
+
+    &quot;k8s.io/dynamic-resource-allocation/api/metadata&quot;
+    &quot;k8s.io/dynamic-resource-allocation/devicemetadata&quot;
+)
+
+func readMetadata(path string) (*metadata.DeviceMetadata, error) {
+    file, err := os.Open(path)
+    if err != nil {
+        return nil, err
+    }
+    defer file.Close()
+
+    var deviceMetadata metadata.DeviceMetadata
+    var validationErr error
+    err = devicemetadata.DecodeMetadataFromStream(
+        json.NewDecoder(file),
+        &amp;deviceMetadata,
+        devicemetadata.DecodeMetadataWithValidationResult(&amp;validationErr),
+    )
+    if err != nil {
+        return nil, err
+    }
+    if validationErr != nil {
+        return nil, validationErr
+    }
+    return &amp;deviceMetadata, nil
+}</code></pre>
 <p>Decoding and validation have separate results. A validation error
 does not prevent the decoder from populating
 <code>deviceMetadata</code>. Validation is useful when metadata comes
@@ -372,7 +381,7 @@ at a time, inspect each <code>apiVersion</code>, skip unknown versions,
 and use the first version that they support.</p>
 <h2 id="clean-up">Clean up</h2>
 <p>Delete the resources that you created:</p>
-<pre class="shell"><code>kubectl delete -f https://k8s.io/examples/dra/dra-device-metadata-pod.yaml
+<pre class="shell"><code class="language-shell">kubectl delete -f https://k8s.io/examples/dra/dra-device-metadata-pod.yaml
 kubectl delete -f https://k8s.io/examples/dra/dra-device-metadata-template-pod.yaml</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -449,6 +458,7 @@ href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-node/5304-
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -457,6 +467,8 @@ href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-node/5304-
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

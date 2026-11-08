@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -235,50 +250,49 @@ with the same name as the subdomain, the cluster's DNS Server also
 returns A and/or AAAA records for the Pod's fully qualified
 hostname.</p>
 <p>Example:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox-subdomain</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo</span><span class="co"> # name is not required for single-port Services</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">1234</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox1</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hostname</span><span class="kw">:</span><span class="at"> busybox-1</span></span>
-<span class="at">  </span><span class="fu">subdomain</span><span class="kw">:</span><span class="at"> busybox-subdomain</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">sleep</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;3600&quot;</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox2</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hostname</span><span class="kw">:</span><span class="at"> busybox-2</span></span>
-<span class="at">  </span><span class="fu">subdomain</span><span class="kw">:</span><span class="at"> busybox-subdomain</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">sleep</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;3600&quot;</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: busybox-subdomain
+spec:
+  selector:
+    name: busybox
+  clusterIP: None
+  ports:
+  - name: foo # name is not required for single-port Services
+    port: 1234
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox1
+  labels:
+    name: busybox
+spec:
+  hostname: busybox-1
+  subdomain: busybox-subdomain
+  containers:
+  - image: busybox:1.28
+    command:
+      - sleep
+      - &quot;3600&quot;
+    name: busybox
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox2
+  labels:
+    name: busybox
+spec:
+  hostname: busybox-2
+  subdomain: busybox-subdomain
+  containers:
+  - image: busybox:1.28
+    command:
+      - sleep
+      - &quot;3600&quot;
+    name: busybox</code></pre>
 <p>Given the above Service <code>"busybox-subdomain"</code> and the Pods
 which set <code>spec.subdomain</code> to
 <code>"busybox-subdomain"</code>, the first Pod will see its own FQDN as
@@ -381,23 +395,22 @@ not explicitly specified, then "ClusterFirst" is used.</p>
 <p>The example below shows a Pod with its DNS policy set to
 "<code>ClusterFirstWithHostNet</code>" because it has
 <code>hostNetwork</code> set to <code>true</code>.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">sleep</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;3600&quot;</span></span>
-<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">  </span><span class="fu">hostNetwork</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">dnsPolicy</span><span class="kw">:</span><span class="at"> ClusterFirstWithHostNet</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  namespace: default
+spec:
+  containers:
+  - image: busybox:1.28
+    command:
+      - sleep
+      - &quot;3600&quot;
+    imagePullPolicy: IfNotPresent
+    name: busybox
+  restartPolicy: Always
+  hostNetwork: true
+  dnsPolicy: ClusterFirstWithHostNet</code></pre>
 <h3 id="pod-dns-config">Pod's DNS Config</h3>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -435,27 +448,26 @@ Duplicate entries are removed.</li>
 <p>The following is an example Pod with custom DNS settings:</p>
 <div class="code-sample">
 <p><code>service/networking/custom-dns.yaml</code></p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dns-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">dnsPolicy</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;None&quot;</span></span>
-<span class="at">  </span><span class="fu">dnsConfig</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nameservers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">192.0.2.1</span><span class="co"> # this is an example</span></span>
-<span class="at">    </span><span class="fu">searches</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">ns1.svc.cluster-domain.example</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">my.dns.search.suffix</span></span>
-<span class="at">    </span><span class="fu">options</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ndots</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> edns0</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  namespace: default
+  name: dns-example
+spec:
+  containers:
+    - name: test
+      image: nginx
+  dnsPolicy: &quot;None&quot;
+  dnsConfig:
+    nameservers:
+      - 192.0.2.1 # this is an example
+    searches:
+      - ns1.svc.cluster-domain.example
+      - my.dns.search.suffix
+    options:
+      - name: ndots
+        value: &quot;2&quot;
+      - name: edns0</code></pre>
 </div>
 <p>When the Pod above is created, the container <code>test</code> gets
 the following contents in its <code>/etc/resolv.conf</code> file:</p>
@@ -464,7 +476,7 @@ search ns1.svc.cluster-domain.example my.dns.search.suffix
 options ndots:2 edns0</code></pre>
 <p>For IPv6 setup, search path and name server should be set up like
 this:</p>
-<pre class="shell"><code>kubectl exec -it dns-example -- cat /etc/resolv.conf</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it dns-example -- cat /etc/resolv.conf</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>nameserver 2001:db8:30::a
 search default.svc.cluster-domain.example svc.cluster-domain.example cluster-domain.example
@@ -583,6 +595,7 @@ DNS Service</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -591,6 +604,8 @@ DNS Service</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

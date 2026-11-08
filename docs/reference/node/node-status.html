@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -134,7 +149,7 @@ healthy and stable cluster.</p>
 </ul>
 <p>You can use <code>kubectl</code> to view a Node's status and other
 details:</p>
-<pre class="shell"><code>kubectl describe node &lt;insert-node-name-here&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe node &lt;insert-node-name-here&gt;</code></pre>
 <p>Each section of the output is described below.</p>
 <h2 id="addresses">Addresses</h2>
 <p>The usage of these fields varies depending on your cloud provider or
@@ -206,17 +221,16 @@ API; instead, cordoned nodes are marked Unschedulable in their spec.</p>
 <p>In the Kubernetes API, a node's condition is represented as part of
 the <code>.status</code> of the Node resource. For example, the
 following JSON structure describes a healthy node:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="st">&quot;conditions&quot;</span><span class="er">:</span> <span class="ot">[</span></span>
-  <span class="fu">{</span></span>
-    <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;Ready&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="st">&quot;True&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;reason&quot;</span><span class="fu">:</span> <span class="st">&quot;KubeletReady&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;message&quot;</span><span class="fu">:</span> <span class="st">&quot;kubelet is posting ready status&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;lastHeartbeatTime&quot;</span><span class="fu">:</span> <span class="st">&quot;2019-06-05T18:38:35Z&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;lastTransitionTime&quot;</span><span class="fu">:</span> <span class="st">&quot;2019-06-05T11:41:27Z&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="ot">]</span></span></code></pre></div>
+<pre class="json"><code class="language-json">&quot;conditions&quot;: [
+  {
+    &quot;type&quot;: &quot;Ready&quot;,
+    &quot;status&quot;: &quot;True&quot;,
+    &quot;reason&quot;: &quot;KubeletReady&quot;,
+    &quot;message&quot;: &quot;kubelet is posting ready status&quot;,
+    &quot;lastHeartbeatTime&quot;: &quot;2019-06-05T18:38:35Z&quot;,
+    &quot;lastTransitionTime&quot;: &quot;2019-06-05T11:41:27Z&quot;
+  }
+]</code></pre>
 <p>When problems occur on nodes, the Kubernetes control plane
 automatically creates <a
 href="../../concepts/scheduling-eviction/taint-and-toleration.html">taints</a>
@@ -372,6 +386,7 @@ milliseconds and capped at 7 seconds.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -380,6 +395,8 @@ milliseconds and capped at 7 seconds.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

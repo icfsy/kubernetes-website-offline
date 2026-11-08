@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -253,22 +268,22 @@ the same plugin. This is called once per plugin per scheduling
 cycle.</p>
 <p>For example, suppose a plugin <code>BlinkingLightScorer</code> ranks
 Nodes based on how many blinking lights they have.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">func</span> ScoreNode<span class="op">(</span>_ <span class="op">*</span>v1<span class="op">.</span>pod<span class="op">,</span> n <span class="op">*</span>v1<span class="op">.</span>Node<span class="op">)</span> <span class="op">(</span><span class="dt">int</span><span class="op">,</span> <span class="dt">error</span><span class="op">)</span> <span class="op">{</span></span>
-    <span class="cf">return</span> getBlinkingLightCount<span class="op">(</span>n<span class="op">)</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">func ScoreNode(_ *v1.pod, n *v1.Node) (int, error) {
+    return getBlinkingLightCount(n)
+}</code></pre>
 <p>However, the maximum count of blinking lights may be small compared
 to <code>NodeScoreMax</code>. To fix this,
 <code>BlinkingLightScorer</code> should also register for this extension
 point.</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">func</span> NormalizeScores<span class="op">(</span>scores <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">int</span><span class="op">)</span> <span class="op">{</span></span>
-    highest <span class="op">:=</span> <span class="dv">0</span></span>
-    <span class="cf">for</span> _<span class="op">,</span> score <span class="op">:=</span> <span class="kw">range</span> scores <span class="op">{</span></span>
-        highest <span class="op">=</span> max<span class="op">(</span>highest<span class="op">,</span> score<span class="op">)</span></span>
-    <span class="op">}</span></span>
-    <span class="cf">for</span> node<span class="op">,</span> score <span class="op">:=</span> <span class="kw">range</span> scores <span class="op">{</span></span>
-        scores<span class="op">[</span>node<span class="op">]</span> <span class="op">=</span> score<span class="op">*</span>NodeScoreMax<span class="op">/</span>highest</span>
-    <span class="op">}</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">func NormalizeScores(scores map[string]int) {
+    highest := 0
+    for _, score := range scores {
+        highest = max(highest, score)
+    }
+    for node, score := range scores {
+        scores[node] = score*NodeScoreMax/highest
+    }
+}</code></pre>
 <p>If any NormalizeScore plugin returns an error, the scheduling cycle
 is aborted.</p>
 <div class="admonition note">
@@ -357,21 +372,21 @@ and can be used to clean up associated resources.</p>
 <p>There are two steps to the plugin API. First, plugins must register
 and get configured, then they use the extension point interfaces.
 Extension point interfaces have the following form.</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> Plugin <span class="kw">interface</span> <span class="op">{</span></span>
-    Name<span class="op">()</span> <span class="dt">string</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> QueueSortPlugin <span class="kw">interface</span> <span class="op">{</span></span>
-    Plugin</span>
-    Less<span class="op">(*</span>v1<span class="op">.</span>pod<span class="op">,</span> <span class="op">*</span>v1<span class="op">.</span>pod<span class="op">)</span> <span class="dt">bool</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> PreFilterPlugin <span class="kw">interface</span> <span class="op">{</span></span>
-    Plugin</span>
-    PreFilter<span class="op">(</span>context<span class="op">.</span>Context<span class="op">,</span> <span class="op">*</span>framework<span class="op">.</span>CycleState<span class="op">,</span> <span class="op">*</span>v1<span class="op">.</span>pod<span class="op">)</span> <span class="dt">error</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="co">// ...</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type Plugin interface {
+    Name() string
+}
+
+type QueueSortPlugin interface {
+    Plugin
+    Less(*v1.pod, *v1.pod) bool
+}
+
+type PreFilterPlugin interface {
+    Plugin
+    PreFilter(context.Context, *framework.CycleState, *v1.pod) error
+}
+
+// ...</code></pre>
 <h2 id="plugin-configuration">Plugin configuration</h2>
 <p>You can enable or disable plugins in the scheduler configuration. If
 you are using Kubernetes v1.18 or later, most scheduling <a
@@ -451,6 +466,7 @@ profiles</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -459,6 +475,8 @@ profiles</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

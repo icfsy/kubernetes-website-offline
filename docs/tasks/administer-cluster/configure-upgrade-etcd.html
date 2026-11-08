@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -192,9 +207,8 @@ cluster.</p>
 <p>Use a single-node etcd cluster only for testing purposes.</p>
 <ol type="1">
 <li><p>Run the following:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">etcd</span> <span class="at">--listen-client-urls</span><span class="op">=</span>http://<span class="va">$PRIVATE_IP</span>:2379 <span class="dt">\</span></span>
-   <span class="at">--advertise-client-urls</span><span class="op">=</span>http://<span class="va">$PRIVATE_IP</span>:2379</span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">etcd --listen-client-urls=http://$PRIVATE_IP:2379 \
+   --advertise-client-urls=http://$PRIVATE_IP:2379</code></pre></li>
 <li><p>Start the Kubernetes API server with the flag
 <code>--etcd-servers=$PRIVATE_IP:2379</code>.</p>
 <p>Make sure <code>PRIVATE_IP</code> is set to your etcd client
@@ -224,7 +238,7 @@ following client URLs: <code>http://$IP1:2379</code>,
 start a Kubernetes API server:</p>
 <ol type="1">
 <li><p>Run the following:</p>
-<pre class="shell"><code>etcd --listen-client-urls=http://$IP1:2379,http://$IP2:2379,http://$IP3:2379,http://$IP4:2379,http://$IP5:2379 --advertise-client-urls=http://$IP1:2379,http://$IP2:2379,http://$IP3:2379,http://$IP4:2379,http://$IP5:2379</code></pre></li>
+<pre class="shell"><code class="language-shell">etcd --listen-client-urls=http://$IP1:2379,http://$IP2:2379,http://$IP3:2379,http://$IP4:2379,http://$IP5:2379 --advertise-client-urls=http://$IP1:2379,http://$IP2:2379,http://$IP3:2379,http://$IP4:2379,http://$IP5:2379</code></pre></li>
 <li><p>Start the Kubernetes API servers with the flag
 <code>--etcd-servers=$IP1:2379,$IP2:2379,$IP3:2379,$IP4:2379,$IP5:2379</code>.</p>
 <p>Make sure the <code>IP&lt;n&gt;</code> variables are set to
@@ -313,9 +327,9 @@ consider a three-member etcd cluster. Let the URLs be,
 replace it with <code>member4=http://10.0.0.4</code>.</p>
 <ol type="1">
 <li><p>Get the member ID of the failed <code>member1</code>:</p>
-<pre class="shell"><code>etcdctl --endpoints=http://10.0.0.2,http://10.0.0.3 member list</code></pre>
+<pre class="shell"><code class="language-shell">etcdctl --endpoints=http://10.0.0.2,http://10.0.0.3 member list</code></pre>
 <p>The following message is displayed:</p>
-<pre class="console"><code>8211f1d0f64f3269, started, member1, http://10.0.0.1:2380, http://10.0.0.1:2379
+<pre class="console"><code class="language-console">8211f1d0f64f3269, started, member1, http://10.0.0.1:2380, http://10.0.0.1:2379
 91bc3c398fb3c146, started, member2, http://10.0.0.2:2380, http://10.0.0.2:2379
 fd422379fda50e48, started, member3, http://10.0.0.3:2380, http://10.0.0.3:2379</code></pre></li>
 <li><p>Do either of the following:</p>
@@ -333,16 +347,16 @@ other clients besides the Kubernetes API server are causing traffic to
 etcd and it is desirable to stop all traffic to prevent writes to the
 data directory.</p></li>
 <li><p>Remove the failed member:</p>
-<pre class="shell"><code>etcdctl member remove 8211f1d0f64f3269</code></pre>
+<pre class="shell"><code class="language-shell">etcdctl member remove 8211f1d0f64f3269</code></pre>
 <p>The following message is displayed:</p>
-<pre class="console"><code>Removed member 8211f1d0f64f3269 from cluster</code></pre></li>
+<pre class="console"><code class="language-console">Removed member 8211f1d0f64f3269 from cluster</code></pre></li>
 <li><p>Add the new member:</p>
-<pre class="shell"><code>etcdctl member add member4 --peer-urls=http://10.0.0.4:2380</code></pre>
+<pre class="shell"><code class="language-shell">etcdctl member add member4 --peer-urls=http://10.0.0.4:2380</code></pre>
 <p>The following message is displayed:</p>
-<pre class="console"><code>Member 2be1eb8f84b7f63e added to cluster ef37ad9dc622a7c4</code></pre></li>
+<pre class="console"><code class="language-console">Member 2be1eb8f84b7f63e added to cluster ef37ad9dc622a7c4</code></pre></li>
 <li><p>Start the newly added member on a machine with the IP
 <code>10.0.0.4</code>:</p>
-<pre class="shell"><code>export ETCD_NAME=&quot;member4&quot;
+<pre class="shell"><code class="language-shell">export ETCD_NAME=&quot;member4&quot;
 export ETCD_INITIAL_CLUSTER=&quot;member2=http://10.0.0.2:2380,member3=http://10.0.0.3:2380,member4=http://10.0.0.4:2380&quot;
 export ETCD_INITIAL_CLUSTER_STATE=existing
 etcd [flags]</code></pre></li>
@@ -380,7 +394,7 @@ directory</a> that is not currently used by an etcd process. Creating
 the snapshot will not affect the performance of the member.</p>
 <p>Below is an example for creating a snapshot of the keyspace served by
 <code>$ENDPOINT</code> to the file <code>snapshot.db</code>:</p>
-<pre class="shell"><code>ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshot.db</code></pre>
+<pre class="shell"><code class="language-shell">ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshot.db</code></pre>
 <p>Verify the snapshot:</p>
 <div class="tabset">
 <div class="tab-label">
@@ -388,10 +402,10 @@ the snapshot will not affect the performance of the member.</p>
 </div>
 <p>The below example depicts the usage of the <code>etcdutl</code> tool
 for verifying a snapshot:</p>
-<pre class="shell"><code>etcdutl --write-out=table snapshot status snapshot.db </code></pre>
+<pre class="shell"><code class="language-shell">etcdutl --write-out=table snapshot status snapshot.db </code></pre>
 <p>This should generate an output resembling the example provided
 below:</p>
-<pre class="console"><code>+----------+----------+------------+------------+
+<pre class="console"><code class="language-console">+----------+----------+------------+------------+
 |   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
 +----------+----------+------------+------------+
 | fe01cf57 |       10 |          7 | 2.1 MB     |
@@ -405,11 +419,11 @@ below:</p>
 <p>:::</p>
 <p>The below example depicts the usage of the <code>etcdctl</code> tool
 for verifying a snapshot:</p>
-<pre class="shell"><code>export ETCDCTL_API=3
+<pre class="shell"><code class="language-shell">export ETCDCTL_API=3
 etcdctl --write-out=table snapshot status snapshot.db</code></pre>
 <p>This should generate an output resembling the example provided
 below:</p>
-<pre class="console"><code>Deprecated: Use `etcdutl snapshot status` instead.
+<pre class="console"><code class="language-console">Deprecated: Use `etcdutl snapshot status` instead.
 
 +----------+----------+------------+------------+
 |   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
@@ -425,11 +439,11 @@ the storage volume.</p>
 options</h3>
 <p>We can also create the snapshot using various options given by
 etcdctl. For example:</p>
-<pre class="shell"><code>ETCDCTL_API=3 etcdctl -h </code></pre>
+<pre class="shell"><code class="language-shell">ETCDCTL_API=3 etcdctl -h </code></pre>
 <p>will list various options available from etcdctl. For example, you
 can create a snapshot by specifying the endpoint, certificates and key
 as shown below:</p>
-<pre class="shell"><code>ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
+<pre class="shell"><code class="language-shell">ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
   --cacert=&lt;trusted-ca-file&gt; --cert=&lt;cert-file&gt; --key=&lt;key-file&gt; \
   snapshot save &lt;backup-file-location&gt;</code></pre>
 <p>where <code>trusted-ca-file</code>, <code>cert-file</code> and
@@ -485,7 +499,7 @@ directory</a>.</p>
 href="https://github.com/etcd-io/etcd/blob/main/etcdutl/README.md"><code>etcdutl</code></a>,
 use the <code>--data-dir</code> option to specify to which folder the
 cluster should be restored:</p>
-<pre class="shell"><code>etcdutl --data-dir &lt;data-dir-location&gt; snapshot restore snapshot.db</code></pre>
+<pre class="shell"><code class="language-shell">etcdutl --data-dir &lt;data-dir-location&gt; snapshot restore snapshot.db</code></pre>
 <p>where <code>&lt;data-dir-location&gt;</code> is a directory
 that will be created during the restore process.</p>
 <div class="tab-label">
@@ -497,7 +511,7 @@ that will be created during the restore process.</p>
 <p>:::</p>
 <p>The below example depicts the usage of the <code>etcdctl</code> tool
 for the restore operation:</p>
-<pre class="shell"><code>export ETCDCTL_API=3
+<pre class="shell"><code class="language-shell">export ETCDCTL_API=3
 etcdctl --data-dir &lt;data-dir-location&gt; snapshot restore snapshot.db</code></pre>
 <p>If <code>&lt;data-dir-location&gt;</code> is the same folder
 as before, delete it and stop the etcd process before restoring the
@@ -649,6 +663,7 @@ for details.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -657,6 +672,8 @@ for details.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

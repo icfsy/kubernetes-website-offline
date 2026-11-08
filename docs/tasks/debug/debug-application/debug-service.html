@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -127,7 +142,7 @@ document will hopefully help you to figure out what's going wrong.</p>
 <p>For many steps here you will want to see what a Pod running in the
 cluster sees. The simplest way to do this is to run an interactive
 busybox Pod:</p>
-<pre class="none"><code>kubectl run -it --rm --restart=Never busybox --image=registry.k8s.io/busybox:1.27.2 sh</code></pre>
+<pre class="none"><code class="language-none">kubectl run -it --rm --restart=Never busybox --image=registry.k8s.io/busybox:1.27.2 sh</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -136,62 +151,61 @@ busybox Pod:</p>
 </div>
 <p>If you already have a running Pod that you prefer to use, you can run
 a command in it using:</p>
-<pre class="shell"><code>kubectl exec &lt;POD-NAME&gt; -c &lt;CONTAINER-NAME&gt; -- &lt;COMMAND&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec &lt;POD-NAME&gt; -c &lt;CONTAINER-NAME&gt; -- &lt;COMMAND&gt;</code></pre>
 <h2 id="setup">Setup</h2>
 <p>For the purposes of this walk-through, let's run some Pods. Since
 you're probably debugging your own Service you can substitute your own
 details, or you can follow along and get a second data point.</p>
-<pre class="shell"><code>kubectl create deployment hostnames --image=registry.k8s.io/serve_hostname</code></pre>
-<pre class="none"><code>deployment.apps/hostnames created</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create deployment hostnames --image=registry.k8s.io/serve_hostname</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/hostnames created</code></pre>
 <p><code>kubectl</code> commands will print the type and name of the
 resource created or mutated, which can then be used in subsequent
 commands.</p>
 <p>Let's scale the deployment to 3 replicas.</p>
-<pre class="shell"><code>kubectl scale deployment hostnames --replicas=3</code></pre>
-<pre class="none"><code>deployment.apps/hostnames scaled</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployment hostnames --replicas=3</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/hostnames scaled</code></pre>
 <p>Note that this is the same as if you had started the Deployment with
 the following YAML:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/serve_hostname</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hostnames
+  name: hostnames
+spec:
+  selector:
+    matchLabels:
+      app: hostnames
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: hostnames
+    spec:
+      containers:
+      - name: hostnames
+        image: registry.k8s.io/serve_hostname</code></pre>
 <p>The label "app" is automatically set by
 <code>kubectl create deployment</code> to the name of the
 Deployment.</p>
 <p>You can confirm your Pods are running:</p>
-<pre class="shell"><code>kubectl get pods -l app=hostnames</code></pre>
-<pre class="none"><code>NAME                        READY     STATUS    RESTARTS   AGE
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=hostnames</code></pre>
+<pre class="none"><code class="language-none">NAME                        READY     STATUS    RESTARTS   AGE
 hostnames-632524106-bbpiw   1/1       Running   0          2m
 hostnames-632524106-ly40y   1/1       Running   0          2m
 hostnames-632524106-tlaok   1/1       Running   0          2m</code></pre>
 <p>You can also confirm that your Pods are serving. You can get the list
 of Pod IP addresses and test them directly.</p>
-<pre class="shell"><code>kubectl get pods -l app=hostnames \
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=hostnames \
     -o go-template=&#39;{{range .items}}{{.status.podIP}}{{&quot;\n&quot;}}{{end}}&#39;</code></pre>
-<pre class="none"><code>10.244.0.5
+<pre class="none"><code class="language-none">10.244.0.5
 10.244.0.6
 10.244.0.7</code></pre>
 <p>The example container used for this walk-through serves its own
 hostname via HTTP on port 9376, but if you are debugging your own app,
 you'll want to use whatever port number your Pods are listening on.</p>
 <p>From within a pod:</p>
-<pre class="shell"><code>for ep in 10.244.0.5:9376 10.244.0.6:9376 10.244.0.7:9376; do
+<pre class="shell"><code class="language-shell">for ep in 10.244.0.5:9376 10.244.0.6:9376 10.244.0.7:9376; do
     wget -qO- $ep
 done</code></pre>
 <p>This should produce something like:</p>
@@ -213,39 +227,38 @@ forgotten, and is the first thing to check.</p>
 <p>What would happen if you tried to access a non-existent Service? If
 you have another Pod that consumes this Service by name you would get
 something like:</p>
-<pre class="shell"><code>wget -O- hostnames</code></pre>
-<pre class="none"><code>Resolving hostnames (hostnames)... failed: Name or service not known.
+<pre class="shell"><code class="language-shell">wget -O- hostnames</code></pre>
+<pre class="none"><code class="language-none">Resolving hostnames (hostnames)... failed: Name or service not known.
 wget: unable to resolve host address &#39;hostnames&#39;</code></pre>
 <p>The first thing to check is whether that Service actually exists:</p>
-<pre class="shell"><code>kubectl get svc hostnames</code></pre>
-<pre class="none"><code>No resources found.
+<pre class="shell"><code class="language-shell">kubectl get svc hostnames</code></pre>
+<pre class="none"><code class="language-none">No resources found.
 Error from server (NotFound): services &quot;hostnames&quot; not found</code></pre>
 <p>Let's create the Service. As before, this is for the walk-through -
 you can use your own Service's details here.</p>
-<pre class="shell"><code>kubectl expose deployment hostnames --port=80 --target-port=9376</code></pre>
-<pre class="none"><code>service/hostnames exposed</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment hostnames --port=80 --target-port=9376</code></pre>
+<pre class="none"><code class="language-none">service/hostnames exposed</code></pre>
 <p>And read it back:</p>
-<pre class="shell"><code>kubectl get svc hostnames</code></pre>
-<pre class="none"><code>NAME        TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+<pre class="shell"><code class="language-shell">kubectl get svc hostnames</code></pre>
+<pre class="none"><code class="language-none">NAME        TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
 hostnames   ClusterIP   10.0.1.175   &lt;none&gt;        80/TCP    5s</code></pre>
 <p>Now you know that the Service exists.</p>
 <p>As before, this is the same as if you had started the Service with
 YAML:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> hostnames</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9376</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: hostnames
+  name: hostnames
+spec:
+  selector:
+    app: hostnames
+  ports:
+  - name: default
+    protocol: TCP
+    port: 80
+    targetPort: 9376</code></pre>
 <p>In order to highlight the full range of configuration, the Service
 you created here uses a different port number than the Pods. For many
 real-world Services, these values might be the same.</p>
@@ -262,24 +275,24 @@ name?</h2>
 <p>One of the most common ways that clients consume a Service is through
 a DNS name.</p>
 <p>From a Pod in the same Namespace:</p>
-<pre class="shell"><code>nslookup hostnames</code></pre>
-<pre class="none"><code>Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
+<pre class="shell"><code class="language-shell">nslookup hostnames</code></pre>
+<pre class="none"><code class="language-none">Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      hostnames
 Address 1: 10.0.1.175 hostnames.default.svc.cluster.local</code></pre>
 <p>If this fails, perhaps your Pod and Service are in different
 Namespaces, try a namespace-qualified name (again, from within a
 Pod):</p>
-<pre class="shell"><code>nslookup hostnames.default</code></pre>
-<pre class="none"><code>Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
+<pre class="shell"><code class="language-shell">nslookup hostnames.default</code></pre>
+<pre class="none"><code class="language-none">Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      hostnames.default
 Address 1: 10.0.1.175 hostnames.default.svc.cluster.local</code></pre>
 <p>If this works, you'll need to adjust your app to use a
 cross-namespace name, or run your app and Service in the same Namespace.
 If this still fails, try a fully-qualified name:</p>
-<pre class="shell"><code>nslookup hostnames.default.svc.cluster.local</code></pre>
-<pre class="none"><code>Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
+<pre class="shell"><code class="language-shell">nslookup hostnames.default.svc.cluster.local</code></pre>
+<pre class="none"><code class="language-none">Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      hostnames.default.svc.cluster.local
 Address 1: 10.0.1.175 hostnames.default.svc.cluster.local</code></pre>
@@ -295,8 +308,8 @@ different in your own cluster.</p>
 <p>10.0.0.10 is the cluster's DNS Service IP, yours might be
 different.</p>
 </div>
-<pre class="shell"><code>nslookup hostnames.default.svc.cluster.local 10.0.0.10</code></pre>
-<pre class="none"><code>Server:         10.0.0.10
+<pre class="shell"><code class="language-shell">nslookup hostnames.default.svc.cluster.local 10.0.0.10</code></pre>
+<pre class="none"><code class="language-none">Server:         10.0.0.10
 Address:        10.0.0.10#53
 
 Name:   hostnames.default.svc.cluster.local
@@ -304,7 +317,7 @@ Address: 10.0.1.175</code></pre>
 <p>If you are able to do a fully-qualified name lookup but not a
 relative one, you need to check that your <code>/etc/resolv.conf</code>
 file in your Pod is correct. From within a Pod:</p>
-<pre class="shell"><code>cat /etc/resolv.conf</code></pre>
+<pre class="shell"><code class="language-shell">cat /etc/resolv.conf</code></pre>
 <p>You should see something like:</p>
 <pre><code>nameserver 10.0.0.10
 search default.svc.cluster.local svc.cluster.local cluster.local example.com
@@ -331,8 +344,8 @@ name?</h3>
 <p>If the above still fails, DNS lookups are not working for your
 Service. You can take a step back and see what else is not working. The
 Kubernetes master Service should always work. From within a Pod:</p>
-<pre class="shell"><code>nslookup kubernetes.default</code></pre>
-<pre class="none"><code>Server:    10.0.0.10
+<pre class="shell"><code class="language-shell">nslookup kubernetes.default</code></pre>
+<pre class="none"><code class="language-none">Server:    10.0.0.10
 Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
 
 Name:      kubernetes.default
@@ -346,7 +359,7 @@ but instead of debugging your own Service, debug the DNS Service.</p>
 whether your Service works by its IP address. From a Pod in your
 cluster, access the Service's IP (from <code>kubectl get</code>
 above).</p>
-<pre class="shell"><code>for i in $(seq 1 3); do 
+<pre class="shell"><code class="language-shell">for i in $(seq 1 3); do 
     wget -qO- 10.0.1.175:80
 done</code></pre>
 <p>This should produce something like:</p>
@@ -360,42 +373,41 @@ correctly?</h2>
 <p>It might sound silly, but you should really double and triple check
 that your Service is correct and matches your Pod's port. Read back your
 Service and verify it:</p>
-<pre class="shell"><code>kubectl get service hostnames -o json</code></pre>
-<div class="sourceCode" id="cb38"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-    <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;Service&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;hostnames&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;namespace&quot;</span><span class="fu">:</span> <span class="st">&quot;default&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;uid&quot;</span><span class="fu">:</span> <span class="st">&quot;428c8b6c-24bc-11e5-936d-42010af0a9bc&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;resourceVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;347189&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;creationTimestamp&quot;</span><span class="fu">:</span> <span class="st">&quot;2015-07-07T15:24:29Z&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;labels&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-            <span class="dt">&quot;app&quot;</span><span class="fu">:</span> <span class="st">&quot;hostnames&quot;</span></span>
-        <span class="fu">}</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;ports&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-            <span class="fu">{</span></span>
-                <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;default&quot;</span><span class="fu">,</span></span>
-                <span class="dt">&quot;protocol&quot;</span><span class="fu">:</span> <span class="st">&quot;TCP&quot;</span><span class="fu">,</span></span>
-                <span class="dt">&quot;port&quot;</span><span class="fu">:</span> <span class="dv">80</span><span class="fu">,</span></span>
-                <span class="dt">&quot;targetPort&quot;</span><span class="fu">:</span> <span class="dv">9376</span><span class="fu">,</span></span>
-                <span class="dt">&quot;nodePort&quot;</span><span class="fu">:</span> <span class="dv">0</span></span>
-            <span class="fu">}</span></span>
-        <span class="ot">]</span><span class="fu">,</span></span>
-        <span class="dt">&quot;selector&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-            <span class="dt">&quot;app&quot;</span><span class="fu">:</span> <span class="st">&quot;hostnames&quot;</span></span>
-        <span class="fu">},</span></span>
-        <span class="dt">&quot;clusterIP&quot;</span><span class="fu">:</span> <span class="st">&quot;10.0.1.175&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;ClusterIP&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;sessionAffinity&quot;</span><span class="fu">:</span> <span class="st">&quot;None&quot;</span></span>
-    <span class="fu">},</span></span>
-    <span class="dt">&quot;status&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;loadBalancer&quot;</span><span class="fu">:</span> <span class="fu">{}</span></span>
-    <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="shell"><code class="language-shell">kubectl get service hostnames -o json</code></pre>
+<pre class="json"><code class="language-json">{
+    &quot;kind&quot;: &quot;Service&quot;,
+    &quot;apiVersion&quot;: &quot;v1&quot;,
+    &quot;metadata&quot;: {
+        &quot;name&quot;: &quot;hostnames&quot;,
+        &quot;namespace&quot;: &quot;default&quot;,
+        &quot;uid&quot;: &quot;428c8b6c-24bc-11e5-936d-42010af0a9bc&quot;,
+        &quot;resourceVersion&quot;: &quot;347189&quot;,
+        &quot;creationTimestamp&quot;: &quot;2015-07-07T15:24:29Z&quot;,
+        &quot;labels&quot;: {
+            &quot;app&quot;: &quot;hostnames&quot;
+        }
+    },
+    &quot;spec&quot;: {
+        &quot;ports&quot;: [
+            {
+                &quot;name&quot;: &quot;default&quot;,
+                &quot;protocol&quot;: &quot;TCP&quot;,
+                &quot;port&quot;: 80,
+                &quot;targetPort&quot;: 9376,
+                &quot;nodePort&quot;: 0
+            }
+        ],
+        &quot;selector&quot;: {
+            &quot;app&quot;: &quot;hostnames&quot;
+        },
+        &quot;clusterIP&quot;: &quot;10.0.1.175&quot;,
+        &quot;type&quot;: &quot;ClusterIP&quot;,
+        &quot;sessionAffinity&quot;: &quot;None&quot;
+    },
+    &quot;status&quot;: {
+        &quot;loadBalancer&quot;: {}
+    }
+}</code></pre>
 <ul>
 <li>Is the Service port you are trying to access listed in
 <code>spec.ports[]</code>?</li>
@@ -414,8 +426,8 @@ correctly defined and is resolved by DNS. Now let's check that the Pods
 you ran are actually being selected by the Service.</p>
 <p>Earlier you saw that the Pods were running. You can re-check
 that:</p>
-<pre class="shell"><code>kubectl get pods -l app=hostnames</code></pre>
-<pre class="none"><code>NAME                        READY     STATUS    RESTARTS   AGE
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=hostnames</code></pre>
+<pre class="none"><code class="language-none">NAME                        READY     STATUS    RESTARTS   AGE
 hostnames-632524106-bbpiw   1/1       Running   0          1h
 hostnames-632524106-ly40y   1/1       Running   0          1h
 hostnames-632524106-tlaok   1/1       Running   0          1h</code></pre>
@@ -432,7 +444,7 @@ pods</a>.</p>
 <p>Inside the Kubernetes system is a control loop which evaluates the
 selector of every Service and saves the results into one or more
 EndpointSlice objects.</p>
-<pre class="shell"><code>kubectl get endpointslices -l kubernetes.io/service-name=hostnames
+<pre class="shell"><code class="language-shell">kubectl get endpointslices -l kubernetes.io/service-name=hostnames
 
 NAME              ADDRESSTYPE   PORTS   ENDPOINTS
 hostnames-ytpni   IPv4          9376    10.244.0.5,10.244.0.6,10.244.0.7</code></pre>
@@ -460,7 +472,7 @@ by the Endpoints above.</p>
 (80).</p>
 </div>
 <p>From within a Pod:</p>
-<pre class="shell"><code>for ep in 10.244.0.5:9376 10.244.0.6:9376 10.244.0.7:9376; do
+<pre class="shell"><code class="language-shell">for ep in 10.244.0.5:9376 10.244.0.6:9376 10.244.0.7:9376; do
     wget -qO- $ep
 done</code></pre>
 <p>This should produce something like:</p>
@@ -483,15 +495,15 @@ implementation of Services you are using.</p>
 <h3 id="is-kube-proxy-running">Is kube-proxy running?</h3>
 <p>Confirm that <code>kube-proxy</code> is running on your Nodes.
 Running directly on a Node, you should get something like the below:</p>
-<pre class="shell"><code>ps auxw | grep kube-proxy</code></pre>
-<pre class="none"><code>root  4194  0.4  0.1 101864 17696 ?    Sl Jul04  25:43 /usr/local/bin/kube-proxy --master=https://kubernetes-master --kubeconfig=/var/lib/kube-proxy/kubeconfig --v=2</code></pre>
+<pre class="shell"><code class="language-shell">ps auxw | grep kube-proxy</code></pre>
+<pre class="none"><code class="language-none">root  4194  0.4  0.1 101864 17696 ?    Sl Jul04  25:43 /usr/local/bin/kube-proxy --master=https://kubernetes-master --kubeconfig=/var/lib/kube-proxy/kubeconfig --v=2</code></pre>
 <p>Next, confirm that it is not failing something obvious, like
 contacting the master. To do this, you'll have to look at the logs.
 Accessing the logs depends on your Node OS. On some OSes it is a file,
 such as /var/log/kube-proxy.log, while other OSes use
 <code>journalctl</code> to access logs. You should see something
 like:</p>
-<pre class="none"><code>I1027 22:14:53.995134    5063 server.go:200] Running in resource-only container &quot;/kube-proxy&quot;
+<pre class="none"><code class="language-none">I1027 22:14:53.995134    5063 server.go:200] Running in resource-only container &quot;/kube-proxy&quot;
 I1027 22:14:53.998163    5063 server.go:247] Using iptables Proxier.
 I1027 22:14:54.038140    5063 proxier.go:352] Setting endpoints for &quot;kube-system/kube-dns:dns-tcp&quot; to [10.244.1.3:53]
 I1027 22:14:54.038164    5063 proxier.go:352] Setting endpoints for &quot;kube-system/kube-dns:dns&quot; to [10.244.1.3:53]
@@ -509,8 +521,8 @@ is running in "iptables" mode. The most common other mode is "ipvs".</p>
 <h4 id="iptables-mode">Iptables mode</h4>
 <p>In "iptables" mode, you should see something like the following on a
 Node:</p>
-<pre class="shell"><code>iptables-save | grep hostnames</code></pre>
-<pre class="none"><code>-A KUBE-SEP-57KPRZ3JQVENLNBR -s 10.244.3.6/32 -m comment --comment &quot;default/hostnames:&quot; -j MARK --set-xmark 0x00004000/0x00004000
+<pre class="shell"><code class="language-shell">iptables-save | grep hostnames</code></pre>
+<pre class="none"><code class="language-none">-A KUBE-SEP-57KPRZ3JQVENLNBR -s 10.244.3.6/32 -m comment --comment &quot;default/hostnames:&quot; -j MARK --set-xmark 0x00004000/0x00004000
 -A KUBE-SEP-57KPRZ3JQVENLNBR -p tcp -m comment --comment &quot;default/hostnames:&quot; -m tcp -j DNAT --to-destination 10.244.3.6:9376
 -A KUBE-SEP-WNBA2IHDGP2BOBGZ -s 10.244.1.7/32 -m comment --comment &quot;default/hostnames:&quot; -j MARK --set-xmark 0x00004000/0x00004000
 -A KUBE-SEP-WNBA2IHDGP2BOBGZ -p tcp -m comment --comment &quot;default/hostnames:&quot; -m tcp -j DNAT --to-destination 10.244.1.7:9376
@@ -531,8 +543,8 @@ rules in it. The exact rules will vary based on your exact config
 <h4 id="ipvs-mode">IPVS mode</h4>
 <p>In "ipvs" mode, you should see something like the following on a
 Node:</p>
-<pre class="shell"><code>ipvsadm -ln</code></pre>
-<pre class="none"><code>Prot LocalAddress:Port Scheduler Flags
+<pre class="shell"><code class="language-shell">ipvsadm -ln</code></pre>
+<pre class="none"><code class="language-none">Prot LocalAddress:Port Scheduler Flags
   -&gt; RemoteAddress:Port           Forward Weight ActiveConn InActConn
 ...
 TCP  10.0.1.175:80 rr
@@ -549,11 +561,11 @@ endpoints(<code>10.244.0.5:9376</code>, <code>10.244.0.6:9376</code>,
 <h3 id="is-kube-proxy-proxying">Is kube-proxy proxying?</h3>
 <p>Assuming you do see one the above cases, try again to access your
 Service by IP from one of your Nodes:</p>
-<pre class="shell"><code>curl 10.0.1.175:80</code></pre>
-<pre class="none"><code>hostnames-632524106-bbpiw</code></pre>
+<pre class="shell"><code class="language-shell">curl 10.0.1.175:80</code></pre>
+<pre class="none"><code class="language-none">hostnames-632524106-bbpiw</code></pre>
 <p>If this still fails, look at the <code>kube-proxy</code> logs for
 specific lines like:</p>
-<pre class="none"><code>Setting endpoints for default/hostnames:default to [10.244.0.5:9376 10.244.0.6:9376 10.244.0.7:9376]</code></pre>
+<pre class="none"><code class="language-none">Setting endpoints for default/hostnames:default to [10.244.0.5:9376 10.244.0.6:9376 10.244.0.7:9376]</code></pre>
 <p>If you don't see those, try restarting <code>kube-proxy</code> with
 the <code>-v</code> flag set to 4, and then look at the logs again.</p>
 <h3 id="a-pod-fails-to-reach-itself-via-the-service-ip">Edge case: A Pod
@@ -576,8 +588,8 @@ flag must either be set to <code>hairpin-veth</code> or
 see something like the below. <code>hairpin-mode</code> is set to
 <code>promiscuous-bridge</code> in the following example.</li>
 </ul>
-<pre class="shell"><code>ps auxw | grep kubelet</code></pre>
-<pre class="none"><code>root      3392  1.1  0.8 186804 65208 ?        Sl   00:51  11:11 /usr/local/bin/kubelet --enable-debugging-handlers=true --config=/etc/kubernetes/manifests --allow-privileged=True --v=4 --cluster-dns=10.0.0.10 --cluster-domain=cluster.local --configure-cbr0=true --cgroup-root=/ --system-cgroups=/system --hairpin-mode=promiscuous-bridge --runtime-cgroups=/docker-daemon --kubelet-cgroups=/kubelet --babysit-daemons=true --max-pods=110 --serialize-image-pulls=false --outofdisk-transition-frequency=0</code></pre>
+<pre class="shell"><code class="language-shell">ps auxw | grep kubelet</code></pre>
+<pre class="none"><code class="language-none">root      3392  1.1  0.8 186804 65208 ?        Sl   00:51  11:11 /usr/local/bin/kubelet --enable-debugging-handlers=true --config=/etc/kubernetes/manifests --allow-privileged=True --v=4 --cluster-dns=10.0.0.10 --cluster-domain=cluster.local --configure-cbr0=true --cgroup-root=/ --system-cgroups=/system --hairpin-mode=promiscuous-bridge --runtime-cgroups=/docker-daemon --kubelet-cgroups=/kubelet --babysit-daemons=true --max-pods=110 --serialize-image-pulls=false --outofdisk-transition-frequency=0</code></pre>
 <ul>
 <li>Confirm the effective <code>hairpin-mode</code>. To do this, you'll
 have to look at kubelet log. Accessing the logs depends on your Node OS.
@@ -588,15 +600,15 @@ flag due to compatibility. Check if there is any log lines with key word
 <code>hairpin</code> in kubelet.log. There should be log lines
 indicating the effective hairpin mode, like something below.</li>
 </ul>
-<pre class="none"><code>I0629 00:51:43.648698    3252 kubelet.go:380] Hairpin mode set to &quot;promiscuous-bridge&quot;</code></pre>
+<pre class="none"><code class="language-none">I0629 00:51:43.648698    3252 kubelet.go:380] Hairpin mode set to &quot;promiscuous-bridge&quot;</code></pre>
 <ul>
 <li>If the effective hairpin mode is <code>hairpin-veth</code>, ensure
 the <code>Kubelet</code> has the permission to operate in
 <code>/sys</code> on node. If everything works properly, you should see
 something like:</li>
 </ul>
-<pre class="shell"><code>for intf in /sys/devices/virtual/net/cbr0/brif/*; do cat $intf/hairpin_mode; done</code></pre>
-<pre class="none"><code>1
+<pre class="shell"><code class="language-shell">for intf in /sys/devices/virtual/net/cbr0/brif/*; do cat $intf/hairpin_mode; done</code></pre>
+<pre class="none"><code class="language-none">1
 1
 1
 1</code></pre>
@@ -606,8 +618,8 @@ ensure <code>Kubelet</code> has the permission to manipulate linux
 bridge on node. If <code>cbr0</code> bridge is used and configured
 properly, you should see:</li>
 </ul>
-<pre class="shell"><code>ifconfig cbr0 |grep PROMISC</code></pre>
-<pre class="none"><code>UP BROADCAST RUNNING PROMISC MULTICAST  MTU:1460  Metric:1</code></pre>
+<pre class="shell"><code class="language-shell">ifconfig cbr0 |grep PROMISC</code></pre>
+<pre class="none"><code class="language-none">UP BROADCAST RUNNING PROMISC MULTICAST  MTU:1460  Metric:1</code></pre>
 <ul>
 <li>Seek help if none of above works out.</li>
 </ul>
@@ -687,6 +699,7 @@ document</a> for more information.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -695,6 +708,8 @@ document</a> for more information.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

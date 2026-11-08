@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -228,7 +243,7 @@ to consume this data in a more user-friendly way, the
 metrics, using the <code>--show-swap</code> flag.</p>
 <p>In order to receive information about swap usage on nodes,
 <code>kubectl top nodes --show-swap</code> can be used:</p>
-<pre class="shell"><code>kubectl top nodes --show-swap</code></pre>
+<pre class="shell"><code class="language-shell">kubectl top nodes --show-swap</code></pre>
 <p>This will result in an output similar to:</p>
 <pre><code>NAME    CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   SWAP(bytes)    SWAP(%)       
 node1   1m           10%      2Mi             10%         1Mi            0%   
@@ -236,7 +251,7 @@ node2   5m           10%      6Mi             10%         2Mi            0%
 node3   3m           10%      4Mi             10%         &lt;unknown&gt;      &lt;unknown&gt;   </code></pre>
 <p>In order to receive information about swap usage by pods,
 <code>kubectl top pods --show-swap</code> can be used:</p>
-<pre class="shell"><code>kubectl top pod -n kube-system --show-swap</code></pre>
+<pre class="shell"><code class="language-shell">kubectl top pod -n kube-system --show-swap</code></pre>
 <p>This will result in an output similar to:</p>
 <pre><code>NAME                                      CPU(cores)   MEMORY(bytes)   SWAP(bytes)
 coredns-58d5bc5cdb-5nbk4                  2m           19Mi            0Mi
@@ -255,7 +270,7 @@ report swap capacity as part of node status</h3>
 capacity of a node.</p>
 <p>As an example, the following command can be used to retrieve the swap
 capacity of the nodes in a cluster:</p>
-<pre class="shell"><code>kubectl get nodes -o go-template=&#39;{{range .items}}{{.metadata.name}}: {{if .status.nodeInfo.swap.capacity}}{{.status.nodeInfo.swap.capacity}}{{else}}&lt;unknown&gt;{{end}}{{&quot;\n&quot;}}{{end}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes -o go-template=&#39;{{range .items}}{{.metadata.name}}: {{if .status.nodeInfo.swap.capacity}}{{.status.nodeInfo.swap.capacity}}{{else}}&lt;unknown&gt;{{end}}{{&quot;\n&quot;}}{{end}}&#39;</code></pre>
 <p>This will result in an output similar to:</p>
 <pre><code>node1: 21474836480
 node2: 42949664768
@@ -279,7 +294,7 @@ features and configuration. It can be utilized to discover which nodes
 are provisioned with swap.</p>
 <p>As an example, to figure out which nodes are provisioned with swap,
 use the following command:</p>
-<pre class="shell"><code>kubectl get nodes -o jsonpath=&#39;{range .items[?(@.metadata.labels.feature\.node\.kubernetes\.io/memory-swap)]}{.metadata.name}{&quot;\t&quot;}{.metadata.labels.feature\.node\.kubernetes\.io/memory-swap}{&quot;\n&quot;}{end}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes -o jsonpath=&#39;{range .items[?(@.metadata.labels.feature\.node\.kubernetes\.io/memory-swap)]}{.metadata.name}{&quot;\t&quot;}{.metadata.labels.feature\.node\.kubernetes\.io/memory-swap}{&quot;\n&quot;}{end}&#39;</code></pre>
 <p>This will result in an output similar to:</p>
 <pre><code>k8s-worker1: true
 k8s-worker2: true
@@ -385,7 +400,7 @@ lower, kubelet is likely to start evicting Pods before the node runs out
 of memory, thus avoiding the OOM killer.</p>
 <p>The value of <code>vm.min_free_kbytes</code> can be determined by
 running the following command on the node:</p>
-<pre class="shell"><code>cat /proc/sys/vm/min_free_kbytes</code></pre>
+<pre class="shell"><code class="language-shell">cat /proc/sys/vm/min_free_kbytes</code></pre>
 <h3 id="unutilized-swap-space">Unutilized swap space</h3>
 <p>Under the <code>LimitedSwap</code> behavior, the amount of swap
 available to a Pod is determined automatically, based on the proportion
@@ -589,6 +604,7 @@ href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-node/2400-
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -597,6 +613,8 @@ href="https://github.com/kubernetes/enhancements/blob/master/keps/sig-node/2400-
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

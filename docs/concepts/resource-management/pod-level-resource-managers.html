@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -241,50 +256,49 @@ CPUs. <code>main-app</code> requests an exclusive 2 CPU slice, while the
 sidecars share the remaining 2 CPUs in the Pod's shared pool:</p>
 <div class="code-sample">
 <p><code>pods/resource/pod-level-resource-managers-pod-scope-mixed.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-scope-mixed</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;A pod demonstrating pod-level scope where one container gets exclusive resources and others share the remaining pod resources in a shared pool.&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># At Pod level, the Pod has CPU request equal to limits and memory request</span></span>
-<span class="at">  </span><span class="co"># also equal to memory limits. The main-app container meets the requirements</span></span>
-<span class="at">  </span><span class="co"># for the Guaranteed QoS class at container level, and the sidecar containers</span></span>
-<span class="at">  </span><span class="co"># don&#39;t specify any resource request. Under pod scope, this means that the</span></span>
-<span class="at">  </span><span class="co"># kubelet could statically assign 4 CPUs to the overall Pod, of which 2 are</span></span>
-<span class="at">  </span><span class="co"># assigned exclusively to the main-app container, and the remaining 2 are</span></span>
-<span class="at">  </span><span class="co"># shared by the sidecars in the pod&#39;s shared pool.</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> metrics-sidecar</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes, not an</span></span>
-<span class="at">    </span><span class="co">#actual metrics helper.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> logging-sidecar</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes, not an</span></span>
-<span class="at">    </span><span class="co"># actual logging agent.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-app</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-scope-mixed
+  annotations:
+    kubernetes.io/description: &quot;A pod demonstrating pod-level scope where one container gets exclusive resources and others share the remaining pod resources in a shared pool.&quot;
+spec:
+  # At Pod level, the Pod has CPU request equal to limits and memory request
+  # also equal to memory limits. The main-app container meets the requirements
+  # for the Guaranteed QoS class at container level, and the sidecar containers
+  # don&#39;t specify any resource request. Under pod scope, this means that the
+  # kubelet could statically assign 4 CPUs to the overall Pod, of which 2 are
+  # assigned exclusively to the main-app container, and the remaining 2 are
+  # shared by the sidecars in the pod&#39;s shared pool.
+  resources:
+    requests:
+      cpu: &quot;4&quot;
+      memory: &quot;4Gi&quot;
+    limits:
+      cpu: &quot;4&quot;
+      memory: &quot;4Gi&quot;
+  initContainers:
+  - name: metrics-sidecar
+    # Note: This is a placeholder image for demonstration purposes, not an
+    #actual metrics helper.
+    image: registry.k8s.io/pause:3.9
+    restartPolicy: Always
+  - name: logging-sidecar
+    # Note: This is a placeholder image for demonstration purposes, not an
+    # actual logging agent.
+    image: registry.k8s.io/pause:3.9
+    restartPolicy: Always
+  containers:
+  - name: main-app
+    # Note: This is a placeholder image for demonstration purposes.
+    image: registry.k8s.io/pause:3.9
+    resources:
+      requests:
+        cpu: &quot;2&quot;
+        memory: &quot;2Gi&quot;
+      limits:
+        cpu: &quot;2&quot;
+        memory: &quot;2Gi&quot;</code></pre>
 </div>
 <p><strong>Important considerations:</strong></p>
 <p>When using pod-level resources with the Topology manager's
@@ -305,57 +319,56 @@ are 0 CPUs left in the shared pool for <code>logging-sidecar</code>, the
 memory):</p>
 <div class="code-sample">
 <p><code>pods/resource/pod-level-resource-managers-empty-shared-pool.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> empty-shared-pool</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;A pod demonstrating a configuration that is rejected because exclusive containers consume the entire pod resource budget, leaving no resources for the remaining container in the shared pool.&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># At Pod level, the Pod has CPU request equal to limits and memory request</span></span>
-<span class="at">  </span><span class="co"># also equal to memory limits. The main-app and metrics-sidecar containers</span></span>
-<span class="at">  </span><span class="co"># meet the requirements for the Guaranteed QoS class at container level, and</span></span>
-<span class="at">  </span><span class="co"># the logging-sidecar container doesn&#39;t specify any resource request. Because</span></span>
-<span class="at">  </span><span class="co"># the Guaranteed containers consume the entire pod resource budget,</span></span>
-<span class="at">  </span><span class="co"># leaving 0 CPUs for the shared pool required by logging-sidecar, this pod</span></span>
-<span class="at">  </span><span class="co"># will be rejected at admission.</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> metrics-sidecar</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes, not an</span></span>
-<span class="at">    </span><span class="co"># actual metrics helper.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> logging-sidecar</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes, not an</span></span>
-<span class="at">    </span><span class="co"># actual logging agent.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-app</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3Gi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3Gi&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: empty-shared-pool
+  annotations:
+    kubernetes.io/description: &quot;A pod demonstrating a configuration that is rejected because exclusive containers consume the entire pod resource budget, leaving no resources for the remaining container in the shared pool.&quot;
+spec:
+  # At Pod level, the Pod has CPU request equal to limits and memory request
+  # also equal to memory limits. The main-app and metrics-sidecar containers
+  # meet the requirements for the Guaranteed QoS class at container level, and
+  # the logging-sidecar container doesn&#39;t specify any resource request. Because
+  # the Guaranteed containers consume the entire pod resource budget,
+  # leaving 0 CPUs for the shared pool required by logging-sidecar, this pod
+  # will be rejected at admission.
+  resources:
+    requests:
+      cpu: &quot;4&quot;
+      memory: &quot;4Gi&quot;
+    limits:
+      cpu: &quot;4&quot;
+      memory: &quot;4Gi&quot;
+  initContainers:
+  - name: metrics-sidecar
+    # Note: This is a placeholder image for demonstration purposes, not an
+    # actual metrics helper.
+    image: registry.k8s.io/pause:3.9
+    restartPolicy: Always
+    resources:
+      requests:
+        cpu: &quot;1&quot;
+        memory: &quot;1Gi&quot;
+      limits:
+        cpu: &quot;1&quot;
+        memory: &quot;1Gi&quot;
+  - name: logging-sidecar
+    # Note: This is a placeholder image for demonstration purposes, not an
+    # actual logging agent.
+    image: registry.k8s.io/pause:3.9
+    restartPolicy: Always
+  containers:
+  - name: main-app
+    # Note: This is a placeholder image for demonstration purposes.
+    image: registry.k8s.io/pause:3.9
+    resources:
+      requests:
+        cpu: &quot;3&quot;
+        memory: &quot;3Gi&quot;
+      limits:
+        cpu: &quot;3&quot;
+        memory: &quot;3Gi&quot;</code></pre>
 </div></li>
 <li><p><strong>Wasted resources:</strong> Any resources overallocated
 when using the <code>pod</code> scope (the total container requests sum
@@ -400,49 +413,48 @@ gets an exclusive, NUMA-aligned 2 CPU slice. The two application workers
 node-wide shared pool:</p>
 <div class="code-sample">
 <p><code>pods/resource/pod-level-resource-managers-container-scope-mixed.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> container-scope-mixed</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;A pod demonstrating container-level scope where one container gets exclusive resources and others run in the node&#39;s shared pool.&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># At Pod level, the Pod has CPU request equal to limits and memory request</span></span>
-<span class="at">  </span><span class="co"># also equal to memory limits. The infrastructure-sidecar container meets the</span></span>
-<span class="at">  </span><span class="co"># requirements for the Guaranteed QoS class at container level, and the worker</span></span>
-<span class="at">  </span><span class="co"># containers don&#39;t specify any resource request. Under container scope, the</span></span>
-<span class="at">  </span><span class="co"># kubelet evaluates containers individually for exclusive allocation. This</span></span>
-<span class="at">  </span><span class="co"># means the infrastructure-sidecar gets an exclusive 2 CPU slice, while the</span></span>
-<span class="at">  </span><span class="co"># worker containers run in the node&#39;s general shared pool, all while bounded</span></span>
-<span class="at">  </span><span class="co"># by the overall pod limits.</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4Gi&quot;</span></span>
-<span class="at">  </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> infrastructure-sidecar</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes, not an</span></span>
-<span class="at">    </span><span class="co"># actual infrastructure helper.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">    </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> worker-1</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> worker-2</span></span>
-<span class="at">    </span><span class="co"># Note: This is a placeholder image for demonstration purposes.</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: container-scope-mixed
+  annotations:
+    kubernetes.io/description: &quot;A pod demonstrating container-level scope where one container gets exclusive resources and others run in the node&#39;s shared pool.&quot;
+spec:
+  # At Pod level, the Pod has CPU request equal to limits and memory request
+  # also equal to memory limits. The infrastructure-sidecar container meets the
+  # requirements for the Guaranteed QoS class at container level, and the worker
+  # containers don&#39;t specify any resource request. Under container scope, the
+  # kubelet evaluates containers individually for exclusive allocation. This
+  # means the infrastructure-sidecar gets an exclusive 2 CPU slice, while the
+  # worker containers run in the node&#39;s general shared pool, all while bounded
+  # by the overall pod limits.
+  resources:
+    requests:
+      cpu: &quot;4&quot;
+      memory: &quot;4Gi&quot;
+    limits:
+      cpu: &quot;4&quot;
+      memory: &quot;4Gi&quot;
+  initContainers:
+  - name: infrastructure-sidecar
+    # Note: This is a placeholder image for demonstration purposes, not an
+    # actual infrastructure helper.
+    image: registry.k8s.io/pause:3.9
+    restartPolicy: Always
+    resources:
+      requests:
+        cpu: &quot;2&quot;
+        memory: &quot;2Gi&quot;
+      limits:
+        cpu: &quot;2&quot;
+        memory: &quot;2Gi&quot;
+  containers:
+  - name: worker-1
+    # Note: This is a placeholder image for demonstration purposes.
+    image: registry.k8s.io/pause:3.9
+  - name: worker-2
+    # Note: This is a placeholder image for demonstration purposes.
+    image: registry.k8s.io/pause:3.9</code></pre>
 </div>
 <h3 id="cpu-quota-cfs">CPU quota (CFS)</h3>
 <p>When running mixed workloads within a Pod, the <code>kubelet</code>
@@ -596,6 +608,7 @@ Resource Managers</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -604,6 +617,8 @@ Resource Managers</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

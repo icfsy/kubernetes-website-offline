@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -147,17 +162,16 @@ shortly assign to the placeholder pods. Later, you will set up a
 Deployment that uses this PriorityClass</p>
 <div class="code-sample">
 <p><code>priorityclass/low-priority-class.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> placeholder</span><span class="co"> # these Pods represent placeholder capacity</span></span>
-<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">-1000</span></span>
-<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Negative priority for placeholder pods to enable overprovisioning.&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: placeholder # these Pods represent placeholder capacity
+value: -1000
+globalDefault: false
+description: &quot;Negative priority for placeholder pods to enable overprovisioning.&quot;</code></pre>
 </div>
 <p>Then create the PriorityClass:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/priorityclass/low-priority-class.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/priorityclass/low-priority-class.yaml</code></pre>
 <p>You will next define a Deployment that uses the negative-priority
 PriorityClass and runs a minimal container. When you add this to your
 cluster, Kubernetes runs those placeholder pods to reserve capacity. Any
@@ -168,44 +182,43 @@ capacity</h2>
 <p>Review the sample manifest:</p>
 <div class="code-sample">
 <p><code>deployments/deployment-with-capacity-reservation.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> capacity-reservation</span></span>
-<span class="at">  </span><span class="co"># You should decide what namespace to deploy this into</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> capacity-placeholder</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> capacity-placeholder</span></span>
-<span class="at">      </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Capacity reservation&quot;</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> placeholder</span></span>
-<span class="at">      </span><span class="fu">affinity</span><span class="kw">:</span><span class="at"> </span><span class="co"># Try to place these overhead Pods on different nodes</span></span>
-<span class="at">                </span><span class="co"># if possible</span></span>
-<span class="at">        </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">            </span><span class="fu">podAffinityTerm</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> capacity-placeholder</span></span>
-<span class="at">              </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/hostname</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pause</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.6</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;50m&quot;</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span>
-<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Mi&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capacity-reservation
+  # You should decide what namespace to deploy this into
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: capacity-placeholder
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: capacity-placeholder
+      annotations:
+        kubernetes.io/description: &quot;Capacity reservation&quot;
+    spec:
+      priorityClassName: placeholder
+      affinity: # Try to place these overhead Pods on different nodes
+                # if possible
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: capacity-placeholder
+              topologyKey: topology.kubernetes.io/hostname
+      containers:
+      - name: pause
+        image: registry.k8s.io/pause:3.6
+        resources:
+          requests:
+            cpu: &quot;50m&quot;
+            memory: &quot;512Mi&quot;
+          limits:
+            memory: &quot;512Mi&quot;</code></pre>
 </div>
 <h3 id="pick-a-namespace-for-the-placeholder-pods">Pick a namespace for
 the placeholder pods</h3>
@@ -214,7 +227,7 @@ into.</p>
 <h3 id="create-the-placeholder-deployment">Create the placeholder
 deployment</h3>
 <p>Create a Deployment based on that manifest:</p>
-<pre class="shell"><code># Change the namespace name &quot;example&quot;
+<pre class="shell"><code class="language-shell"># Change the namespace name &quot;example&quot;
 kubectl --namespace example apply -f https://k8s.io/examples/deployments/deployment-with-capacity-reservation.yaml</code></pre>
 <h2 id="adjust-placeholder-resource-requests">Adjust placeholder
 resource requests</h2>
@@ -227,17 +240,16 @@ the Deployment manifest file to set appropriate requests and limits. You
 can download that file locally and then edit it with whichever text
 editor you prefer.</p>
 <p>You can also edit the Deployment using kubectl:</p>
-<pre class="shell"><code>kubectl edit deployment capacity-reservation</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit deployment capacity-reservation</code></pre>
 <p>For example, to reserve a total of a 0.5 CPU and 1GiB of memory
 across 5 placeholder pods, define the resource requests and limits for a
 single placeholder pod as follows:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100m&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  resources:
+    requests:
+      cpu: &quot;100m&quot;
+      memory: &quot;200Mi&quot;
+    limits:
+      cpu: &quot;100m&quot;</code></pre>
 <h2 id="set-the-desired-replica-count">Set the desired replica
 count</h2>
 <h3 id="calculate-the-total-reserved-resources">Calculate the total
@@ -250,11 +262,11 @@ Total memory reserved: 5 × 200MiB = 1GiB (in the Pod specification,
 you'll write <code>1 Gi</code>)</p>
 <p>To scale the Deployment, adjust the number of replicas based on your
 cluster's size and expected workload:</p>
-<pre class="shell"><code>kubectl scale deployment capacity-reservation --replicas=5</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployment capacity-reservation --replicas=5</code></pre>
 <p>Verify the scaling:</p>
-<pre class="shell"><code>kubectl get deployment capacity-reservation</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment capacity-reservation</code></pre>
 <p>The output should reflect the updated number of replicas:</p>
-<pre class="none"><code>NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+<pre class="none"><code class="language-none">NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
 capacity-reservation   5/5     5            5           2m</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
@@ -347,6 +359,7 @@ Kubernetes to react when resources are contended.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -355,6 +368,8 @@ Kubernetes to react when resources are contended.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -197,21 +212,20 @@ CertificateSigningRequest:</p>
 <p>For example:</p>
 <div class="code-sample">
 <p><code>access/certificate-signing-request/clusterrole-create.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> csr-creator</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificatesigningrequests</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">create</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">get</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">list</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">watch</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csr-creator
+rules:
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - create
+  - get
+  - list
+  - watch</code></pre>
 </div>
 <p>To allow approving a CertificateSigningRequest:</p>
 <ul>
@@ -229,34 +243,33 @@ or <code>&lt;signerNameDomain&gt;/*</code></li>
 <p>For example:</p>
 <div class="code-sample">
 <p><code>access/certificate-signing-request/clusterrole-approve.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> csr-approver</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificatesigningrequests</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">get</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">list</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">watch</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificatesigningrequests/approval</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">update</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">signers</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">example.com/my-signer-name</span><span class="co"> # example.com/* can be used to authorize for all signers in the &#39;example.com&#39; domain</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">approve</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csr-approver
+rules:
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests/approval
+  verbs:
+  - update
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - signers
+  resourceNames:
+  - example.com/my-signer-name # example.com/* can be used to authorize for all signers in the &#39;example.com&#39; domain
+  verbs:
+  - approve</code></pre>
 </div>
 <p>To allow signing a CertificateSigningRequest:</p>
 <ul>
@@ -272,34 +285,33 @@ or <code>&lt;signerNameDomain&gt;/*</code></li>
 </ul>
 <div class="code-sample">
 <p><code>access/certificate-signing-request/clusterrole-sign.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> csr-signer</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificatesigningrequests</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">get</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">list</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">watch</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificatesigningrequests/status</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">update</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">certificates.k8s.io</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">signers</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">example.com/my-signer-name</span><span class="co"> # example.com/* can be used to authorize for all signers in the &#39;example.com&#39; domain</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">sign</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: csr-signer
+rules:
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - certificatesigningrequests/status
+  verbs:
+  - update
+- apiGroups:
+  - certificates.k8s.io
+  resources:
+  - signers
+  resourceNames:
+  - example.com/my-signer-name # example.com/* can be used to authorize for all signers in the &#39;example.com&#39; domain
+  verbs:
+  - sign</code></pre>
 </div>
 <h2 id="signers">Signers</h2>
 <p>Signers abstractly represent the entity or entities that might sign,
@@ -558,9 +570,9 @@ manually approve (or deny) CertificateSigningRequests by using the
 <code>kubectl certificate approve</code> and
 <code>kubectl certificate deny</code> commands.</p>
 <p>To approve a CSR with kubectl:</p>
-<pre class="shell"><code>kubectl certificate approve &lt;certificate-signing-request-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl certificate approve &lt;certificate-signing-request-name&gt;</code></pre>
 <p>Likewise, to deny a CSR:</p>
-<pre class="shell"><code>kubectl certificate deny &lt;certificate-signing-request-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl certificate deny &lt;certificate-signing-request-name&gt;</code></pre>
 <h3 id="approval-rejection-api-client">Approval or rejection using the
 Kubernetes API</h3>
 <p>Users of the REST API can approve CSRs by submitting an UPDATE
@@ -571,29 +583,27 @@ particular kind of CSR and then sends an UPDATE to approve them.</p>
 <code>Approved</code> or <code>Denied</code> status condition based on
 the state you determine:</p>
 <p>For <code>Approved</code> CSRs:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CertificateSigningRequest</span></span>
-<span class="co">...</span></span>
-<span class="er">status:</span></span>
-<span class="er">  conditions:</span></span>
-<span class="er">  - lastUpdateTime: &quot;</span><span class="st">2020-02-08T11:37:35Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2020-02-08T11:37:35Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Approved by my custom approver controller</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> ApprovedByMyPolicy</span><span class="co"> # You can set this to any string</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Approved</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+...
+status:
+  conditions:
+  - lastUpdateTime: &quot;2020-02-08T11:37:35Z&quot;
+    lastTransitionTime: &quot;2020-02-08T11:37:35Z&quot;
+    message: Approved by my custom approver controller
+    reason: ApprovedByMyPolicy # You can set this to any string
+    type: Approved</code></pre>
 <p>For <code>Denied</code> CSRs:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CertificateSigningRequest</span></span>
-<span class="co">...</span></span>
-<span class="er">status:</span></span>
-<span class="er">  conditions:</span></span>
-<span class="er">  - lastUpdateTime: &quot;</span><span class="st">2020-02-08T11:37:35Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2020-02-08T11:37:35Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Denied by my custom approver controller</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> DeniedByMyPolicy</span><span class="co"> # You can set this to any string</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Denied</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+...
+status:
+  conditions:
+  - lastUpdateTime: &quot;2020-02-08T11:37:35Z&quot;
+    lastTransitionTime: &quot;2020-02-08T11:37:35Z&quot;
+    message: Denied by my custom approver controller
+    reason: DeniedByMyPolicy # You can set this to any string
+    type: Denied</code></pre>
 <p>It's usual to set <code>status.conditions.reason</code> to a
 machine-friendly reason code using TitleCase; this is a convention but
 you can set it to anything you like. If you want to add a note for human
@@ -641,12 +651,11 @@ CertificateSigningRequest has been approved and signed, it contains the
 signed certificate in the <code>status.certificate</code> field. A
 CertificateSigningRequest containing the example certificate above would
 look like this:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CertificateSigningRequest</span></span>
-<span class="co">...</span></span>
-<span class="er">status:</span></span>
-<span class="er">  certificate: &quot;</span><span class="st">LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JS...&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+...
+status:
+  certificate: &quot;LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JS...&quot;</code></pre>
 <h2 id="pod-certificate-requests">PodCertificateRequests</h2>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -799,19 +808,17 @@ cluster, so that they work as intended.</p>
 <p>If you do not have permission to list cluster trust bundles by
 default in your cluster, you can impersonate a service account you have
 access to in order to see available ClusterTrustBundles:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> get clustertrustbundles <span class="at">--as</span><span class="op">=</span><span class="st">&#39;system:serviceaccount:mynamespace:default&#39;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl get clustertrustbundles --as=&#39;system:serviceaccount:mynamespace:default&#39;</code></pre>
 <h3 id="ctb-signer-linked">Signer-linked ClusterTrustBundles</h3>
 <p>Signer-linked ClusterTrustBundles are associated with a <em>signer
 name</em>, like this:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterTrustBundle</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example.com:mysigner:foo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">signerName</span><span class="kw">:</span><span class="at"> example.com/mysigner</span></span>
-<span class="at">  </span><span class="fu">trustBundle</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&lt;... PEM data ...&gt;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: certificates.k8s.io/v1
+kind: ClusterTrustBundle
+metadata:
+  name: example.com:mysigner:foo
+spec:
+  signerName: example.com/mysigner
+  trustBundle: &quot;&lt;... PEM data ...&gt;&quot;</code></pre>
 <p>These ClusterTrustBundles are intended to be maintained by a
 signer-specific controller in the cluster, so they have several security
 features:</p>
@@ -841,14 +848,13 @@ selector</a>.</p>
 <h3 id="ctb-signer-unlinked">Signer-unlinked ClusterTrustBundles</h3>
 <p>Signer-unlinked ClusterTrustBundles have an empty
 <code>spec.signerName</code> field, like this:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterTrustBundle</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># no signerName specified, so the field is blank</span></span>
-<span class="at">  </span><span class="fu">trustBundle</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&lt;... PEM data ...&gt;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: certificates.k8s.io/v1
+kind: ClusterTrustBundle
+metadata:
+  name: foo
+spec:
+  # no signerName specified, so the field is blank
+  trustBundle: &quot;&lt;... PEM data ...&gt;&quot;</code></pre>
 <p>They are primarily intended for cluster configuration use cases. Each
 signer-unlinked ClusterTrustBundle is an independent object, in contrast
 to the customary grouping behavior of signer-linked
@@ -957,6 +963,7 @@ requests, refer to <a target="_blank" rel="noopener" href="https://tools.ietf.or
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -965,6 +972,8 @@ requests, refer to <a target="_blank" rel="noopener" href="https://tools.ietf.or
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

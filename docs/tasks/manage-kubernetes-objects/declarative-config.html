@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -187,7 +202,7 @@ changes.</li>
 <p>Use <code>kubectl apply</code> to create all objects, except those
 that already exist, defined by configuration files in a specified
 directory:</p>
-<pre class="shell"><code>kubectl apply -f &lt;directory&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f &lt;directory&gt;</code></pre>
 <p>This sets the
 <code>kubectl.kubernetes.io/last-applied-configuration: '{...}'</code>
 annotation on each object. The annotation contains the contents of the
@@ -201,30 +216,29 @@ object configuration file that was used to create the object.</p>
 <p>Here's an example of an object configuration file:</p>
 <div class="code-sample">
 <p><code>application/simple_deployment.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>Run <code>kubectl diff</code> to print the object that will be
 created:</p>
-<pre class="shell"><code>kubectl diff -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl diff -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -240,50 +254,49 @@ href="../../reference/using-api/api-concepts.html#dry-run-authorization">Dry-Run
 Authorization</a> for details.</p>
 </div>
 <p>Create the object using <code>kubectl apply</code>:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
 <p>Print the live configuration using <code>kubectl get</code>:</p>
-<pre class="shell"><code>kubectl get -f https://k8s.io/examples/application/simple_deployment.yaml -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get -f https://k8s.io/examples/application/simple_deployment.yaml -o yaml</code></pre>
 <p>The output shows that the
 <code>kubectl.kubernetes.io/last-applied-configuration</code> annotation
 was written to the live configuration, and it matches the configuration
 file:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># This is the json representation of simple_deployment.yaml</span></span>
-<span class="at">    </span><span class="co"># It was written by kubectl apply when the object was created</span></span>
-<span class="at">    </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">      </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;apps/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;Deployment&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx-deployment&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;minReadySeconds&quot;</span><span class="kw">:</span><span class="dv">5</span><span class="kw">,</span><span class="fu">&quot;selector&quot;</span><span class="kw">:{</span><span class="fu">&quot;matchLabels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="at">nginx</span><span class="kw">}},</span><span class="fu">&quot;template&quot;</span><span class="kw">:{</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;labels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">}},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;containers&quot;</span><span class="kw">:[{</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;nginx:1.14.2&quot;</span><span class="kw">,</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;ports&quot;</span><span class="kw">:[{</span><span class="fu">&quot;containerPort&quot;</span><span class="kw">:</span><span class="dv">80</span><span class="kw">}]}]}}}}</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: Deployment
+metadata:
+  annotations:
+    # ...
+    # This is the json representation of simple_deployment.yaml
+    # It was written by kubectl apply when the object was created
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {&quot;apiVersion&quot;:&quot;apps/v1&quot;,&quot;kind&quot;:&quot;Deployment&quot;,
+      &quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;nginx-deployment&quot;,&quot;namespace&quot;:&quot;default&quot;},
+      &quot;spec&quot;:{&quot;minReadySeconds&quot;:5,&quot;selector&quot;:{&quot;matchLabels&quot;:{&quot;app&quot;:nginx}},&quot;template&quot;:{&quot;metadata&quot;:{&quot;labels&quot;:{&quot;app&quot;:&quot;nginx&quot;}},
+      &quot;spec&quot;:{&quot;containers&quot;:[{&quot;image&quot;:&quot;nginx:1.14.2&quot;,&quot;name&quot;:&quot;nginx&quot;,
+      &quot;ports&quot;:[{&quot;containerPort&quot;:80}]}]}}}}
+  # ...
+spec:
+  # ...
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      # ...
+      app: nginx
+  template:
+    metadata:
+      # ...
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.14.2
+        # ...
+        name: nginx
+        ports:
+        - containerPort: 80
+        # ...
+      # ...
+    # ...
+  # ...</code></pre>
 <h2 id="how-to-update-objects">How to update objects</h2>
 <p>You can also use <code>kubectl apply</code> to update all objects
 defined in a directory, even if those objects already exist. This
@@ -294,7 +307,7 @@ configuration.</li>
 <li>Clears fields removed from the configuration file in the live
 configuration.</li>
 </ol>
-<pre class="shell"><code>kubectl diff -f &lt;directory&gt;
+<pre class="shell"><code class="language-shell">kubectl diff -f &lt;directory&gt;
 kubectl apply -f &lt;directory&gt;</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
@@ -305,29 +318,28 @@ kubectl apply -f &lt;directory&gt;</code></pre>
 <p>Here's an example configuration file:</p>
 <div class="code-sample">
 <p><code>application/simple_deployment.yaml</code></p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>Create the object using <code>kubectl apply</code>:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -336,124 +348,121 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 single configuration file instead of a directory.</p>
 </div>
 <p>Print the live configuration using <code>kubectl get</code>:</p>
-<pre class="shell"><code>kubectl get -f https://k8s.io/examples/application/simple_deployment.yaml -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get -f https://k8s.io/examples/application/simple_deployment.yaml -o yaml</code></pre>
 <p>The output shows that the
 <code>kubectl.kubernetes.io/last-applied-configuration</code> annotation
 was written to the live configuration, and it matches the configuration
 file:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># This is the json representation of simple_deployment.yaml</span></span>
-<span class="at">    </span><span class="co"># It was written by kubectl apply when the object was created</span></span>
-<span class="at">    </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">      </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;apps/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;Deployment&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx-deployment&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;minReadySeconds&quot;</span><span class="kw">:</span><span class="dv">5</span><span class="kw">,</span><span class="fu">&quot;selector&quot;</span><span class="kw">:{</span><span class="fu">&quot;matchLabels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="at">nginx</span><span class="kw">}},</span><span class="fu">&quot;template&quot;</span><span class="kw">:{</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;labels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">}},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;containers&quot;</span><span class="kw">:[{</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;nginx:1.14.2&quot;</span><span class="kw">,</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;ports&quot;</span><span class="kw">:[{</span><span class="fu">&quot;containerPort&quot;</span><span class="kw">:</span><span class="dv">80</span><span class="kw">}]}]}}}}</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: Deployment
+metadata:
+  annotations:
+    # ...
+    # This is the json representation of simple_deployment.yaml
+    # It was written by kubectl apply when the object was created
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {&quot;apiVersion&quot;:&quot;apps/v1&quot;,&quot;kind&quot;:&quot;Deployment&quot;,
+      &quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;nginx-deployment&quot;,&quot;namespace&quot;:&quot;default&quot;},
+      &quot;spec&quot;:{&quot;minReadySeconds&quot;:5,&quot;selector&quot;:{&quot;matchLabels&quot;:{&quot;app&quot;:nginx}},&quot;template&quot;:{&quot;metadata&quot;:{&quot;labels&quot;:{&quot;app&quot;:&quot;nginx&quot;}},
+      &quot;spec&quot;:{&quot;containers&quot;:[{&quot;image&quot;:&quot;nginx:1.14.2&quot;,&quot;name&quot;:&quot;nginx&quot;,
+      &quot;ports&quot;:[{&quot;containerPort&quot;:80}]}]}}}}
+  # ...
+spec:
+  # ...
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      # ...
+      app: nginx
+  template:
+    metadata:
+      # ...
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.14.2
+        # ...
+        name: nginx
+        ports:
+        - containerPort: 80
+        # ...
+      # ...
+    # ...
+  # ...</code></pre>
 <p>Directly update the <code>replicas</code> field in the live
 configuration by using <code>kubectl scale</code>. This does not use
 <code>kubectl apply</code>:</p>
-<pre class="shell"><code>kubectl scale deployment/nginx-deployment --replicas=2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale deployment/nginx-deployment --replicas=2</code></pre>
 <p>Print the live configuration using <code>kubectl get</code>:</p>
-<pre class="shell"><code>kubectl get deployment nginx-deployment -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment nginx-deployment -o yaml</code></pre>
 <p>The output shows that the <code>replicas</code> field has been set to
 2, and the <code>last-applied-configuration</code> annotation does not
 contain a <code>replicas</code> field:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># note that the annotation does not contain replicas</span></span>
-<span class="at">    </span><span class="co"># because it was not updated through apply</span></span>
-<span class="at">    </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">      </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;apps/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;Deployment&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx-deployment&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;minReadySeconds&quot;</span><span class="kw">:</span><span class="dv">5</span><span class="kw">,</span><span class="fu">&quot;selector&quot;</span><span class="kw">:{</span><span class="fu">&quot;matchLabels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="at">nginx</span><span class="kw">}},</span><span class="fu">&quot;template&quot;</span><span class="kw">:{</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;labels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">}},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;containers&quot;</span><span class="kw">:[{</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;nginx:1.14.2&quot;</span><span class="kw">,</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;ports&quot;</span><span class="kw">:[{</span><span class="fu">&quot;containerPort&quot;</span><span class="kw">:</span><span class="dv">80</span><span class="kw">}]}]}}}}</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # written by scale</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # ...
+    # note that the annotation does not contain replicas
+    # because it was not updated through apply
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {&quot;apiVersion&quot;:&quot;apps/v1&quot;,&quot;kind&quot;:&quot;Deployment&quot;,
+      &quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;nginx-deployment&quot;,&quot;namespace&quot;:&quot;default&quot;},
+      &quot;spec&quot;:{&quot;minReadySeconds&quot;:5,&quot;selector&quot;:{&quot;matchLabels&quot;:{&quot;app&quot;:nginx}},&quot;template&quot;:{&quot;metadata&quot;:{&quot;labels&quot;:{&quot;app&quot;:&quot;nginx&quot;}},
+      &quot;spec&quot;:{&quot;containers&quot;:[{&quot;image&quot;:&quot;nginx:1.14.2&quot;,&quot;name&quot;:&quot;nginx&quot;,
+      &quot;ports&quot;:[{&quot;containerPort&quot;:80}]}]}}}}
+  # ...
+spec:
+  replicas: 2 # written by scale
+  # ...
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      # ...
+      app: nginx
+  template:
+    metadata:
+      # ...
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.14.2
+        # ...
+        name: nginx
+        ports:
+        - containerPort: 80
+      # ...</code></pre>
 <p>Update the <code>simple_deployment.yaml</code> configuration file to
 change the image from <code>nginx:1.14.2</code> to
 <code>nginx:1.16.1</code>, and delete the <code>minReadySeconds</code>
 field:</p>
 <div class="code-sample">
 <p><code>application/update_deployment.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16.1</span><span class="co"> # update the image</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.16.1 # update the image
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>Apply the changes made to the configuration file:</p>
-<pre class="shell"><code>kubectl diff -f https://k8s.io/examples/application/update_deployment.yaml
+<pre class="shell"><code class="language-shell">kubectl diff -f https://k8s.io/examples/application/update_deployment.yaml
 kubectl apply -f https://k8s.io/examples/application/update_deployment.yaml</code></pre>
 <p>Print the live configuration using <code>kubectl get</code>:</p>
-<pre class="shell"><code>kubectl get -f https://k8s.io/examples/application/update_deployment.yaml -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get -f https://k8s.io/examples/application/update_deployment.yaml -o yaml</code></pre>
 <p>The output shows the following changes to the live configuration:</p>
 <ul>
 <li>The <code>replicas</code> field retains the value of 2 set by
@@ -467,45 +476,44 @@ updated with the new image.</li>
 <li>The <code>last-applied-configuration</code> annotation no longer
 contains the <code>minReadySeconds</code> field.</li>
 </ul>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># The annotation contains the updated image to nginx 1.16.1,</span></span>
-<span class="at">    </span><span class="co"># but does not contain the updated replicas to 2</span></span>
-<span class="at">    </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">      </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;apps/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;Deployment&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx-deployment&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;selector&quot;</span><span class="kw">:{</span><span class="fu">&quot;matchLabels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="at">nginx</span><span class="kw">}},</span><span class="fu">&quot;template&quot;</span><span class="kw">:{</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;labels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">}},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;containers&quot;</span><span class="kw">:[{</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;nginx:1.16.1&quot;</span><span class="kw">,</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;ports&quot;</span><span class="kw">:[{</span><span class="fu">&quot;containerPort&quot;</span><span class="kw">:</span><span class="dv">80</span><span class="kw">}]}]}}}}</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # Set by `kubectl scale`.  Ignored by `kubectl apply`.</span></span>
-<span class="at">  </span><span class="co"># minReadySeconds cleared by `kubectl apply`</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16.1</span><span class="co"> # Set by `kubectl apply`</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # ...
+    # The annotation contains the updated image to nginx 1.16.1,
+    # but does not contain the updated replicas to 2
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {&quot;apiVersion&quot;:&quot;apps/v1&quot;,&quot;kind&quot;:&quot;Deployment&quot;,
+      &quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;nginx-deployment&quot;,&quot;namespace&quot;:&quot;default&quot;},
+      &quot;spec&quot;:{&quot;selector&quot;:{&quot;matchLabels&quot;:{&quot;app&quot;:nginx}},&quot;template&quot;:{&quot;metadata&quot;:{&quot;labels&quot;:{&quot;app&quot;:&quot;nginx&quot;}},
+      &quot;spec&quot;:{&quot;containers&quot;:[{&quot;image&quot;:&quot;nginx:1.16.1&quot;,&quot;name&quot;:&quot;nginx&quot;,
+      &quot;ports&quot;:[{&quot;containerPort&quot;:80}]}]}}}}
+    # ...
+spec:
+  replicas: 2 # Set by `kubectl scale`.  Ignored by `kubectl apply`.
+  # minReadySeconds cleared by `kubectl apply`
+  # ...
+  selector:
+    matchLabels:
+      # ...
+      app: nginx
+  template:
+    metadata:
+      # ...
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.16.1 # Set by `kubectl apply`
+        # ...
+        name: nginx
+        ports:
+        - containerPort: 80
+        # ...
+      # ...
+    # ...
+  # ...</code></pre>
 <div class="admonition warning">
 <div class="admonition-title">
 <p>Warning:</p>
@@ -526,7 +534,7 @@ not supported. This is because <code>create</code> and
 recommended approach, as it is more explicit about what is being
 deleted, and less likely to result in the user deleting something
 unintentionally:</p>
-<pre class="shell"><code>kubectl delete -f &lt;filename&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete -f &lt;filename&gt;</code></pre>
 <h3 id="alternative-kubectl-apply-f-lt-directory-gt-prune">Alternative:
 <code>kubectl apply -f &lt;directory&gt; --prune</code></h3>
 <p>As an alternative to <code>kubectl delete</code>, you can use
@@ -591,7 +599,7 @@ manifest files. If an object matches the query, and it does not have a
 manifest in the directory, and it has a
 <code>kubectl.kubernetes.io/last-applied-configuration</code>
 annotation, it is deleted.</p>
-<pre class="shell"><code>kubectl apply -f &lt;directory&gt; --prune -l &lt;labels&gt; --prune-allowlist=&lt;gvk-list&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f &lt;directory&gt; --prune -l &lt;labels&gt; --prune-allowlist=&lt;gvk-list&gt;</code></pre>
 <div class="admonition warning">
 <div class="admonition-title">
 <p>Warning:</p>
@@ -629,7 +637,7 @@ in the set passed to the current invocation.</li>
 to accurately and efficiently track set membership across
 <code>apply</code> operations.</li>
 </ul>
-<pre class="shell"><code>KUBECTL_APPLYSET=true kubectl apply -f &lt;directory&gt; --prune --applyset=&lt;name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">KUBECTL_APPLYSET=true kubectl apply -f &lt;directory&gt; --prune --applyset=&lt;name&gt;</code></pre>
 <p>By default, the type of the ApplySet parent object used is a Secret.
 However, ConfigMaps can also be used in the format:
 <code>--applyset=configmaps/&lt;name&gt;</code>. When using a
@@ -669,7 +677,7 @@ a unique ApplySet name for each.</li>
 <h2 id="how-to-view-an-object">How to view an object</h2>
 <p>You can use <code>kubectl get</code> with <code>-o yaml</code> to
 view the configuration of a live object:</p>
-<pre class="shell"><code>kubectl get -f &lt;filename|url&gt; -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get -f &lt;filename|url&gt; -o yaml</code></pre>
 <h2 id="how-apply-calculates-differences-and-merges-changes">How apply
 calculates differences and merges changes</h2>
 <div class="admonition caution">
@@ -708,64 +716,62 @@ configuration.</li>
 Deployment object:</p>
 <div class="code-sample">
 <p><code>application/update_deployment.yaml</code></p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16.1</span><span class="co"> # update the image</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.16.1 # update the image
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>Also, suppose this is the live configuration for the same Deployment
 object:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># note that the annotation does not contain replicas</span></span>
-<span class="at">    </span><span class="co"># because it was not updated through apply</span></span>
-<span class="at">    </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">      </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;apps/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;Deployment&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx-deployment&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;minReadySeconds&quot;</span><span class="kw">:</span><span class="dv">5</span><span class="kw">,</span><span class="fu">&quot;selector&quot;</span><span class="kw">:{</span><span class="fu">&quot;matchLabels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="at">nginx</span><span class="kw">}},</span><span class="fu">&quot;template&quot;</span><span class="kw">:{</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;labels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">}},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;containers&quot;</span><span class="kw">:[{</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;nginx:1.14.2&quot;</span><span class="kw">,</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;ports&quot;</span><span class="kw">:[{</span><span class="fu">&quot;containerPort&quot;</span><span class="kw">:</span><span class="dv">80</span><span class="kw">}]}]}}}}</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # written by scale</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # ...
+    # note that the annotation does not contain replicas
+    # because it was not updated through apply
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {&quot;apiVersion&quot;:&quot;apps/v1&quot;,&quot;kind&quot;:&quot;Deployment&quot;,
+      &quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;nginx-deployment&quot;,&quot;namespace&quot;:&quot;default&quot;},
+      &quot;spec&quot;:{&quot;minReadySeconds&quot;:5,&quot;selector&quot;:{&quot;matchLabels&quot;:{&quot;app&quot;:nginx}},&quot;template&quot;:{&quot;metadata&quot;:{&quot;labels&quot;:{&quot;app&quot;:&quot;nginx&quot;}},
+      &quot;spec&quot;:{&quot;containers&quot;:[{&quot;image&quot;:&quot;nginx:1.14.2&quot;,&quot;name&quot;:&quot;nginx&quot;,
+      &quot;ports&quot;:[{&quot;containerPort&quot;:80}]}]}}}}
+  # ...
+spec:
+  replicas: 2 # written by scale
+  # ...
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      # ...
+      app: nginx
+  template:
+    metadata:
+      # ...
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.14.2
+        # ...
+        name: nginx
+        ports:
+        - containerPort: 80
+      # ...</code></pre>
 <p>Here are the merge calculations that would be performed by
 <code>kubectl apply</code>:</p>
 <ol type="1">
@@ -789,45 +795,44 @@ the value of the configuration file.</li>
 API server.</li>
 </ol>
 <p>Here is the live configuration that is the result of the merge:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># The annotation contains the updated image to nginx 1.16.1,</span></span>
-<span class="at">    </span><span class="co"># but does not contain the updated replicas to 2</span></span>
-<span class="at">    </span><span class="fu">kubectl.kubernetes.io/last-applied-configuration</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">      </span><span class="kw">{</span><span class="fu">&quot;apiVersion&quot;</span><span class="kw">:</span><span class="st">&quot;apps/v1&quot;</span><span class="kw">,</span><span class="fu">&quot;kind&quot;</span><span class="kw">:</span><span class="st">&quot;Deployment&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;annotations&quot;</span><span class="kw">:{},</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx-deployment&quot;</span><span class="kw">,</span><span class="fu">&quot;namespace&quot;</span><span class="kw">:</span><span class="st">&quot;default&quot;</span><span class="kw">},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;selector&quot;</span><span class="kw">:{</span><span class="fu">&quot;matchLabels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="at">nginx</span><span class="kw">}},</span><span class="fu">&quot;template&quot;</span><span class="kw">:{</span><span class="fu">&quot;metadata&quot;</span><span class="kw">:{</span><span class="fu">&quot;labels&quot;</span><span class="kw">:{</span><span class="fu">&quot;app&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">}},</span></span>
-<span class="at">      </span><span class="fu">&quot;spec&quot;</span><span class="kw">:{</span><span class="fu">&quot;containers&quot;</span><span class="kw">:[{</span><span class="fu">&quot;image&quot;</span><span class="kw">:</span><span class="st">&quot;nginx:1.16.1&quot;</span><span class="kw">,</span><span class="fu">&quot;name&quot;</span><span class="kw">:</span><span class="st">&quot;nginx&quot;</span><span class="kw">,</span></span>
-<span class="at">      </span><span class="fu">&quot;ports&quot;</span><span class="kw">:[{</span><span class="fu">&quot;containerPort&quot;</span><span class="kw">:</span><span class="dv">80</span><span class="kw">}]}]}}}}</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # Set by `kubectl scale`.  Ignored by `kubectl apply`.</span></span>
-<span class="at">  </span><span class="co"># minReadySeconds cleared by `kubectl apply`</span></span>
-<span class="at">  </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16.1</span><span class="co"> # Set by `kubectl apply`</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="co"># ...</span></span>
-<span class="at">      </span><span class="co"># ...</span></span>
-<span class="at">    </span><span class="co"># ...</span></span>
-<span class="at">  </span><span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    # ...
+    # The annotation contains the updated image to nginx 1.16.1,
+    # but does not contain the updated replicas to 2
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {&quot;apiVersion&quot;:&quot;apps/v1&quot;,&quot;kind&quot;:&quot;Deployment&quot;,
+      &quot;metadata&quot;:{&quot;annotations&quot;:{},&quot;name&quot;:&quot;nginx-deployment&quot;,&quot;namespace&quot;:&quot;default&quot;},
+      &quot;spec&quot;:{&quot;selector&quot;:{&quot;matchLabels&quot;:{&quot;app&quot;:nginx}},&quot;template&quot;:{&quot;metadata&quot;:{&quot;labels&quot;:{&quot;app&quot;:&quot;nginx&quot;}},
+      &quot;spec&quot;:{&quot;containers&quot;:[{&quot;image&quot;:&quot;nginx:1.16.1&quot;,&quot;name&quot;:&quot;nginx&quot;,
+      &quot;ports&quot;:[{&quot;containerPort&quot;:80}]}]}}}}
+    # ...
+spec:
+  selector:
+    matchLabels:
+      # ...
+      app: nginx
+  replicas: 2 # Set by `kubectl scale`.  Ignored by `kubectl apply`.
+  # minReadySeconds cleared by `kubectl apply`
+  # ...
+  template:
+    metadata:
+      # ...
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.16.1 # Set by `kubectl apply`
+        # ...
+        name: nginx
+        ports:
+        - containerPort: 80
+        # ...
+      # ...
+    # ...
+  # ...</code></pre>
 <h3 id="how-different-types-of-fields-are-merged">How different types of
 fields are merged</h3>
 <p>How a particular field in a configuration file is merged with the
@@ -978,18 +983,17 @@ configuration file. Any <code>args</code> elements that had previously
 been added to the live configuration are lost. The order of the
 <code>args</code> elements defined in the configuration file is retained
 in the live configuration.</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># last-applied-configuration value</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;a&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;b&quot;</span><span class="kw">]</span></span>
-</span>
-<span class="co"># configuration file value</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;a&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;c&quot;</span><span class="kw">]</span></span>
-</span>
-<span class="co"># live configuration</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;a&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;b&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;d&quot;</span><span class="kw">]</span></span>
-</span>
-<span class="co"># result after merge</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;a&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;c&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># last-applied-configuration value
+    args: [&quot;a&quot;, &quot;b&quot;]
+
+# configuration file value
+    args: [&quot;a&quot;, &quot;c&quot;]
+
+# live configuration
+    args: [&quot;a&quot;, &quot;b&quot;, &quot;d&quot;]
+
+# result after merge
+    args: [&quot;a&quot;, &quot;c&quot;]</code></pre>
 <p><strong>Explanation:</strong> The merge used the configuration file
 value as the new list value.</p>
 <h4 id="merge-individual-elements-of-a-list-of-complex-elements">Merge
@@ -1008,49 +1012,48 @@ for that element.</p>
 the <code>containers</code> field of a PodSpec. This merges the list as
 though it was a map where each element is keyed by
 <code>name</code>.</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># last-applied-configuration value</span></span>
-<span class="at">    </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-a</span><span class="co"> # key: nginx-helper-a; will be deleted in result</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-b</span><span class="co"> # key: nginx-helper-b; will be retained</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-</span>
-<span class="co"># configuration file value</span></span>
-<span class="at">    </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-b</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-c</span><span class="co"> # key: nginx-helper-c; will be added in result</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-</span>
-<span class="co"># live configuration</span></span>
-<span class="at">    </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-a</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-b</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;run&quot;</span><span class="kw">]</span><span class="at"> </span><span class="co"># Field will be retained</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-d</span><span class="co"> # key: nginx-helper-d; will be retained</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-</span>
-<span class="co"># result after merge</span></span>
-<span class="at">    </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16</span></span>
-<span class="at">      </span><span class="co"># Element nginx-helper-a was deleted</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-b</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;run&quot;</span><span class="kw">]</span><span class="at"> </span><span class="co"># Field was retained</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-c</span><span class="co"> # Element was added</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-helper-d</span><span class="co"> # Element was ignored</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> helper:1.3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># last-applied-configuration value
+    containers:
+    - name: nginx
+      image: nginx:1.16
+    - name: nginx-helper-a # key: nginx-helper-a; will be deleted in result
+      image: helper:1.3
+    - name: nginx-helper-b # key: nginx-helper-b; will be retained
+      image: helper:1.3
+
+# configuration file value
+    containers:
+    - name: nginx
+      image: nginx:1.16
+    - name: nginx-helper-b
+      image: helper:1.3
+    - name: nginx-helper-c # key: nginx-helper-c; will be added in result
+      image: helper:1.3
+
+# live configuration
+    containers:
+    - name: nginx
+      image: nginx:1.16
+    - name: nginx-helper-a
+      image: helper:1.3
+    - name: nginx-helper-b
+      image: helper:1.3
+      args: [&quot;run&quot;] # Field will be retained
+    - name: nginx-helper-d # key: nginx-helper-d; will be retained
+      image: helper:1.3
+
+# result after merge
+    containers:
+    - name: nginx
+      image: nginx:1.16
+      # Element nginx-helper-a was deleted
+    - name: nginx-helper-b
+      image: helper:1.3
+      args: [&quot;run&quot;] # Field was retained
+    - name: nginx-helper-c # Element was added
+      image: helper:1.3
+    - name: nginx-helper-d # Element was ignored
+      image: helper:1.3</code></pre>
 <p><strong>Explanation:</strong></p>
 <ul>
 <li>The container named "nginx-helper-a" was deleted because no
@@ -1090,69 +1093,67 @@ configuration if they are not specified when the object is created.</p>
 specify <code>strategy</code>:</p>
 <div class="code-sample">
 <p><code>application/simple_deployment.yaml</code></p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>Create the object using <code>kubectl apply</code>:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/simple_deployment.yaml</code></pre>
 <p>Print the live configuration using <code>kubectl get</code>:</p>
-<pre class="shell"><code>kubectl get -f https://k8s.io/examples/application/simple_deployment.yaml -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get -f https://k8s.io/examples/application/simple_deployment.yaml -o yaml</code></pre>
 <p>The output shows that the API server set several fields to default
 values in the live configuration. These fields were not specified in the
 configuration file.</p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="co"># ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span><span class="at"> </span><span class="co"># defaulted by apiserver - derived from strategy.type</span></span>
-<span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">          </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># defaulted by apiserver</span></span>
-<span class="at">        </span><span class="fu">terminationMessagePath</span><span class="kw">:</span><span class="at"> /dev/termination-log</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">      </span><span class="fu">dnsPolicy</span><span class="kw">:</span><span class="at"> ClusterFirst</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="at">      </span><span class="fu">securityContext</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># defaulted by apiserver</span></span>
-<span class="at">      </span><span class="fu">terminationGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span><span class="co"> # defaulted by apiserver</span></span>
-<span class="co"># ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+# ...
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  minReadySeconds: 5
+  replicas: 1 # defaulted by apiserver
+  strategy:
+    rollingUpdate: # defaulted by apiserver - derived from strategy.type
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate # defaulted by apiserver
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - image: nginx:1.14.2
+        imagePullPolicy: IfNotPresent # defaulted by apiserver
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP # defaulted by apiserver
+        resources: {} # defaulted by apiserver
+        terminationMessagePath: /dev/termination-log # defaulted by apiserver
+      dnsPolicy: ClusterFirst # defaulted by apiserver
+      restartPolicy: Always # defaulted by apiserver
+      securityContext: {} # defaulted by apiserver
+      terminationGracePeriodSeconds: 30 # defaulted by apiserver
+# ...</code></pre>
 <p>In a patch request, defaulted fields are not re-defaulted unless they
 are explicitly cleared as part of a patch request. This can cause
 unexpected behavior for fields that are defaulted based on the values of
@@ -1165,70 +1166,69 @@ desired values match the server defaults. This makes it easier to
 recognize conflicting values that will not be re-defaulted by the
 server.</p>
 <p><strong>Example:</strong></p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># last-applied-configuration</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-</span>
-<span class="co"># configuration file</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span><span class="co"> # updated value</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-</span>
-<span class="co"># live configuration</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RollingUpdate</span><span class="co"> # defaulted value</span></span>
-<span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span><span class="at"> </span><span class="co"># defaulted value derived from type</span></span>
-<span class="at">      </span><span class="fu">maxSurge </span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-</span>
-<span class="co"># result after merge - ERROR!</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span><span class="co"> # updated value: incompatible with rollingUpdate</span></span>
-<span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span><span class="at"> </span><span class="co"># defaulted value: incompatible with &quot;type: Recreate&quot;</span></span>
-<span class="at">      </span><span class="fu">maxSurge </span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">      </span><span class="fu">maxUnavailable</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># last-applied-configuration
+spec:
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+
+# configuration file
+spec:
+  strategy:
+    type: Recreate # updated value
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+
+# live configuration
+spec:
+  strategy:
+    type: RollingUpdate # defaulted value
+    rollingUpdate: # defaulted value derived from type
+      maxSurge : 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+
+# result after merge - ERROR!
+spec:
+  strategy:
+    type: Recreate # updated value: incompatible with rollingUpdate
+    rollingUpdate: # defaulted value: incompatible with &quot;type: Recreate&quot;
+      maxSurge : 1
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80</code></pre>
 <p><strong>Explanation:</strong></p>
 <ol type="1">
 <li>The user creates a Deployment without defining
@@ -1306,7 +1306,7 @@ configuration</h3>
 configuration involves several manual steps:</p>
 <ol type="1">
 <li><p>Export the live object to a local configuration file:</p>
-<pre class="shell"><code>kubectl get &lt;kind&gt;/&lt;name&gt; -o yaml &gt; &lt;kind&gt;_&lt;name&gt;.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl get &lt;kind&gt;/&lt;name&gt; -o yaml &gt; &lt;kind&gt;_&lt;name&gt;.yaml</code></pre></li>
 <li><p>Manually remove the <code>status</code> field from the
 configuration file.</p>
 <div class="admonition note">
@@ -1319,7 +1319,7 @@ the status field even if it is present in the configuration file.</p>
 <li><p>Set the
 <code>kubectl.kubernetes.io/last-applied-configuration</code> annotation
 on the object:</p>
-<pre class="shell"><code>kubectl replace --save-config -f &lt;kind&gt;_&lt;name&gt;.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl replace --save-config -f &lt;kind&gt;_&lt;name&gt;.yaml</code></pre></li>
 <li><p>Change processes to use <code>kubectl apply</code> for managing
 the object exclusively.</p></li>
 </ol>
@@ -1331,7 +1331,7 @@ configuration</h3>
 <li><p>Set the
 <code>kubectl.kubernetes.io/last-applied-configuration</code> annotation
 on the object:</p>
-<pre class="shell"><code>kubectl replace --save-config -f &lt;kind&gt;_&lt;name&gt;.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl replace --save-config -f &lt;kind&gt;_&lt;name&gt;.yaml</code></pre></li>
 <li><p>Change processes to use <code>kubectl apply</code> for managing
 the object exclusively.</p></li>
 </ol>
@@ -1347,14 +1347,13 @@ controller selectors and PodTemplate labels</h2>
 label used only by the controller selector with no other semantic
 meaning.</p>
 <p><strong>Example:</strong></p>
-<div class="sourceCode" id="cb36"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">controller-selector</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;apps/v1/deployment/nginx&quot;</span></span>
-<span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">controller-selector</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;apps/v1/deployment/nginx&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">selector:
+  matchLabels:
+      controller-selector: &quot;apps/v1/deployment/nginx&quot;
+template:
+  metadata:
+    labels:
+      controller-selector: &quot;apps/v1/deployment/nginx&quot;</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li><a
@@ -1434,6 +1433,7 @@ API Reference</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1442,6 +1442,8 @@ API Reference</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

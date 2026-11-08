@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -308,9 +323,8 @@ in workloads missing required configuration.</p>
 <li><p>Identify pods running under the original PSP. This can be done
 using the <code>kubernetes.io/psp</code> annotation. For example, using
 kubectl:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="va">PSP_NAME</span><span class="op">=</span><span class="st">&quot;original&quot;</span> <span class="co"># Set the name of the PSP you&#39;re checking for</span></span>
-<span class="ex">kubectl</span> get pods <span class="at">--all-namespaces</span> <span class="at">-o</span> jsonpath=<span class="st">&quot;{range .items[?(@.metadata.annotations.kubernetes\.io\/psp==&#39;</span><span class="va">$PSP_NAME</span><span class="st">&#39;)]}{.metadata.namespace} {.metadata.name}{&#39;\n&#39;}{end}&quot;</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">PSP_NAME=&quot;original&quot; # Set the name of the PSP you&#39;re checking for
+kubectl get pods --all-namespaces -o jsonpath=&quot;{range .items[?(@.metadata.annotations.kubernetes\.io\/psp==&#39;$PSP_NAME&#39;)]}{.metadata.namespace} {.metadata.name}{&#39;\n&#39;}{end}&quot;</code></pre></li>
 <li><p>Compare these running pods against the original pod spec to
 determine whether PodSecurityPolicy has modified the pod. For pods
 created by a <a href="../../concepts/workloads/controllers.html">workload
@@ -380,8 +394,7 @@ the Pod Security Standards, you may need to decide between choosing a
 level that is at least as permissive as the PSP, and a level that is at
 least as restrictive. You can see which PSPs are in use for pods in a
 given namespace with this command:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get pods <span class="at">-n</span> <span class="va">$NAMESPACE</span> <span class="at">-o</span> jsonpath=<span class="st">&quot;{.items[*].metadata.annotations.kubernetes\.io\/psp}&quot;</span> <span class="kw">|</span> <span class="fu">tr</span> <span class="st">&quot; &quot;</span> <span class="st">&quot;\n&quot;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span></span></code></pre></div></li>
+<pre class="sh"><code class="language-sh">kubectl get pods -n $NAMESPACE -o jsonpath=&quot;{.items[*].metadata.annotations.kubernetes\.io\/psp}&quot; | tr &quot; &quot; &quot;\n&quot; | sort -u</code></pre></li>
 <li><p><strong>By existing pods</strong> - Using the strategies under <a
 href="#verify-pss-level">Verify the Pod Security level</a>, you can test
 out both the Baseline and Restricted levels to see whether they are
@@ -404,8 +417,8 @@ several tools to help test and safely roll out profiles.</p>
 <p>First, you can dry-run the policy, which will evaluate pods currently
 running in the namespace against the applied policy, without making the
 new policy take effect:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># $LEVEL is the level to dry-run, either &quot;baseline&quot; or &quot;restricted&quot;.</span></span>
-<span class="ex">kubectl</span> label <span class="at">--dry-run</span><span class="op">=</span>server <span class="at">--overwrite</span> ns <span class="va">$NAMESPACE</span> pod-security.kubernetes.io/enforce=<span class="va">$LEVEL</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh"># $LEVEL is the level to dry-run, either &quot;baseline&quot; or &quot;restricted&quot;.
+kubectl label --dry-run=server --overwrite ns $NAMESPACE pod-security.kubernetes.io/enforce=$LEVEL</code></pre>
 <p>This command will return a warning for any <em>existing</em> pods
 that are not valid under the proposed level.</p>
 <p>The second option is better for catching workloads that are not
@@ -415,7 +428,7 @@ audit logs, which can be reviewed later after some soak time, but are
 not forbidden. Warning mode works similarly, but returns the warning to
 the user immediately. You can set the audit level on a namespace with
 this command:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> label <span class="at">--overwrite</span> ns <span class="va">$NAMESPACE</span> pod-security.kubernetes.io/audit=<span class="va">$LEVEL</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl label --overwrite ns $NAMESPACE pod-security.kubernetes.io/audit=$LEVEL</code></pre>
 <p>If either of these approaches yield unexpected violations, you will
 need to either update the violating workloads to meet the policy
 requirements, or relax the namespace Pod Security level.</p>
@@ -424,18 +437,18 @@ level</h3>
 <p>When you are satisfied that the chosen level can safely be enforced
 on the namespace, you can update the namespace to enforce the desired
 level:</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> label <span class="at">--overwrite</span> ns <span class="va">$NAMESPACE</span> pod-security.kubernetes.io/enforce=<span class="va">$LEVEL</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl label --overwrite ns $NAMESPACE pod-security.kubernetes.io/enforce=$LEVEL</code></pre>
 <h3 id="bypass-psp">3.d. Bypass PodSecurityPolicy</h3>
 <p>Finally, you can effectively bypass PodSecurityPolicy at the
 namespace level by binding the fully <a
 href="https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/policy/privileged-psp.yaml">policy/privileged-psp.yaml</a>privileged
 PSP to all service accounts in the namespace.</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># The following cluster-scoped commands are only needed once.</span></span>
-<span class="ex">kubectl</span> apply <span class="at">-f</span> privileged-psp.yaml</span>
-<span class="ex">kubectl</span> create clusterrole privileged-psp <span class="at">--verb</span> use <span class="at">--resource</span> podsecuritypolicies.policy <span class="at">--resource-name</span> privileged</span>
-</span>
-<span class="co"># Per-namespace disable</span></span>
-<span class="ex">kubectl</span> create <span class="at">-n</span> <span class="va">$NAMESPACE</span> rolebinding disable-psp <span class="at">--clusterrole</span> privileged-psp <span class="at">--group</span> system:serviceaccounts:<span class="va">$NAMESPACE</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh"># The following cluster-scoped commands are only needed once.
+kubectl apply -f privileged-psp.yaml
+kubectl create clusterrole privileged-psp --verb use --resource podsecuritypolicies.policy --resource-name privileged
+
+# Per-namespace disable
+kubectl create -n $NAMESPACE rolebinding disable-psp --clusterrole privileged-psp --group system:serviceaccounts:$NAMESPACE</code></pre>
 <p>Since the privileged PSP is non-mutating, and the PSP admission
 controller always prefers non-mutating PSPs, this will ensure that pods
 in this namespace are no longer being modified or restricted by
@@ -444,8 +457,8 @@ PodSecurityPolicy.</p>
 like this is if a problem arises you can easily roll the change back by
 deleting the RoleBinding. Just make sure the pre-existing
 PodSecurityPolicies are still in place!</p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># Undo PodSecurityPolicy disablement.</span></span>
-<span class="ex">kubectl</span> delete <span class="at">-n</span> <span class="va">$NAMESPACE</span> rolebinding disable-psp</span></code></pre></div>
+<pre class="sh"><code class="language-sh"># Undo PodSecurityPolicy disablement.
+kubectl delete -n $NAMESPACE rolebinding disable-psp</code></pre>
 <h2 id="review-namespace-creation-process">4. Review namespace creation
 processes</h2>
 <p>Now that existing namespaces have been updated to enforce Pod
@@ -543,6 +556,7 @@ sure they don't grant any other unrelated permissions).</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -551,6 +565,8 @@ sure they don't grant any other unrelated permissions).</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

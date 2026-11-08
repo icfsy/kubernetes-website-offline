@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -180,21 +195,20 @@ ValidatingAdmissionPolicy</h3>
 <p>The following is an example of a ValidatingAdmissionPolicy.</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/basic-example-policy.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;demo-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.replicas &lt;= 5&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;demo-policy.example.com&quot;
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;]
+  validations:
+    - expression: &quot;object.spec.replicas &lt;= 5&quot;</code></pre>
 </div>
 <p><code>spec.validations</code> contains CEL expressions which use the
 <a target="_blank" rel="noopener" href="https://github.com/google/cel-spec">Common Expression Language
@@ -213,22 +227,21 @@ binding is required. The following is an example of a
 ValidatingAdmissionPolicyBinding.:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/basic-example-binding.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;demo-binding-test.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;demo-policy.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Deny</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">environment</span><span class="kw">:</span><span class="at"> test</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: &quot;demo-binding-test.example.com&quot;
+spec:
+  policyName: &quot;demo-policy.example.com&quot;
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        environment: test</code></pre>
 </div>
 <p>When trying to create a deployment with replicas set not satisfying
 the validation expression, an error will return containing message:</p>
-<pre class="none"><code>ValidatingAdmissionPolicy &#39;demo-policy.example.com&#39; with binding &#39;demo-binding-test.example.com&#39; denied request: failed expression: object.spec.replicas &lt;= 5</code></pre>
+<pre class="none"><code class="language-none">ValidatingAdmissionPolicy &#39;demo-policy.example.com&#39; with binding &#39;demo-binding-test.example.com&#39; denied request: failed expression: object.spec.replicas &lt;= 5</code></pre>
 <p>The above provides a simple example of using
 ValidatingAdmissionPolicy without a parameter configured.</p>
 <h4 id="validation-actions">Validation actions</h4>
@@ -247,8 +260,7 @@ event for the API request.</li>
 </ul>
 <p>For example, to both warn clients about a validation failure and to
 audit the validation failures, use:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">validationActions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Warn</span><span class="kw">,</span><span class="at"> Audit</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">validationActions: [Warn, Audit]</code></pre>
 <p><code>Deny</code> and <code>Warn</code> may not be used together
 since this combination needlessly duplicates the validation failure both
 in the API response body and the HTTP warning headers.</p>
@@ -270,25 +282,24 @@ policyName) to a particular parameter resource via paramRef.</p>
 a ValidatingAdmissionPolicy with parameter configuration.</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/policy-with-param.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicalimit-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">paramKind</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rules.example.com/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ReplicaLimit</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.replicas &lt;= params.maxReplicas&quot;</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> Invalid</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;replicalimit-policy.example.com&quot;
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: rules.example.com/v1
+    kind: ReplicaLimit
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;]
+  validations:
+    - expression: &quot;object.spec.replicas &lt;= params.maxReplicas&quot;
+      reason: Invalid</code></pre>
 </div>
 <p>The <code>spec.paramKind</code> field of the
 ValidatingAdmissionPolicy specifies the kind of resources used to
@@ -311,35 +322,33 @@ of a ValidatingAdmissionPolicyBinding that uses a
 validate every resource request that matches the binding:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/binding-with-param.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicalimit-binding-test.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicalimit-policy.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Deny</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">paramRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replica-limit-test.example.com&quot;</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default&quot;</span></span>
-<span class="at">    </span><span class="fu">parameterNotFoundAction</span><span class="kw">:</span><span class="at"> Deny</span></span>
-<span class="at">  </span><span class="fu">matchResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">environment</span><span class="kw">:</span><span class="at"> test</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: &quot;replicalimit-binding-test.example.com&quot;
+spec:
+  policyName: &quot;replicalimit-policy.example.com&quot;
+  validationActions: [Deny]
+  paramRef:
+    name: &quot;replica-limit-test.example.com&quot;
+    namespace: &quot;default&quot;
+    parameterNotFoundAction: Deny
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        environment: test</code></pre>
 </div>
 <p>Notice this binding applies a parameter to the policy for all
 resources which are in the <code>test</code> environment.</p>
 <p>The parameter resource could be as following:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/replicalimit-param.yaml</code></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rules.example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ReplicaLimit</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replica-limit-test.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default&quot;</span></span>
-<span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rules.example.com/v1
+kind: ReplicaLimit
+metadata:
+  name: &quot;replica-limit-test.example.com&quot;
+  namespace: &quot;default&quot;
+maxReplicas: 3</code></pre>
 </div>
 <p>This policy parameter resource limits deployments to a max of 3
 replicas.</p>
@@ -348,37 +357,35 @@ environments to have a maxReplicas limit of 100, create another
 ValidatingAdmissionPolicyBinding:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/binding-with-param-prod.yaml</code></p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicalimit-binding-nontest&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replicalimit-policy.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Deny</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">paramRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replica-limit-prod.example.com&quot;</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default&quot;</span></span>
-<span class="at">    </span><span class="fu">parameterNotFoundAction</span><span class="kw">:</span><span class="at"> Deny</span></span>
-<span class="at">  </span><span class="fu">matchResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> environment</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> NotIn</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">test</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: &quot;replicalimit-binding-nontest&quot;
+spec:
+  policyName: &quot;replicalimit-policy.example.com&quot;
+  validationActions: [Deny]
+  paramRef:
+    name: &quot;replica-limit-prod.example.com&quot;
+    namespace: &quot;default&quot;
+    parameterNotFoundAction: Deny
+  matchResources:
+    namespaceSelector:
+      matchExpressions:
+      - key: environment
+        operator: NotIn
+        values:
+        - test</code></pre>
 </div>
 <p>Notice this binding applies a different parameter to resources which
 are not in the <code>test</code> environment.</p>
 <p>And have a parameter resource:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/replicalimit-param-prod.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rules.example.com/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ReplicaLimit</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replica-limit-prod.example.com&quot;</span></span>
-<span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rules.example.com/v1
+kind: ReplicaLimit
+metadata:
+  name: &quot;replica-limit-prod.example.com&quot;
+maxReplicas: 100</code></pre>
 </div>
 <p>For each admission request, the API server evaluates CEL expressions
 of each (policy, binding, param) combination that match the request. For
@@ -532,20 +539,19 @@ no parameters match the selector. The
 <code>parameterNotFoundAction</code> field determines how the binding
 behaves in this scenario.</p>
 <p><strong>Example:</strong></p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1alpha1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-binding</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> example-policy</span></span>
-<span class="at">  </span><span class="fu">paramRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">environment</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">    </span><span class="fu">parameterNotFoundAction</span><span class="kw">:</span><span class="at"> Allow</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Deny</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1alpha1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: example-binding
+spec:
+  policyName: example-policy
+  paramRef:
+    selector:
+      matchLabels:
+        environment: test
+    parameterNotFoundAction: Allow
+  validationActions:
+  - Deny</code></pre>
 <h3 id="failure-policy">Failure Policy</h3>
 <p><code>failurePolicy</code> defines how mis-configurations and CEL
 expressions evaluating to error from the admission policy are handled.
@@ -562,14 +568,13 @@ request to be rejected.</li>
 <code>ValidatingAdmissionPolicy</code>:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/failure-policy-ignore.yaml</code></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="co">...</span></span>
-<span class="er">failurePolicy: Ignore </span><span class="co"># The default is &quot;Fail&quot;</span></span>
-<span class="fu">validations</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.xyz == params.x&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+spec:
+...
+failurePolicy: Ignore # The default is &quot;Fail&quot;
+validations:
+- expression: &quot;object.spec.xyz == params.x&quot;</code></pre>
 </div>
 <h3 id="validation-expression">Validation Expression</h3>
 <p><code>spec.validations[i].expression</code> represents the expression
@@ -729,28 +734,27 @@ conditions must evaluate to true for the resource to be evaluated.</p>
 conditions:</p>
 <div class="code-sample">
 <p><code>access/validating-admission-policy-match-conditions.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;demo-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;*&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;exclude-leases&#39;</span><span class="at"> </span><span class="co"># Each match condition must have a unique name</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;!(request.resource.group == &quot;coordination.k8s.io&quot; &amp;&amp; request.resource.resource == &quot;leases&quot;)&#39;</span><span class="at"> </span><span class="co"># Match non-lease resources.</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;exclude-kubelet-requests&#39;</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;!(&quot;system:nodes&quot; in request.userInfo.groups)&#39;</span><span class="at"> </span><span class="co"># Match requests made by non-node users.</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;rbac&#39;</span><span class="at"> </span><span class="co"># Skip RBAC requests.</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;request.resource.group != &quot;rbac.authorization.k8s.io&quot;&#39;</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!object.metadata.name.contains(&#39;demo&#39;) || object.metadata.namespace == &#39;demo&#39;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;demo-policy.example.com&quot;
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups:   [&quot;*&quot;]
+        apiVersions: [&quot;*&quot;]
+        operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+        resources:   [&quot;*&quot;]
+  matchConditions:
+    - name: &#39;exclude-leases&#39; # Each match condition must have a unique name
+      expression: &#39;!(request.resource.group == &quot;coordination.k8s.io&quot; &amp;&amp; request.resource.resource == &quot;leases&quot;)&#39; # Match non-lease resources.
+    - name: &#39;exclude-kubelet-requests&#39;
+      expression: &#39;!(&quot;system:nodes&quot; in request.userInfo.groups)&#39; # Match requests made by non-node users.
+    - name: &#39;rbac&#39; # Skip RBAC requests.
+      expression: &#39;request.resource.group != &quot;rbac.authorization.k8s.io&quot;&#39;
+  validations:
+    - expression: &quot;!object.metadata.name.contains(&#39;demo&#39;) || object.metadata.namespace == &#39;demo&#39;&quot;</code></pre>
 </div>
 <p>Match conditions have access to the same CEL variables as validation
 expressions, except for <code>namespaceObject</code> and
@@ -790,25 +794,24 @@ annotations in the audit event of the API request.</p>
 annotation:</p>
 <div class="code-sample">
 <p><code>access/validating-admission-policy-audit-annotation.yaml</code></p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;demo-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.replicas &gt; 50&quot;</span></span>
-<span class="at">      </span><span class="fu">messageExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;Deployment spec.replicas set to &#39; + string(object.spec.replicas)&quot;</span></span>
-<span class="at">  </span><span class="fu">auditAnnotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;high-replica-count&quot;</span></span>
-<span class="at">      </span><span class="fu">valueExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;Deployment spec.replicas set to &#39; + string(object.spec.replicas)&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;demo-policy.example.com&quot;
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;]
+  validations:
+    - expression: &quot;object.spec.replicas &gt; 50&quot;
+      messageExpression: &quot;&#39;Deployment spec.replicas set to &#39; + string(object.spec.replicas)&quot;
+  auditAnnotations:
+    - key: &quot;high-replica-count&quot;
+      valueExpression: &quot;&#39;Deployment spec.replicas set to &#39; + string(object.spec.replicas)&quot;</code></pre>
 </div>
 <p>When an API request is validated with this admission policy, the
 resulting audit event will look like:</p>
@@ -847,25 +850,24 @@ the policy refers to a parameter, we can have the following
 validation:</p>
 <div class="code-sample">
 <p><code>access/deployment-replicas-policy.yaml</code></p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;deploy-replica-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">paramKind</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rules.example.com/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ReplicaLimit</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.replicas &lt;= params.maxReplicas&quot;</span></span>
-<span class="at">    </span><span class="fu">messageExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;object.spec.replicas must be no greater than &#39; + string(params.maxReplicas)&quot;</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> Invalid</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;deploy-replica-policy.example.com&quot;
+spec:
+  paramKind:
+    apiVersion: rules.example.com/v1
+    kind: ReplicaLimit
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;]
+  validations:
+  - expression: &quot;object.spec.replicas &lt;= params.maxReplicas&quot;
+    messageExpression: &quot;&#39;object.spec.replicas must be no greater than &#39; + string(params.maxReplicas)&quot;
+    reason: Invalid</code></pre>
 </div>
 <p>After creating a params object that limits the replicas to 3 and
 setting up the binding, when we try to create a deployment with 5
@@ -895,69 +897,65 @@ errors were detected.</p>
 <p>For example, given the following policy definition:</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/typechecking.yaml</code></p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;deploy-replica-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.replicas &gt; 1&quot;</span><span class="at"> </span><span class="co"># should be &quot;object.spec.replicas &gt; 1&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;must be replicated&quot;</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> Invalid</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;deploy-replica-policy.example.com&quot;
+spec:
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;]
+  validations:
+  - expression: &quot;object.replicas &gt; 1&quot; # should be &quot;object.spec.replicas &gt; 1&quot;
+    message: &quot;must be replicated&quot;
+    reason: Invalid</code></pre>
 </div>
 <p>The status will yield the following information:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">typeChecking</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">expressionWarnings</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">fieldRef</span><span class="kw">:</span><span class="at"> spec.validations[0].expression</span></span>
-<span class="at">      </span><span class="fu">warning</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">        </span><span class="fu">apps/v1, Kind=Deployment</span><span class="kw">:</span><span class="at"> ERROR</span><span class="er">: </span><span class="at">&lt;input&gt;:1:7</span><span class="er">: </span><span class="at">undefined field &#39;replicas&#39;</span></span>
-<span class="at">         </span><span class="ch">| </span><span class="er">object.replicas</span><span class="ch"> </span><span class="er">&gt;</span><span class="ch"> </span><span class="er">1</span></span>
-         | ......^</span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">status:
+  typeChecking:
+    expressionWarnings:
+    - fieldRef: spec.validations[0].expression
+      warning: |-
+        apps/v1, Kind=Deployment: ERROR: &lt;input&gt;:1:7: undefined field &#39;replicas&#39;
+         | object.replicas &gt; 1
+         | ......^</code></pre>
 <p>If multiple resources are matched in
 <code>spec.matchConstraints</code>, all of matched resources will be
 checked against. For example, the following policy definition</p>
 <div class="code-sample">
 <p><code>validatingadmissionpolicy/typechecking-multiple-match.yaml</code></p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;replica-policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">,</span><span class="st">&quot;replicasets&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.replicas &gt; 1&quot;</span><span class="at"> </span><span class="co"># should be &quot;object.spec.replicas &gt; 1&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;must be replicated&quot;</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> Invalid</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;replica-policy.example.com&quot;
+spec:
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;,&quot;replicasets&quot;]
+  validations:
+  - expression: &quot;object.replicas &gt; 1&quot; # should be &quot;object.spec.replicas &gt; 1&quot;
+    message: &quot;must be replicated&quot;
+    reason: Invalid</code></pre>
 </div>
 <p>will have multiple types and type checking result of each type in the
 warning message.</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">typeChecking</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">expressionWarnings</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">fieldRef</span><span class="kw">:</span><span class="at"> spec.validations[0].expression</span></span>
-<span class="at">      </span><span class="fu">warning</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">        </span><span class="fu">apps/v1, Kind=Deployment</span><span class="kw">:</span><span class="at"> ERROR</span><span class="er">: </span><span class="at">&lt;input&gt;:1:7</span><span class="er">: </span><span class="at">undefined field &#39;replicas&#39;</span></span>
-<span class="at">         </span><span class="ch">| </span><span class="er">object.replicas</span><span class="ch"> </span><span class="er">&gt;</span><span class="ch"> </span><span class="er">1</span></span>
-         | ......^</span>
-<span class="at">        </span><span class="fu">apps/v1, Kind=ReplicaSet</span><span class="kw">:</span><span class="at"> ERROR</span><span class="er">: </span><span class="at">&lt;input&gt;:1:7</span><span class="er">: </span><span class="at">undefined field &#39;replicas&#39;</span></span>
-<span class="at">         </span><span class="ch">| </span><span class="er">object.replicas</span><span class="ch"> </span><span class="er">&gt;</span><span class="ch"> </span><span class="er">1</span></span>
-         | ......^</span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">status:
+  typeChecking:
+    expressionWarnings:
+    - fieldRef: spec.validations[0].expression
+      warning: |-
+        apps/v1, Kind=Deployment: ERROR: &lt;input&gt;:1:7: undefined field &#39;replicas&#39;
+         | object.replicas &gt; 1
+         | ......^
+        apps/v1, Kind=ReplicaSet: ERROR: &lt;input&gt;:1:7: undefined field &#39;replicas&#39;
+         | object.replicas &gt; 1
+         | ......^</code></pre>
 <p>Type Checking has the following limitation:</p>
 <ul>
 <li>No wildcard matching. If
@@ -983,13 +981,12 @@ reusable and computationally expensive to evaluate, you can extract some
 part of the expressions into variables. A variable is a named expression
 that can be referred later in <code>variables</code> in other
 expressions.</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">variables</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;foo&#39; in object.spec.metadata.labels ? object.spec.metadata.labels[&#39;foo&#39;] : &#39;default&#39;&quot;</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> variables.foo == &#39;bar&#39;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  variables:
+    - name: foo
+      expression: &quot;&#39;foo&#39; in object.spec.metadata.labels ? object.spec.metadata.labels[&#39;foo&#39;] : &#39;default&#39;&quot;
+  validations:
+    - expression: variables.foo == &#39;bar&#39;</code></pre>
 <p>A variable is lazily evaluated when it is first referred. Any error
 that occurs during the evaluation will be reported during the evaluation
 of the referring expression. Both the result and potential error are
@@ -1001,42 +998,41 @@ circular references.</p>
 names match the environment defined in its namespace.</p>
 <div class="code-sample">
 <p><code>access/image-matches-namespace-environment.policy.yaml</code></p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># This policy enforces that all containers of a deployment has the image repo match the environment label of its namespace.</span></span>
-<span class="co"># Except for &quot;exempt&quot; deployments, or any containers that do not belong to the &quot;example.com&quot; organization (e.g. common sidecars).</span></span>
-<span class="co"># For example, if the namespace has a label of {&quot;environment&quot;: &quot;staging&quot;}, all container images must be either staging.example.com/*</span></span>
-<span class="co"># or do not contain &quot;example.com&quot; at all, unless the deployment has {&quot;exempt&quot;: &quot;true&quot;} label.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;image-matches-namespace-environment.policy.example.com&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">failurePolicy</span><span class="kw">:</span><span class="at"> Fail</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">variables</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> environment</span></span>
-<span class="at">    </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;environment&#39; in namespaceObject.metadata.labels ? namespaceObject.metadata.labels[&#39;environment&#39;] : &#39;prod&#39;&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> exempt</span></span>
-<span class="at">    </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;exempt&#39; in object.metadata.labels &amp;&amp; object.metadata.labels[&#39;exempt&#39;] == &#39;true&#39;&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> containers</span></span>
-<span class="at">    </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.template.spec.containers&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> containersToCheck</span></span>
-<span class="at">    </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;variables.containers.filter(c, c.image.contains(&#39;example.com/&#39;))&quot;</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;variables.exempt || variables.containersToCheck.all(c, c.image.startsWith(variables.environment + &#39;.&#39;))&quot;</span></span>
-<span class="at">    </span><span class="fu">messageExpression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&#39;only &#39; + variables.environment + &#39; images are allowed in namespace &#39; + namespaceObject.metadata.name&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># This policy enforces that all containers of a deployment has the image repo match the environment label of its namespace.
+# Except for &quot;exempt&quot; deployments, or any containers that do not belong to the &quot;example.com&quot; organization (e.g. common sidecars).
+# For example, if the namespace has a label of {&quot;environment&quot;: &quot;staging&quot;}, all container images must be either staging.example.com/*
+# or do not contain &quot;example.com&quot; at all, unless the deployment has {&quot;exempt&quot;: &quot;true&quot;} label.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;image-matches-namespace-environment.policy.example.com&quot;
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;]
+      resources:   [&quot;deployments&quot;]
+  variables:
+  - name: environment
+    expression: &quot;&#39;environment&#39; in namespaceObject.metadata.labels ? namespaceObject.metadata.labels[&#39;environment&#39;] : &#39;prod&#39;&quot;
+  - name: exempt
+    expression: &quot;&#39;exempt&#39; in object.metadata.labels &amp;&amp; object.metadata.labels[&#39;exempt&#39;] == &#39;true&#39;&quot;
+  - name: containers
+    expression: &quot;object.spec.template.spec.containers&quot;
+  - name: containersToCheck
+    expression: &quot;variables.containers.filter(c, c.image.contains(&#39;example.com/&#39;))&quot;
+  validations:
+  - expression: &quot;variables.exempt || variables.containersToCheck.all(c, c.image.startsWith(variables.environment + &#39;.&#39;))&quot;
+    messageExpression: &quot;&#39;only &#39; + variables.environment + &#39; images are allowed in namespace &#39; + namespaceObject.metadata.name&quot;</code></pre>
 </div>
 <p>With the policy bound to the namespace <code>default</code>, which is
 labeled <code>environment: prod</code>, the following attempt to create
 a deployment would be rejected.</p>
-<pre class="shell"><code>kubectl create deploy --image=dev.example.com/nginx invalid</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create deploy --image=dev.example.com/nginx invalid</code></pre>
 <p>The error message is similar to this.</p>
-<pre class="console"><code>error: failed to create deployment: deployments.apps &quot;invalid&quot; is forbidden: ValidatingAdmissionPolicy &#39;image-matches-namespace-environment.policy.example.com&#39; with binding &#39;demo-binding-test.example.com&#39; denied request: only prod images are allowed in namespace default</code></pre>
+<pre class="console"><code class="language-console">error: failed to create deployment: deployments.apps &quot;invalid&quot; is forbidden: ValidatingAdmissionPolicy &#39;image-matches-namespace-environment.policy.example.com&#39; with binding &#39;demo-binding-test.example.com&#39; denied request: only prod images are allowed in namespace default</code></pre>
 <h2 id="api-kinds-exempt-from-admission-validation">API kinds exempt
 from admission validation</h2>
 <p>There are certain API kinds that are exempt from admission-time
@@ -1152,6 +1148,7 @@ webhooks</a> also exclude these virtual resources by default.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1160,6 +1157,8 @@ webhooks</a> also exclude these virtual resources by default.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

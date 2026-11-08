@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -150,28 +165,27 @@ situations.</p>
 configuration file for the Pod:</p>
 <div class="code-sample">
 <p><code>pods/probe/exec-liveness.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">test</span><span class="kw">:</span><span class="at"> liveness</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> liveness-exec</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> liveness</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">cat</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">/tmp/healthy</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: liveness
+  name: liveness-exec
+spec:
+  containers:
+  - name: liveness
+    image: registry.k8s.io/busybox:1.27.2
+    args:
+    - /bin/sh
+    - -c
+    - touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600
+    livenessProbe:
+      exec:
+        command:
+        - cat
+        - /tmp/healthy
+      initialDelaySeconds: 5
+      periodSeconds: 5</code></pre>
 </div>
 <p>In the configuration file, you can see that the Pod has a single
 <code>Container</code>. The <code>periodSeconds</code> field specifies
@@ -183,17 +197,17 @@ target container. If the command succeeds, it returns 0, and the kubelet
 considers the container to be alive and healthy. If the command returns
 a non-zero value, the kubelet kills the container and restarts it.</p>
 <p>When the container starts, it executes this command:</p>
-<pre class="shell"><code>/bin/sh -c &quot;touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600&quot;</code></pre>
+<pre class="shell"><code class="language-shell">/bin/sh -c &quot;touch /tmp/healthy; sleep 30; rm -f /tmp/healthy; sleep 600&quot;</code></pre>
 <p>For the first 30 seconds of the container's life, there is a
 <code>/tmp/healthy</code> file. So during the first 30 seconds, the
 command <code>cat /tmp/healthy</code> returns a success code. After 30
 seconds, <code>cat /tmp/healthy</code> returns a failure code.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/probe/exec-liveness.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/probe/exec-liveness.yaml</code></pre>
 <p>Within 30 seconds, view the Pod events:</p>
-<pre class="shell"><code>kubectl describe pod liveness-exec</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod liveness-exec</code></pre>
 <p>The output indicates that no liveness probes have failed yet:</p>
-<pre class="none"><code>Type    Reason     Age   From               Message
+<pre class="none"><code class="language-none">Type    Reason     Age   From               Message
 ----    ------     ----  ----               -------
 Normal  Scheduled  11s   default-scheduler  Successfully assigned default/liveness-exec to node01
 Normal  Pulling    9s    kubelet, node01    Pulling image &quot;registry.k8s.io/busybox:1.27.2&quot;
@@ -201,11 +215,11 @@ Normal  Pulled     7s    kubelet, node01    Successfully pulled image &quot;regi
 Normal  Created    7s    kubelet, node01    Created container liveness
 Normal  Started    7s    kubelet, node01    Started container liveness</code></pre>
 <p>After 35 seconds, view the Pod events again:</p>
-<pre class="shell"><code>kubectl describe pod liveness-exec</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod liveness-exec</code></pre>
 <p>At the bottom of the output, there are messages indicating that the
 liveness probes have failed, and the failed containers have been killed
 and recreated.</p>
-<pre class="none"><code>Type     Reason     Age                From               Message
+<pre class="none"><code class="language-none">Type     Reason     Age                From               Message
 ----     ------     ----               ----               -------
 Normal   Scheduled  57s                default-scheduler  Successfully assigned default/liveness-exec to node01
 Normal   Pulling    55s                kubelet, node01    Pulling image &quot;registry.k8s.io/busybox:1.27.2&quot;
@@ -216,11 +230,11 @@ Warning  Unhealthy  10s (x3 over 20s)  kubelet, node01    Liveness probe failed:
 Normal   Killing    10s                kubelet, node01    Container liveness failed liveness probe, will be restarted</code></pre>
 <p>Wait another 30 seconds, and verify that the container has been
 restarted:</p>
-<pre class="shell"><code>kubectl get pod liveness-exec</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod liveness-exec</code></pre>
 <p>The output shows that <code>RESTARTS</code> has been incremented.
 Note that the <code>RESTARTS</code> counter increments as soon as a
 failed container comes back to the running state:</p>
-<pre class="none"><code>NAME            READY     STATUS    RESTARTS   AGE
+<pre class="none"><code class="language-none">NAME            READY     STATUS    RESTARTS   AGE
 liveness-exec   1/1       Running   1          1m</code></pre>
 <h2 id="define-a-liveness-http-request">Define a liveness HTTP
 request</h2>
@@ -229,28 +243,27 @@ configuration file for a Pod that runs a container based on the
 <code>registry.k8s.io/e2e-test-images/agnhost</code> image.</p>
 <div class="code-sample">
 <p><code>pods/probe/http-liveness.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">test</span><span class="kw">:</span><span class="at"> liveness</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> liveness-http</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> liveness</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.40</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">liveness</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">        </span><span class="fu">httpHeaders</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Custom-Header</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> Awesome</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    test: liveness
+  name: liveness-http
+spec:
+  containers:
+  - name: liveness
+    image: registry.k8s.io/e2e-test-images/agnhost:2.40
+    args:
+    - liveness
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+        httpHeaders:
+        - name: Custom-Header
+          value: Awesome
+      initialDelaySeconds: 3
+      periodSeconds: 3</code></pre>
 </div>
 <p>In the configuration file, you can see that the Pod has a single
 container. The <code>periodSeconds</code> field specifies that the
@@ -269,26 +282,25 @@ href="https://github.com/kubernetes/kubernetes/blob/master/test/images/agnhost/l
 <p>For the first 10 seconds that the container is alive, the
 <code>/healthz</code> handler returns a status of 200. After that, the
 handler returns a status of 500.</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode go"><code class="sourceCode go">http<span class="op">.</span>HandleFunc<span class="op">(</span><span class="st">&quot;/healthz&quot;</span><span class="op">,</span> <span class="kw">func</span><span class="op">(</span>w http<span class="op">.</span>ResponseWriter<span class="op">,</span> r <span class="op">*</span>http<span class="op">.</span>Request<span class="op">)</span> <span class="op">{</span></span>
-    duration <span class="op">:=</span> time<span class="op">.</span>Now<span class="op">().</span>Sub<span class="op">(</span>started<span class="op">)</span></span>
-    <span class="cf">if</span> duration<span class="op">.</span>Seconds<span class="op">()</span> <span class="op">&gt;</span> <span class="dv">10</span> <span class="op">{</span></span>
-        w<span class="op">.</span>WriteHeader<span class="op">(</span><span class="dv">500</span><span class="op">)</span></span>
-        w<span class="op">.</span>Write<span class="op">([]</span><span class="dt">byte</span><span class="op">(</span>fmt<span class="op">.</span>Sprintf<span class="op">(</span><span class="st">&quot;error: %v&quot;</span><span class="op">,</span> duration<span class="op">.</span>Seconds<span class="op">())))</span></span>
-    <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
-        w<span class="op">.</span>WriteHeader<span class="op">(</span><span class="dv">200</span><span class="op">)</span></span>
-        w<span class="op">.</span>Write<span class="op">([]</span><span class="dt">byte</span><span class="op">(</span><span class="st">&quot;ok&quot;</span><span class="op">))</span></span>
-    <span class="op">}</span></span>
-<span class="op">})</span></span></code></pre></div>
+<pre class="go"><code class="language-go">http.HandleFunc(&quot;/healthz&quot;, func(w http.ResponseWriter, r *http.Request) {
+    duration := time.Now().Sub(started)
+    if duration.Seconds() &gt; 10 {
+        w.WriteHeader(500)
+        w.Write([]byte(fmt.Sprintf(&quot;error: %v&quot;, duration.Seconds())))
+    } else {
+        w.WriteHeader(200)
+        w.Write([]byte(&quot;ok&quot;))
+    }
+})</code></pre>
 <p>The kubelet starts performing health checks 3 seconds after the
 container starts. So the first couple of health checks will succeed. But
 after 10 seconds, the health checks will fail, and the kubelet will kill
 and restart the container.</p>
 <p>To try the HTTP liveness check, create a Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/probe/http-liveness.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/probe/http-liveness.yaml</code></pre>
 <p>After 10 seconds, view Pod events to verify that liveness probes have
 failed and the container has been restarted:</p>
-<pre class="shell"><code>kubectl describe pod liveness-http</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod liveness-http</code></pre>
 <p>In releases after v1.13, local HTTP proxy environment variable
 settings do not affect the HTTP liveness probe.</p>
 <h3 id="use-h2c-with-http-probes">Use HTTP/2 cleartext (h2c) with HTTP
@@ -311,25 +323,24 @@ gate</a> to be enabled on both the <code>kube-apiserver</code> and the
 <code>kubelet</code>.</p>
 <div class="code-sample">
 <p><code>pods/probe/h2c-liveness.yaml</code></p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> h2c-app</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.64.0</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/agnhost&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;h2c-server&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--port=8080&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">        </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> HTTP2</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: h2c-app
+spec:
+  containers:
+  - name: app
+    image: registry.k8s.io/e2e-test-images/agnhost:2.64.0
+    command: [&quot;/agnhost&quot;, &quot;h2c-server&quot;, &quot;--port=8080&quot;]
+    ports:
+    - containerPort: 8080
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: 8080
+        protocol: HTTP2
+      initialDelaySeconds: 5
+      periodSeconds: 10</code></pre>
 </div>
 <p>When <code>protocol</code> is set to <code>HTTP2</code>, the
 <code>kubelet</code> connects using HTTP/2 cleartext (h2c) — HTTP/2 over
@@ -350,29 +361,28 @@ container is considered healthy, if it can't it is considered a
 failure.</p>
 <div class="code-sample">
 <p><code>pods/probe/tcp-liveness-readiness.yaml</code></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> goproxy</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> goproxy</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> goproxy</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/goproxy:0.1</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">    </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">tcpSocket</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">tcpSocket</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: goproxy
+  labels:
+    app: goproxy
+spec:
+  containers:
+  - name: goproxy
+    image: registry.k8s.io/goproxy:0.1
+    ports:
+    - containerPort: 8080
+    readinessProbe:
+      tcpSocket:
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    livenessProbe:
+      tcpSocket:
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 10</code></pre>
 </div>
 <p>As you can see, configuration for a TCP check is quite similar to an
 HTTP check. This example uses both readiness and liveness probes. The
@@ -390,9 +400,9 @@ receive traffic from services. If the readiness probe fails, the pod
 will be marked unready and will not receive traffic from any
 services.</p>
 <p>To try the TCP liveness check, create a Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/probe/tcp-liveness-readiness.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/probe/tcp-liveness-readiness.yaml</code></pre>
 <p>After 15 seconds, view Pod events to verify that liveness probes:</p>
-<pre class="shell"><code>kubectl describe pod goproxy</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod goproxy</code></pre>
 <h2 id="define-a-grpc-liveness-probe">Define a gRPC liveness probe</h2>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -408,30 +418,29 @@ configure readiness and startup probes.</p>
 <p>Here is an example manifest:</p>
 <div class="code-sample">
 <p><code>pods/probe/grpc-liveness.yaml</code></p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> etcd-with-grpc</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> etcd</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/etcd:3.5.1-0</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/usr/local/bin/etcd&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--data-dir&quot;</span><span class="kw">,</span><span class="at">  </span><span class="st">&quot;/var/lib/etcd&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--listen-client-urls&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;http://0.0.0.0:2379&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--advertise-client-urls&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;http://127.0.0.1:2379&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--log-level&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;debug&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">2379</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">grpc</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">2379</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: etcd-with-grpc
+spec:
+  containers:
+  - name: etcd
+    image: registry.k8s.io/etcd:3.5.1-0
+    command: [ &quot;/usr/local/bin/etcd&quot;, &quot;--data-dir&quot;,  &quot;/var/lib/etcd&quot;, &quot;--listen-client-urls&quot;, &quot;http://0.0.0.0:2379&quot;, &quot;--advertise-client-urls&quot;, &quot;http://127.0.0.1:2379&quot;, &quot;--log-level&quot;, &quot;debug&quot;]
+    ports:
+    - containerPort: 2379
+    livenessProbe:
+      grpc:
+        port: 2379
+      initialDelaySeconds: 10</code></pre>
 </div>
 <p>To try the gRPC liveness check, create a Pod using the command below.
 In the example below, the etcd pod is configured to use gRPC liveness
 probe.</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/probe/grpc-liveness.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/probe/grpc-liveness.yaml</code></pre>
 <p>After 15 seconds, view Pod events to verify that the liveness check
 has not failed:</p>
-<pre class="shell"><code>kubectl describe pod etcd-with-grpc</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pod etcd-with-grpc</code></pre>
 <p>When using a gRPC probe, there are some technical details to be aware
 of:</p>
 <ul>
@@ -465,24 +474,23 @@ gate</a> to be enabled on both the <code>kube-apiserver</code> and the
 <code>kubelet</code>.</p>
 <div class="code-sample">
 <p><code>pods/probe/grpc-tls-liveness.yaml</code></p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> grpc-tls-app</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.40</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/agnhost&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;grpc-health-checking&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--port=8443&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8443</span></span>
-<span class="at">    </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">grpc</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8443</span></span>
-<span class="at">        </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> TLS</span></span>
-<span class="at">      </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: grpc-tls-app
+spec:
+  containers:
+  - name: app
+    image: registry.k8s.io/e2e-test-images/agnhost:2.40
+    command: [&quot;/agnhost&quot;, &quot;grpc-health-checking&quot;, &quot;--port=8443&quot;]
+    ports:
+    - containerPort: 8443
+    livenessProbe:
+      grpc:
+        port: 8443
+        mode: TLS
+      initialDelaySeconds: 5
+      periodSeconds: 10</code></pre>
 </div>
 <p>When <code>mode</code> is set to <code>TLS</code>, the
 <code>kubelet</code> connects over TLS with
@@ -496,15 +504,14 @@ removes the <code>mode</code> field from new or updated Pods.</p>
 href="https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#ports"><code>port</code></a>
 for HTTP and TCP probes. gRPC probes do not support named ports.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> liveness-port</span></span>
-<span class="at">  </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-</span>
-<span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> liveness-port</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">ports:
+- name: liveness-port
+  containerPort: 8080
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: liveness-port</code></pre>
 <h2 id="define-startup-probes">Protect slow starting containers with
 startup probes</h2>
 <p>Sometimes, you have to deal with applications that require additional
@@ -515,24 +522,23 @@ set up a startup probe with the same command, HTTP or TCP check, with a
 <code>failureThreshold * periodSeconds</code> long enough to cover the
 worst case startup time.</p>
 <p>So, the previous example would become:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> liveness-port</span></span>
-<span class="at">  </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-</span>
-<span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> liveness-port</span></span>
-<span class="at">  </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-</span>
-<span class="fu">startupProbe</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> liveness-port</span></span>
-<span class="at">  </span><span class="fu">failureThreshold</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">ports:
+- name: liveness-port
+  containerPort: 8080
+
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: liveness-port
+  failureThreshold: 1
+  periodSeconds: 10
+
+startupProbe:
+  httpGet:
+    path: /healthz
+    port: liveness-port
+  failureThreshold: 30
+  periodSeconds: 10</code></pre>
 <p>Thanks to the startup probe, the application will have a maximum of 5
 minutes (30 * 10 = 300s) to finish its startup. Once the startup probe
 has succeeded once, the liveness probe takes over to provide a fast
@@ -566,14 +572,13 @@ should use <code>initialDelaySeconds</code> or a
 <p>Readiness probes are configured similarly to liveness probes. The
 only difference is that you use the <code>readinessProbe</code> field
 instead of the <code>livenessProbe</code> field.</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">readinessProbe</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">/bin/cat</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">/tmp/healthy</span></span>
-<span class="at">  </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">readinessProbe:
+  exec:
+    command:
+    - /bin/cat
+    - /tmp/healthy
+  initialDelaySeconds: 5
+  periodSeconds: 5</code></pre>
 <p>Configuration for HTTP and TCP readiness probes also remains
 identical to liveness probes.</p>
 <p>Readiness and liveness probes can be used in parallel for the same
@@ -657,6 +662,7 @@ href="https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -665,6 +671,8 @@ href="https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

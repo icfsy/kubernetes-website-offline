@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -151,9 +166,9 @@ href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
 nginx Deployment from <a
 href="run-stateless-application-deployment.html">Run
 a Stateless Application Using a Deployment</a>:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/deployment.yaml</code></pre>
 <p>Verify the Deployment runs two Pods:</p>
-<pre class="shell"><code>kubectl get deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME               READY   UP-TO-DATE   AVAILABLE   AGE
 nginx-deployment   2/2     2            2           10s</code></pre>
@@ -167,13 +182,13 @@ configuration and gradually terminates old Pods.</p>
 and applying the change. This approach works well when you keep
 manifests in version control.</p>
 <p>Export the current Deployment to a local file:</p>
-<pre class="shell"><code>kubectl get deployment nginx-deployment -o yaml &gt; /tmp/nginx-deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment nginx-deployment -o yaml &gt; /tmp/nginx-deployment.yaml</code></pre>
 <p>Edit <code>/tmp/nginx-deployment.yaml</code> and change
 <code>.spec.template.spec.containers[0].image</code> from
 <code>nginx:1.14.2</code> to <code>nginx:1.16.1</code>.</p>
 <p>Before applying, compare your local changes against the cluster
 state:</p>
-<pre class="shell"><code>kubectl diff -f /tmp/nginx-deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl diff -f /tmp/nginx-deployment.yaml</code></pre>
 <p>The output is similar to:</p>
 <pre><code>diff -u -N /tmp/LIVE/apps.v1.Deployment.default.nginx-deployment /tmp/MERGED/apps.v1.Deployment.default.nginx-deployment
 --- /tmp/LIVE/apps.v1.Deployment...
@@ -184,29 +199,29 @@ state:</p>
 +      - image: nginx:1.16.1
          name: nginx</code></pre>
 <p>Apply the updated manifest:</p>
-<pre class="shell"><code>kubectl apply -f /tmp/nginx-deployment.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f /tmp/nginx-deployment.yaml</code></pre>
 <h3 id="updating-only-the-container-image">Updating only the container
 image</h3>
 <p>To update the container image without editing a manifest file, use
 <code>kubectl set image</code>:</p>
-<pre class="shell"><code>kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment/nginx-deployment nginx=nginx:1.16.1</code></pre>
 <p>The output is similar to:</p>
 <pre><code>deployment.apps/nginx-deployment image updated</code></pre>
 <p>Verify the image was updated:</p>
-<pre class="shell"><code>kubectl get deployment nginx-deployment -o jsonpath=&#39;{.spec.template.spec.containers[0].image}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment nginx-deployment -o jsonpath=&#39;{.spec.template.spec.containers[0].image}&#39;</code></pre>
 <p>The output is similar to:</p>
 <pre><code>nginx:1.16.1</code></pre>
 <h2 id="monitoring-rollout-progress">Monitoring rollout progress</h2>
 <p>Use <code>kubectl rollout status</code> to watch the progress of a
 rolling update:</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>Waiting for deployment &quot;nginx-deployment&quot; rollout to finish: 1 out of 2 new replicas have been updated...
 Waiting for deployment &quot;nginx-deployment&quot; rollout to finish: 1 out of 2 new replicas have been updated...
 Waiting for deployment &quot;nginx-deployment&quot; rollout to finish: 1 old replicas are pending termination...
 deployment &quot;nginx-deployment&quot; successfully rolled out</code></pre>
 <p>After the rollout completes, verify the Deployment:</p>
-<pre class="shell"><code>kubectl get deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME               READY   UP-TO-DATE   AVAILABLE   AGE
 nginx-deployment   2/2     2            2           2m</code></pre>
@@ -215,14 +230,14 @@ rollout</h2>
 <p>You can pause a rollout to inspect a partial update or to batch
 multiple changes into a single rollout.</p>
 <h3 id="pausing-a-rollout">Pausing a rollout</h3>
-<pre class="shell"><code>kubectl rollout pause deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout pause deployment/nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>deployment.apps/nginx-deployment paused</code></pre>
 <h3 id="making-additional-changes-while-paused">Making additional
 changes while paused</h3>
 <p>While the rollout is paused, you can make additional changes. These
 changes do not trigger a new rollout until you resume:</p>
-<pre class="shell"><code>kubectl set image deployment/nginx-deployment nginx=nginx:1.17.0</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployment/nginx-deployment nginx=nginx:1.17.0</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -231,11 +246,11 @@ changes do not trigger a new rollout until you resume:</p>
 applies all changes together when you resume the rollout.</p>
 </div>
 <h3 id="resuming-a-rollout">Resuming a rollout</h3>
-<pre class="shell"><code>kubectl rollout resume deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout resume deployment/nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>deployment.apps/nginx-deployment resumed</code></pre>
 <p>Verify the rollout completes:</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <h2 id="configuring-rolling-update-strategy">Configuring rolling update
 strategy</h2>
 <p>Deployments support two <a
@@ -291,7 +306,7 @@ the desired replica count, rounding down for <code>maxUnavailable</code>
 and rounding up for <code>maxSurge</code>.</p>
 </div>
 <p>To configure these parameters, use <code>kubectl patch</code>:</p>
-<pre class="shell"><code>kubectl patch deployment nginx-deployment -p \
+<pre class="shell"><code class="language-shell">kubectl patch deployment nginx-deployment -p \
   &#39;{&quot;spec&quot;:{&quot;strategy&quot;:{&quot;rollingUpdate&quot;:{&quot;maxUnavailable&quot;:&quot;25%&quot;,&quot;maxSurge&quot;:&quot;25%&quot;}}}}&#39;</code></pre>
 <p>You can also set these fields in a Deployment manifest under
 <code>.spec.strategy.rollingUpdate</code>. For detailed examples, see <a
@@ -305,7 +320,7 @@ surge</a> in the Deployment concepts documentation.</p>
 Kubernetes marks the Deployment condition <code>Progressing</code> as
 <code>False</code>. You can check for this condition by describing the
 Deployment:</p>
-<pre class="shell"><code>kubectl describe deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe deployment nginx-deployment</code></pre>
 <p>Look for the <code>Progressing</code> condition in the
 <code>Conditions</code> section of the output. A stalled rollout usually
 indicates that new Pods are failing to start. The <code>Events</code>
@@ -314,7 +329,7 @@ section of the output can help diagnose the issue.</p>
 <p>If a new version introduces issues, you can roll back to a previous
 revision.</p>
 <h3 id="viewing-rollout-history">Viewing rollout history</h3>
-<pre class="shell"><code>kubectl rollout history deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout history deployment/nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>deployment.apps/nginx-deployment
 REVISION  CHANGE-CAUSE
@@ -332,14 +347,14 @@ you use may write some text into that annotation.</p>
 </div>
 <h3 id="rolling-back-to-the-previous-revision">Rolling back to the
 previous revision</h3>
-<pre class="shell"><code>kubectl rollout undo deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout undo deployment/nginx-deployment</code></pre>
 <p>The output is similar to:</p>
 <pre><code>deployment.apps/nginx-deployment rolled back</code></pre>
 <h3 id="rolling-back-to-a-specific-revision">Rolling back to a specific
 revision</h3>
-<pre class="shell"><code>kubectl rollout undo deployment/nginx-deployment --to-revision=1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout undo deployment/nginx-deployment --to-revision=1</code></pre>
 <p>Verify the rollback completes:</p>
-<pre class="shell"><code>kubectl rollout status deployment/nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployment/nginx-deployment</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -352,7 +367,7 @@ entirely.</p>
 </div>
 <h2 id="cleaning-up">Cleaning up</h2>
 <p>Delete the Deployment:</p>
-<pre class="shell"><code>kubectl delete deployment nginx-deployment</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployment nginx-deployment</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>Learn more about <a
@@ -431,6 +446,7 @@ update on a DaemonSet</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -439,6 +455,8 @@ update on a DaemonSet</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

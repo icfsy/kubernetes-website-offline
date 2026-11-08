@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -188,18 +203,17 @@ CSI volume it has mounted for a Pod, and writes the result to
 <code>pod.spec.volumes</code>. The probe interval is the kubelet's
 <code>volumeStatsAggPeriod</code> setting (the
 <code>--volume-stats-agg-period</code> command line flag).</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="co"># ...</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">volumeHealth</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-volume</span></span>
-<span class="at">    </span><span class="fu">healthConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">status</span><span class="kw">:</span><span class="at"> Inaccessible</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> VolumeNotFound</span></span>
-<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;volume not found on the storage backend&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2026-07-20T12:00:00Z&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+# ...
+status:
+  volumeHealth:
+  - name: my-volume
+    healthConditions:
+    - status: Inaccessible
+      reason: VolumeNotFound
+      message: &quot;volume not found on the storage backend&quot;
+    lastTransitionTime: &quot;2026-07-20T12:00:00Z&quot;</code></pre>
 <p>The kubelet only writes <code>pods/status</code>, a subresource it is
 already authorized to update for Pods bound to its own node, so no new
 authorization is required for this field.</p>
@@ -208,17 +222,16 @@ authorization is required for this field.</p>
 <code>NodeGetStorageHealth</code>, the kubelet periodically calls that
 RPC and writes the result to <code>csinode.status.storageHealth</code>,
 keyed by driver name.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CSINode</span></span>
-<span class="co"># ...</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageHealth</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> csi.example.com</span></span>
-<span class="at">    </span><span class="fu">healthConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">status</span><span class="kw">:</span><span class="at"> StorageUnreachable</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> NetworkPartition</span></span>
-<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;data path to the storage backend is unreachable from this node&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: CSINode
+# ...
+status:
+  storageHealth:
+  - name: csi.example.com
+    healthConditions:
+    - status: StorageUnreachable
+      reason: NetworkPartition
+      message: &quot;data path to the storage backend is unreachable from this node&quot;</code></pre>
 <p>A <code>StorageHealthCondition</code> entry can optionally scope
 itself to a specific <code>accessMode</code> or <code>volumeMode</code>,
 for backends that degrade asymmetrically (for example, a network problem
@@ -241,17 +254,16 @@ alongside a CSI driver's controller plugin. The sidecar calls
 <code>ControllerListVolumeHealth</code> (or falls back to
 <code>ControllerGetVolumeHealth</code> per volume) and writes the
 result:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="co"># ...</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">healthStatus</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">healthConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">status</span><span class="kw">:</span><span class="at"> Inaccessible</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> VolumeNotFound</span></span>
-<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;volume not found on the storage backend&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2026-07-20T12:00:00Z&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+# ...
+status:
+  healthStatus:
+    healthConditions:
+    - status: Inaccessible
+      reason: VolumeNotFound
+      message: &quot;volume not found on the storage backend&quot;
+    lastTransitionTime: &quot;2026-07-20T12:00:00Z&quot;</code></pre>
 <p>No node ever writes this field; only the sidecar, running in the
 control plane, does. This keeps a compromised or misbehaving node from
 being able to influence what other users of the cluster see on a
@@ -378,6 +390,7 @@ monitoring.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -386,6 +399,8 @@ monitoring.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

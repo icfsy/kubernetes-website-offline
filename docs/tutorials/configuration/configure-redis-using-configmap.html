@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -155,7 +170,7 @@ World Example: Configuring Redis using a ConfigMap</h2>
 <p>Follow the steps below to configure a Redis cache using data stored
 in a ConfigMap.</p>
 <p>First create a ConfigMap with an empty configuration block:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt;./example-redis-config.yaml
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt;./example-redis-config.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -165,7 +180,7 @@ data:
 EOF</code></pre>
 <p>Apply the ConfigMap created above, along with a Redis pod
 manifest:</p>
-<pre class="shell"><code>kubectl apply -f example-redis-config.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f example-redis-config.yaml
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/pods/config/redis-pod.yaml</code></pre>
 <p>Examine the contents of the Redis pod manifest and note the
 following:</p>
@@ -187,43 +202,42 @@ ConfigMap as a file named <code>redis.conf</code> on the
 <code>/redis-master/redis.conf</code> inside the Pod.</p>
 <div class="code-sample">
 <p><code>pods/config/redis-pod.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:8.0.2</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">redis-server</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;/redis-master/redis.conf&quot;</span></span>
-<span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MASTER</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.1&quot;</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /redis-master-data</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /redis-master</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">      </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">      </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-redis-config</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> redis-config</span></span>
-<span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> redis.conf</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+spec:
+  containers:
+  - name: redis
+    image: redis:8.0.2
+    command:
+      - redis-server
+      - &quot;/redis-master/redis.conf&quot;
+    env:
+    - name: MASTER
+      value: &quot;true&quot;
+    ports:
+    - containerPort: 6379
+    resources:
+      limits:
+        cpu: &quot;0.1&quot;
+    volumeMounts:
+    - mountPath: /redis-master-data
+      name: data
+    - mountPath: /redis-master
+      name: config
+  volumes:
+    - name: data
+      emptyDir: {}
+    - name: config
+      configMap:
+        name: example-redis-config
+        items:
+        - key: redis-config
+          path: redis.conf</code></pre>
 </div>
 <p>Examine the created objects:</p>
-<pre class="shell"><code>kubectl get pod/redis configmap/example-redis-config </code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod/redis configmap/example-redis-config </code></pre>
 <p>You should see the following output:</p>
 <pre><code>NAME        READY   STATUS    RESTARTS   AGE
 pod/redis   1/1     Running   0          8s
@@ -232,9 +246,9 @@ NAME                             DATA   AGE
 configmap/example-redis-config   1      14s</code></pre>
 <p>Recall that we left <code>redis-config</code> key in the
 <code>example-redis-config</code> ConfigMap blank:</p>
-<pre class="shell"><code>kubectl describe configmap/example-redis-config</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmap/example-redis-config</code></pre>
 <p>You should see an empty <code>redis-config</code> key:</p>
-<pre class="shell"><code>Name:         example-redis-config
+<pre class="shell"><code class="language-shell">Name:         example-redis-config
 Namespace:    default
 Labels:       &lt;none&gt;
 Annotations:  &lt;none&gt;
@@ -244,38 +258,37 @@ Data
 redis-config:</code></pre>
 <p>Use <code>kubectl exec</code> to enter the pod and run the
 <code>redis-cli</code> tool to check the current configuration:</p>
-<pre class="shell"><code>kubectl exec -it pod/redis -- redis-cli</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it pod/redis -- redis-cli</code></pre>
 <p>Check <code>maxmemory</code>:</p>
-<pre class="shell"><code>127.0.0.1:6379&gt; CONFIG GET maxmemory</code></pre>
+<pre class="shell"><code class="language-shell">127.0.0.1:6379&gt; CONFIG GET maxmemory</code></pre>
 <p>It should show the default value of 0:</p>
-<pre class="shell"><code>1) &quot;maxmemory&quot;
+<pre class="shell"><code class="language-shell">1) &quot;maxmemory&quot;
 2) &quot;0&quot;</code></pre>
 <p>Similarly, check <code>maxmemory-policy</code>:</p>
-<pre class="shell"><code>127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</code></pre>
+<pre class="shell"><code class="language-shell">127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</code></pre>
 <p>Which should also yield its default value of
 <code>noeviction</code>:</p>
-<pre class="shell"><code>1) &quot;maxmemory-policy&quot;
+<pre class="shell"><code class="language-shell">1) &quot;maxmemory-policy&quot;
 2) &quot;noeviction&quot;</code></pre>
 <p>Now let's add some configuration values to the
 <code>example-redis-config</code> ConfigMap:</p>
 <div class="code-sample">
 <p><code>pods/config/example-redis-config.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-redis-config</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">redis-config</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    maxmemory 2mb</span></span>
-<span class="at">    maxmemory-policy allkeys-lru</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: example-redis-config
+data:
+  redis-config: |
+    maxmemory 2mb
+    maxmemory-policy allkeys-lru</code></pre>
 </div>
 <p>Apply the updated ConfigMap:</p>
-<pre class="shell"><code>kubectl apply -f example-redis-config.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f example-redis-config.yaml</code></pre>
 <p>Confirm that the ConfigMap was updated:</p>
-<pre class="shell"><code>kubectl describe configmap/example-redis-config</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmap/example-redis-config</code></pre>
 <p>You should see the configuration values we just added:</p>
-<pre class="shell"><code>Name:         example-redis-config
+<pre class="shell"><code class="language-shell">Name:         example-redis-config
 Namespace:    default
 Labels:       &lt;none&gt;
 Annotations:  &lt;none&gt;
@@ -288,37 +301,37 @@ maxmemory 2mb
 maxmemory-policy allkeys-lru</code></pre>
 <p>Check the Redis Pod again using <code>redis-cli</code> via
 <code>kubectl exec</code> to see if the configuration was applied:</p>
-<pre class="shell"><code>kubectl exec -it pod/redis -- redis-cli</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it pod/redis -- redis-cli</code></pre>
 <p>Check <code>maxmemory</code>:</p>
-<pre class="shell"><code>127.0.0.1:6379&gt; CONFIG GET maxmemory</code></pre>
+<pre class="shell"><code class="language-shell">127.0.0.1:6379&gt; CONFIG GET maxmemory</code></pre>
 <p>It remains at the default value of 0:</p>
-<pre class="shell"><code>1) &quot;maxmemory&quot;
+<pre class="shell"><code class="language-shell">1) &quot;maxmemory&quot;
 2) &quot;0&quot;</code></pre>
 <p>Similarly, <code>maxmemory-policy</code> remains at the
 <code>noeviction</code> default setting:</p>
-<pre class="shell"><code>127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</code></pre>
+<pre class="shell"><code class="language-shell">127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</code></pre>
 <p>Returns:</p>
-<pre class="shell"><code>1) &quot;maxmemory-policy&quot;
+<pre class="shell"><code class="language-shell">1) &quot;maxmemory-policy&quot;
 2) &quot;noeviction&quot;</code></pre>
 <p>The configuration values have not changed because the Pod needs to be
 restarted to grab updated values from associated ConfigMaps. Let's
 delete and recreate the Pod:</p>
-<pre class="shell"><code>kubectl delete pod redis
+<pre class="shell"><code class="language-shell">kubectl delete pod redis
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/pods/config/redis-pod.yaml</code></pre>
 <p>Now re-check the configuration values one last time:</p>
-<pre class="shell"><code>kubectl exec -it pod/redis -- redis-cli</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it pod/redis -- redis-cli</code></pre>
 <p>Check <code>maxmemory</code>:</p>
-<pre class="shell"><code>127.0.0.1:6379&gt; CONFIG GET maxmemory</code></pre>
+<pre class="shell"><code class="language-shell">127.0.0.1:6379&gt; CONFIG GET maxmemory</code></pre>
 <p>It should now return the updated value of 2097152:</p>
-<pre class="shell"><code>1) &quot;maxmemory&quot;
+<pre class="shell"><code class="language-shell">1) &quot;maxmemory&quot;
 2) &quot;2097152&quot;</code></pre>
 <p>Similarly, <code>maxmemory-policy</code> has also been updated:</p>
-<pre class="shell"><code>127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</code></pre>
+<pre class="shell"><code class="language-shell">127.0.0.1:6379&gt; CONFIG GET maxmemory-policy</code></pre>
 <p>It now reflects the desired value of <code>allkeys-lru</code>:</p>
-<pre class="shell"><code>1) &quot;maxmemory-policy&quot;
+<pre class="shell"><code class="language-shell">1) &quot;maxmemory-policy&quot;
 2) &quot;allkeys-lru&quot;</code></pre>
 <p>Clean up your work by deleting the created resources:</p>
-<pre class="shell"><code>kubectl delete pod/redis configmap/example-redis-config</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod/redis configmap/example-redis-config</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>Learn more about <a
@@ -391,6 +404,7 @@ configuration via a ConfigMap</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -399,6 +413,8 @@ configuration via a ConfigMap</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

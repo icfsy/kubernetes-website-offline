@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -238,7 +253,7 @@ until the PV is no longer bound to a PVC.</p>
 <p>You can see that a PVC is protected when the PVC's status is
 <code>Terminating</code> and the <code>Finalizers</code> list includes
 <code>kubernetes.io/pvc-protection</code>:</p>
-<pre class="shell"><code>kubectl describe pvc hostpath
+<pre class="shell"><code class="language-shell">kubectl describe pvc hostpath
 Name:          hostpath
 Namespace:     default
 StorageClass:  example-hostpath
@@ -252,7 +267,7 @@ Finalizers:    [kubernetes.io/pvc-protection]
 <p>You can see that a PV is protected when the PV's status is
 <code>Terminating</code> and the <code>Finalizers</code> list includes
 <code>kubernetes.io/pv-protection</code> too:</p>
-<pre class="shell"><code>kubectl describe pv task-pv-volume
+<pre class="shell"><code class="language-shell">kubectl describe pv task-pv-volume
 Name:            task-pv-volume
 Labels:          type=local
 Annotations:     &lt;none&gt;
@@ -320,25 +335,24 @@ as described in the <a
 href="../../reference/command-line-tools-reference/kube-controller-manager.html">reference</a>.
 The custom recycler Pod template must contain a <code>volumes</code>
 specification, as shown in the example below:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pv-recycler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> vol</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /any/path/it/will/be/replaced</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pv-recycler</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;registry.k8s.io/busybox&quot;</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;test -e /scrub &amp;&amp; rm -rf /scrub/..?* /scrub/.[!.]* /scrub/*  &amp;&amp; test -z </span><span class="sc">\&quot;</span><span class="st">$(ls -A /scrub)</span><span class="sc">\&quot;</span><span class="st"> || exit 1&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> vol</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /scrub</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pv-recycler
+  namespace: default
+spec:
+  restartPolicy: Never
+  volumes:
+  - name: vol
+    hostPath:
+      path: /any/path/it/will/be/replaced
+  containers:
+  - name: pv-recycler
+    image: &quot;registry.k8s.io/busybox&quot;
+    command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;test -e /scrub &amp;&amp; rm -rf /scrub/..?* /scrub/.[!.]* /scrub/*  &amp;&amp; test -z \&quot;$(ls -A /scrub)\&quot; || exit 1&quot;]
+    volumeMounts:
+    - name: vol
+      mountPath: /scrub</code></pre>
 <p>However, the particular path specified in the custom recycler Pod
 template in the <code>volumes</code> part is replaced with the
 particular path of the volume that is being recycled.</p>
@@ -363,7 +377,7 @@ v1.31) is added to dynamically provisioned in-tree plugin volumes and
 skipped for statically provisioned in-tree plugin volumes.</p>
 <p>The following is an example of dynamically provisioned in-tree plugin
 volume:</p>
-<pre class="shell"><code>kubectl describe pv pvc-74a498d6-3929-47e8-8c02-078c1ece4d78
+<pre class="shell"><code class="language-shell">kubectl describe pv pvc-74a498d6-3929-47e8-8c02-078c1ece4d78
 Name:            pvc-74a498d6-3929-47e8-8c02-078c1ece4d78
 Labels:          &lt;none&gt;
 Annotations:     kubernetes.io/createdby: vsphere-volume-dynamic-provisioner
@@ -388,7 +402,7 @@ Events:                 &lt;none&gt;</code></pre>
 <p>The finalizer
 <code>external-provisioner.volume.kubernetes.io/finalizer</code> is
 added for CSI volumes. The following is an example:</p>
-<pre class="shell"><code>Name:            pvc-2f0bab97-85a8-4552-8044-eb8be45cf48d
+<pre class="shell"><code class="language-shell">Name:            pvc-2f0bab97-85a8-4552-8044-eb8be45cf48d
 Labels:          &lt;none&gt;
 Annotations:     pv.kubernetes.io/provisioned-by: csi.vsphere.vmware.com
 Finalizers:      [kubernetes.io/pv-protection external-provisioner.volume.kubernetes.io/finalizer]
@@ -433,32 +447,30 @@ PersistentVolumeClaim will be bound.</p>
 including node affinity. The control plane still checks that <a
 href="storage-classes.html">storage class</a>,
 access modes, and requested storage size are valid.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo-pvc</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span><span class="at"> </span><span class="co"># Empty string must be explicitly set otherwise default StorageClass will be set</span></span>
-<span class="at">  </span><span class="fu">volumeName</span><span class="kw">:</span><span class="at"> foo-pv</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: foo-pvc
+  namespace: foo
+spec:
+  storageClassName: &quot;&quot; # Empty string must be explicitly set otherwise default StorageClass will be set
+  volumeName: foo-pv
+  ...</code></pre>
 <p>This method does not guarantee any binding privileges to the
 PersistentVolume. If other PersistentVolumeClaims could use the PV that
 you specify, you first need to reserve that storage volume. Specify the
 relevant PersistentVolumeClaim in the <code>claimRef</code> field of the
 PV so that other PVCs can not bind to it.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo-pv</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">claimRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo-pvc</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: foo-pv
+spec:
+  storageClassName: &quot;&quot;
+  claimRef:
+    name: foo-pvc
+    namespace: foo
+  ...</code></pre>
 <p>This is useful if you want to consume PersistentVolumes that have
 their <code>persistentVolumeReclaimPolicy</code> set to
 <code>Retain</code>, including cases where you are reusing an existing
@@ -481,18 +493,17 @@ some CSI migrated volume types)</li>
 </ul>
 <p>You can only expand a PVC if its storage class's
 <code>allowVolumeExpansion</code> field is set to true.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-vol-default</span></span>
-<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> vendor-name.example/magicstorage</span></span>
-<span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">resturl</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;http://192.168.10.100:8080&quot;</span></span>
-<span class="at">  </span><span class="fu">restuser</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">secretNamespace</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="at">  </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&quot;</span></span>
-<span class="fu">allowVolumeExpansion</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: example-vol-default
+provisioner: vendor-name.example/magicstorage
+parameters:
+  resturl: &quot;http://192.168.10.100:8080&quot;
+  restuser: &quot;&quot;
+  secretNamespace: &quot;&quot;
+  secretName: &quot;&quot;
+allowVolumeExpansion: true</code></pre>
 <p>To request a larger volume for a PVC, edit the PVC object and specify
 a larger size. This triggers expansion of the volume that backs the
 underlying PersistentVolume. A new PersistentVolume is never created to
@@ -689,25 +700,24 @@ status of the volume. The name of a PersistentVolume object must be a
 valid <a
 href="../overview/working-with-objects/names.html#dns-subdomain-names">DNS
 subdomain name</a>.</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pv0003</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 5Gi</span></span>
-<span class="at">  </span><span class="fu">volumeMode</span><span class="kw">:</span><span class="at"> Filesystem</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Recycle</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> slow</span></span>
-<span class="at">  </span><span class="fu">mountOptions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">hard</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">nfsvers=4.1</span></span>
-<span class="at">  </span><span class="fu">nfs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /tmp</span></span>
-<span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> 172.17.0.2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv0003
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: slow
+  mountOptions:
+    - hard
+    - nfsvers=4.1
+  nfs:
+    path: /tmp
+    server: 172.17.0.2</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1054,24 +1064,23 @@ status of the claim. The name of a PersistentVolumeClaim object must be
 a valid <a
 href="../overview/working-with-objects/names.html#dns-subdomain-names">DNS
 subdomain name</a>.</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myclaim</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">volumeMode</span><span class="kw">:</span><span class="at"> Filesystem</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 8Gi</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> slow</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">release</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;stable&quot;</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- {</span><span class="fu">key</span><span class="kw">:</span><span class="fu"> </span><span class="at">environment</span><span class="kw">,</span><span class="at"> </span><span class="fu">operator</span><span class="kw">:</span><span class="fu"> </span><span class="at">In</span><span class="kw">,</span><span class="at"> </span><span class="fu">values</span><span class="kw">:</span><span class="fu"> </span><span class="kw">[</span><span class="at">dev</span><span class="kw">]}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: myclaim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: slow
+  selector:
+    matchLabels:
+      release: &quot;stable&quot;
+    matchExpressions:
+      - {key: environment, operator: In, values: [dev]}</code></pre>
 <h3 id="access-modes-1">Access Modes</h3>
 <p>Claims use <a href="#access-modes-1">the same conventions as
 volumes</a> when requesting storage with specific access modes.</p>
@@ -1262,22 +1271,21 @@ in the same namespace as the Pod using the claim. The cluster finds the
 claim in the Pod's namespace and uses it to get the PersistentVolume
 backing the claim. The volume is then mounted to the host and into the
 Pod.</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myfrontend</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/www/html&quot;</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypd</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypd</span></span>
-<span class="at">      </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> myclaim</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+    - name: myfrontend
+      image: nginx
+      volumeMounts:
+      - mountPath: &quot;/var/www/html&quot;
+        name: mypd
+  volumes:
+    - name: mypd
+      persistentVolumeClaim:
+        claimName: myclaim</code></pre>
 <h3 id="a-note-on-namespaces">A Note on Namespaces</h3>
 <p>PersistentVolumes binds are exclusive, and since
 PersistentVolumeClaims are namespaced objects, mounting claims with
@@ -1306,57 +1314,54 @@ dynamic provisioning where applicable:</p>
 </ul>
 <h3 id="persistent-volume-using-a-raw-block-volume">PersistentVolume
 using a Raw Block Volume</h3>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> block-pv</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">volumeMode</span><span class="kw">:</span><span class="at"> Block</span></span>
-<span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Retain</span></span>
-<span class="at">  </span><span class="fu">fc</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">targetWWNs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;50060e801049cfd1&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">lun</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">    </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: block-pv
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Block
+  persistentVolumeReclaimPolicy: Retain
+  fc:
+    targetWWNs: [&quot;50060e801049cfd1&quot;]
+    lun: 0
+    readOnly: false</code></pre>
 <h3
 id="persistent-volume-claim-requesting-a-raw-block-volume">PersistentVolumeClaim
 requesting a Raw Block Volume</h3>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> block-pvc</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">volumeMode</span><span class="kw">:</span><span class="at"> Block</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: block-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Block
+  resources:
+    requests:
+      storage: 10Gi</code></pre>
 <h3 id="pod-specification-adding-raw-block-device-path-in-container">Pod
 specification adding Raw Block Device path in container</h3>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-block-volume</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fc-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> fedora:26</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;tail -f /dev/null&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeDevices</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">          </span><span class="fu">devicePath</span><span class="kw">:</span><span class="at"> /dev/xvda</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">      </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> block-pvc</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-block-volume
+spec:
+  containers:
+    - name: fc-container
+      image: fedora:26
+      command: [&quot;/bin/sh&quot;, &quot;-c&quot;]
+      args: [ &quot;tail -f /dev/null&quot; ]
+      volumeDevices:
+        - name: data
+          devicePath: /dev/xvda
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: block-pvc</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1453,42 +1458,40 @@ href="https://github.com/kubernetes/community/blob/main/sig-storage/volume-plugi
 Plugin FAQ</a>.</p>
 <h3 id="create-persistent-volume-claim-from-volume-snapshot">Create a
 PersistentVolumeClaim from a Volume Snapshot</h3>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> restore-pvc</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> csi-hostpath-sc</span></span>
-<span class="at">  </span><span class="fu">dataSource</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new-snapshot-test</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> VolumeSnapshot</span></span>
-<span class="at">    </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> snapshot.storage.k8s.io</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: restore-pvc
+spec:
+  storageClassName: csi-hostpath-sc
+  dataSource:
+    name: new-snapshot-test
+    kind: VolumeSnapshot
+    apiGroup: snapshot.storage.k8s.io
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi</code></pre>
 <h2 id="volume-cloning">Volume Cloning</h2>
 <p><a href="volume-pvc-datasource.html">Volume
 Cloning</a> only available for CSI volume plugins.</p>
 <h3 id="create-persistent-volume-claim-from-an-existing-pvc">Create
 PersistentVolumeClaim from an existing PVC</h3>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cloned-pvc</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> my-csi-plugin</span></span>
-<span class="at">  </span><span class="fu">dataSource</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> existing-src-pvc-name</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cloned-pvc
+spec:
+  storageClassName: my-csi-plugin
+  dataSource:
+    name: existing-src-pvc-name
+    kind: PersistentVolumeClaim
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi</code></pre>
 <h2 id="volume-populators-and-data-sources">Volume populators and data
 sources</h2>
 <p><a href="#volume-cloning">Volume cloning</a> and <a
@@ -1498,21 +1501,20 @@ source</em>. <em>Volume populators</em> extend this mechanism so that a
 PersistentVolumeClaim can be pre-populated from other kinds of source (a
 custom resource), referenced through its <code>dataSourceRef</code>
 field:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> populated-pvc</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">dataSourceRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-name</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ExampleDataSource</span></span>
-<span class="at">    </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> example.storage.k8s.io</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: populated-pvc
+spec:
+  dataSourceRef:
+    name: example-name
+    kind: ExampleDataSource
+    apiGroup: example.storage.k8s.io
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi</code></pre>
 <p>For details, including cross-namespace data sources, see <a
 href="volume-populators-and-data-sources.html">Volume
 Populators and Data Sources</a>.</p>
@@ -1631,6 +1633,7 @@ href="https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-res
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1639,6 +1642,8 @@ href="https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-res
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

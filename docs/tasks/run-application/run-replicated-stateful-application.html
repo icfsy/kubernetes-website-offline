@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -184,25 +199,24 @@ and a StatefulSet.</p>
 <p>Create the ConfigMap from the following YAML configuration file:</p>
 <div class="code-sample">
 <p><code>application/mysql/mysql-configmap.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">primary.cnf</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    </span><span class="co"># Apply this config only on the primary.</span></span>
-<span class="at">    </span><span class="kw">[</span><span class="at">mysqld</span><span class="kw">]</span></span>
-<span class="at">    log-bin</span></span>
-<span class="at">  </span><span class="fu">replica.cnf</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    </span><span class="co"># Apply this config only on replicas.</span></span>
-<span class="at">    </span><span class="kw">[</span><span class="at">mysqld</span><span class="kw">]</span></span>
-<span class="at">    super-read-only</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+    app.kubernetes.io/name: mysql
+data:
+  primary.cnf: |
+    # Apply this config only on the primary.
+    [mysqld]
+    log-bin
+  replica.cnf: |
+    # Apply this config only on replicas.
+    [mysqld]
+    super-read-only</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/mysql/mysql-configmap.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/mysql/mysql-configmap.yaml</code></pre>
 <p>This ConfigMap provides <code>my.cnf</code> overrides that let you
 independently control configuration on the primary MySQL server and its
 replicas. In this case, you want the primary server to be able to serve
@@ -216,41 +230,40 @@ by the StatefulSet controller.</p>
 <p>Create the Services from the following YAML configuration file:</p>
 <div class="code-sample">
 <p><code>application/mysql/mysql-services.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Headless service for stable DNS entries of StatefulSet members.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="pp">---</span></span>
-<span class="co"># Client service for connecting to any MySQL instance for reads.</span></span>
-<span class="co"># For writes, you must instead connect to the primary: mysql-0.mysql.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-read</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">readonly</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># Headless service for stable DNS entries of StatefulSet members.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  labels:
+    app: mysql
+    app.kubernetes.io/name: mysql
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+  clusterIP: None
+  selector:
+    app: mysql
+---
+# Client service for connecting to any MySQL instance for reads.
+# For writes, you must instead connect to the primary: mysql-0.mysql.
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql-read
+  labels:
+    app: mysql
+    app.kubernetes.io/name: mysql
+    readonly: &quot;true&quot;
+spec:
+  ports:
+  - name: mysql
+    port: 3306
+  selector:
+    app: mysql</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/mysql/mysql-services.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/mysql/mysql-services.yaml</code></pre>
 <p>The headless Service provides a home for the DNS entries that the
 StatefulSet <a class="glossary-term" href="../../reference/glossary.html#term-controller" title="Glossary: controller">controllers</a> creates for each Pod that's
 part of the set. Because the headless Service is named
@@ -270,179 +283,178 @@ headless Service) to execute writes.</p>
 file:</p>
 <div class="code-sample">
 <p><code>application/mysql/mysql-statefulset.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> init-mysql</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">bash</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;-c&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">          set -ex</span></span>
-<span class="at">          </span><span class="co"># Generate mysql server-id from pod ordinal index.</span></span>
-<span class="at">          </span><span class="kw">[[</span><span class="at"> $HOSTNAME =~ -(</span><span class="kw">[</span><span class="at">0-9</span><span class="kw">]</span><span class="at">+)$ </span><span class="kw">]]</span><span class="at"> </span><span class="ch">|</span><span class="er">|</span><span class="ch"> </span><span class="er">exit</span><span class="ch"> </span><span class="er">1</span></span>
-<span class="at">          ordinal=${BASH_REMATCH[1]}</span></span>
-<span class="at">          echo [mysqld] &gt; /mnt/conf.d/server-id.cnf</span></span>
-<span class="at">          </span><span class="co"># Add an offset to avoid reserved server-id=0 value.</span></span>
-<span class="at">          echo server-id=$((100 + $ordinal)) &gt;&gt; /mnt/conf.d/server-id.cnf</span></span>
-<span class="at">          </span><span class="co"># Copy appropriate conf.d files from config-map to emptyDir.</span></span>
-<span class="at">          if [[ $ordinal -eq 0 ]]; then</span></span>
-<span class="at">            cp /mnt/config-map/primary.cnf /mnt/conf.d/</span></span>
-<span class="at">          else</span></span>
-<span class="at">            cp /mnt/config-map/replica.cnf /mnt/conf.d/</span></span>
-<span class="at">          fi</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> conf</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/conf.d</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-map</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/config-map</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> clone-mysql</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/xtrabackup:1.0</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">bash</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;-c&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">          set -ex</span></span>
-<span class="at">          </span><span class="co"># Skip the clone if data already exists.</span></span>
-<span class="at">          </span><span class="kw">[[</span><span class="at"> -d /var/lib/mysql/mysql </span><span class="kw">]]</span><span class="at"> </span><span class="ot">&amp;&amp;</span><span class="at"> exit 0</span></span>
-<span class="at">          </span><span class="co"># Skip the clone on primary (ordinal index 0).</span></span>
-<span class="at">          </span><span class="kw">[[</span><span class="at"> `hostname` =~ -(</span><span class="kw">[</span><span class="at">0-9</span><span class="kw">]</span><span class="at">+)$ </span><span class="kw">]]</span><span class="at"> </span><span class="ch">|</span><span class="er">|</span><span class="ch"> </span><span class="er">exit</span><span class="ch"> </span><span class="er">1</span></span>
-<span class="at">          ordinal=${BASH_REMATCH[1]}</span></span>
-<span class="at">          </span><span class="kw">[[</span><span class="at"> $ordinal -eq 0 </span><span class="kw">]]</span><span class="at"> </span><span class="ot">&amp;&amp;</span><span class="at"> exit 0</span></span>
-<span class="at">          </span><span class="co"># Clone data from previous peer.</span></span>
-<span class="at">          ncat --recv-only mysql-$(($ordinal-1)).mysql 3307 | xbstream -x -C /var/lib/mysql</span></span>
-<span class="at">          </span><span class="co"># Prepare the backup.</span></span>
-<span class="at">          xtrabackup --prepare --target-dir=/var/lib/mysql</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
-<span class="at">          </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> conf</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/mysql/conf.d</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:5.7</span></span>
-<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_ALLOW_EMPTY_PASSWORD</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">          </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
-<span class="at">          </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> conf</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/mysql/conf.d</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 500m</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
-<span class="at">        </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;mysqladmin&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;ping&quot;</span><span class="kw">]</span></span>
-<span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
-<span class="at">          </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">          </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">        </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">exec</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="co"># Check we can execute queries over TCP (skip-networking is off).</span></span>
-<span class="at">            </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;mysql&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-h&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;127.0.0.1&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-e&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;SELECT 1&quot;</span><span class="kw">]</span></span>
-<span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">          </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">          </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> xtrabackup</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/xtrabackup:1.0</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> xtrabackup</span></span>
-<span class="at">          </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3307</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">bash</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;-c&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">          set -ex</span></span>
-<span class="at">          cd /var/lib/mysql</span></span>
-</span>
-<span class="at">          </span><span class="co"># Determine binlog position of cloned data, if any.</span></span>
-<span class="at">          if [[ -f xtrabackup_slave_info &amp;&amp; &quot;x$(&lt;xtrabackup_slave_info)&quot; != &quot;x&quot; ]]; then</span></span>
-<span class="at">            </span><span class="co"># XtraBackup already generated a partial &quot;CHANGE MASTER TO&quot; query</span></span>
-<span class="at">            </span><span class="co"># because we&#39;re cloning from an existing replica. (Need to remove the tailing semicolon!)</span></span>
-<span class="at">            cat xtrabackup_slave_info | sed -E &#39;s/;$//g&#39; &gt; change_master_to.sql.in</span></span>
-<span class="at">            </span><span class="co"># Ignore xtrabackup_binlog_info in this case (it&#39;s useless).</span></span>
-<span class="at">            rm -f xtrabackup_slave_info xtrabackup_binlog_info</span></span>
-<span class="at">          elif [[ -f xtrabackup_binlog_info ]]; then</span></span>
-<span class="at">            </span><span class="co"># We&#39;re cloning directly from primary. Parse binlog position.</span></span>
-<span class="at">            </span><span class="kw">[[</span><span class="at"> `cat xtrabackup_binlog_info` =~ ^(.*?)</span><span class="kw">[[</span><span class="at">:space:</span><span class="kw">]]</span><span class="at">+(.*?)$ </span><span class="kw">]]</span><span class="at"> </span><span class="ch">|</span><span class="er">|</span><span class="ch"> </span><span class="er">exit</span><span class="ch"> </span><span class="er">1</span></span>
-<span class="at">            rm -f xtrabackup_binlog_info xtrabackup_slave_info</span></span>
-<span class="at">            echo &quot;CHANGE MASTER TO MASTER_LOG_FILE=&#39;${BASH_REMATCH[1]}&#39;,\</span></span>
-<span class="at">                  MASTER_LOG_POS=${BASH_REMATCH[2]}&quot; &gt; change_master_to.sql.in</span></span>
-<span class="at">          fi</span></span>
-</span>
-<span class="at">          </span><span class="co"># Check if we need to complete a clone by starting replication.</span></span>
-<span class="at">          if [[ -f change_master_to.sql.in ]]; then</span></span>
-<span class="at">            echo &quot;Waiting for mysqld to be ready (accepting connections)&quot;</span></span>
-<span class="at">            until mysql -h 127.0.0.1 -e &quot;SELECT 1&quot;; do sleep 1; done</span></span>
-</span>
-<span class="at">            echo &quot;Initializing replication from clone position&quot;</span></span>
-<span class="at">            mysql -h 127.0.0.1 \</span></span>
-<span class="at">                  -e &quot;$(&lt;change_master_to.sql.in), \</span></span>
-<span class="at">                          MASTER_HOST=&#39;mysql-0.mysql&#39;, \</span></span>
-<span class="at">                          MASTER_USER=&#39;root&#39;, \</span></span>
-<span class="at">                          MASTER_PASSWORD=&#39;&#39;, \</span></span>
-<span class="at">                          MASTER_CONNECT_RETRY=10; \</span></span>
-<span class="at">                        START SLAVE;&quot; || exit 1</span></span>
-<span class="at">            </span><span class="co"># In case of container restart, attempt this at-most-once.</span></span>
-<span class="at">            mv change_master_to.sql.in change_master_to.sql.orig</span></span>
-<span class="at">          fi</span></span>
-</span>
-<span class="at">          </span><span class="co"># Start a server to send backups when requested by peers.</span></span>
-<span class="at">          exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \</span></span>
-<span class="at">            </span><span class="st">&quot;xtrabackup --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=root&quot;</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
-<span class="at">          </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> conf</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/mysql/conf.d</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 100m</span></span>
-<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> conf</span></span>
-<span class="at">        </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-map</span></span>
-<span class="at">        </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> data</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 10Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+      app.kubernetes.io/name: mysql
+  serviceName: mysql
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: mysql
+        app.kubernetes.io/name: mysql
+    spec:
+      initContainers:
+      - name: init-mysql
+        image: mysql:5.7
+        command:
+        - bash
+        - &quot;-c&quot;
+        - |
+          set -ex
+          # Generate mysql server-id from pod ordinal index.
+          [[ $HOSTNAME =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          echo [mysqld] &gt; /mnt/conf.d/server-id.cnf
+          # Add an offset to avoid reserved server-id=0 value.
+          echo server-id=$((100 + $ordinal)) &gt;&gt; /mnt/conf.d/server-id.cnf
+          # Copy appropriate conf.d files from config-map to emptyDir.
+          if [[ $ordinal -eq 0 ]]; then
+            cp /mnt/config-map/primary.cnf /mnt/conf.d/
+          else
+            cp /mnt/config-map/replica.cnf /mnt/conf.d/
+          fi
+        volumeMounts:
+        - name: conf
+          mountPath: /mnt/conf.d
+        - name: config-map
+          mountPath: /mnt/config-map
+      - name: clone-mysql
+        image: gcr.io/google-samples/xtrabackup:1.0
+        command:
+        - bash
+        - &quot;-c&quot;
+        - |
+          set -ex
+          # Skip the clone if data already exists.
+          [[ -d /var/lib/mysql/mysql ]] &amp;&amp; exit 0
+          # Skip the clone on primary (ordinal index 0).
+          [[ `hostname` =~ -([0-9]+)$ ]] || exit 1
+          ordinal=${BASH_REMATCH[1]}
+          [[ $ordinal -eq 0 ]] &amp;&amp; exit 0
+          # Clone data from previous peer.
+          ncat --recv-only mysql-$(($ordinal-1)).mysql 3307 | xbstream -x -C /var/lib/mysql
+          # Prepare the backup.
+          xtrabackup --prepare --target-dir=/var/lib/mysql
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+      containers:
+      - name: mysql
+        image: mysql:5.7
+        env:
+        - name: MYSQL_ALLOW_EMPTY_PASSWORD
+          value: &quot;1&quot;
+        ports:
+        - name: mysql
+          containerPort: 3306
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        livenessProbe:
+          exec:
+            command: [&quot;mysqladmin&quot;, &quot;ping&quot;]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          exec:
+            # Check we can execute queries over TCP (skip-networking is off).
+            command: [&quot;mysql&quot;, &quot;-h&quot;, &quot;127.0.0.1&quot;, &quot;-e&quot;, &quot;SELECT 1&quot;]
+          initialDelaySeconds: 5
+          periodSeconds: 2
+          timeoutSeconds: 1
+      - name: xtrabackup
+        image: gcr.io/google-samples/xtrabackup:1.0
+        ports:
+        - name: xtrabackup
+          containerPort: 3307
+        command:
+        - bash
+        - &quot;-c&quot;
+        - |
+          set -ex
+          cd /var/lib/mysql
+
+          # Determine binlog position of cloned data, if any.
+          if [[ -f xtrabackup_slave_info &amp;&amp; &quot;x$(&lt;xtrabackup_slave_info)&quot; != &quot;x&quot; ]]; then
+            # XtraBackup already generated a partial &quot;CHANGE MASTER TO&quot; query
+            # because we&#39;re cloning from an existing replica. (Need to remove the tailing semicolon!)
+            cat xtrabackup_slave_info | sed -E &#39;s/;$//g&#39; &gt; change_master_to.sql.in
+            # Ignore xtrabackup_binlog_info in this case (it&#39;s useless).
+            rm -f xtrabackup_slave_info xtrabackup_binlog_info
+          elif [[ -f xtrabackup_binlog_info ]]; then
+            # We&#39;re cloning directly from primary. Parse binlog position.
+            [[ `cat xtrabackup_binlog_info` =~ ^(.*?)[[:space:]]+(.*?)$ ]] || exit 1
+            rm -f xtrabackup_binlog_info xtrabackup_slave_info
+            echo &quot;CHANGE MASTER TO MASTER_LOG_FILE=&#39;${BASH_REMATCH[1]}&#39;,\
+                  MASTER_LOG_POS=${BASH_REMATCH[2]}&quot; &gt; change_master_to.sql.in
+          fi
+
+          # Check if we need to complete a clone by starting replication.
+          if [[ -f change_master_to.sql.in ]]; then
+            echo &quot;Waiting for mysqld to be ready (accepting connections)&quot;
+            until mysql -h 127.0.0.1 -e &quot;SELECT 1&quot;; do sleep 1; done
+
+            echo &quot;Initializing replication from clone position&quot;
+            mysql -h 127.0.0.1 \
+                  -e &quot;$(&lt;change_master_to.sql.in), \
+                          MASTER_HOST=&#39;mysql-0.mysql&#39;, \
+                          MASTER_USER=&#39;root&#39;, \
+                          MASTER_PASSWORD=&#39;&#39;, \
+                          MASTER_CONNECT_RETRY=10; \
+                        START SLAVE;&quot; || exit 1
+            # In case of container restart, attempt this at-most-once.
+            mv change_master_to.sql.in change_master_to.sql.orig
+          fi
+
+          # Start a server to send backups when requested by peers.
+          exec ncat --listen --keep-open --send-only --max-conns=1 3307 -c \
+            &quot;xtrabackup --backup --slave-info --stream=xbstream --host=127.0.0.1 --user=root&quot;
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/mysql
+          subPath: mysql
+        - name: conf
+          mountPath: /etc/mysql/conf.d
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+      volumes:
+      - name: conf
+        emptyDir: {}
+      - name: config-map
+        configMap:
+          name: mysql
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [&quot;ReadWriteOnce&quot;]
+      resources:
+        requests:
+          storage: 10Gi</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/mysql/mysql-statefulset.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/mysql/mysql-statefulset.yaml</code></pre>
 <p>You can watch the startup progress by running:</p>
-<pre class="shell"><code>kubectl get pods -l app=mysql --watch</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=mysql --watch</code></pre>
 <p>After a while, you should see all 3 Pods become
 <code>Running</code>:</p>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
@@ -543,7 +555,7 @@ needs to redo the clone.</p>
 <code>mysql-0.mysql</code>) by running a temporary container with the
 <code>mysql:5.7</code> image and running the <code>mysql</code> client
 binary.</p>
-<pre class="shell"><code>kubectl run mysql-client --image=mysql:5.7 -i --rm --restart=Never --\
+<pre class="shell"><code class="language-shell">kubectl run mysql-client --image=mysql:5.7 -i --rm --restart=Never --\
   mysql -h mysql-0.mysql &lt;&lt;EOF
 CREATE DATABASE test;
 CREATE TABLE test.messages (message VARCHAR(250));
@@ -551,7 +563,7 @@ INSERT INTO test.messages VALUES (&#39;hello&#39;);
 EOF</code></pre>
 <p>Use the hostname <code>mysql-read</code> to send test queries to any
 server that reports being Ready:</p>
-<pre class="shell"><code>kubectl run mysql-client --image=mysql:5.7 -i -t --rm --restart=Never --\
+<pre class="shell"><code class="language-shell">kubectl run mysql-client --image=mysql:5.7 -i -t --rm --restart=Never --\
   mysql -h mysql-read -e &quot;SELECT * FROM test.messages&quot;</code></pre>
 <p>You should get output like this:</p>
 <pre><code>Waiting for pod default/mysql-client to be running, status is Pending, pod ready: false
@@ -564,7 +576,7 @@ pod &quot;mysql-client&quot; deleted</code></pre>
 <p>To demonstrate that the <code>mysql-read</code> Service distributes
 connections across servers, you can run <code>SELECT @@server_id</code>
 in a loop:</p>
-<pre class="shell"><code>kubectl run mysql-client-loop --image=mysql:5.7 -i -t --rm --restart=Never --\
+<pre class="shell"><code class="language-shell">kubectl run mysql-client-loop --image=mysql:5.7 -i -t --rm --restart=Never --\
   bash -ic &quot;while sleep 1; do mysql -h mysql-read -e &#39;SELECT @@server_id,NOW()&#39;; done&quot;</code></pre>
 <p>You should see the reported <code>@@server_id</code> change randomly,
 because a different endpoint might be selected upon each connection
@@ -601,13 +613,13 @@ probe</a> for the <code>mysql</code> container runs the command
 up and able to execute queries.</p>
 <p>One way to force this readiness probe to fail is to break that
 command:</p>
-<pre class="shell"><code>kubectl exec mysql-2 -c mysql -- mv /usr/bin/mysql /usr/bin/mysql.off</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec mysql-2 -c mysql -- mv /usr/bin/mysql /usr/bin/mysql.off</code></pre>
 <p>This reaches into the actual container's filesystem for Pod
 <code>mysql-2</code> and renames the <code>mysql</code> command so the
 readiness probe can't find it. After a few seconds, the Pod should
 report one of its containers as not Ready, which you can check by
 running:</p>
-<pre class="shell"><code>kubectl get pod mysql-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod mysql-2</code></pre>
 <p>Look for <code>1/2</code> in the <code>READY</code> column:</p>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE
 mysql-2   1/2       Running   0          3m</code></pre>
@@ -618,11 +630,11 @@ anymore. Recall that the <code>init-mysql</code> script defined
 <code>102</code> corresponds to Pod <code>mysql-2</code>.</p>
 <p>Now repair the Pod and it should reappear in the loop output after a
 few seconds:</p>
-<pre class="shell"><code>kubectl exec mysql-2 -c mysql -- mv /usr/bin/mysql.off /usr/bin/mysql</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec mysql-2 -c mysql -- mv /usr/bin/mysql.off /usr/bin/mysql</code></pre>
 <h3 id="delete-pods">Delete Pods</h3>
 <p>The StatefulSet also recreates Pods if they're deleted, similar to
 what a ReplicaSet does for stateless Pods.</p>
-<pre class="shell"><code>kubectl delete pod mysql-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod mysql-2</code></pre>
 <p>The StatefulSet controller notices that no <code>mysql-2</code> Pod
 exists anymore, and creates a new one with the same name and linked to
 the same PersistentVolumeClaim. You should see server ID
@@ -633,7 +645,7 @@ return on its own.</p>
 downtime (such as when Nodes are upgraded) by issuing a <a
 href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#drain">drain</a>.</p>
 <p>First determine which Node one of the MySQL Pods is on:</p>
-<pre class="shell"><code>kubectl get pod mysql-2 -o wide</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod mysql-2 -o wide</code></pre>
 <p>The Node name should show up in the last column:</p>
 <pre><code>NAME      READY     STATUS    RESTARTS   AGE       IP            NODE
 mysql-2   2/2       Running   0          15m       10.244.5.27   kubernetes-node-9l2t</code></pre>
@@ -648,10 +660,10 @@ you found in the last step.</p>
 <p>Draining a Node can impact other workloads and applications running
 on the same node. Only perform the following step in a test cluster.</p>
 </div>
-<pre class="shell"><code># See above advice about impact on other workloads
+<pre class="shell"><code class="language-shell"># See above advice about impact on other workloads
 kubectl drain &lt;node-name&gt; --force --delete-emptydir-data --ignore-daemonsets</code></pre>
 <p>Now you can watch as the Pod reschedules on a different Node:</p>
-<pre class="shell"><code>kubectl get pod mysql-2 -o wide --watch</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod mysql-2 -o wide --watch</code></pre>
 <p>It should look something like this:</p>
 <pre><code>NAME      READY   STATUS          RESTARTS   AGE       IP            NODE
 mysql-2   2/2     Terminating     0          15m       10.244.1.56   kubernetes-node-9l2t
@@ -666,21 +678,21 @@ mysql-2   2/2     Running         0          30s       10.244.5.32   kubernetes-
 the <code>SELECT @@server_id</code> loop output for a while and then
 return.</p>
 <p>Now uncordon the Node to return it to a normal state:</p>
-<pre class="shell"><code>kubectl uncordon &lt;node-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl uncordon &lt;node-name&gt;</code></pre>
 <h2 id="scaling-the-number-of-replicas">Scaling the number of
 replicas</h2>
 <p>When you use MySQL replication, you can scale your read query
 capacity by adding replicas. For a StatefulSet, you can achieve this
 with a single command:</p>
-<pre class="shell"><code>kubectl scale statefulset mysql  --replicas=5</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale statefulset mysql  --replicas=5</code></pre>
 <p>Watch the new Pods come up by running:</p>
-<pre class="shell"><code>kubectl get pods -l app=mysql --watch</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=mysql --watch</code></pre>
 <p>Once they're up, you should see server IDs <code>103</code> and
 <code>104</code> start appearing in the <code>SELECT @@server_id</code>
 loop output.</p>
 <p>You can also verify that these new servers have the data you added
 before they existed:</p>
-<pre class="shell"><code>kubectl run mysql-client --image=mysql:5.7 -i -t --rm --restart=Never --\
+<pre class="shell"><code class="language-shell">kubectl run mysql-client --image=mysql:5.7 -i -t --rm --restart=Never --\
   mysql -h mysql-3.mysql -e &quot;SELECT * FROM test.messages&quot;</code></pre>
 <pre><code>Waiting for pod default/mysql-client to be running, status is Pending, pod ready: false
 +---------+
@@ -690,7 +702,7 @@ before they existed:</p>
 +---------+
 pod &quot;mysql-client&quot; deleted</code></pre>
 <p>Scaling back down is also seamless:</p>
-<pre class="shell"><code>kubectl scale statefulset mysql --replicas=3</code></pre>
+<pre class="shell"><code class="language-shell">kubectl scale statefulset mysql --replicas=3</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -702,7 +714,7 @@ make scaling back up quicker, or to extract data before deleting
 them.</p>
 </div>
 <p>You can see this by running:</p>
-<pre class="shell"><code>kubectl get pvc -l app=mysql</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pvc -l app=mysql</code></pre>
 <p>Which shows that all 5 PVCs still exist, despite having scaled the
 StatefulSet down to 3:</p>
 <pre><code>NAME           STATUS    VOLUME                                     CAPACITY   ACCESSMODES   AGE
@@ -712,24 +724,24 @@ data-mysql-2   Bound     pvc-8ad69a6d-b103-11e6-93fa-42010a800002   10Gi       R
 data-mysql-3   Bound     pvc-50043c45-b1c5-11e6-93fa-42010a800002   10Gi       RWO           2m
 data-mysql-4   Bound     pvc-500a9957-b1c5-11e6-93fa-42010a800002   10Gi       RWO           2m</code></pre>
 <p>If you don't intend to reuse the extra PVCs, you can delete them:</p>
-<pre class="shell"><code>kubectl delete pvc data-mysql-3
+<pre class="shell"><code class="language-shell">kubectl delete pvc data-mysql-3
 kubectl delete pvc data-mysql-4</code></pre>
 <h2 id="cleaning-up">Cleaning up</h2>
 <ol type="1">
 <li><p>Cancel the <code>SELECT @@server_id</code> loop by pressing
 <strong>Ctrl+C</strong> in its terminal, or running the following from
 another terminal:</p>
-<pre class="shell"><code>kubectl delete pod mysql-client-loop --now</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete pod mysql-client-loop --now</code></pre></li>
 <li><p>Delete the StatefulSet. This also begins terminating the
 Pods.</p>
-<pre class="shell"><code>kubectl delete statefulset mysql</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete statefulset mysql</code></pre></li>
 <li><p>Verify that the Pods disappear. They might take some time to
 finish terminating.</p>
-<pre class="shell"><code>kubectl get pods -l app=mysql</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods -l app=mysql</code></pre>
 <p>You'll know the Pods have terminated when the above returns:</p>
 <pre><code>No resources found.</code></pre></li>
 <li><p>Delete the ConfigMap, Services, and PersistentVolumeClaims.</p>
-<pre class="shell"><code>kubectl delete configmap,service,pvc -l app=mysql</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete configmap,service,pvc -l app=mysql</code></pre></li>
 <li><p>If you manually provisioned PersistentVolumes, you also need to
 manually delete them, as well as release the underlying resources. If
 you used a dynamic provisioner, it automatically deletes the
@@ -819,6 +831,7 @@ repository</a> for other stateful application examples.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -827,6 +840,8 @@ repository</a> for other stateful application examples.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -173,7 +188,7 @@ href="https://github.com/kubernetes-sigs/metrics-server#deployment">metrics-serv
 documentation</a>.</p>
 <p>If you are running <a class="glossary-term" href="../../reference/glossary.html#term-minikube" title="Glossary: minikube">Minikube</a>, run the following command to
 enable metrics-server:</p>
-<pre class="shell"><code>minikube addons enable metrics-server</code></pre>
+<pre class="shell"><code class="language-shell">minikube addons enable metrics-server</code></pre>
 <h2 id="run-and-expose-php-apache-server">Run and expose php-apache
 server</h2>
 <p>To demonstrate a HorizontalPodAutoscaler, you will first start a
@@ -181,45 +196,44 @@ Deployment that runs a container using the <code>hpa-example</code>
 image, and expose it as a <a class="glossary-term" href="../../reference/glossary.html#term-service" title="Glossary: service">Service</a> using the following manifest:</p>
 <div class="code-sample">
 <p><code>application/php-apache.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/hpa-example</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 500m</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 200m</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">run</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">run</span><span class="kw">:</span><span class="at"> php-apache</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: php-apache
+spec:
+  selector:
+    matchLabels:
+      run: php-apache
+  template:
+    metadata:
+      labels:
+        run: php-apache
+    spec:
+      containers:
+      - name: php-apache
+        image: registry.k8s.io/hpa-example
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 500m
+          requests:
+            cpu: 200m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: php-apache
+  labels:
+    run: php-apache
+spec:
+  ports:
+  - port: 80
+  selector:
+    run: php-apache</code></pre>
 </div>
 <p>To do so, run the following command:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/php-apache.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/application/php-apache.yaml</code></pre>
 <pre><code>deployment.apps/php-apache created
 service/php-apache created</code></pre>
 <h2 id="create-horizontal-pod-autoscaler">Create the
@@ -243,11 +257,11 @@ this means an average CPU usage of 100 milli-cores. See <a
 href="../../concepts/workloads/autoscaling/horizontal-pod-autoscale.html#algorithm-details">Algorithm
 details</a> for more details on the algorithm.</p>
 <p>Create the HorizontalPodAutoscaler:</p>
-<pre class="shell"><code>kubectl autoscale deployment php-apache --cpu=50% --min=1 --max=10</code></pre>
+<pre class="shell"><code class="language-shell">kubectl autoscale deployment php-apache --cpu=50% --min=1 --max=10</code></pre>
 <pre><code>horizontalpodautoscaler.autoscaling/php-apache autoscaled</code></pre>
 <p>You can check the current status of the newly-made
 HorizontalPodAutoscaler, by running:</p>
-<pre class="shell"><code># You can use &quot;hpa&quot; or &quot;horizontalpodautoscaler&quot;; either name works OK.
+<pre class="shell"><code class="language-shell"># You can use &quot;hpa&quot; or &quot;horizontalpodautoscaler&quot;; either name works OK.
 kubectl get hpa</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME         REFERENCE                     TARGET    MINPODS   MAXPODS   REPLICAS   AGE
@@ -263,11 +277,11 @@ deployment).</p>
 you'll start a different Pod to act as a client. The container within
 the client Pod runs in an infinite loop, sending queries to the
 php-apache service.</p>
-<pre class="shell"><code># Run this in a separate terminal
+<pre class="shell"><code class="language-shell"># Run this in a separate terminal
 # so that the load generation continues and you can carry on with the rest of the steps
 kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c &quot;while sleep 0.01; do wget -q -O- http://php-apache; done&quot;</code></pre>
 <p>Now run:</p>
-<pre class="shell"><code># type Ctrl+C to end the watch when you&#39;re ready
+<pre class="shell"><code class="language-shell"># type Ctrl+C to end the watch when you&#39;re ready
 kubectl get hpa php-apache --watch</code></pre>
 <p>Within a minute or so, you should see the higher CPU load; for
 example:</p>
@@ -278,7 +292,7 @@ php-apache   Deployment/php-apache/scale   305% / 50%  1         10        1    
 php-apache   Deployment/php-apache/scale   305% / 50%  1         10        7          3m</code></pre>
 <p>Here, CPU consumption has increased to 305% of the request. As a
 result, the Deployment was resized to 7 replicas:</p>
-<pre class="shell"><code>kubectl get deployment php-apache</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment php-apache</code></pre>
 <p>You should see the replica count matching the figure from the
 HorizontalPodAutoscaler</p>
 <pre><code>NAME         READY   UP-TO-DATE   AVAILABLE   AGE
@@ -297,13 +311,13 @@ final number of replicas will differ from this example.</p>
 <code>busybox</code> image, terminate the load generation by typing
 <code>&lt;Ctrl&gt; + C</code>.</p>
 <p>Then verify the result state (after a minute or so):</p>
-<pre class="shell"><code># type Ctrl+C to end the watch when you&#39;re ready
+<pre class="shell"><code class="language-shell"># type Ctrl+C to end the watch when you&#39;re ready
 kubectl get hpa php-apache --watch</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME         REFERENCE                     TARGET       MINPODS   MAXPODS   REPLICAS   AGE
 php-apache   Deployment/php-apache/scale   0% / 50%     1         10        1          11m</code></pre>
 <p>and the Deployment also shows that it has scaled down:</p>
-<pre class="shell"><code>kubectl get deployment php-apache</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployment php-apache</code></pre>
 <pre><code>NAME         READY   UP-TO-DATE   AVAILABLE   AGE
 php-apache   1/1     1            1           27m</code></pre>
 <p>Once CPU utilization dropped to 0, the HPA automatically scaled the
@@ -316,40 +330,39 @@ on multiple metrics and custom metrics</h2>
 <code>autoscaling/v2</code> API version.</p>
 <p>First, get the YAML of your HorizontalPodAutoscaler in the
 <code>autoscaling/v2</code> form:</p>
-<pre class="shell"><code>kubectl get hpa php-apache -o yaml &gt; /tmp/hpa-v2.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get hpa php-apache -o yaml &gt; /tmp/hpa-v2.yaml</code></pre>
 <p>Open the <code>/tmp/hpa-v2.yaml</code> file in an editor, and you
 should see YAML which looks like this:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
-<span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">observedGeneration</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">lastScaleTime</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;some-time&gt;</span></span>
-<span class="at">  </span><span class="fu">currentReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">desiredReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">currentMetrics</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">      </span><span class="fu">current</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">        </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+status:
+  observedGeneration: 1
+  lastScaleTime: &lt;some-time&gt;
+  currentReplicas: 1
+  desiredReplicas: 1
+  currentMetrics:
+  - type: Resource
+    resource:
+      name: cpu
+      current:
+        averageUtilization: 0
+        averageValue: 0</code></pre>
 <p>Notice that the <code>targetCPUUtilizationPercentage</code> field has
 been replaced with an array called <code>metrics</code>. The CPU
 utilization metric is a <em>resource metric</em>, since it is
@@ -382,14 +395,13 @@ compared with a target value to determine the replica count. They work
 much like resource metrics, except that they <em>only</em> support a
 <code>target</code> type of <code>AverageValue</code>.</p>
 <p>Pod metrics are specified using a metric block like this:</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
-<span class="fu">pods</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> packets-per-second</span></span>
-<span class="at">  </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> AverageValue</span></span>
-<span class="at">    </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> 1k</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: Pods
+pods:
+  metric:
+    name: packets-per-second
+  target:
+    type: AverageValue
+    averageValue: 1k</code></pre>
 <p>The second alternative metric type is <em>object metrics</em>. These
 metrics describe a different object in the same namespace, instead of
 describing Pods. The metrics are not necessarily fetched from the
@@ -401,18 +413,17 @@ compared directly to the returned metric from the API. With
 API is divided by the number of Pods before being compared to the
 target. The following example is the YAML representation of the
 <code>requests-per-second</code> metric.</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> Object</span></span>
-<span class="fu">object</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> requests-per-second</span></span>
-<span class="at">  </span><span class="fu">describedObject</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-route</span></span>
-<span class="at">  </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Value</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 2k</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: Object
+object:
+  metric:
+    name: requests-per-second
+  describedObject:
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    name: main-route
+  target:
+    type: Value
+    value: 2k</code></pre>
 <p>If you provide multiple such metric blocks, the
 HorizontalPodAutoscaler will consider each metric in turn. The
 HorizontalPodAutoscaler will calculate proposed replica counts for each
@@ -420,65 +431,64 @@ metric, and then choose the one with the highest replica count.</p>
 <p>For example, if you had your monitoring system collecting metrics
 about network traffic, you could update the definition above using
 <code>kubectl edit</code> to look like this:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
-<span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> packets-per-second</span></span>
-<span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> AverageValue</span></span>
-<span class="at">        </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> 1k</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Object</span></span>
-<span class="at">    </span><span class="fu">object</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> requests-per-second</span></span>
-<span class="at">      </span><span class="fu">describedObject</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="at">        </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-route</span></span>
-<span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Value</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 10k</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">observedGeneration</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">lastScaleTime</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;some-time&gt;</span></span>
-<span class="at">  </span><span class="fu">currentReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">desiredReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">currentMetrics</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">    </span><span class="fu">current</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">      </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Object</span></span>
-<span class="at">    </span><span class="fu">object</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> requests-per-second</span></span>
-<span class="at">      </span><span class="fu">describedObject</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="at">        </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main-route</span></span>
-<span class="at">      </span><span class="fu">current</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 10k</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
+  - type: Pods
+    pods:
+      metric:
+        name: packets-per-second
+      target:
+        type: AverageValue
+        averageValue: 1k
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        name: main-route
+      target:
+        type: Value
+        value: 10k
+status:
+  observedGeneration: 1
+  lastScaleTime: &lt;some-time&gt;
+  currentReplicas: 1
+  desiredReplicas: 1
+  currentMetrics:
+  - type: Resource
+    resource:
+      name: cpu
+    current:
+      averageUtilization: 0
+      averageValue: 0
+  - type: Object
+    object:
+      metric:
+        name: requests-per-second
+      describedObject:
+        apiVersion: networking.k8s.io/v1
+        kind: Ingress
+        name: main-route
+      current:
+        value: 10k</code></pre>
 <p>Then, your HorizontalPodAutoscaler would attempt to ensure that each
 pod was consuming roughly 50% of its requested CPU, serving 1000 packets
 per second, and that all pods behind the main-route Ingress were serving
@@ -492,12 +502,11 @@ you can specify an additional label selector which is passed to your
 metric pipeline. For instance, if you collect a metric
 <code>http_requests</code> with the <code>verb</code> label, you can
 specify the following metric block to scale only on GET requests:</p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> Object</span></span>
-<span class="fu">object</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http_requests</span></span>
-<span class="at">    </span><span class="fu">selector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">matchLabels</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span><span class="fu">verb</span><span class="kw">:</span><span class="fu"> </span><span class="at">GET</span><span class="kw">}}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: Object
+object:
+  metric:
+    name: http_requests
+    selector: {matchLabels: {verb: GET}}</code></pre>
 <p>This selector uses the same syntax as the full Kubernetes label
 selectors. The monitoring pipeline determines how to collapse multiple
 series into a single value, if the name and selector match multiple
@@ -528,17 +537,16 @@ as when you use the <code>Object</code> type.</p>
 service, you could add the following section to your
 HorizontalPodAutoscaler manifest to specify that you need one worker per
 30 outstanding tasks.</p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> External</span></span>
-<span class="at">  </span><span class="fu">external</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metric</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> queue_messages_ready</span></span>
-<span class="at">      </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">queue</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;worker_tasks&quot;</span></span>
-<span class="at">    </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> AverageValue</span></span>
-<span class="at">      </span><span class="fu">averageValue</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">- type: External
+  external:
+    metric:
+      name: queue_messages_ready
+      selector:
+        matchLabels:
+          queue: &quot;worker_tasks&quot;
+    target:
+      type: AverageValue
+      averageValue: 30</code></pre>
 <p>When possible, it's preferable to use the custom metric target types
 instead of external metrics, since it's easier for cluster
 administrators to secure the custom metrics API. The external metrics
@@ -555,7 +563,7 @@ way.</p>
 <p>The conditions appear in the <code>status.conditions</code> field. To
 see the conditions affecting a HorizontalPodAutoscaler, we can use
 <code>kubectl describe hpa</code>:</p>
-<pre class="shell"><code>kubectl describe hpa cm-test</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe hpa cm-test</code></pre>
 <pre><code>Name:                           cm-test
 Namespace:                      prom
 Labels:                         &lt;none&gt;
@@ -605,28 +613,27 @@ HorizontalPodAutoscaler imperatively we can use the following manifest
 to create it declaratively:</p>
 <div class="code-sample">
 <p><code>application/hpa/php-apache.yaml</code></p>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> autoscaling/v2</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> HorizontalPodAutoscaler</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleTargetRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php-apache</span></span>
-<span class="at">  </span><span class="fu">minReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">maxReplicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">metrics</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">      </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
-<span class="at">        </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: php-apache
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: php-apache
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50</code></pre>
 </div>
 <p>Then, create the autoscaler by executing the following command:</p>
-<pre class="shell"><code>kubectl create -f https://k8s.io/examples/application/hpa/php-apache.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://k8s.io/examples/application/hpa/php-apache.yaml</code></pre>
 <pre><code>horizontalpodautoscaler.autoscaling/php-apache created</code></pre>
 
         </article>
@@ -692,6 +699,7 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -700,6 +708,8 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

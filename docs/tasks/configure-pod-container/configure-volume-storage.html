@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -151,53 +166,52 @@ for the life of the Pod, even if the Container terminates and restarts.
 Here is the configuration file for the Pod:</p>
 <div class="code-sample">
 <p><code>pods/storage/redis.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-storage</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data/redis</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-storage</span></span>
-<span class="at">    </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+spec:
+  containers:
+  - name: redis
+    image: redis
+    volumeMounts:
+    - name: redis-storage
+      mountPath: /data/redis
+  volumes:
+  - name: redis-storage
+    emptyDir: {}</code></pre>
 </div>
 <ol type="1">
 <li><p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/storage/redis.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/storage/redis.yaml</code></pre></li>
 <li><p>Verify that the Pod's Container is running, and then watch for
 changes to the Pod:</p>
-<pre class="shell"><code>kubectl get pod redis --watch</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod redis --watch</code></pre>
 <p>The output looks like this:</p>
-<pre class="console"><code>NAME      READY     STATUS    RESTARTS   AGE
+<pre class="console"><code class="language-console">NAME      READY     STATUS    RESTARTS   AGE
 redis     1/1       Running   0          13s</code></pre></li>
 <li><p>In another terminal, get a shell to the running Container:</p>
-<pre class="shell"><code>kubectl exec -it redis -- /bin/bash</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl exec -it redis -- /bin/bash</code></pre></li>
 <li><p>In your shell, go to <code>/data/redis</code>, and then create a
 file:</p>
-<pre class="shell"><code>root@redis:/data# cd /data/redis/
+<pre class="shell"><code class="language-shell">root@redis:/data# cd /data/redis/
 root@redis:/data/redis# echo Hello &gt; test-file</code></pre></li>
 <li><p>In your shell, list the running processes:</p>
-<pre class="shell"><code>root@redis:/data/redis# apt-get update
+<pre class="shell"><code class="language-shell">root@redis:/data/redis# apt-get update
 root@redis:/data/redis# apt-get install procps
 root@redis:/data/redis# ps aux</code></pre>
 <p>The output is similar to this:</p>
-<pre class="console"><code>USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+<pre class="console"><code class="language-console">USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
 redis        1  0.1  0.1  33308  3828 ?        Ssl  00:46   0:00 redis-server *:6379
 root        12  0.0  0.0  20228  3020 ?        Ss   00:47   0:00 /bin/bash
 root        15  0.0  0.0  17500  2072 ?        R+   00:48   0:00 ps aux</code></pre></li>
 <li><p>In your shell, kill the Redis process:</p>
-<pre class="shell"><code>root@redis:/data/redis# kill &lt;pid&gt;</code></pre>
+<pre class="shell"><code class="language-shell">root@redis:/data/redis# kill &lt;pid&gt;</code></pre>
 <p>where <code>&lt;pid&gt;</code> is the Redis process ID
 (PID).</p></li>
 <li><p>In your original terminal, watch for changes to the Redis Pod.
 Eventually, you will see something like this:</p>
-<pre class="console"><code>NAME      READY     STATUS     RESTARTS   AGE
+<pre class="console"><code class="language-console">NAME      READY     STATUS     RESTARTS   AGE
 redis     1/1       Running    0          13s
 redis     0/1       Completed  0         6m
 redis     1/1       Running    1         6m</code></pre></li>
@@ -208,14 +222,14 @@ href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#podsp
 of <code>Always</code>.</p>
 <ol type="1">
 <li><p>Get a shell into the restarted Container:</p>
-<pre class="shell"><code>kubectl exec -it redis -- /bin/bash</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl exec -it redis -- /bin/bash</code></pre></li>
 <li><p>In your shell, go to <code>/data/redis</code>, and verify that
 <code>test-file</code> is still there.</p>
-<pre class="shell"><code>root@redis:/data/redis# cd /data/redis/
+<pre class="shell"><code class="language-shell">root@redis:/data/redis# cd /data/redis/
 root@redis:/data/redis# ls
 test-file</code></pre></li>
 <li><p>Delete the Pod that you created for this exercise:</p>
-<pre class="shell"><code>kubectl delete pod redis</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete pod redis</code></pre></li>
 </ol>
 <h2 id="what-s-next">What's next</h2>
 <ul>
@@ -295,6 +309,7 @@ details.</p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -303,6 +318,8 @@ details.</p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

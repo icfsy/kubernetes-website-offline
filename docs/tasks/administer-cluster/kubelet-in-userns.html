@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -376,25 +391,24 @@ running within the user namespace before the kubelet starts.</p>
 since containerd 1.4.</p>
 <p>Running containerd within a user namespace requires the following
 configurations.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode toml"><code class="sourceCode toml"><span class="dt">version</span> <span class="op">=</span> <span class="dv">2</span></span>
-</span>
-<span class="kw">[plugins.&quot;</span><span class="dt">io.containerd.grpc.v1.cri&quot;</span><span class="kw">]</span></span>
-<span class="co"># Disable AppArmor</span></span>
-  <span class="dt">disable_apparmor</span> <span class="op">=</span> <span class="cn">true</span></span>
-<span class="co"># Ignore an error during setting oom_score_adj</span></span>
-  <span class="dt">restrict_oom_score_adj</span> <span class="op">=</span> <span class="cn">true</span></span>
-<span class="co"># Disable hugetlb cgroup v2 controller (because systemd does not support delegating hugetlb controller)</span></span>
-  <span class="dt">disable_hugetlb_controller</span> <span class="op">=</span> <span class="cn">true</span></span>
-</span>
-<span class="kw">[plugins.&quot;</span><span class="dt">io.containerd.grpc.v1.cri&quot;</span><span class="kw">.containerd]</span></span>
-<span class="co"># Using non-fuse overlayfs is also possible for kernel &gt;= 5.11, but requires SELinux to be disabled</span></span>
-  <span class="dt">snapshotter</span> <span class="op">=</span> <span class="st">&quot;fuse-overlayfs&quot;</span></span>
-</span>
-<span class="kw">[plugins.&quot;</span><span class="dt">io.containerd.grpc.v1.cri&quot;</span><span class="kw">.containerd.runtimes.runc.options]</span></span>
-<span class="co"># We use cgroupfs that is delegated by systemd, so we do not use SystemdCgroup driver</span></span>
-<span class="co"># (unless you run another systemd in the namespace)</span></span>
-  <span class="dt">SystemdCgroup</span> <span class="op">=</span> <span class="cn">false</span></span></code></pre></div>
+<pre class="toml"><code class="language-toml">version = 2
+
+[plugins.&quot;io.containerd.grpc.v1.cri&quot;]
+# Disable AppArmor
+  disable_apparmor = true
+# Ignore an error during setting oom_score_adj
+  restrict_oom_score_adj = true
+# Disable hugetlb cgroup v2 controller (because systemd does not support delegating hugetlb controller)
+  disable_hugetlb_controller = true
+
+[plugins.&quot;io.containerd.grpc.v1.cri&quot;.containerd]
+# Using non-fuse overlayfs is also possible for kernel &gt;= 5.11, but requires SELinux to be disabled
+  snapshotter = &quot;fuse-overlayfs&quot;
+
+[plugins.&quot;io.containerd.grpc.v1.cri&quot;.containerd.runtimes.runc.options]
+# We use cgroupfs that is delegated by systemd, so we do not use SystemdCgroup driver
+# (unless you run another systemd in the namespace)
+  SystemdCgroup = false</code></pre>
 <p>The default path of the configuration file is
 <code>/etc/containerd/config.toml</code>. The path can be specified with
 <code>containerd -c /path/to/containerd/config.toml</code>.</p>
@@ -405,16 +419,15 @@ class="sourceCode toml"><code class="sourceCode toml"><span class="dt">version</
 <p>CRI-O requires an environment variable <code>_CRIO_ROOTLESS=1</code>
 to be set.</p>
 <p>The following configurations are also recommended:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode toml"><code class="sourceCode toml"><span class="kw">[crio]</span></span>
-  <span class="dt">storage_driver</span> <span class="op">=</span> <span class="st">&quot;overlay&quot;</span></span>
-<span class="co"># Using non-fuse overlayfs is also possible for kernel &gt;= 5.11, but requires SELinux to be disabled</span></span>
-  <span class="dt">storage_option</span> <span class="op">=</span> <span class="op">[</span><span class="st">&quot;overlay.mount_program=/usr/local/bin/fuse-overlayfs&quot;</span><span class="op">]</span></span>
-</span>
-<span class="kw">[crio.runtime]</span></span>
-<span class="co"># We use cgroupfs that is delegated by systemd, so we do not use &quot;systemd&quot; driver</span></span>
-<span class="co"># (unless you run another systemd in the namespace)</span></span>
-  <span class="dt">cgroup_manager</span> <span class="op">=</span> <span class="st">&quot;cgroupfs&quot;</span></span></code></pre></div>
+<pre class="toml"><code class="language-toml">[crio]
+  storage_driver = &quot;overlay&quot;
+# Using non-fuse overlayfs is also possible for kernel &gt;= 5.11, but requires SELinux to be disabled
+  storage_option = [&quot;overlay.mount_program=/usr/local/bin/fuse-overlayfs&quot;]
+
+[crio.runtime]
+# We use cgroupfs that is delegated by systemd, so we do not use &quot;systemd&quot; driver
+# (unless you run another systemd in the namespace)
+  cgroup_manager = &quot;cgroupfs&quot;</code></pre>
 <p>The default path of the configuration file is
 <code>/etc/crio/crio.conf</code>. The path can be specified with
 <code>crio --config /path/to/crio/crio.conf</code>.</p>
@@ -422,14 +435,13 @@ class="sourceCode toml"><code class="sourceCode toml"><span class="kw">[crio]</s
 <h3 id="configuring-kubelet">Configuring kubelet</h3>
 <p>Running kubelet in a user namespace requires the following
 configuration:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">featureGates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">KubeletInUserNamespace</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="co"># We use cgroupfs that is delegated by systemd, so we do not use &quot;systemd&quot; driver</span></span>
-<span class="co"># (unless you run another systemd in the namespace)</span></span>
-<span class="fu">cgroupDriver</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cgroupfs&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+featureGates:
+  KubeletInUserNamespace: true
+# We use cgroupfs that is delegated by systemd, so we do not use &quot;systemd&quot; driver
+# (unless you run another systemd in the namespace)
+cgroupDriver: &quot;cgroupfs&quot;</code></pre>
 <p>When the <code>KubeletInUserNamespace</code> feature gate is enabled,
 the kubelet ignores errors that may happen during setting the following
 sysctl values on the node.</p>
@@ -454,17 +466,16 @@ not officially supported.</p>
 <h3 id="configuring-kube-proxy">Configuring kube-proxy</h3>
 <p>Running kube-proxy in a user namespace requires the following
 configuration:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeproxy.config.k8s.io/v1alpha1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeProxyConfiguration</span></span>
-<span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;iptables&quot;</span><span class="at"> </span><span class="co"># or &quot;userspace&quot;</span></span>
-<span class="fu">conntrack</span><span class="kw">:</span></span>
-<span class="co"># Skip setting sysctl value &quot;net.netfilter.nf_conntrack_max&quot;</span></span>
-<span class="at">  </span><span class="fu">maxPerCore</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="co"># Skip setting &quot;net.netfilter.nf_conntrack_tcp_timeout_established&quot;</span></span>
-<span class="at">  </span><span class="fu">tcpEstablishedTimeout</span><span class="kw">:</span><span class="at"> 0s</span></span>
-<span class="co"># Skip setting &quot;net.netfilter.nf_conntrack_tcp_timeout_close&quot;</span></span>
-<span class="at">  </span><span class="fu">tcpCloseWaitTimeout</span><span class="kw">:</span><span class="at"> 0s</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+mode: &quot;iptables&quot; # or &quot;userspace&quot;
+conntrack:
+# Skip setting sysctl value &quot;net.netfilter.nf_conntrack_max&quot;
+  maxPerCore: 0
+# Skip setting &quot;net.netfilter.nf_conntrack_tcp_timeout_established&quot;
+  tcpEstablishedTimeout: 0s
+# Skip setting &quot;net.netfilter.nf_conntrack_tcp_timeout_close&quot;
+  tcpCloseWaitTimeout: 0s</code></pre>
 <h2 id="caveats">Caveats</h2>
 <ul>
 <li><p>Most of "non-local" volume drivers such as <code>nfs</code> and
@@ -559,6 +570,7 @@ Kubelet-in-UserNS (aka Rootless mode)</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -567,6 +579,8 @@ Kubelet-in-UserNS (aka Rootless mode)</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -141,19 +156,19 @@ the version, enter <code>kubectl version</code>.</li>
 <h2 id="add-a-label-to-a-node">Add a label to a node</h2>
 <ol type="1">
 <li><p>List the nodes in your cluster, along with their labels:</p>
-<pre class="shell"><code>kubectl get nodes --show-labels</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes --show-labels</code></pre>
 <p>The output is similar to this:</p>
-<pre class="shell"><code>NAME      STATUS    ROLES    AGE     VERSION        LABELS
+<pre class="shell"><code class="language-shell">NAME      STATUS    ROLES    AGE     VERSION        LABELS
 worker0   Ready     &lt;none&gt;   1d      v1.13.0        ...,kubernetes.io/hostname=worker0
 worker1   Ready     &lt;none&gt;   1d      v1.13.0        ...,kubernetes.io/hostname=worker1
 worker2   Ready     &lt;none&gt;   1d      v1.13.0        ...,kubernetes.io/hostname=worker2</code></pre></li>
 <li><p>Choose one of your nodes, and add a label to it:</p>
-<pre class="shell"><code>kubectl label nodes &lt;your-node-name&gt; disktype=ssd</code></pre>
+<pre class="shell"><code class="language-shell">kubectl label nodes &lt;your-node-name&gt; disktype=ssd</code></pre>
 <p>where <code>&lt;your-node-name&gt;</code> is the name of your
 chosen node.</p></li>
 <li><p>Verify that your chosen node has a <code>disktype=ssd</code>
 label:</p>
-<pre class="shell"><code>kubectl get nodes --show-labels</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes --show-labels</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME      STATUS    ROLES    AGE     VERSION        LABELS
 worker0   Ready     &lt;none&gt;   1d      v1.13.0        ...,disktype=ssd,kubernetes.io/hostname=worker0
@@ -170,32 +185,31 @@ affinity,<code>disktype: ssd</code>. This means that the pod will get
 scheduled only on a node that has a <code>disktype=ssd</code> label.</p>
 <div class="code-sample">
 <p><code>pods/pod-nginx-required-affinity.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> disktype</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">ssd            </span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd            
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the manifest to create a Pod that is scheduled onto your
 chosen node:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/pod-nginx-required-affinity.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/pod-nginx-required-affinity.yaml</code></pre></li>
 <li><p>Verify that the pod is running on your chosen node:</p>
-<pre class="shell"><code>kubectl get pods --output=wide</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods --output=wide</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME     READY     STATUS    RESTARTS   AGE    IP           NODE
 nginx    1/1       Running   0          13s    10.200.0.4   worker0</code></pre></li>
@@ -208,33 +222,32 @@ affinity,<code>disktype: ssd</code>. This means that the pod will prefer
 a node that has a <code>disktype=ssd</code> label.</p>
 <div class="code-sample">
 <p><code>pods/pod-nginx-preferred-affinity.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> disktype</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">ssd          </span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: disktype
+            operator: In
+            values:
+            - ssd          
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent</code></pre>
 </div>
 <ol type="1">
 <li><p>Apply the manifest to create a Pod that is scheduled onto your
 chosen node:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/pod-nginx-preferred-affinity.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/pod-nginx-preferred-affinity.yaml</code></pre></li>
 <li><p>Verify that the pod is running on your chosen node:</p>
-<pre class="shell"><code>kubectl get pods --output=wide</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods --output=wide</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME     READY     STATUS    RESTARTS   AGE    IP           NODE
 nginx    1/1       Running   0          13s    10.200.0.4   worker0</code></pre></li>
@@ -307,6 +320,7 @@ Affinity</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -315,6 +329,8 @@ Affinity</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

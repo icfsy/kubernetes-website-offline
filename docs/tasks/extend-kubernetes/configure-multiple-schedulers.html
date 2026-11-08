@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -153,12 +168,12 @@ purposes of this example, you can use the default scheduler
 (kube-scheduler) as your second scheduler. Clone the <a
 href="https://github.com/kubernetes/kubernetes">Kubernetes source code
 from GitHub</a> and build the source.</p>
-<pre class="shell"><code>git clone https://github.com/kubernetes/kubernetes.git
+<pre class="shell"><code class="language-shell">git clone https://github.com/kubernetes/kubernetes.git
 cd kubernetes
 make</code></pre>
 <p>Create a container image containing the kube-scheduler binary. Here
 is the <code>Dockerfile</code> to build the image:</p>
-<pre class="docker"><code>FROM busybox
+<pre class="docker"><code class="language-docker">FROM busybox
 ADD ./_output/local/bin/linux/amd64/kube-scheduler /usr/local/bin/kube-scheduler</code></pre>
 <p>Save the file as <code>Dockerfile</code>, build the image and push it
 to a registry. This example pushes the image to <a
@@ -169,7 +184,7 @@ Alternatively you can also use the <a
 href="https://hub.docker.com/search?q=">docker hub</a>. For more details
 refer to the docker hub <a
 href="https://docs.docker.com/docker-hub/repos/create/#create-a-repository">documentation</a>.</p>
-<pre class="shell"><code>docker build -t gcr.io/my-gcp-project/my-kube-scheduler:1.0 .     # The image name and the repository
+<pre class="shell"><code class="language-shell">docker build -t gcr.io/my-gcp-project/my-kube-scheduler:1.0 .     # The image name and the repository
 gcloud docker -- push gcr.io/my-gcp-project/my-kube-scheduler:1.0 # used in here is just an example</code></pre>
 <h2 id="define-a-kubernetes-deployment-for-the-scheduler">Define a
 Kubernetes Deployment for the scheduler</h2>
@@ -186,120 +201,119 @@ to failures. Here is the deployment config. Save it as
 <code>my-scheduler.yaml</code>:</p>
 <div class="code-sample">
 <p><code>admin/sched/my-scheduler.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler-as-kube-scheduler</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-scheduler</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler-as-volume-scheduler</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:volume-scheduler</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler-extension-apiserver-authentication-reader</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> extension-apiserver-authentication-reader</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">my-scheduler-config.yaml</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="at">    </span><span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">    </span><span class="fu">leaderElection</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">leaderElect</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">component</span><span class="kw">:</span><span class="at"> scheduler</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> control-plane</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">component</span><span class="kw">:</span><span class="at"> scheduler</span></span>
-<span class="at">      </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> control-plane</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">component</span><span class="kw">:</span><span class="at"> scheduler</span></span>
-<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> control-plane</span></span>
-<span class="at">        </span><span class="fu">version</span><span class="kw">:</span><span class="at"> second</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">/usr/local/bin/kube-scheduler</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">--config=/etc/kubernetes/my-scheduler/my-scheduler-config.yaml</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/my-gcp-project/my-kube-scheduler:1.0</span></span>
-<span class="at">        </span><span class="fu">livenessProbe</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">10259</span></span>
-<span class="at">            </span><span class="fu">scheme</span><span class="kw">:</span><span class="at"> HTTPS</span></span>
-<span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-second-scheduler</span></span>
-<span class="at">        </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">httpGet</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /healthz</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">10259</span></span>
-<span class="at">            </span><span class="fu">scheme</span><span class="kw">:</span><span class="at"> HTTPS</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;0.1&#39;</span></span>
-<span class="at">        </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">privileged</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">            </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/my-scheduler</span></span>
-<span class="at">      </span><span class="fu">hostNetwork</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">      </span><span class="fu">hostPID</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">          </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-scheduler-config</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: my-scheduler
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: my-scheduler-as-kube-scheduler
+subjects:
+- kind: ServiceAccount
+  name: my-scheduler
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:kube-scheduler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: my-scheduler-as-volume-scheduler
+subjects:
+- kind: ServiceAccount
+  name: my-scheduler
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: system:volume-scheduler
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: my-scheduler-extension-apiserver-authentication-reader
+  namespace: kube-system
+roleRef:
+  kind: Role
+  name: extension-apiserver-authentication-reader
+  apiGroup: rbac.authorization.k8s.io
+subjects:
+- kind: ServiceAccount
+  name: my-scheduler
+  namespace: kube-system
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: my-scheduler-config
+  namespace: kube-system
+data:
+  my-scheduler-config.yaml: |
+    apiVersion: kubescheduler.config.k8s.io/v1
+    kind: KubeSchedulerConfiguration
+    profiles:
+      - schedulerName: my-scheduler
+    leaderElection:
+      leaderElect: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: scheduler
+    tier: control-plane
+  name: my-scheduler
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      component: scheduler
+      tier: control-plane
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        component: scheduler
+        tier: control-plane
+        version: second
+    spec:
+      serviceAccountName: my-scheduler
+      containers:
+      - command:
+        - /usr/local/bin/kube-scheduler
+        - --config=/etc/kubernetes/my-scheduler/my-scheduler-config.yaml
+        image: gcr.io/my-gcp-project/my-kube-scheduler:1.0
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 10259
+            scheme: HTTPS
+          initialDelaySeconds: 15
+        name: kube-second-scheduler
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 10259
+            scheme: HTTPS
+        resources:
+          requests:
+            cpu: &#39;0.1&#39;
+        securityContext:
+          privileged: false
+        volumeMounts:
+          - name: config-volume
+            mountPath: /etc/kubernetes/my-scheduler
+      hostNetwork: false
+      hostPID: false
+      volumes:
+        - name: config-volume
+          configMap:
+            name: my-scheduler-config</code></pre>
 </div>
 <p>In the above manifest, you use a <a
 href="../../reference/scheduling/config.html">KubeSchedulerConfiguration</a>
@@ -337,9 +351,9 @@ customizable <code>kube-scheduler</code> configurations.</p>
 scheduler in the cluster</h2>
 <p>In order to run your scheduler in a Kubernetes cluster, create the
 deployment specified in the config above in a Kubernetes cluster:</p>
-<pre class="shell"><code>kubectl create -f my-scheduler.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f my-scheduler.yaml</code></pre>
 <p>Verify that the scheduler pod is running:</p>
-<pre class="shell"><code>kubectl get pods --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods --namespace=kube-system</code></pre>
 <pre><code>NAME                                           READY     STATUS    RESTARTS   AGE
 ....
 my-scheduler-lnf4s-4744f                       1/1       Running   0          2m
@@ -370,47 +384,46 @@ namespace.</p>
 <code>system:kube-scheduler</code> cluster role. Add your scheduler name
 to the resourceNames of the rule applied for <code>endpoints</code> and
 <code>leases</code> resources, as in the following example:</p>
-<pre class="shell"><code>kubectl edit clusterrole system:kube-scheduler</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit clusterrole system:kube-scheduler</code></pre>
 <div class="code-sample">
 <p><code>admin/sched/clusterrole.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rbac.authorization.kubernetes.io/autoupdate</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/bootstrapping</span><span class="kw">:</span><span class="at"> rbac-defaults</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-scheduler</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">coordination.k8s.io</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">leases</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">create</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">coordination.k8s.io</span></span>
-<span class="at">    </span><span class="fu">resourceNames</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">kube-scheduler</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">my-scheduler</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">leases</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">get</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">update</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;&quot;</span></span>
-<span class="at">    </span><span class="fu">resourceNames</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">kube-scheduler</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">my-scheduler</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">endpoints</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">delete</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">get</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">patch</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">update</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  annotations:
+    rbac.authorization.kubernetes.io/autoupdate: &quot;true&quot;
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+  name: system:kube-scheduler
+rules:
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - create
+  - apiGroups:
+      - coordination.k8s.io
+    resourceNames:
+      - kube-scheduler
+      - my-scheduler
+    resources:
+      - leases
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - &quot;&quot;
+    resourceNames:
+      - kube-scheduler
+      - my-scheduler
+    resources:
+      - endpoints
+    verbs:
+      - delete
+      - get
+      - patch
+      - update</code></pre>
 </div>
 <h2 id="specify-schedulers-for-pods">Specify schedulers for pods</h2>
 <p>Now that your second scheduler is running, create some pods, and
@@ -422,60 +435,57 @@ look at three examples.</p>
 <li><p>Pod spec without any scheduler name</p>
 <div class="code-sample">
 <p><code>admin/sched/pod1.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> no-annotation</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multischeduler-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-no-annotation-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: no-annotation
+  labels:
+    name: multischeduler-example
+spec:
+  containers:
+  - name: pod-with-no-annotation-container
+    image: registry.k8s.io/pause:3.8</code></pre>
 </div>
 <p>When no scheduler name is supplied, the pod is automatically
 scheduled using the default-scheduler.</p>
 <p>Save this file as <code>pod1.yaml</code> and submit it to the
 Kubernetes cluster.</p>
-<pre class="shell"><code>kubectl create -f pod1.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create -f pod1.yaml</code></pre></li>
 <li><p>Pod spec with <code>default-scheduler</code></p>
 <div class="code-sample">
 <p><code>admin/sched/pod2.yaml</code></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> annotation-default-scheduler</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multischeduler-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> default-scheduler</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-default-annotation-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: annotation-default-scheduler
+  labels:
+    name: multischeduler-example
+spec:
+  schedulerName: default-scheduler
+  containers:
+  - name: pod-with-default-annotation-container
+    image: registry.k8s.io/pause:3.8</code></pre>
 </div>
 <p>A scheduler is specified by supplying the scheduler name as a value
 to <code>spec.schedulerName</code>. In this case, we supply the name of
 the default scheduler which is <code>default-scheduler</code>.</p>
 <p>Save this file as <code>pod2.yaml</code> and submit it to the
 Kubernetes cluster.</p>
-<pre class="shell"><code>kubectl create -f pod2.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create -f pod2.yaml</code></pre></li>
 <li><p>Pod spec with <code>my-scheduler</code></p>
 <div class="code-sample">
 <p><code>admin/sched/pod3.yaml</code></p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> annotation-second-scheduler</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multischeduler-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> my-scheduler</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-second-annotation-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: annotation-second-scheduler
+  labels:
+    name: multischeduler-example
+spec:
+  schedulerName: my-scheduler
+  containers:
+  - name: pod-with-second-annotation-container
+    image: registry.k8s.io/pause:3.8</code></pre>
 </div>
 <p>In this case, we specify that this pod should be scheduled using the
 scheduler that we deployed - <code>my-scheduler</code>. Note that the
@@ -484,9 +494,9 @@ for the scheduler in the <code>schedulerName</code> field of the mapping
 <code>KubeSchedulerProfile</code>.</p>
 <p>Save this file as <code>pod3.yaml</code> and submit it to the
 Kubernetes cluster.</p>
-<pre class="shell"><code>kubectl create -f pod3.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f pod3.yaml</code></pre>
 <p>Verify that all three pods are running.</p>
-<pre class="shell"><code>kubectl get pods</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre></li>
 </ul>
 <h3
 id="verifying-that-the-pods-were-scheduled-using-the-desired-schedulers">Verifying
@@ -504,7 +514,7 @@ as well.</p>
 <p>Alternatively, you can look at the "Scheduled" entries in the event
 logs to verify that the pods were scheduled by the desired
 schedulers.</p>
-<pre class="shell"><code>kubectl get events</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get events</code></pre>
 <p>You can also use a <a
 href="../../reference/scheduling/config.html#multiple-profiles">custom
 scheduler configuration</a> or a custom container image for the
@@ -574,6 +584,7 @@ relevant control plane nodes.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -582,6 +593,8 @@ relevant control plane nodes.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -138,26 +153,24 @@ make scheduling of the higher priority Pod possible.</p>
 class name to an integer priority value. Higher numbers indicate higher
 priority.</p>
 <h3 id="defining-a-priorityclass">Defining a PriorityClass</h3>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
-<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10000</span></span>
-<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Priority class for high-priority workloads&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 10000
+globalDefault: false
+description: &quot;Priority class for high-priority workloads&quot;</code></pre>
 <h3 id="specify-pod-priority-using-a-priorityclass">Specify pod priority
 using a PriorityClass</h3>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> high-priority</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  priorityClassName: high-priority</code></pre>
 <h3 id="built-in-priorityclasses">Built-in PriorityClasses</h3>
 <p>Kubernetes provides two built-in PriorityClasses:</p>
 <ul>
@@ -176,16 +189,15 @@ runtime for a Pod. It is useful when you want to specify different
 container runtimes for different kinds of Pod, such as when you need
 different isolation levels or runtime features.</p>
 <h3 id="runtimeclass-pod-example">Example Pod</h3>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">runtimeClassName</span><span class="kw">:</span><span class="at"> myclass</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mycontainer</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  runtimeClassName: myclass
+  containers:
+  - name: mycontainer
+    image: nginx</code></pre>
 <p>A <a
 href="../../containers/runtime-class.html">RuntimeClass</a> is a
 cluster-scoped object that represents a container runtime that is
@@ -210,43 +222,41 @@ overrides.</p>
 <p>Here's an example of using <code>securityContext</code> at the Pod
 level:</p>
 <h4 id="pod-level-security-context-example">Example Pod</h4>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span><span class="at">  </span><span class="co"># This applies to the entire Pod</span></span>
-<span class="at">    </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">    </span><span class="fu">runAsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">3000</span></span>
-<span class="at">    </span><span class="fu">fsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">2000</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-demo</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.45</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;sleep 1h&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo
+spec:
+  securityContext:  # This applies to the entire Pod
+    runAsUser: 1000
+    runAsGroup: 3000
+    fsGroup: 2000
+  containers:
+  - name: sec-ctx-demo
+    image: registry.k8s.io/e2e-test-images/agnhost:2.45
+    command: [&quot;sh&quot;, &quot;-c&quot;, &quot;sleep 1h&quot;]</code></pre>
 <h3 id="container-level-security-context">Container-level security
 context</h3>
 <p>You can specify the security context just for a specific container.
 Here's an example:</p>
 <h4 id="container-level-security-context-example">Example Pod</h4>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> security-context-demo-2</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sec-ctx-demo-2</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/node-hello:1.0</span></span>
-<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
-<span class="at">      </span><span class="fu">runAsNonRoot</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">runAsUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">      </span><span class="fu">capabilities</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">drop</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">ALL</span></span>
-<span class="at">      </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RuntimeDefault</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: security-context-demo-2
+spec:
+  containers:
+  - name: sec-ctx-demo-2
+    image: gcr.io/google-samples/node-hello:1.0
+    securityContext:
+      allowPrivilegeEscalation: false
+      runAsNonRoot: true
+      runAsUser: 1000
+      capabilities:
+        drop:
+        - ALL
+      seccompProfile:
+        type: RuntimeDefault</code></pre>
 <h3 id="security-context-options">Security context options</h3>
 <ul>
 <li><strong>User and Group IDs</strong>: Control which user/group the
@@ -284,17 +294,16 @@ a Security Context for a Pod or Container</a>.</p>
 Pods are scheduled on.</p>
 <h3 id="node-selectors">Node selectors</h3>
 <p>The simplest form of node selection constraint:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">disktype</span><span class="kw">:</span><span class="at"> ssd</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  nodeSelector:
+    disktype: ssd</code></pre>
 <h3 id="node-affinity">Node affinity</h3>
 <p>Node affinity allows you to specify rules that constrain which nodes
 your Pod can be scheduled on. Here's an example of a Pod that prefers
@@ -302,101 +311,97 @@ running on nodes labelled as being on a particular continent, selecting
 based on the value of <a
 href="../../../reference/labels-annotations-taints.html#topologykubernetesiozone"><code>topology.kubernetes.io/zone</code></a>
 label.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">antarctica-east1</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">antarctica-west1</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values:
+            - antarctica-east1
+            - antarctica-west1
+  containers:
+  - name: with-node-affinity
+    image: registry.k8s.io/pause:3.8</code></pre>
 <h3 id="pod-affinity-and-anti-affinity">Pod affinity and
 anti-affinity</h3>
 <p>In addition to node affinity, you can also constrain which nodes a
 Pod can be scheduled on based on the labels of <em>other Pods</em> that
 are already running on nodes. Pod affinity allows you to specify rules
 about where a Pod should be placed relative to other Pods.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-pod-affinity</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">database</span></span>
-<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-pod-affinity</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: app
+            operator: In
+            values:
+            - database
+        topologyKey: topology.kubernetes.io/zone
+  containers:
+  - name: with-pod-affinity
+    image: registry.k8s.io/pause:3.8</code></pre>
 <h3 id="tolerations">Tolerations</h3>
 <p><em>Tolerations</em> allow Pods to be scheduled on nodes with
 matching taints:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">tolerations</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;key&quot;</span></span>
-<span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Equal&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;value&quot;</span></span>
-<span class="at">    </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;NoSchedule&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: myapp
+    image: nginx
+  tolerations:
+  - key: &quot;key&quot;
+    operator: &quot;Equal&quot;
+    value: &quot;value&quot;
+    effect: &quot;NoSchedule&quot;</code></pre>
 <p>For more information, see <a
 href="../../scheduling-eviction/assign-pod-node.html">Assign Pods
 to Nodes</a>.</p>
 <h2 id="pod-overhead">Pod overhead</h2>
 <p>Pod overhead allows you to account for the resources consumed by the
 Pod infrastructure on top of the container requests and limits.</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> node.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RuntimeClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kvisor-runtime</span></span>
-<span class="fu">handler</span><span class="kw">:</span><span class="at"> kvisor-runtime</span></span>
-<span class="fu">overhead</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podFixed</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">runtimeClassName</span><span class="kw">:</span><span class="at"> kvisor-runtime</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myapp</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: kvisor-runtime
+handler: kvisor-runtime
+overhead:
+  podFixed:
+    memory: &quot;2Gi&quot;
+    cpu: &quot;500m&quot;
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  runtimeClassName: kvisor-runtime
+  containers:
+  - name: myapp
+    image: nginx
+    resources:
+      requests:
+        memory: &quot;64Mi&quot;
+        cpu: &quot;250m&quot;
+      limits:
+        memory: &quot;128Mi&quot;
+        cpu: &quot;500m&quot;</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>Read about <a
@@ -477,6 +482,7 @@ Overhead</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -485,6 +491,8 @@ Overhead</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

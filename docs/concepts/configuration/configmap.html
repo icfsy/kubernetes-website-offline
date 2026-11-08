@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -189,24 +204,23 @@ any other API objects.</p>
 <p>Here's an example ConfigMap that has some keys with single values,
 and other keys where the value looks like a fragment of a configuration
 format.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-demo</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># property-like keys; each key maps to a simple value</span></span>
-<span class="at">  </span><span class="fu">player_initial_lives</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3&quot;</span></span>
-<span class="at">  </span><span class="fu">ui_properties_file_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;user-interface.properties&quot;</span></span>
-</span>
-<span class="at">  </span><span class="co"># file-like keys</span></span>
-<span class="at">  </span><span class="fu">game.properties</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    enemy.types=aliens,monsters</span></span>
-<span class="at">    player.maximum-lives=5</span></span>
-<span class="at">  </span><span class="fu">user-interface.properties</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    color.good=purple</span></span>
-<span class="at">    color.bad=yellow</span></span>
-<span class="at">    allow.textmode=true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: game-demo
+data:
+  # property-like keys; each key maps to a simple value
+  player_initial_lives: &quot;3&quot;
+  ui_properties_file_name: &quot;user-interface.properties&quot;
+
+  # file-like keys
+  game.properties: |
+    enemy.types=aliens,monsters
+    player.maximum-lives=5
+  user-interface.properties: |
+    color.good=purple
+    color.bad=yellow
+    allow.textmode=true</code></pre>
 <p>There are four different ways that you can use a ConfigMap to
 configure a container inside a Pod:</p>
 <ol type="1">
@@ -230,45 +244,44 @@ namespace.</p>
 configure a Pod:</p>
 <div class="code-sample">
 <p><code>configmap/configure-pod.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-demo-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> demo</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;3600&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># Define the environment variable</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> PLAYER_INITIAL_LIVES</span><span class="co"> # Notice that the case is different here</span></span>
-<span class="at">                                     </span><span class="co"># from the key name in the ConfigMap.</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-demo           # The ConfigMap this value comes from.</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> player_initial_lives</span><span class="co"> # The key to fetch.</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> UI_PROPERTIES_FILE_NAME</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-demo</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ui_properties_file_name</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">        </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/config&quot;</span></span>
-<span class="at">        </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># You set volumes at the Pod level, then mount them into containers inside that Pod</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config</span></span>
-<span class="at">    </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Provide the name of the ConfigMap you want to mount.</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-demo</span></span>
-<span class="at">      </span><span class="co"># An array of keys from the ConfigMap to create as files</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;game.properties&quot;</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;game.properties&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;user-interface.properties&quot;</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;user-interface.properties&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-demo-pod
+spec:
+  containers:
+    - name: demo
+      image: alpine
+      command: [&quot;sleep&quot;, &quot;3600&quot;]
+      env:
+        # Define the environment variable
+        - name: PLAYER_INITIAL_LIVES # Notice that the case is different here
+                                     # from the key name in the ConfigMap.
+          valueFrom:
+            configMapKeyRef:
+              name: game-demo           # The ConfigMap this value comes from.
+              key: player_initial_lives # The key to fetch.
+        - name: UI_PROPERTIES_FILE_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: game-demo
+              key: ui_properties_file_name
+      volumeMounts:
+      - name: config
+        mountPath: &quot;/config&quot;
+        readOnly: true
+  volumes:
+  # You set volumes at the Pod level, then mount them into containers inside that Pod
+  - name: config
+    configMap:
+      # Provide the name of the ConfigMap you want to mount.
+      name: game-demo
+      # An array of keys from the ConfigMap to create as files
+      items:
+      - key: &quot;game.properties&quot;
+        path: &quot;game.properties&quot;
+      - key: &quot;user-interface.properties&quot;
+        path: &quot;user-interface.properties&quot;</code></pre>
 </div>
 <p>A ConfigMap doesn't differentiate between single line property values
 and multi-line file-like values. What matters is how Pods and other
@@ -311,23 +324,22 @@ files in that directory. Each key in the ConfigMap <code>data</code> map
 becomes the filename under <code>mountPath</code>.</li>
 </ol>
 <p>This is an example of a Pod that mounts a ConfigMap in a volume:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mypod</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/foo&quot;</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="at">    </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myconfigmap</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: mypod
+spec:
+  containers:
+  - name: mypod
+    image: redis
+    volumeMounts:
+    - name: foo
+      mountPath: &quot;/etc/foo&quot;
+      readOnly: true
+  volumes:
+  - name: foo
+    configMap:
+      name: myconfigmap</code></pre>
 <p>Each ConfigMap you want to use needs to be referred to in
 <code>.spec.volumes</code>.</p>
 <p>If there are multiple containers in the Pod, then each container
@@ -374,33 +386,31 @@ values in the specified environment variables.</li>
 variable:</p>
 <p>The following ConfigMap (myconfigmap.yaml) stores two properties:
 username and access_level:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myconfigmap</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">username</span><span class="kw">:</span><span class="at"> k8s-admin</span></span>
-<span class="at">  </span><span class="fu">access_level</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: myconfigmap
+data:
+  username: k8s-admin
+  access_level: &quot;1&quot;</code></pre>
 <p>The following command will create the ConfigMap object:</p>
-<pre class="shell"><code>kubectl apply -f myconfigmap.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f myconfigmap.yaml</code></pre>
 <p>The following Pod consumes the content of the ConfigMap as
 environment variables:</p>
 <div class="code-sample">
 <p><code>configmap/env-configmap.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> env-configmap</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;printenv&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:latest</span></span>
-<span class="at">      </span><span class="fu">envFrom</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">configMapRef</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myconfigmap</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: env-configmap
+spec:
+  containers:
+    - name: app
+      command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;printenv&quot;]
+      image: busybox:latest
+      envFrom:
+        - configMapRef:
+            name: myconfigmap</code></pre>
 </div>
 <p>The <code>envFrom</code> field instructs Kubernetes to create
 environment variables from the sources nested within it. The inner
@@ -409,10 +419,10 @@ all its key-value pairs. Add the Pod to your cluster, then retrieve its
 logs to see the output from the printenv command. This should confirm
 that the two key-value pairs from the ConfigMap have been set as
 environment variables:</p>
-<pre class="shell"><code>kubectl apply -f env-configmap.yaml</code></pre>
-<pre class="shell"><code>kubectl logs pod/env-configmap</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f env-configmap.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs pod/env-configmap</code></pre>
 <p>The output is similar to this:</p>
-<pre class="console"><code>...
+<pre class="console"><code class="language-console">...
 username: &quot;k8s-admin&quot;
 access_level: &quot;1&quot;
 ...</code></pre>
@@ -422,21 +432,20 @@ username value from the ConfigMap. For this use case, you can use the
 <code>env.valueFrom</code> syntax instead, which lets you select
 individual keys in a ConfigMap. The name of the environment variable can
 also be different from the key within the ConfigMap. For example:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> env-configmap</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> envars-test-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CONFIGMAP_USERNAME</span></span>
-<span class="at">      </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myconfigmap</span></span>
-<span class="at">          </span><span class="fu">key</span><span class="kw">:</span><span class="at"> username</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: env-configmap
+spec:
+  containers:
+  - name: envars-test-container
+    image: nginx
+    env:
+    - name: CONFIGMAP_USERNAME
+      valueFrom:
+        configMapKeyRef:
+          name: myconfigmap
+          key: username</code></pre>
 <p>In the Pod created from this manifest, you will see that the
 environment variable <code>CONFIGMAP_USERNAME</code> is set to the value
 of the <code>username</code> value from the ConfigMap. Other keys from
@@ -467,14 +476,13 @@ immutable.</li>
 </ul>
 <p>You can create an immutable ConfigMap by setting the
 <code>immutable</code> field to <code>true</code>. For example:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="fu">immutable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  ...
+data:
+  ...
+immutable: true</code></pre>
 <p>Once a ConfigMap is marked as immutable, it is <em>not</em> possible
 to revert this change nor to mutate the contents of the
 <code>data</code> or the <code>binaryData</code> field. You can only
@@ -558,6 +566,7 @@ understand the motivation for separating code from configuration.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -566,6 +575,8 @@ understand the motivation for separating code from configuration.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

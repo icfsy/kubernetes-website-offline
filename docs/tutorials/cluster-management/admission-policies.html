@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -258,23 +273,22 @@ validation</h2>
 requires that any Deployment has multiple replicas.</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/vap-min-replicas.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;enforce-multiple-replicas-deployments&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Require that matching Deployments have multiple replicas&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span><span class="at">      </span><span class="co"># the Deployment API</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;UPDATE&quot;</span><span class="kw">]</span><span class="at"> </span><span class="co"># the API verb, converted to upper case</span></span>
-<span class="at">  </span><span class="fu">validations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;object.spec.replicas &gt;= 2&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: &quot;enforce-multiple-replicas-deployments&quot;
+  annotations:
+    kubernetes.io/description: &quot;Require that matching Deployments have multiple replicas&quot;
+spec:
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;apps&quot;]
+      apiVersions: [&quot;v1&quot;]
+      resources:   [&quot;deployments&quot;]      # the Deployment API
+      operations:  [&quot;CREATE&quot;, &quot;UPDATE&quot;] # the API verb, converted to upper case
+  validations:
+    - expression: &quot;object.spec.replicas &gt;= 2&quot;</code></pre>
 </div>
 <p><code>spec.validations</code> contains CEL expressions which use the
 <a target="_blank" rel="noopener" href="https://github.com/google/cel-spec">Common Expression Language
@@ -283,7 +297,7 @@ the validation check is enforced according to the
 <code>spec.failurePolicy</code> field.</p>
 <p>Write a policy like this and apply it.</p>
 <p>Or, if you want to apply a ready-made manifest:</p>
-<pre class="shell"><code>kubectl apply --server-side -f https://k8s.io/examples/access/manifest-admission-control/vap-min-replicas.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f https://k8s.io/examples/access/manifest-admission-control/vap-min-replicas.yaml</code></pre>
 <p>On its own, this doesn't do anything.</p>
 <p>You can try creating a Deployment with 0 or 1 replicas; it will work
 (unless some other policy prevents it).</p>
@@ -292,18 +306,17 @@ the validation check is enforced according to the
 <p>Pick a namespace where you'll enforce the new policy.</p>
 <p>The following is an example ValidatingAdmissionPolicyBinding for the
 policy you made:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ValidatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> enforce-multiple-replicas-deployments-binding</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;enforce-multiple-replicas-deployments&quot;</span></span>
-<span class="at">  </span><span class="fu">validationActions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">Deny</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">kubernetes.io/metadata.name</span><span class="kw">:</span><span class="at"> default</span><span class="co"> # change this to match the namespace you&#39;re using</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: enforce-multiple-replicas-deployments-binding
+spec:
+  policyName: &quot;enforce-multiple-replicas-deployments&quot;
+  validationActions: [Deny]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        kubernetes.io/metadata.name: default # change this to match the namespace you&#39;re using</code></pre>
 <div class="admonition caution">
 <div class="admonition-title">
 <p>Caution:</p>
@@ -360,35 +373,34 @@ modify is Namespace.</p>
 <p>Here's a MutatingAdmissionPolicy that does some of this:</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/default-pod-security-baseline.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co"># Caution: read the notes for this default-pod-security-baseline policy before</span></span>
-<span class="co"># you apply it, so that you understand the information security consequences.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default-pod-security-baseline&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Default new namespaces to enforce the Baseline pod security standard&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">reinvocationPolicy</span><span class="kw">:</span><span class="at"> IfNeeded</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;namespaces&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;exclude-system-namespaces&quot;</span></span>
-<span class="at">      </span><span class="co"># If the name begins with &quot;kube-&quot;, it&#39;s a system namespace.</span></span>
-<span class="at">      </span><span class="co"># Assume that the API server or cluster management tooling applies relevant defaults.</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!object.metadata.name.startsWith(&#39;kube-&#39;)&quot;</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;no-existing-pod-security-label&quot;</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!(&#39;pod-security.kubernetes.io/enforce&#39; in object.metadata.labels)&quot;</span></span>
-<span class="at">  </span><span class="fu">mutations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">patchType</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ApplyConfiguration&quot;</span></span>
-<span class="at">      </span><span class="fu">applyConfiguration</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Object{metadata: Object.metadata{labels: {&#39;pod-security.kubernetes.io/enforce&#39;: &#39;baseline&#39;}}}&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+# Caution: read the notes for this default-pod-security-baseline policy before
+# you apply it, so that you understand the information security consequences.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: &quot;default-pod-security-baseline&quot;
+  annotations:
+    kubernetes.io/description: &quot;Default new namespaces to enforce the Baseline pod security standard&quot;
+spec:
+  reinvocationPolicy: IfNeeded
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;]
+      resources:   [&quot;namespaces&quot;]
+  matchConditions:
+    - name: &quot;exclude-system-namespaces&quot;
+      # If the name begins with &quot;kube-&quot;, it&#39;s a system namespace.
+      # Assume that the API server or cluster management tooling applies relevant defaults.
+      expression: &quot;!object.metadata.name.startsWith(&#39;kube-&#39;)&quot;
+    - name: &quot;no-existing-pod-security-label&quot;
+      expression: &quot;!(&#39;pod-security.kubernetes.io/enforce&#39; in object.metadata.labels)&quot;
+  mutations:
+    - patchType: &quot;ApplyConfiguration&quot;
+      applyConfiguration:
+        expression: &quot;Object{metadata: Object.metadata{labels: {&#39;pod-security.kubernetes.io/enforce&#39;: &#39;baseline&#39;}}}&quot;</code></pre>
 </div>
 <div class="admonition caution">
 <div class="admonition-title">
@@ -403,33 +415,31 @@ href="../../concepts/security.html">Security</a> documentation or get
 external information security advice.</p>
 </div>
 <p>To apply that policy:</p>
-<pre class="shell"><code>kubectl apply --server-side -f https://k8s.io/examples/access/manifest-admission-control/default-pod-security-baseline.yaml </code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply --server-side -f https://k8s.io/examples/access/manifest-admission-control/default-pod-security-baseline.yaml </code></pre>
 <p>A MutatingAdmissionPolicyBinding is required to activate this policy;
 for example:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-pod-security-baseline</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># the name of the MutatingAdmissionPolicy to apply</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> default-pod-security-baseline</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: default-pod-security-baseline
+spec:
+  # the name of the MutatingAdmissionPolicy to apply
+  policyName: default-pod-security-baseline</code></pre>
 <h3 id="test-admission-policy-mutation">Test the policy</h3>
 <p>Try creating a new namespace named <code>example</code>:</p>
-<pre class="shell"><code>kubectl create ns example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create ns example</code></pre>
 <p>Examine its labels:</p>
-<pre class="shell"><code>kubectl describe ns example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe ns example</code></pre>
 <p>Even though you didn't specify a Pod security admission enforcement
 level, the label has been set.</p>
 <p>Next, check whether you can find a way round the security settings.
 Create a YAML manifest for a different Namespace:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Namespace</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> another-example</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">pod-security.kubernetes.io/enforce</span><span class="kw">:</span><span class="at"> privileged</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Namespace
+metadata:
+  name: another-example
+  labels:
+    pod-security.kubernetes.io/enforce: privileged</code></pre>
 <p>You can create that namespace from the local manifest using
 <code>kubectl apply --server-side</code>. Does it work?</p>
 <p>Yes, and the new namespace allows running privileged Pods.</p>
@@ -452,99 +462,95 @@ parameter resource. Then, a policy binding ties that policy to the scope
 where it is bound, as configured by a particular parameter resource.</p>
 <div class="code-sample">
 <p><code>access/manifest-admission-control/default-pod-security-configurable.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co"># Caution: read the notes for this default-pod-security-configurable policy before</span></span>
-<span class="co"># you apply it, so that you understand the information security consequences.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default-pod-security-configurable&quot;</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Default new namespaces to enforce the chosen pod security standard&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">reinvocationPolicy</span><span class="kw">:</span><span class="at"> IfNeeded</span></span>
-<span class="at">  </span><span class="fu">paramKind</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="at">  </span><span class="fu">matchConstraints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resourceRules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">apiVersions</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;v1&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">operations</span><span class="kw">:</span><span class="at">  </span><span class="kw">[</span><span class="st">&quot;CREATE&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span><span class="at">   </span><span class="kw">[</span><span class="st">&quot;namespaces&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">matchConditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;exclude-system-namespaces&quot;</span></span>
-<span class="at">      </span><span class="co"># If the name begins with &quot;kube-&quot;, it&#39;s a system namespace.</span></span>
-<span class="at">      </span><span class="co"># Assume that the API server or cluster management tooling applies relevant defaults.</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!object.metadata.name.startsWith(&#39;kube-&#39;)&quot;</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;no-existing-pod-security-label&quot;</span></span>
-<span class="at">      </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;!(&#39;pod-security.kubernetes.io/enforce&#39; in object.metadata.labels)&quot;</span></span>
-<span class="at">  </span><span class="fu">mutations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">patchType</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ApplyConfiguration&quot;</span></span>
-<span class="at">      </span><span class="fu">applyConfiguration</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">expression</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Object{metadata: Object.metadata{labels: {&#39;pod-security.kubernetes.io/enforce&#39;: params.data.default}}}&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+# Caution: read the notes for this default-pod-security-configurable policy before
+# you apply it, so that you understand the information security consequences.
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicy
+metadata:
+  name: &quot;default-pod-security-configurable&quot;
+  annotations:
+    kubernetes.io/description: &quot;Default new namespaces to enforce the chosen pod security standard&quot;
+spec:
+  reinvocationPolicy: IfNeeded
+  paramKind:
+    apiVersion: v1
+    kind: ConfigMap
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   [&quot;&quot;]
+      apiVersions: [&quot;v1&quot;]
+      operations:  [&quot;CREATE&quot;]
+      resources:   [&quot;namespaces&quot;]
+  matchConditions:
+    - name: &quot;exclude-system-namespaces&quot;
+      # If the name begins with &quot;kube-&quot;, it&#39;s a system namespace.
+      # Assume that the API server or cluster management tooling applies relevant defaults.
+      expression: &quot;!object.metadata.name.startsWith(&#39;kube-&#39;)&quot;
+    - name: &quot;no-existing-pod-security-label&quot;
+      expression: &quot;!(&#39;pod-security.kubernetes.io/enforce&#39; in object.metadata.labels)&quot;
+  mutations:
+    - patchType: &quot;ApplyConfiguration&quot;
+      applyConfiguration:
+        expression: &quot;Object{metadata: Object.metadata{labels: {&#39;pod-security.kubernetes.io/enforce&#39;: params.data.default}}}&quot;</code></pre>
 </div>
 <p>Here is a sample MutatingAdmissionPolicyBinding:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> admissionregistration.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> MutatingAdmissionPolicyBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-pod-security-configurable</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># the name of the MutatingAdmissionPolicy to apply</span></span>
-<span class="at">  </span><span class="fu">policyName</span><span class="kw">:</span><span class="at"> default-pod-security-configurable</span></span>
-</span>
-<span class="at">  </span><span class="co"># parameters to use</span></span>
-<span class="at">  </span><span class="fu">paramRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># if the ConfigMap is missing or empty, don&#39;t set a default</span></span>
-<span class="at">    </span><span class="co"># (but do allow namespace creation)</span></span>
-<span class="at">    </span><span class="fu">parameterNotFoundAction</span><span class="kw">:</span><span class="at"> Allow</span></span>
-</span>
-<span class="at">    </span><span class="co"># where to find the parameter</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-pod-security-standard</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingAdmissionPolicyBinding
+metadata:
+  name: default-pod-security-configurable
+spec:
+  # the name of the MutatingAdmissionPolicy to apply
+  policyName: default-pod-security-configurable
+
+  # parameters to use
+  paramRef:
+    # if the ConfigMap is missing or empty, don&#39;t set a default
+    # (but do allow namespace creation)
+    parameterNotFoundAction: Allow
+
+    # where to find the parameter
+    namespace: kube-system
+    name: default-pod-security-standard</code></pre>
 <p>and here's a sample ConfigMap to put into the kube-system
 namespace:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-pod-security-standard</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">default</span><span class="kw">:</span><span class="at"> baseline</span><span class="co"> # could also be &quot;restricted&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: kube-system
+  name: default-pod-security-standard
+data:
+  default: baseline # could also be &quot;restricted&quot;</code></pre>
 <p>Define both of those. You should <strong>create the ConfigMap
 first</strong>; the binding expects that the parameter resource already
 exists (even if you plan to change it later).</p>
 <p>Now, delete the previous MutatingAdmissionPolicyBinding:</p>
-<pre class="shell"><code>kubectl delete mutatingadmissionpolicybindings/default-pod-security-baseline</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete mutatingadmissionpolicybindings/default-pod-security-baseline</code></pre>
 <p>and create a new namespace:</p>
-<pre class="shell"><code>kubectl create ns yet-another-example</code></pre>
-<pre class="shell"><code>kubectl describe ns yet-another-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create ns yet-another-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe ns yet-another-example</code></pre>
 <p>Did the labels get defaulted?</p>
 <h3 id="change-the-parameter">Change the parameter</h3>
-<pre class="shell"><code># This starts an editor that lets you change .data.default for the parameter
+<pre class="shell"><code class="language-shell"># This starts an editor that lets you change .data.default for the parameter
 kubectl --namespace kube-system edit configmap default-pod-security-standard</code></pre>
 <p>After you change it, try creating one more namespace. What
 happens?</p>
 <h2 id="clean-up">Clean up</h2>
 <p>To remove the resources created, run the following commands:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> delete validatingadmissionpolices/enforce-multiple-replicas-deployments <span class="dt">\</span></span>
-               validatingadmissionpolicybindings/enforce-multiple-replicas-deployments</span>
-</span>
-<span class="ex">kubectl</span> delete mutatingadmissionpolicies/default-pod-security-baseline <span class="dt">\</span></span>
-               mutatingadmissionpolicybindings/default-pod-security-baseline</span>
-</span>
-<span class="ex">kubectl</span> delete mutatingadmissionpolicies/default-pod-security-configurable <span class="dt">\</span></span>
-               mutatingadmissionpolicybindings/default-pod-security-configurable</span>
-</span>
-<span class="ex">kubectl</span> <span class="at">--namespace</span> kube-system delete configmaps/default-pod-security-standard</span>
-</span>
-<span class="ex">kubectl</span> delete namespaces/example namespaces/another-example namespaces/yet-another-example</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl delete validatingadmissionpolices/enforce-multiple-replicas-deployments \
+               validatingadmissionpolicybindings/enforce-multiple-replicas-deployments
+
+kubectl delete mutatingadmissionpolicies/default-pod-security-baseline \
+               mutatingadmissionpolicybindings/default-pod-security-baseline
+
+kubectl delete mutatingadmissionpolicies/default-pod-security-configurable \
+               mutatingadmissionpolicybindings/default-pod-security-configurable
+
+kubectl --namespace kube-system delete configmaps/default-pod-security-standard
+
+kubectl delete namespaces/example namespaces/another-example namespaces/yet-another-example</code></pre>
 <p>If you created any test Pods or test Namespaces, clear those up
 too.</p>
 
@@ -611,6 +617,7 @@ too.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -619,6 +626,8 @@ too.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

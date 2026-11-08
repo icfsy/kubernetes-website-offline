@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -183,7 +198,7 @@ it into something that the program can use as input.</li>
 the <a target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man1/rev.1.html">rev</a>
 utility. This program accepts a file as an argument and prints its
 content reversed.</p>
-<pre class="shell"><code>rev data.txt</code></pre>
+<pre class="shell"><code class="language-shell">rev data.txt</code></pre>
 <p>You'll use the <code>rev</code> tool from the <a
 href="https://hub.docker.com/_/busybox"><code>busybox</code></a>
 container image.</p>
@@ -199,42 +214,41 @@ publish, by counting frames from the start of the clip.</p>
 completion mode:</p>
 <div class="code-sample">
 <p><code>application/job/indexed-job.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;indexed-job&#39;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">completionMode</span><span class="kw">:</span><span class="at"> Indexed</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">initContainers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;input&#39;</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;docker.io/library/bash&#39;</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;bash&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;-c&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">          items=(foo bar baz qux xyz)</span></span>
-<span class="at">          echo ${items[$JOB_COMPLETION_INDEX]} &gt; /input/data.txt</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /input</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> input</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;worker&#39;</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;docker.io/library/busybox&#39;</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;rev&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;/input/data.txt&quot;</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /input</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> input</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> input</span></span>
-<span class="at">        </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: &#39;indexed-job&#39;
+spec:
+  completions: 5
+  parallelism: 3
+  completionMode: Indexed
+  template:
+    spec:
+      restartPolicy: Never
+      initContainers:
+      - name: &#39;input&#39;
+        image: &#39;docker.io/library/bash&#39;
+        command:
+        - &quot;bash&quot;
+        - &quot;-c&quot;
+        - |
+          items=(foo bar baz qux xyz)
+          echo ${items[$JOB_COMPLETION_INDEX]} &gt; /input/data.txt
+        volumeMounts:
+        - mountPath: /input
+          name: input
+      containers:
+      - name: &#39;worker&#39;
+        image: &#39;docker.io/library/busybox&#39;
+        command:
+        - &quot;rev&quot;
+        - &quot;/input/data.txt&quot;
+        volumeMounts:
+        - mountPath: /input
+          name: input
+      volumes:
+      - name: input
+        emptyDir: {}</code></pre>
 </div>
 <p>In the example above, you use the builtin
 <code>JOB_COMPLETION_INDEX</code> environment variable set by the Job
@@ -256,38 +270,37 @@ the downward API to pass the annotation value as a volume file</a>, like
 shown in the following example:</p>
 <div class="code-sample">
 <p><code>application/job/indexed-job-vol.yaml</code></p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;indexed-job&#39;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">completionMode</span><span class="kw">:</span><span class="at"> Indexed</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;worker&#39;</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;docker.io/library/busybox&#39;</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;rev&quot;</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;/input/data.txt&quot;</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /input</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> input</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> input</span></span>
-<span class="at">        </span><span class="fu">downwardAPI</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;data.txt&quot;</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.annotations[&#39;batch.kubernetes.io/job-completion-index&#39;]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: &#39;indexed-job&#39;
+spec:
+  completions: 5
+  parallelism: 3
+  completionMode: Indexed
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: &#39;worker&#39;
+        image: &#39;docker.io/library/busybox&#39;
+        command:
+        - &quot;rev&quot;
+        - &quot;/input/data.txt&quot;
+        volumeMounts:
+        - mountPath: /input
+          name: input
+      volumes:
+      - name: input
+        downwardAPI:
+          items:
+          - path: &quot;data.txt&quot;
+            fieldRef:
+              fieldPath: metadata.annotations[&#39;batch.kubernetes.io/job-completion-index&#39;]</code></pre>
 </div>
 <h2 id="running-the-job">Running the Job</h2>
 <p>Now run the Job:</p>
-<pre class="shell"><code># This uses the first approach (relying on $JOB_COMPLETION_INDEX)
+<pre class="shell"><code class="language-shell"># This uses the first approach (relying on $JOB_COMPLETION_INDEX)
 kubectl apply -f https://kubernetes.io/examples/application/job/indexed-job.yaml</code></pre>
 <p>When you create this Job, the control plane creates a series of Pods,
 one for each index you specified. The value of
@@ -298,10 +311,10 @@ creates in total.</p>
 <code>.spec.completions</code>, the control plane waits for some of the
 first Pods to complete before starting more of them.</p>
 <p>You can wait for the Job to succeed, with a timeout:</p>
-<pre class="shell"><code># The check for condition name is case insensitive
+<pre class="shell"><code class="language-shell"># The check for condition name is case insensitive
 kubectl wait --for=condition=complete --timeout=300s job/indexed-job</code></pre>
 <p>Now, describe the Job and check that it was successful.</p>
-<pre class="shell"><code>kubectl describe jobs/indexed-job</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe jobs/indexed-job</code></pre>
 <p>The output is similar to:</p>
 <pre><code>Name:              indexed-job
 Namespace:         default
@@ -357,7 +370,7 @@ Events:
   Normal  SuccessfulCreate  1s    job-controller  Created pod: indexed-job-ncslj</code></pre>
 <p>In this example, you run the Job with custom values for each index.
 You can inspect the output of one of the pods:</p>
-<pre class="shell"><code>kubectl logs indexed-job-fdhq5 # Change this to match the name of a Pod from that Job</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs indexed-job-fdhq5 # Change this to match the name of a Pod from that Job</code></pre>
 <p>The output is similar to:</p>
 <pre><code>xuq</code></pre>
 
@@ -424,6 +437,7 @@ You can inspect the output of one of the pods:</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -432,6 +446,8 @@ You can inspect the output of one of the pods:</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

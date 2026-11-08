@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -132,12 +147,12 @@ kubectl</a>.</p>
 <p>The first thing to debug in your cluster is if your nodes are all
 registered correctly.</p>
 <p>Run the following command:</p>
-<pre class="shell"><code>kubectl get nodes</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get nodes</code></pre>
 <p>And verify that all of the nodes you expect to see are present and
 that they are all in the <code>Ready</code> state.</p>
 <p>To get detailed information about the overall health of your cluster,
 you can run:</p>
-<pre class="shell"><code>kubectl cluster-info dump</code></pre>
+<pre class="shell"><code class="language-shell">kubectl cluster-info dump</code></pre>
 <h3 id="example-debugging-a-down-unreachable-node">Example: debugging a
 down/unreachable node</h3>
 <p>Sometimes when debugging it can be useful to look at the status of a
@@ -150,14 +165,14 @@ is down (disconnected from the network, or kubelet dies and won't
 restart, etc.). Notice the events that show the node is NotReady, and
 also notice that the pods are no longer running (they are evicted after
 five minutes of NotReady status).</p>
-<pre class="shell"><code>kubectl get nodes</code></pre>
-<pre class="none"><code>NAME                     STATUS       ROLES     AGE     VERSION
+<pre class="shell"><code class="language-shell">kubectl get nodes</code></pre>
+<pre class="none"><code class="language-none">NAME                     STATUS       ROLES     AGE     VERSION
 kube-worker-1            NotReady     &lt;none&gt;    1h      v1.23.3
 kubernetes-node-bols     Ready        &lt;none&gt;    1h      v1.23.3
 kubernetes-node-st6x     Ready        &lt;none&gt;    1h      v1.23.3
 kubernetes-node-unaj     Ready        &lt;none&gt;    1h      v1.23.3</code></pre>
-<pre class="shell"><code>kubectl describe node kube-worker-1</code></pre>
-<pre class="none"><code>Name:               kube-worker-1
+<pre class="shell"><code class="language-shell">kubectl describe node kube-worker-1</code></pre>
+<pre class="none"><code class="language-none">Name:               kube-worker-1
 Roles:              &lt;none&gt;
 Labels:             beta.kubernetes.io/arch=amd64
                     beta.kubernetes.io/os=linux
@@ -225,88 +240,87 @@ Allocated resources:
   hugepages-2Mi      0 (0%)       0 (0%)
 Events:
 ...</code></pre>
-<pre class="shell"><code>kubectl get node kube-worker-1 -o yaml</code></pre>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Node</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">node.alpha.kubernetes.io/ttl</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">    </span><span class="fu">volumes.kubernetes.io/controller-managed-attach-detach</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:46:30Z&quot;</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">beta.kubernetes.io/arch</span><span class="kw">:</span><span class="at"> amd64</span></span>
-<span class="at">    </span><span class="fu">beta.kubernetes.io/os</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/arch</span><span class="kw">:</span><span class="at"> amd64</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/hostname</span><span class="kw">:</span><span class="at"> kube-worker-1</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/os</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-worker-1</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4026&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 98efe7cb-2978-4a0b-842a-1a7bf12c05f8</span></span>
-<span class="fu">spec</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">addresses</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">address</span><span class="kw">:</span><span class="at"> 192.168.0.113</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> InternalIP</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">address</span><span class="kw">:</span><span class="at"> kube-worker-1</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Hostname</span></span>
-<span class="at">  </span><span class="fu">allocatable</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">    </span><span class="fu">ephemeral-storage</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;14167048988&quot;</span></span>
-<span class="at">    </span><span class="fu">hugepages-2Mi</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 1922788Ki</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;110&quot;</span></span>
-<span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">    </span><span class="fu">ephemeral-storage</span><span class="kw">:</span><span class="at"> 15372232Ki</span></span>
-<span class="at">    </span><span class="fu">hugepages-2Mi</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 2025188Ki</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;110&quot;</span></span>
-<span class="at">  </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">lastHeartbeatTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:20:32Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:20:32Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Weave pod has set this</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> WeaveIsUp</span></span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;False&quot;</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NetworkUnavailable</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">lastHeartbeatTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:20:15Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:13:25Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> kubelet has sufficient memory available</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> KubeletHasSufficientMemory</span></span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;False&quot;</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> MemoryPressure</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">lastHeartbeatTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:20:15Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:13:25Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> kubelet has no disk pressure</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> KubeletHasNoDiskPressure</span></span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;False&quot;</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DiskPressure</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">lastHeartbeatTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:20:15Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:13:25Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> kubelet has sufficient PID available</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> KubeletHasSufficientPID</span></span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;False&quot;</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> PIDPressure</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">lastHeartbeatTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:20:15Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T22:15:15Z&quot;</span></span>
-<span class="at">    </span><span class="fu">message</span><span class="kw">:</span><span class="at"> kubelet is posting ready status</span></span>
-<span class="at">    </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> KubeletReady</span></span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Ready</span></span>
-<span class="at">  </span><span class="fu">daemonEndpoints</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubeletEndpoint</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">Port</span><span class="kw">:</span><span class="at"> </span><span class="dv">10250</span></span>
-<span class="at">  </span><span class="fu">nodeInfo</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">architecture</span><span class="kw">:</span><span class="at"> amd64</span></span>
-<span class="at">    </span><span class="fu">bootID</span><span class="kw">:</span><span class="at"> 22333234-7a6b-44d4-9ce1-67e31dc7e369</span></span>
-<span class="at">    </span><span class="fu">containerRuntimeVersion</span><span class="kw">:</span><span class="at"> containerd://1.5.9</span></span>
-<span class="at">    </span><span class="fu">kernelVersion</span><span class="kw">:</span><span class="at"> 5.13.0-28-generic</span></span>
-<span class="at">    </span><span class="fu">kubeProxyVersion</span><span class="kw">:</span><span class="at"> v1.23.3</span></span>
-<span class="at">    </span><span class="fu">kubeletVersion</span><span class="kw">:</span><span class="at"> v1.23.3</span></span>
-<span class="at">    </span><span class="fu">machineID</span><span class="kw">:</span><span class="at"> 9384e2927f544209b5d7b67474bbf92b</span></span>
-<span class="at">    </span><span class="fu">operatingSystem</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">    </span><span class="fu">osImage</span><span class="kw">:</span><span class="at"> Ubuntu 21.10</span></span>
-<span class="at">    </span><span class="fu">systemUUID</span><span class="kw">:</span><span class="at"> aa829ca9-73d7-064d-9019-df07404ad448</span></span></code></pre></div>
+<pre class="shell"><code class="language-shell">kubectl get node kube-worker-1 -o yaml</code></pre>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Node
+metadata:
+  annotations:
+    node.alpha.kubernetes.io/ttl: &quot;0&quot;
+    volumes.kubernetes.io/controller-managed-attach-detach: &quot;true&quot;
+  creationTimestamp: &quot;2022-02-17T21:46:30Z&quot;
+  labels:
+    beta.kubernetes.io/arch: amd64
+    beta.kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+    kubernetes.io/hostname: kube-worker-1
+    kubernetes.io/os: linux
+  name: kube-worker-1
+  resourceVersion: &quot;4026&quot;
+  uid: 98efe7cb-2978-4a0b-842a-1a7bf12c05f8
+spec: {}
+status:
+  addresses:
+  - address: 192.168.0.113
+    type: InternalIP
+  - address: kube-worker-1
+    type: Hostname
+  allocatable:
+    cpu: &quot;2&quot;
+    ephemeral-storage: &quot;14167048988&quot;
+    hugepages-2Mi: &quot;0&quot;
+    memory: 1922788Ki
+    pods: &quot;110&quot;
+  capacity:
+    cpu: &quot;2&quot;
+    ephemeral-storage: 15372232Ki
+    hugepages-2Mi: &quot;0&quot;
+    memory: 2025188Ki
+    pods: &quot;110&quot;
+  conditions:
+  - lastHeartbeatTime: &quot;2022-02-17T22:20:32Z&quot;
+    lastTransitionTime: &quot;2022-02-17T22:20:32Z&quot;
+    message: Weave pod has set this
+    reason: WeaveIsUp
+    status: &quot;False&quot;
+    type: NetworkUnavailable
+  - lastHeartbeatTime: &quot;2022-02-17T22:20:15Z&quot;
+    lastTransitionTime: &quot;2022-02-17T22:13:25Z&quot;
+    message: kubelet has sufficient memory available
+    reason: KubeletHasSufficientMemory
+    status: &quot;False&quot;
+    type: MemoryPressure
+  - lastHeartbeatTime: &quot;2022-02-17T22:20:15Z&quot;
+    lastTransitionTime: &quot;2022-02-17T22:13:25Z&quot;
+    message: kubelet has no disk pressure
+    reason: KubeletHasNoDiskPressure
+    status: &quot;False&quot;
+    type: DiskPressure
+  - lastHeartbeatTime: &quot;2022-02-17T22:20:15Z&quot;
+    lastTransitionTime: &quot;2022-02-17T22:13:25Z&quot;
+    message: kubelet has sufficient PID available
+    reason: KubeletHasSufficientPID
+    status: &quot;False&quot;
+    type: PIDPressure
+  - lastHeartbeatTime: &quot;2022-02-17T22:20:15Z&quot;
+    lastTransitionTime: &quot;2022-02-17T22:15:15Z&quot;
+    message: kubelet is posting ready status
+    reason: KubeletReady
+    status: &quot;True&quot;
+    type: Ready
+  daemonEndpoints:
+    kubeletEndpoint:
+      Port: 10250
+  nodeInfo:
+    architecture: amd64
+    bootID: 22333234-7a6b-44d4-9ce1-67e31dc7e369
+    containerRuntimeVersion: containerd://1.5.9
+    kernelVersion: 5.13.0-28-generic
+    kubeProxyVersion: v1.23.3
+    kubeletVersion: v1.23.3
+    machineID: 9384e2927f544209b5d7b67474bbf92b
+    operatingSystem: linux
+    osImage: Ubuntu 21.10
+    systemUUID: aa829ca9-73d7-064d-9019-df07404ad448</code></pre>
 <h2 id="looking-at-logs">Looking at logs</h2>
 <p>For now, digging deeper into the cluster requires logging into the
 relevant machines. Here are the locations of the relevant log files. On
@@ -548,6 +562,7 @@ debug services locally</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -556,6 +571,8 @@ debug services locally</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

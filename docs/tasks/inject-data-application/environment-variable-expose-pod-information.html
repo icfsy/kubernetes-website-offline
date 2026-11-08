@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -161,45 +176,44 @@ and you project Pod-level fields into the running container as
 environment variables.</p>
 <div class="code-sample">
 <p><code>pods/inject/dapi-envars-pod.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-envars-fieldref</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">while true; do</span></span>
-<span class="at">          echo -en &#39;\n&#39;;</span></span>
-<span class="at">          printenv MY_NODE_NAME MY_POD_NAME MY_POD_NAMESPACE;</span></span>
-<span class="at">          printenv MY_POD_IP MY_POD_SERVICE_ACCOUNT;</span></span>
-<span class="at">          sleep 10;</span></span>
-<span class="at">        done;</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_NODE_NAME</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> spec.nodeName</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_POD_NAME</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.name</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_POD_NAMESPACE</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.namespace</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_POD_IP</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> status.podIP</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_POD_SERVICE_ACCOUNT</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> spec.serviceAccountName</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-envars-fieldref
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;sh&quot;, &quot;-c&quot;]
+      args:
+      - while true; do
+          echo -en &#39;\n&#39;;
+          printenv MY_NODE_NAME MY_POD_NAME MY_POD_NAMESPACE;
+          printenv MY_POD_IP MY_POD_SERVICE_ACCOUNT;
+          sleep 10;
+        done;
+      env:
+        - name: MY_NODE_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
+        - name: MY_POD_SERVICE_ACCOUNT
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+  restartPolicy: Never</code></pre>
 </div>
 <p>In that manifest, you can see five environment variables. The
 <code>env</code> field is an array of environment variable definitions.
@@ -215,12 +229,12 @@ variables get their names from Pod fields.</p>
 container in the Pod.</p>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/inject/dapi-envars-pod.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/inject/dapi-envars-pod.yaml</code></pre>
 <p>Verify that the container in the Pod is running:</p>
-<pre class="shell"><code># If the new Pod isn&#39;t yet healthy, rerun this command a few times.
+<pre class="shell"><code class="language-shell"># If the new Pod isn&#39;t yet healthy, rerun this command a few times.
 kubectl get pods</code></pre>
 <p>View the container's logs:</p>
-<pre class="shell"><code>kubectl logs dapi-envars-fieldref</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs dapi-envars-fieldref</code></pre>
 <p>The output shows the values of selected environment variables:</p>
 <pre><code>minikube
 dapi-envars-fieldref
@@ -232,9 +246,9 @@ default</code></pre>
 file. When the container starts, it writes the values of five
 environment variables to stdout. It repeats this every ten seconds.</p>
 <p>Next, get a shell into the container that is running in your Pod:</p>
-<pre class="shell"><code>kubectl exec -it dapi-envars-fieldref -- sh</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -it dapi-envars-fieldref -- sh</code></pre>
 <p>In your shell, view the environment variables:</p>
-<pre class="shell"><code># Run this in a shell inside the container
+<pre class="shell"><code class="language-shell"># Run this in a shell inside the container
 printenv</code></pre>
 <p>The output shows that certain environment variables have been
 assigned the values of Pod fields:</p>
@@ -258,52 +272,51 @@ rather than from the Pod overall.</p>
 container:</p>
 <div class="code-sample">
 <p><code>pods/inject/dapi-envars-container.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-envars-resourcefieldref</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">while true; do</span></span>
-<span class="at">          echo -en &#39;\n&#39;;</span></span>
-<span class="at">          printenv MY_CPU_REQUEST MY_CPU_LIMIT;</span></span>
-<span class="at">          printenv MY_MEM_REQUEST MY_MEM_LIMIT;</span></span>
-<span class="at">          sleep 10;</span></span>
-<span class="at">        done;</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;32Mi&quot;</span></span>
-<span class="at">          </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;125m&quot;</span></span>
-<span class="at">        </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;64Mi&quot;</span></span>
-<span class="at">          </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250m&quot;</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_CPU_REQUEST</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> requests.cpu</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_CPU_LIMIT</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> limits.cpu</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_MEM_REQUEST</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> requests.memory</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_MEM_LIMIT</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">resourceFieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> limits.memory</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-envars-resourcefieldref
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;sh&quot;, &quot;-c&quot;]
+      args:
+      - while true; do
+          echo -en &#39;\n&#39;;
+          printenv MY_CPU_REQUEST MY_CPU_LIMIT;
+          printenv MY_MEM_REQUEST MY_MEM_LIMIT;
+          sleep 10;
+        done;
+      resources:
+        requests:
+          memory: &quot;32Mi&quot;
+          cpu: &quot;125m&quot;
+        limits:
+          memory: &quot;64Mi&quot;
+          cpu: &quot;250m&quot;
+      env:
+        - name: MY_CPU_REQUEST
+          valueFrom:
+            resourceFieldRef:
+              containerName: test-container
+              resource: requests.cpu
+        - name: MY_CPU_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: test-container
+              resource: limits.cpu
+        - name: MY_MEM_REQUEST
+          valueFrom:
+            resourceFieldRef:
+              containerName: test-container
+              resource: requests.memory
+        - name: MY_MEM_LIMIT
+          valueFrom:
+            resourceFieldRef:
+              containerName: test-container
+              resource: limits.memory
+  restartPolicy: Never</code></pre>
 </div>
 <p>In this manifest, you can see four environment variables. The
 <code>env</code> field is an array of environment variable definitions.
@@ -313,12 +326,12 @@ The first element in the array specifies that the
 <code>test-container</code>. Similarly, the other environment variables
 get their values from fields that are specific to this container.</p>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/inject/dapi-envars-container.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/pods/inject/dapi-envars-container.yaml</code></pre>
 <p>Verify that the container in the Pod is running:</p>
-<pre class="shell"><code># If the new Pod isn&#39;t yet healthy, rerun this command a few times.
+<pre class="shell"><code class="language-shell"># If the new Pod isn&#39;t yet healthy, rerun this command a few times.
 kubectl get pods</code></pre>
 <p>View the container's logs:</p>
-<pre class="shell"><code>kubectl logs dapi-envars-resourcefieldref</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs dapi-envars-resourcefieldref</code></pre>
 <p>The output shows the values of selected environment variables:</p>
 <pre><code>1
 1
@@ -417,6 +430,7 @@ href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#resou
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -425,6 +439,8 @@ href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#resou
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

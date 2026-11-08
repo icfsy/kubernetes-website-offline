@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -138,23 +153,22 @@ href="cron-jobs.html">CronJob</a>.</p>
 prints it out. It takes around 10s to complete.</p>
 <div class="code-sample">
 <p><code>controllers/job.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pi</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pi</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> perl:5.34.0</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;perl&quot;</span><span class="kw">,</span><span class="at">  </span><span class="st">&quot;-Mbignum=bpi&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-wle&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;print bpi(2000)&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi
+spec:
+  template:
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: [&quot;perl&quot;,  &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]
+      restartPolicy: Never
+  backoffLimit: 4</code></pre>
 </div>
 <p>You can run the example with this command:</p>
-<pre class="shell"><code>kubectl apply -f https://kubernetes.io/examples/controllers/job.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://kubernetes.io/examples/controllers/job.yaml</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>job.batch/pi created</code></pre>
 <p>Check on the status of the Job with <code>kubectl</code>:</p>
@@ -162,103 +176,101 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 <div class="tab-label">
 <p>kubectl describe job pi</p>
 </div>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">Name:</span>           pi</span>
-<span class="ex">Namespace:</span>      default</span>
-<span class="ex">Selector:</span>       batch.kubernetes.io/controller-uid=c9948307-e56d-4b5d-8302-ae2d7b7da67c</span>
-<span class="ex">Labels:</span>         batch.kubernetes.io/controller-uid=c9948307-e56d-4b5d-8302-ae2d7b7da67c</span>
-                <span class="ex">batch.kubernetes.io/job-name=pi</span></span>
-                <span class="ex">...</span></span>
-<span class="ex">Annotations:</span>    batch.kubernetes.io/job-tracking: <span class="st">&quot;&quot;</span></span>
-<span class="ex">Parallelism:</span>    1</span>
-<span class="ex">Completions:</span>    1</span>
-<span class="ex">Start</span> Time:     Mon, 02 Dec 2019 15:20:11 +0200</span>
-<span class="ex">Completed</span> At:   Mon, 02 Dec 2019 15:21:16 +0200</span>
-<span class="ex">Duration:</span>       65s</span>
-<span class="ex">Pods</span> Statuses:  0 Running / 1 Succeeded / 0 Failed</span>
-<span class="ex">Pod</span> Template:</span>
-  <span class="ex">Labels:</span>  batch.kubernetes.io/controller-uid=c9948307-e56d-4b5d-8302-ae2d7b7da67c</span>
-           <span class="ex">batch.kubernetes.io/job-name=pi</span></span>
-  <span class="ex">Containers:</span></span>
-   <span class="ex">pi:</span></span>
-    <span class="ex">Image:</span>      perl:5.34.0</span>
-    <span class="ex">Port:</span>       <span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">none</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span></span>
-    <span class="ex">Host</span> Port:  <span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">none</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span></span>
-    <span class="ex">Command:</span></span>
-      <span class="fu">perl</span></span>
-      <span class="ex">-Mbignum=bpi</span></span>
-      <span class="ex">-wle</span></span>
-      <span class="ex">print</span> bpi<span class="er">(</span><span class="ex">2000</span><span class="kw">)</span></span>
-    <span class="ex">Environment:</span>  <span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">none</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span></span>
-    <span class="ex">Mounts:</span>       <span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">none</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span></span>
-  <span class="ex">Volumes:</span>        <span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">none</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span></span>
-<span class="ex">Events:</span></span>
-  <span class="ex">Type</span>    Reason            Age   From            Message</span>
-  <span class="ex">----</span>    <span class="at">------</span>            <span class="at">----</span>  <span class="at">----</span>            <span class="at">-------</span></span>
-  <span class="ex">Normal</span>  SuccessfulCreate  21s   job-controller  Created pod: pi-xf9p4</span>
-  <span class="ex">Normal</span>  Completed         18s   job-controller  Job completed</span></code></pre></div>
+<pre class="bash"><code class="language-bash">Name:           pi
+Namespace:      default
+Selector:       batch.kubernetes.io/controller-uid=c9948307-e56d-4b5d-8302-ae2d7b7da67c
+Labels:         batch.kubernetes.io/controller-uid=c9948307-e56d-4b5d-8302-ae2d7b7da67c
+                batch.kubernetes.io/job-name=pi
+                ...
+Annotations:    batch.kubernetes.io/job-tracking: &quot;&quot;
+Parallelism:    1
+Completions:    1
+Start Time:     Mon, 02 Dec 2019 15:20:11 +0200
+Completed At:   Mon, 02 Dec 2019 15:21:16 +0200
+Duration:       65s
+Pods Statuses:  0 Running / 1 Succeeded / 0 Failed
+Pod Template:
+  Labels:  batch.kubernetes.io/controller-uid=c9948307-e56d-4b5d-8302-ae2d7b7da67c
+           batch.kubernetes.io/job-name=pi
+  Containers:
+   pi:
+    Image:      perl:5.34.0
+    Port:       &lt;none&gt;
+    Host Port:  &lt;none&gt;
+    Command:
+      perl
+      -Mbignum=bpi
+      -wle
+      print bpi(2000)
+    Environment:  &lt;none&gt;
+    Mounts:       &lt;none&gt;
+  Volumes:        &lt;none&gt;
+Events:
+  Type    Reason            Age   From            Message
+  ----    ------            ----  ----            -------
+  Normal  SuccessfulCreate  21s   job-controller  Created pod: pi-xf9p4
+  Normal  Completed         18s   job-controller  Job completed</code></pre>
 <div class="tab-label">
 <p>kubectl get job pi -o yaml</p>
 </div>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">apiVersion:</span> batch/v1</span>
-<span class="ex">kind:</span> Job</span>
-<span class="ex">metadata:</span></span>
-  <span class="ex">annotations:</span> batch.kubernetes.io/job-tracking: <span class="st">&quot;&quot;</span></span>
-             <span class="ex">...</span>  </span>
-  <span class="ex">creationTimestamp:</span> <span class="st">&quot;2022-11-10T17:53:53Z&quot;</span></span>
-  <span class="ex">generation:</span> 1</span>
-  <span class="ex">labels:</span></span>
-    <span class="ex">batch.kubernetes.io/controller-uid:</span> 863452e6-270d-420e-9b94-53a54146c223</span>
-    <span class="ex">batch.kubernetes.io/job-name:</span> pi</span>
-  <span class="ex">name:</span> pi</span>
-  <span class="ex">namespace:</span> default</span>
-  <span class="ex">resourceVersion:</span> <span class="st">&quot;4751&quot;</span></span>
-  <span class="ex">uid:</span> 204fb678-040b-497f-9266-35ffa8716d14</span>
-<span class="ex">spec:</span></span>
-  <span class="ex">backoffLimit:</span> 4</span>
-  <span class="ex">completionMode:</span> NonIndexed</span>
-  <span class="ex">completions:</span> 1</span>
-  <span class="ex">parallelism:</span> 1</span>
-  <span class="ex">selector:</span></span>
-    <span class="ex">matchLabels:</span></span>
-      <span class="ex">batch.kubernetes.io/controller-uid:</span> 863452e6-270d-420e-9b94-53a54146c223</span>
-  <span class="ex">suspend:</span> false</span>
-  <span class="ex">template:</span></span>
-    <span class="ex">metadata:</span></span>
-      <span class="ex">creationTimestamp:</span> null</span>
-      <span class="ex">labels:</span></span>
-        <span class="ex">batch.kubernetes.io/controller-uid:</span> 863452e6-270d-420e-9b94-53a54146c223</span>
-        <span class="ex">batch.kubernetes.io/job-name:</span> pi</span>
-    <span class="ex">spec:</span></span>
-      <span class="ex">containers:</span></span>
-      <span class="ex">-</span> command:</span>
-        <span class="ex">-</span> perl</span>
-        <span class="ex">-</span> <span class="at">-Mbignum</span><span class="op">=</span>bpi</span>
-        <span class="ex">-</span> <span class="at">-wle</span></span>
-        <span class="ex">-</span> print bpi<span class="er">(</span><span class="ex">2000</span><span class="kw">)</span></span>
-        <span class="ex">image:</span> perl:5.34.0</span>
-        <span class="ex">imagePullPolicy:</span> IfNotPresent</span>
-        <span class="ex">name:</span> pi</span>
-        <span class="ex">resources:</span> {}</span>
-        <span class="ex">terminationMessagePath:</span> /dev/termination-log</span>
-        <span class="ex">terminationMessagePolicy:</span> File</span>
-      <span class="ex">dnsPolicy:</span> ClusterFirst</span>
-      <span class="ex">restartPolicy:</span> Never</span>
-      <span class="ex">schedulerName:</span> default-scheduler</span>
-      <span class="ex">securityContext:</span> {}</span>
-      <span class="ex">terminationGracePeriodSeconds:</span> 30</span>
-<span class="ex">status:</span></span>
-  <span class="ex">active:</span> 1</span>
-  <span class="ex">ready:</span> 0</span>
-  <span class="ex">startTime:</span> <span class="st">&quot;2022-11-10T17:53:57Z&quot;</span></span>
-  <span class="ex">uncountedTerminatedPods:</span> {}</span></code></pre></div>
+<pre class="bash"><code class="language-bash">apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations: batch.kubernetes.io/job-tracking: &quot;&quot;
+             ...  
+  creationTimestamp: &quot;2022-11-10T17:53:53Z&quot;
+  generation: 1
+  labels:
+    batch.kubernetes.io/controller-uid: 863452e6-270d-420e-9b94-53a54146c223
+    batch.kubernetes.io/job-name: pi
+  name: pi
+  namespace: default
+  resourceVersion: &quot;4751&quot;
+  uid: 204fb678-040b-497f-9266-35ffa8716d14
+spec:
+  backoffLimit: 4
+  completionMode: NonIndexed
+  completions: 1
+  parallelism: 1
+  selector:
+    matchLabels:
+      batch.kubernetes.io/controller-uid: 863452e6-270d-420e-9b94-53a54146c223
+  suspend: false
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        batch.kubernetes.io/controller-uid: 863452e6-270d-420e-9b94-53a54146c223
+        batch.kubernetes.io/job-name: pi
+    spec:
+      containers:
+      - command:
+        - perl
+        - -Mbignum=bpi
+        - -wle
+        - print bpi(2000)
+        image: perl:5.34.0
+        imagePullPolicy: IfNotPresent
+        name: pi
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Never
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+status:
+  active: 1
+  ready: 0
+  startTime: &quot;2022-11-10T17:53:57Z&quot;
+  uncountedTerminatedPods: {}</code></pre>
 </div>
 <p>To view completed Pods of a Job, use
 <code>kubectl get pods</code>.</p>
 <p>To list all the Pods that belong to a Job in a machine readable form,
 you can use a command like this:</p>
-<pre class="shell"><code>pods=$(kubectl get pods --selector=batch.kubernetes.io/job-name=pi --output=jsonpath=&#39;{.items[*].metadata.name}&#39;)
+<pre class="shell"><code class="language-shell">pods=$(kubectl get pods --selector=batch.kubernetes.io/job-name=pi --output=jsonpath=&#39;{.items[*].metadata.name}&#39;)
 echo $pods</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>pi-5rwd7</code></pre>
@@ -266,9 +278,9 @@ echo $pods</code></pre>
 <code>--output=jsonpath</code> option specifies an expression with the
 name from each Pod in the returned list.</p>
 <p>View the standard output of one of the pods:</p>
-<pre class="shell"><code>kubectl logs $pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs $pods</code></pre>
 <p>Another way to view the logs of a Job:</p>
-<pre class="shell"><code>kubectl logs jobs/pi</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs jobs/pi</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679821480865132823066470938446095505822317253594081284811174502841027019385211055596446229489549303819644288109756659334461284756482337867831652712019091456485669234603486104543266482133936072602491412737245870066063155881748815209209628292540917153643678925903600113305305488204665213841469519415116094330572703657595919530921861173819326117931051185480744623799627495673518857527248912279381830119491298336733624406566430860213949463952247371907021798609437027705392171762931767523846748184676694051320005681271452635608277857713427577896091736371787214684409012249534301465495853710507922796892589235420199561121290219608640344181598136297747713099605187072113499999983729780499510597317328160963185950244594553469083026425223082533446850352619311881710100031378387528865875332083814206171776691473035982534904287554687311595628638823537875937519577818577805321712268066130019278766111959092164201989380952572010654858632788659361533818279682303019520353018529689957736225994138912497217752834791315155748572424541506959508295331168617278558890750983817546374649393192550604009277016711390098488240128583616035637076601047101819429555961989467678374494482553797747268471040475346462080466842590694912933136770289891521047521620569660240580381501935112533824300355876402474964732639141992726042699227967823547816360093417216412199245863150302861829745557067498385054945885869269956909272107975093029553211653449872027559602364806654991198818347977535663698074265425278625518184175746728909777727938000816470600161452491921732172147723501414419735685481613611573525521334757418494684385233239073941433345477624168625189835694855620992192221842725502542568876717904946016534668049886272327917860857843838279679766814541009538837863609506800642251252051173929848960841284886269456042419652850222106611863067442786220391949450471237137869609563643719172874677646575739624138908658326459958133904780275901</code></pre>
 <h2 id="writing-a-job-spec">Writing a Job spec</h2>
@@ -484,33 +496,32 @@ elastically</a>.</p>
 <h3 id="gang-scheduling">Gang scheduling</h3>
 <p>The following Job requests gang scheduling for its 8 Pods, co-located
 within a single zone, and disrupted together:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> distributed-training</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> training</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span></span>
-<span class="at">  </span><span class="fu">completionMode</span><span class="kw">:</span><span class="at"> Indexed</span></span>
-<span class="at">  </span><span class="fu">scheduling</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">gang</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at">                </span><span class="co"># minCount omitted -&gt; defaults to parallelism (8)</span></span>
-<span class="at">    </span><span class="fu">schedulingConstraints</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">key</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">level</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">    </span><span class="fu">disruptionMode</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">all</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at">                 </span><span class="co"># the entire group is disrupted together</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> trainer</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> training-image:latest</span></span>
-<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">nvidia.com/gpu</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: distributed-training
+  namespace: training
+spec:
+  parallelism: 8
+  completions: 8
+  completionMode: Indexed
+  scheduling:
+    schedulingPolicy:
+      gang: {}                # minCount omitted -&gt; defaults to parallelism (8)
+    schedulingConstraints:
+      key:
+      - level: topology.kubernetes.io/zone
+    disruptionMode:
+      all: {}                 # the entire group is disrupted together
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: trainer
+        image: training-image:latest
+        resources:
+          limits:
+            nvidia.com/gpu: 1</code></pre>
 <p>When the Job controller processes this Job, it:</p>
 <ol type="1">
 <li>Creates a <a
@@ -536,22 +547,21 @@ to the Job, so they are garbage collected when the Job is deleted.</p>
 scheduling. Its Pods schedule the same way as an ordinary Job, while a
 <code>Basic</code> <code>Workload</code> and <code>PodGroup</code> are
 still created:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> batch-processor</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> batch</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="co"># .spec.scheduling omitted -&gt; defaults to Basic scheduling.</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> processor</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> processor-image:v1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: batch-processor
+  namespace: batch
+spec:
+  parallelism: 10
+  completions: 10
+  # .spec.scheduling omitted -&gt; defaults to Basic scheduling.
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: processor
+        image: processor-image:v1</code></pre>
 <h3 id="higher-level-controllers">Higher-level controllers</h3>
 <p>For a standalone Job, the Job controller owns both the
 <code>Workload</code> and the <code>PodGroup</code>. When a Job instead
@@ -714,55 +724,52 @@ the Job status.</p>
 <code>backoffLimitPerIndex</code>:</p>
 <div class="code-sample">
 <p><code>/controllers/job-backoff-limit-per-index-example.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-backoff-limit-per-index-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">completionMode</span><span class="kw">:</span><span class="at"> Indexed  # required for the feature</span></span>
-<span class="at">  </span><span class="fu">backoffLimitPerIndex</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="at">  # maximal number of failures per index</span></span>
-<span class="at">  </span><span class="fu">maxFailedIndexes</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="at">      # maximal number of failed indexes before terminating the Job execution</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span><span class="co"> # required for the feature</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> python</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at">           </span><span class="co"># The jobs fails as there is at least one failed index</span></span>
-<span class="at">                           </span><span class="co"># (all even indexes fail in here), yet all indexes</span></span>
-<span class="at">                           </span><span class="co"># are executed as maxFailedIndexes is not exceeded.</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">python3</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">          import os, sys</span></span>
-<span class="at">          print(&quot;Hello world&quot;)</span></span>
-<span class="at">          </span><span class="fu">if int(os.environ.get(&quot;JOB_COMPLETION_INDEX&quot;)) % 2 == 0</span><span class="kw">:</span></span>
-<span class="at">            sys.exit(1)</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-backoff-limit-per-index-example
+spec:
+  completions: 10
+  parallelism: 3
+  completionMode: Indexed  # required for the feature
+  backoffLimitPerIndex: 1  # maximal number of failures per index
+  maxFailedIndexes: 5      # maximal number of failed indexes before terminating the Job execution
+  template:
+    spec:
+      restartPolicy: Never # required for the feature
+      containers:
+      - name: example
+        image: python
+        command:           # The jobs fails as there is at least one failed index
+                           # (all even indexes fail in here), yet all indexes
+                           # are executed as maxFailedIndexes is not exceeded.
+        - python3
+        - -c
+        - |
+          import os, sys
+          print(&quot;Hello world&quot;)
+          if int(os.environ.get(&quot;JOB_COMPLETION_INDEX&quot;)) % 2 == 0:
+            sys.exit(1)</code></pre>
 </div>
 <p>In the example above, the Job controller allows for one restart for
 each of the indexes. When the total number of failed indexes exceeds 5,
 then the entire Job is terminated.</p>
 <p>Once the job is finished, the Job status looks as follows:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get <span class="at">-o</span> yaml job job-backoff-limit-per-index-example</span></code></pre></div>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">completedIndexes</span><span class="kw">:</span><span class="at"> 1,3,5,7,9</span></span>
-<span class="at">    </span><span class="fu">failedIndexes</span><span class="kw">:</span><span class="at"> 0,2,4,6,8</span></span>
-<span class="at">    </span><span class="fu">succeeded</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="at">          # 1 succeeded pod for each of 5 succeeded indexes</span></span>
-<span class="at">    </span><span class="fu">failed</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span><span class="at">            # 2 failed pods (1 retry) for each of 5 failed indexes</span></span>
-<span class="at">    </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Job has failed indexes</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> FailedIndexes</span></span>
-<span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> FailureTarget</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Job has failed indexes</span></span>
-<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> FailedIndexes</span></span>
-<span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Failed</span></span></code></pre></div>
+<pre class="sh"><code class="language-sh">kubectl get -o yaml job job-backoff-limit-per-index-example</code></pre>
+<pre class="yaml"><code class="language-yaml">  status:
+    completedIndexes: 1,3,5,7,9
+    failedIndexes: 0,2,4,6,8
+    succeeded: 5          # 1 succeeded pod for each of 5 succeeded indexes
+    failed: 10            # 2 failed pods (1 retry) for each of 5 failed indexes
+    conditions:
+    - message: Job has failed indexes
+      reason: FailedIndexes
+      status: &quot;True&quot;
+      type: FailureTarget
+    - message: Job has failed indexes
+      reason: FailedIndexes
+      status: &quot;True&quot;
+      type: Failed</code></pre>
 <p>The Job controller adds the <code>FailureTarget</code> Job condition
 to trigger <a href="#job-termination-and-cleanup">Job termination and
 cleanup</a>. When all of the Job Pods are terminated, the Job controller
@@ -811,35 +818,34 @@ and the Pod conditions.</p>
 <code>podFailurePolicy</code>:</p>
 <div class="code-sample">
 <p><code>/controllers/job-pod-failure-policy-example.yaml</code></p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-pod-failure-policy-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">12</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/bash:5</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;bash&quot;</span><span class="kw">]</span><span class="at">        </span><span class="co"># example command simulating a bug which triggers the FailJob action</span></span>
-<span class="at">        </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">echo &quot;Hello world!&quot; &amp;&amp; sleep 5 &amp;&amp; exit 42</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">6</span></span>
-<span class="at">  </span><span class="fu">podFailurePolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> FailJob</span></span>
-<span class="at">      </span><span class="fu">onExitCodes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">containerName</span><span class="kw">:</span><span class="at"> main      # optional</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In             # one of</span><span class="er">: </span><span class="at">In, NotIn</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="dv">42</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">action</span><span class="kw">:</span><span class="at"> Ignore             # one of</span><span class="er">: </span><span class="at">Ignore, FailJob, Count</span></span>
-<span class="at">      </span><span class="fu">onPodConditions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DisruptionTarget   # indicates Pod disruption</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-pod-failure-policy-example
+spec:
+  completions: 12
+  parallelism: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: main
+        image: docker.io/library/bash:5
+        command: [&quot;bash&quot;]        # example command simulating a bug which triggers the FailJob action
+        args:
+        - -c
+        - echo &quot;Hello world!&quot; &amp;&amp; sleep 5 &amp;&amp; exit 42
+  backoffLimit: 6
+  podFailurePolicy:
+    rules:
+    - action: FailJob
+      onExitCodes:
+        containerName: main      # optional
+        operator: In             # one of: In, NotIn
+        values: [42]
+    - action: Ignore             # one of: Ignore, FailJob, Count
+      onPodConditions:
+      - type: DisruptionTarget   # indicates Pod disruption</code></pre>
 </div>
 <p>In the example above, the first rule of the Pod failure policy
 specifies that the Job should be marked failed if the <code>main</code>
@@ -983,35 +989,34 @@ remaining rules.</p>
 <p>Here is a manifest for a Job with <code>successPolicy</code>:</p>
 <div class="code-sample">
 <p><code>/controllers/job-success-policy.yaml</code></p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-success</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">  </span><span class="fu">completionMode</span><span class="kw">:</span><span class="at"> Indexed</span><span class="co"> # Required for the success policy</span></span>
-<span class="at">  </span><span class="fu">successPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">succeededIndexes</span><span class="kw">:</span><span class="at"> 0,2-3</span></span>
-<span class="at">        </span><span class="fu">succeededCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> main</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> python</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at">          </span><span class="co"># Provided that at least one of the Pods with 0, 2, and 3 indexes has succeeded,</span></span>
-<span class="at">                          </span><span class="co"># the overall Job is a success.</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">python3</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="ch">|</span></span>
-<span class="at">            import os, sys</span></span>
-<span class="at">            </span><span class="fu">if os.environ.get(&quot;JOB_COMPLETION_INDEX&quot;) == &quot;2&quot;</span><span class="kw">:</span></span>
-<span class="at">              sys.exit(0)</span></span>
-<span class="at">            </span><span class="fu">else</span><span class="kw">:</span></span>
-<span class="at">              sys.exit(1)</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-success
+spec:
+  parallelism: 10
+  completions: 10
+  completionMode: Indexed # Required for the success policy
+  successPolicy:
+    rules:
+      - succeededIndexes: 0,2-3
+        succeededCount: 1
+  template:
+    spec:
+      containers:
+      - name: main
+        image: python
+        command:          # Provided that at least one of the Pods with 0, 2, and 3 indexes has succeeded,
+                          # the overall Job is a success.
+          - python3
+          - -c
+          - |
+            import os, sys
+            if os.environ.get(&quot;JOB_COMPLETION_INDEX&quot;) == &quot;2&quot;:
+              sys.exit(0)
+            else:
+              sys.exit(1)
+      restartPolicy: Never</code></pre>
 </div>
 <p>In the example above, both <code>succeededIndexes</code> and
 <code>succeededCount</code> have been specified. Therefore, the job
@@ -1066,21 +1071,20 @@ once it reaches the time limit specified by
 <code>activeDeadlineSeconds</code>, even if the
 <code>backoffLimit</code> is not yet reached.</p>
 <p>Example:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pi-with-timeout</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">backoffLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">activeDeadlineSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pi</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> perl:5.34.0</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;perl&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-Mbignum=bpi&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-wle&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;print bpi(2000)&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi-with-timeout
+spec:
+  backoffLimit: 5
+  activeDeadlineSeconds: 100
+  template:
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: [&quot;perl&quot;, &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]
+      restartPolicy: Never</code></pre>
 <p>Note that both the Job spec and the <a
 href="../pods/init-containers.html#detailed-behavior">Pod
 template spec</a> within the Job have an
@@ -1192,20 +1196,19 @@ cascadingly, i.e. delete its dependent objects, such as Pods, together
 with the Job. Note that when the Job is deleted, its lifecycle
 guarantees, such as finalizers, will be honored.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pi-with-ttl</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ttlSecondsAfterFinished</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pi</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> perl:5.34.0</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;perl&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-Mbignum=bpi&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-wle&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;print bpi(2000)&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: pi-with-ttl
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      containers:
+      - name: pi
+        image: perl:5.34.0
+        command: [&quot;perl&quot;, &quot;-Mbignum=bpi&quot;, &quot;-wle&quot;, &quot;print bpi(2000)&quot;]
+      restartPolicy: Never</code></pre>
 <p>The Job <code>pi-with-ttl</code> will be eligible to be automatically
 deleted, <code>100</code> seconds after it finishes.</p>
 <p>If the field is set to <code>0</code>, the Job will be eligible to be
@@ -1417,39 +1420,37 @@ involve saving progress for later or undoing changes. Pods terminated
 this way will not count towards the Job's <code>completions</code>
 count.</p>
 <p>An example Job definition in the suspended state can be like so:</p>
-<pre class="shell"><code>kubectl get job myjob -o yaml</code></pre>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myjob</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">suspend</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      ...</span></span></code></pre></div>
+<pre class="shell"><code class="language-shell">kubectl get job myjob -o yaml</code></pre>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: myjob
+spec:
+  suspend: true
+  parallelism: 1
+  completions: 5
+  template:
+    spec:
+      ...</code></pre>
 <p>You can also toggle Job suspension by patching the Job using the
 command line.</p>
 <p>Suspend an active Job:</p>
-<pre class="shell"><code>kubectl patch job/myjob --type=strategic --patch &#39;{&quot;spec&quot;:{&quot;suspend&quot;:true}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch job/myjob --type=strategic --patch &#39;{&quot;spec&quot;:{&quot;suspend&quot;:true}}&#39;</code></pre>
 <p>Resume a suspended Job:</p>
-<pre class="shell"><code>kubectl patch job/myjob --type=strategic --patch &#39;{&quot;spec&quot;:{&quot;suspend&quot;:false}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch job/myjob --type=strategic --patch &#39;{&quot;spec&quot;:{&quot;suspend&quot;:false}}&#39;</code></pre>
 <p>The Job's status can be used to determine if a Job is suspended or
 has been suspended in the past:</p>
-<pre class="shell"><code>kubectl get jobs/myjob -o yaml</code></pre>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="co"># .metadata and .spec omitted</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">conditions</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2021-02-05T13:14:33Z&quot;</span></span>
-<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2021-02-05T13:14:33Z&quot;</span></span>
-<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Suspended</span></span>
-<span class="at">  </span><span class="fu">startTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2021-02-05T13:13:48Z&quot;</span></span></code></pre></div>
+<pre class="shell"><code class="language-shell">kubectl get jobs/myjob -o yaml</code></pre>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+# .metadata and .spec omitted
+status:
+  conditions:
+  - lastProbeTime: &quot;2021-02-05T13:14:33Z&quot;
+    lastTransitionTime: &quot;2021-02-05T13:14:33Z&quot;
+    status: &quot;True&quot;
+    type: Suspended
+  startTime: &quot;2021-02-05T13:13:48Z&quot;</code></pre>
 <p>The Job condition of type "Suspended" with status "True" means the
 Job is suspended; the <code>lastTransitionTime</code> field can be used
 to determine how long the Job has been suspended for. If the status of
@@ -1457,7 +1458,7 @@ that condition is "False", then the Job was previously suspended and is
 now running. If such a condition does not exist in the Job's status, the
 Job has never been stopped.</p>
 <p>Events are also created when the Job is suspended and resumed:</p>
-<pre class="shell"><code>kubectl describe jobs/myjob</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe jobs/myjob</code></pre>
 <pre><code>Name:           myjob
 ...
 Events:
@@ -1559,18 +1560,17 @@ update the Job because these fields are not updatable. Therefore, you
 delete Job <code>old</code> but <em>leave its pods running</em>, using
 <code>kubectl delete jobs/old --cascade=orphan</code>. Before deleting
 it, you make a note of what selector it uses:</p>
-<pre class="shell"><code>kubectl get job old -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get job old -o yaml</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> old</span></span>
-<span class="at">  ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">batch.kubernetes.io/controller-uid</span><span class="kw">:</span><span class="at"> a8f3d00d-c6d2-11e5-9f87-42010af00002</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: Job
+metadata:
+  name: old
+  ...
+spec:
+  selector:
+    matchLabels:
+      batch.kubernetes.io/controller-uid: a8f3d00d-c6d2-11e5-9f87-42010af00002
+  ...</code></pre>
 <p>Then you create a new Job with name <code>new</code> and you
 explicitly specify the same selector. Since the existing Pods have label
 <code>batch.kubernetes.io/controller-uid=a8f3d00d-c6d2-11e5-9f87-42010af00002</code>,
@@ -1578,17 +1578,16 @@ they are controlled by Job <code>new</code> as well.</p>
 <p>You need to specify <code>manualSelector: true</code> in the new Job
 since you are not using the selector that the system normally generates
 for you automatically.</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new</span></span>
-<span class="at">  ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">manualSelector</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">batch.kubernetes.io/controller-uid</span><span class="kw">:</span><span class="at"> a8f3d00d-c6d2-11e5-9f87-42010af00002</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: Job
+metadata:
+  name: new
+  ...
+spec:
+  manualSelector: true
+  selector:
+    matchLabels:
+      batch.kubernetes.io/controller-uid: a8f3d00d-c6d2-11e5-9f87-42010af00002
+  ...</code></pre>
 <p>The new Job itself will have a different uid from
 <code>a8f3d00d-c6d2-11e5-9f87-42010af00002</code>. Setting
 <code>manualSelector: true</code> tells the system that you know what
@@ -1682,25 +1681,23 @@ set, the default <code>podReplacementPolicy</code> is
 <code>Failed</code>, and no other value is permitted. See <a
 href="#pod-failure-policy">Pod failure policy</a> to learn more about
 Pod failure policies for Jobs.</p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> new</span></span>
-<span class="at">  ...</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podReplacementPolicy</span><span class="kw">:</span><span class="at"> Failed</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">kind: Job
+metadata:
+  name: new
+  ...
+spec:
+  podReplacementPolicy: Failed
+  ...</code></pre>
 <p>Provided your cluster has the feature gate enabled, you can inspect
 the <code>.status.terminating</code> field of a Job. The value of the
 field is the number of Pods owned by the Job that are currently
 terminating.</p>
-<pre class="shell"><code>kubectl get jobs/myjob -o yaml</code></pre>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="co"># .metadata and .spec omitted</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">terminating</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co"> # three Pods are terminating and have not yet reached the Failed phase</span></span></code></pre></div>
+<pre class="shell"><code class="language-shell">kubectl get jobs/myjob -o yaml</code></pre>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+# .metadata and .spec omitted
+status:
+  terminating: 3 # three Pods are terminating and have not yet reached the Failed phase</code></pre>
 <h3
 id="delegation-of-managing-a-job-object-to-external-controller">Delegation
 of managing a Job object to external controller</h3>
@@ -1874,6 +1871,7 @@ scheduling</a> for all-or-nothing scheduling of parallel Jobs.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1882,6 +1880,8 @@ scheduling</a> for all-or-nothing scheduling of parallel Jobs.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

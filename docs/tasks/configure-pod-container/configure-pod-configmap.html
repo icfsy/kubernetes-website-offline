@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -163,7 +178,7 @@ ConfigMaps from <a
 href="#create-configmaps-from-directories">directories</a>, <a
 href="#create-configmaps-from-files">files</a>, or <a
 href="#create-configmaps-from-literal-values">literal values</a>:</p>
-<pre class="shell"><code>kubectl create configmap &lt;map-name&gt; &lt;data-source&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap &lt;map-name&gt; &lt;data-source&gt;</code></pre>
 <p>where &lt;map-name&gt; is the name you want to assign to the
 ConfigMap and &lt;data-source&gt; is the directory, file, or literal
 value to draw the data from. The name of a ConfigMap object must be a
@@ -202,9 +217,9 @@ command may fail.</p>
 encounters an invalid filename.</p>
 </div>
 <p>Create the local directory:</p>
-<pre class="shell"><code>mkdir -p configure-pod-container/configmap/</code></pre>
+<pre class="shell"><code class="language-shell">mkdir -p configure-pod-container/configmap/</code></pre>
 <p>Now, download the sample configuration and create the ConfigMap:</p>
-<pre class="shell"><code># Download the sample files into `configure-pod-container/configmap/` directory
+<pre class="shell"><code class="language-shell"># Download the sample files into `configure-pod-container/configmap/` directory
 wget https://kubernetes.io/examples/configmap/game.properties -O configure-pod-container/configmap/game.properties
 wget https://kubernetes.io/examples/configmap/ui.properties -O configure-pod-container/configmap/ui.properties
 
@@ -215,7 +230,7 @@ kubectl create configmap game-config --from-file=configure-pod-container/configm
 <code>configure-pod-container/configmap/</code> directory into the
 game-config ConfigMap. You can display details of the ConfigMap using
 the following command:</p>
-<pre class="shell"><code>kubectl describe configmaps game-config</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmaps game-config</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Name:         game-config
 Namespace:    default
@@ -242,38 +257,37 @@ how.nice.to.look=fairlyNice</code></pre>
 <p>The <code>game.properties</code> and <code>ui.properties</code> files
 in the <code>configure-pod-container/configmap/</code> directory are
 represented in the <code>data</code> section of the ConfigMap.</p>
-<pre class="shell"><code>kubectl get configmaps game-config -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmaps game-config -o yaml</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2022-02-18T18:52:05Z</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;516&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> b4952dc3-d670-11e5-8cd0-68f728db1985</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">game.properties</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    enemies=aliens</span></span>
-<span class="at">    lives=3</span></span>
-<span class="at">    enemies.cheat=true</span></span>
-<span class="at">    enemies.cheat.level=noGoodRotten</span></span>
-<span class="at">    secret.code.passphrase=UUDDLRLRBABAS</span></span>
-<span class="at">    secret.code.allowed=true</span></span>
-<span class="at">    secret.code.lives=30</span></span>
-<span class="at">  </span><span class="fu">ui.properties</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    color.good=purple</span></span>
-<span class="at">    color.bad=yellow</span></span>
-<span class="at">    allow.textmode=true</span></span>
-<span class="at">    how.nice.to.look=fairlyNice</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2022-02-18T18:52:05Z
+  name: game-config
+  namespace: default
+  resourceVersion: &quot;516&quot;
+  uid: b4952dc3-d670-11e5-8cd0-68f728db1985
+data:
+  game.properties: |
+    enemies=aliens
+    lives=3
+    enemies.cheat=true
+    enemies.cheat.level=noGoodRotten
+    secret.code.passphrase=UUDDLRLRBABAS
+    secret.code.allowed=true
+    secret.code.lives=30
+  ui.properties: |
+    color.good=purple
+    color.bad=yellow
+    allow.textmode=true
+    how.nice.to.look=fairlyNice</code></pre>
 <h4 id="create-configmaps-from-files">Create ConfigMaps from files</h4>
 <p>You can use <code>kubectl create configmap</code> to create a
 ConfigMap from an individual file, or from multiple files.</p>
 <p>For example,</p>
-<pre class="shell"><code>kubectl create configmap game-config-2 --from-file=configure-pod-container/configmap/game.properties</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap game-config-2 --from-file=configure-pod-container/configmap/game.properties</code></pre>
 <p>would produce the following ConfigMap:</p>
-<pre class="shell"><code>kubectl describe configmaps game-config-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmaps game-config-2</code></pre>
 <p>where the output is similar to this:</p>
 <pre><code>Name:         game-config-2
 Namespace:    default
@@ -293,10 +307,10 @@ secret.code.allowed=true
 secret.code.lives=30</code></pre>
 <p>You can pass in the <code>--from-file</code> argument multiple times
 to create a ConfigMap from multiple data sources.</p>
-<pre class="shell"><code>kubectl create configmap game-config-2 --from-file=configure-pod-container/configmap/game.properties --from-file=configure-pod-container/configmap/ui.properties</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap game-config-2 --from-file=configure-pod-container/configmap/game.properties --from-file=configure-pod-container/configmap/ui.properties</code></pre>
 <p>You can display details of the <code>game-config-2</code> ConfigMap
 using the following command:</p>
-<pre class="shell"><code>kubectl describe configmaps game-config-2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmaps game-config-2</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Name:         game-config-2
 Namespace:    default
@@ -322,7 +336,7 @@ allow.textmode=true
 how.nice.to.look=fairlyNice</code></pre>
 <p>Use the option <code>--from-env-file</code> to create a ConfigMap
 from an env-file, for example:</p>
-<pre class="shell"><code># Env-files contain a list of environment variables.
+<pre class="shell"><code class="language-shell"># Env-files contain a list of environment variables.
 # These syntax rules apply:
 #   Each line in an env file has to be in VAR=VAL format.
 #   Lines beginning with # (i.e. comments) are ignored.
@@ -340,105 +354,101 @@ lives=3
 allowed=&quot;true&quot;
 
 # This comment and the empty line above it are ignored</code></pre>
-<pre class="shell"><code>kubectl create configmap game-config-env-file \
+<pre class="shell"><code class="language-shell">kubectl create configmap game-config-env-file \
        --from-env-file=configure-pod-container/configmap/game-env-file.properties</code></pre>
 <p>would produce a ConfigMap. View the ConfigMap:</p>
-<pre class="shell"><code>kubectl get configmap game-config-env-file -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmap game-config-env-file -o yaml</code></pre>
 <p>the output is similar to:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2019-12-27T18:36:28Z</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-config-env-file</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;809965&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> d9d1ca5b-eb34-11e7-887b-42010a8002b8</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">allowed</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;&quot;true&quot;&#39;</span></span>
-<span class="at">  </span><span class="fu">enemies</span><span class="kw">:</span><span class="at"> aliens</span></span>
-<span class="at">  </span><span class="fu">lives</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2019-12-27T18:36:28Z
+  name: game-config-env-file
+  namespace: default
+  resourceVersion: &quot;809965&quot;
+  uid: d9d1ca5b-eb34-11e7-887b-42010a8002b8
+data:
+  allowed: &#39;&quot;true&quot;&#39;
+  enemies: aliens
+  lives: &quot;3&quot;</code></pre>
 <p>Starting with Kubernetes v1.23, <code>kubectl</code> supports the
 <code>--from-env-file</code> argument to be specified multiple times to
 create a ConfigMap from multiple data sources.</p>
-<pre class="shell"><code>kubectl create configmap config-multi-env-files \
+<pre class="shell"><code class="language-shell">kubectl create configmap config-multi-env-files \
         --from-env-file=configure-pod-container/configmap/game-env-file.properties \
         --from-env-file=configure-pod-container/configmap/ui-env-file.properties</code></pre>
 <p>would produce the following ConfigMap:</p>
-<pre class="shell"><code>kubectl get configmap config-multi-env-files -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmap config-multi-env-files -o yaml</code></pre>
 <p>where the output is similar to this:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2019-12-27T18:38:34Z</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-multi-env-files</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;810136&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 252c4572-eb35-11e7-887b-42010a8002b8</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">allowed</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;&quot;true&quot;&#39;</span></span>
-<span class="at">  </span><span class="fu">color</span><span class="kw">:</span><span class="at"> purple</span></span>
-<span class="at">  </span><span class="fu">enemies</span><span class="kw">:</span><span class="at"> aliens</span></span>
-<span class="at">  </span><span class="fu">how</span><span class="kw">:</span><span class="at"> fairlyNice</span></span>
-<span class="at">  </span><span class="fu">lives</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3&quot;</span></span>
-<span class="at">  </span><span class="fu">textmode</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2019-12-27T18:38:34Z
+  name: config-multi-env-files
+  namespace: default
+  resourceVersion: &quot;810136&quot;
+  uid: 252c4572-eb35-11e7-887b-42010a8002b8
+data:
+  allowed: &#39;&quot;true&quot;&#39;
+  color: purple
+  enemies: aliens
+  how: fairlyNice
+  lives: &quot;3&quot;
+  textmode: &quot;true&quot;</code></pre>
 <h4
 id="define-the-key-to-use-when-creating-a-configmap-from-a-file">Define
 the key to use when creating a ConfigMap from a file</h4>
 <p>You can define a key other than the file name to use in the
 <code>data</code> section of your ConfigMap when using the
 <code>--from-file</code> argument:</p>
-<pre class="shell"><code>kubectl create configmap game-config-3 --from-file=&lt;my-key-name&gt;=&lt;path-to-file&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap game-config-3 --from-file=&lt;my-key-name&gt;=&lt;path-to-file&gt;</code></pre>
 <p>where <code>&lt;my-key-name&gt;</code> is the key you want to
 use in the ConfigMap and <code>&lt;path-to-file&gt;</code> is
 the location of the data source file you want the key to represent.</p>
 <p>For example:</p>
-<pre class="shell"><code>kubectl create configmap game-config-3 --from-file=game-special-key=configure-pod-container/configmap/game.properties</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap game-config-3 --from-file=game-special-key=configure-pod-container/configmap/game.properties</code></pre>
 <p>would produce the following ConfigMap:</p>
 <pre><code>kubectl get configmaps game-config-3 -o yaml</code></pre>
 <p>where the output is similar to this:</p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2022-02-18T18:54:22Z</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> game-config-3</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;530&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 05f8da22-d671-11e5-8cd0-68f728db1985</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">game-special-key</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    enemies=aliens</span></span>
-<span class="at">    lives=3</span></span>
-<span class="at">    enemies.cheat=true</span></span>
-<span class="at">    enemies.cheat.level=noGoodRotten</span></span>
-<span class="at">    secret.code.passphrase=UUDDLRLRBABAS</span></span>
-<span class="at">    secret.code.allowed=true</span></span>
-<span class="at">    secret.code.lives=30</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2022-02-18T18:54:22Z
+  name: game-config-3
+  namespace: default
+  resourceVersion: &quot;530&quot;
+  uid: 05f8da22-d671-11e5-8cd0-68f728db1985
+data:
+  game-special-key: |
+    enemies=aliens
+    lives=3
+    enemies.cheat=true
+    enemies.cheat.level=noGoodRotten
+    secret.code.passphrase=UUDDLRLRBABAS
+    secret.code.allowed=true
+    secret.code.lives=30</code></pre>
 <h4 id="create-configmaps-from-literal-values">Create ConfigMaps from
 literal values</h4>
 <p>You can use <code>kubectl create configmap</code> with the
 <code>--from-literal</code> argument to define a literal value from the
 command line:</p>
-<pre class="shell"><code>kubectl create configmap special-config --from-literal=special.how=very --from-literal=special.type=charm</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap special-config --from-literal=special.how=very --from-literal=special.type=charm</code></pre>
 <p>You can pass in multiple key-value pairs. Each pair provided on the
 command line is represented as a separate entry in the <code>data</code>
 section of the ConfigMap.</p>
-<pre class="shell"><code>kubectl get configmaps special-config -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmaps special-config -o yaml</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2022-02-18T19:14:38Z</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;651&quot;</span></span>
-<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> dadce046-d673-11e5-8cd0-68f728db1985</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">special.how</span><span class="kw">:</span><span class="at"> very</span></span>
-<span class="at">  </span><span class="fu">special.type</span><span class="kw">:</span><span class="at"> charm</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2022-02-18T19:14:38Z
+  name: special-config
+  namespace: default
+  resourceVersion: &quot;651&quot;
+  uid: dadce046-d673-11e5-8cd0-68f728db1985
+data:
+  special.how: very
+  special.type: charm</code></pre>
 <h3 id="create-a-configmap-from-generator">Create a ConfigMap from
 generator</h3>
 <p>You can also create a ConfigMap from generators and then apply it to
@@ -449,7 +459,7 @@ directory.</p>
 files</h4>
 <p>For example, to generate a ConfigMap from files
 <code>configure-pod-container/configmap/game.properties</code></p>
-<pre class="shell"><code># Create a kustomization.yaml file with ConfigMapGenerator
+<pre class="shell"><code class="language-shell"># Create a kustomization.yaml file with ConfigMapGenerator
 cat &lt;&lt;EOF &gt;./kustomization.yaml
 configMapGenerator:
 - name: game-config-4
@@ -460,14 +470,14 @@ configMapGenerator:
   - configure-pod-container/configmap/game.properties
 EOF</code></pre>
 <p>Apply the kustomization directory to create the ConfigMap object:</p>
-<pre class="shell"><code>kubectl apply -k .</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -k .</code></pre>
 <pre><code>configmap/game-config-4-m9dm2f92bt created</code></pre>
 <p>You can check that the ConfigMap was created like this:</p>
-<pre class="shell"><code>kubectl get configmap</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmap</code></pre>
 <pre><code>NAME                       DATA   AGE
 game-config-4-m9dm2f92bt   1      37s</code></pre>
 <p>and also:</p>
-<pre class="shell"><code>kubectl describe configmaps/game-config-4-m9dm2f92bt</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmaps/game-config-4-m9dm2f92bt</code></pre>
 <pre><code>Name:         game-config-4-m9dm2f92bt
 Namespace:    default
 Labels:       game-config=config-4
@@ -496,7 +506,7 @@ the key to use when generating a ConfigMap from a file</h4>
 generator. For example, to generate a ConfigMap from files
 <code>configure-pod-container/configmap/game.properties</code> with the
 key <code>game-special-key</code></p>
-<pre class="shell"><code># Create a kustomization.yaml file with ConfigMapGenerator
+<pre class="shell"><code class="language-shell"># Create a kustomization.yaml file with ConfigMapGenerator
 cat &lt;&lt;EOF &gt;./kustomization.yaml
 configMapGenerator:
 - name: game-config-5
@@ -507,7 +517,7 @@ configMapGenerator:
   - game-special-key=configure-pod-container/configmap/game.properties
 EOF</code></pre>
 <p>Apply the kustomization directory to create the ConfigMap object.</p>
-<pre class="shell"><code>kubectl apply -k .</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -k .</code></pre>
 <pre><code>configmap/game-config-5-m67dt67794 created</code></pre>
 <h4 id="generate-configmaps-from-literals">Generate ConfigMaps from
 literals</h4>
@@ -517,23 +527,21 @@ two literal key/value pairs: <code>special.type=charm</code> and
 this, you can specify the <code>ConfigMap</code> generator. Create (or
 replace) <code>kustomization.yaml</code> so that it has the following
 contents:</p>
-<div class="sourceCode" id="cb38"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co"># kustomization.yaml contents for creating a ConfigMap from literals</span></span>
-<span class="fu">configMapGenerator</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config-2</span></span>
-<span class="at">  </span><span class="fu">literals</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">special.how=very</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">special.type=charm</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+# kustomization.yaml contents for creating a ConfigMap from literals
+configMapGenerator:
+- name: special-config-2
+  literals:
+  - special.how=very
+  - special.type=charm</code></pre>
 <p>Apply the kustomization directory to create the ConfigMap object:</p>
-<pre class="shell"><code>kubectl apply -k .</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -k .</code></pre>
 <pre><code>configmap/special-config-2-c92b5mmcf2 created</code></pre>
 <h2 id="interim-cleanup">Interim cleanup</h2>
 <p>Before proceeding, clean up some of the ConfigMaps you made:</p>
-<div class="sourceCode" id="cb41"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> delete configmap special-config</span>
-<span class="ex">kubectl</span> delete configmap env-config</span>
-<span class="ex">kubectl</span> delete configmap <span class="at">-l</span> <span class="st">&#39;game-config in (config-4,config-5)&#39;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl delete configmap special-config
+kubectl delete configmap env-config
+kubectl delete configmap -l &#39;game-config in (config-4,config-5)&#39;</code></pre>
 <p>Now that you have learned to define ConfigMaps, you can move on to
 the next section, and learn how to use these objects with Pods.</p>
 <hr />
@@ -546,35 +554,34 @@ a container environment variable with data from a single ConfigMap</h3>
 <ol type="1">
 <li><p>Define an environment variable as a key-value pair in a
 ConfigMap:</p>
-<pre class="shell"><code>kubectl create configmap special-config --from-literal=special.how=very</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create configmap special-config --from-literal=special.how=very</code></pre></li>
 <li><p>Assign the <code>special.how</code> value defined in the
 ConfigMap to the <code>SPECIAL_LEVEL_KEY</code> environment variable in
 the Pod specification.</p>
 <div class="code-sample">
 <p><code>pods/pod-single-configmap-env-variable.yaml</code></p>
-<div class="sourceCode" id="cb43"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># Define the environment variable</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> SPECIAL_LEVEL_KEY</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="co"># The ConfigMap containing the value you want to assign to SPECIAL_LEVEL_KEY</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">              </span><span class="co"># Specify the key associated with the value</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> special.how</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot; ]
+      env:
+        # Define the environment variable
+        - name: SPECIAL_LEVEL_KEY
+          valueFrom:
+            configMapKeyRef:
+              # The ConfigMap containing the value you want to assign to SPECIAL_LEVEL_KEY
+              name: special-config
+              # Specify the key associated with the value
+              key: special.how
+  restartPolicy: Never</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/pods/pod-single-configmap-env-variable.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/pods/pod-single-configmap-env-variable.yaml</code></pre>
 <p>Now, the Pod's output includes environment variable
 <code>SPECIAL_LEVEL_KEY=very</code>.</p></li>
 </ol>
@@ -585,58 +592,56 @@ container environment variables with data from multiple ConfigMaps</h3>
 the manifest you will use:</p>
 <div class="code-sample">
 <p><code>configmap/configmaps.yaml</code></p>
-<div class="sourceCode" id="cb45"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">special.how</span><span class="kw">:</span><span class="at"> very</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> env-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">log_level</span><span class="kw">:</span><span class="at"> INFO</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: special-config
+  namespace: default
+data:
+  special.how: very
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: env-config
+  namespace: default
+data:
+  log_level: INFO</code></pre>
 </div>
 <ul>
 <li><p>Create the ConfigMap:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/configmap/configmaps.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/configmap/configmaps.yaml</code></pre></li>
 <li><p>Define the environment variables in the Pod specification.</p>
 <div class="code-sample">
 <p><code>pods/pod-multiple-configmap-env-variable.yaml</code></p>
-<div class="sourceCode" id="cb47"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> SPECIAL_LEVEL_KEY</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> special.how</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> LOG_LEVEL</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> env-config</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> log_level</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot; ]
+      env:
+        - name: SPECIAL_LEVEL_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: special-config
+              key: special.how
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: env-config
+              key: log_level
+  restartPolicy: Never</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/pods/pod-multiple-configmap-env-variable.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/pods/pod-multiple-configmap-env-variable.yaml</code></pre>
 <p>Now, the Pod's output includes environment variables
 <code>SPECIAL_LEVEL_KEY=very</code> and <code>LOG_LEVEL=INFO</code>.</p>
 <p>Once you're happy to move on, delete that Pod and ConfigMap:</p>
-<pre class="shell"><code>kubectl delete pod dapi-test-pod --now
+<pre class="shell"><code class="language-shell">kubectl delete pod dapi-test-pod --now
 kubectl delete configmap special-config
 kubectl delete configmap env-config</code></pre></li>
 </ul>
@@ -648,44 +653,42 @@ variables</h2>
 <li><p>Create a ConfigMap containing multiple key-value pairs.</p>
 <div class="code-sample">
 <p><code>configmap/configmap-multikeys.yaml</code></p>
-<div class="sourceCode" id="cb50"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">SPECIAL_LEVEL</span><span class="kw">:</span><span class="at"> very</span></span>
-<span class="at">  </span><span class="fu">SPECIAL_TYPE</span><span class="kw">:</span><span class="at"> charm</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: special-config
+  namespace: default
+data:
+  SPECIAL_LEVEL: very
+  SPECIAL_TYPE: charm</code></pre>
 </div>
 <p>Create the ConfigMap:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/configmap/configmap-multikeys.yaml</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/configmap/configmap-multikeys.yaml</code></pre></li>
 <li><p>Use <code>envFrom</code> to define all of the ConfigMap's data as
 container environment variables. The key from the ConfigMap becomes the
 environment variable name in the Pod.</p>
 <div class="code-sample">
 <p><code>pods/pod-configmap-envFrom.yaml</code></p>
-<div class="sourceCode" id="cb52"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">envFrom</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">configMapRef</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot; ]
+      envFrom:
+      - configMapRef:
+          name: special-config
+  restartPolicy: Never</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-envFrom.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-envFrom.yaml</code></pre>
 <p>Now, the Pod's output includes environment variables
 <code>SPECIAL_LEVEL=very</code> and <code>SPECIAL_TYPE=charm</code>.</p>
 <p>Once you're happy to move on, delete that Pod:</p>
-<pre class="shell"><code>kubectl delete pod dapi-test-pod --now</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl delete pod dapi-test-pod --now</code></pre></li>
 </ul>
 <h2 id="use-configmap-defined-environment-variables-in-pod-commands">Use
 ConfigMap-defined environment variables in Pod commands</h2>
@@ -695,37 +698,36 @@ ConfigMap-defined environment variables in Pod commands</h2>
 <p>For example, the following Pod manifest:</p>
 <div class="code-sample">
 <p><code>pods/pod-configmap-env-var-valueFrom.yaml</code></p>
-<div class="sourceCode" id="cb55"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/echo&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;$(SPECIAL_LEVEL_KEY) $(SPECIAL_TYPE_KEY)&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> SPECIAL_LEVEL_KEY</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> SPECIAL_LEVEL</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> SPECIAL_TYPE_KEY</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> SPECIAL_TYPE</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;/bin/echo&quot;, &quot;$(SPECIAL_LEVEL_KEY) $(SPECIAL_TYPE_KEY)&quot; ]
+      env:
+        - name: SPECIAL_LEVEL_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: special-config
+              key: SPECIAL_LEVEL
+        - name: SPECIAL_TYPE_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: special-config
+              key: SPECIAL_TYPE
+  restartPolicy: Never</code></pre>
 </div>
 <p>Create that Pod, by running:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-env-var-valueFrom.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-env-var-valueFrom.yaml</code></pre>
 <p>That pod produces the following output from the
 <code>test-container</code> container:</p>
-<pre class="shell"><code>kubectl logs dapi-test-pod</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs dapi-test-pod</code></pre>
 <pre><code>very charm</code></pre>
 <p>Once you're happy to move on, delete that Pod:</p>
-<pre class="shell"><code>kubectl delete pod dapi-test-pod --now</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod dapi-test-pod --now</code></pre>
 <h2 id="add-configmap-data-to-a-volume">Add ConfigMap data to a
 Volume</h2>
 <p>As explained in <a href="#create-configmaps-from-files">Create
@@ -737,18 +739,17 @@ key's value.</p>
 <code>special-config</code>:</p>
 <div class="code-sample">
 <p><code>configmap/configmap-multikeys.yaml</code></p>
-<div class="sourceCode" id="cb60"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">SPECIAL_LEVEL</span><span class="kw">:</span><span class="at"> very</span></span>
-<span class="at">  </span><span class="fu">SPECIAL_TYPE</span><span class="kw">:</span><span class="at"> charm</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: special-config
+  namespace: default
+data:
+  SPECIAL_LEVEL: very
+  SPECIAL_TYPE: charm</code></pre>
 </div>
 <p>Create the ConfigMap:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/configmap/configmap-multikeys.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/configmap/configmap-multikeys.yaml</code></pre>
 <h3 id="populate-a-volume-with-data-stored-in-a-configmap">Populate a
 Volume with data stored in a ConfigMap</h3>
 <p>Add the ConfigMap name under the <code>volumes</code> section of the
@@ -758,29 +759,28 @@ specified as <code>volumeMounts.mountPath</code> (in this case,
 directory files with names that match the keys in ConfigMap.</p>
 <div class="code-sample">
 <p><code>pods/pod-configmap-volume.yaml</code></p>
-<div class="sourceCode" id="cb62"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;ls /etc/config/&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">        </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">      </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># Provide the name of the ConfigMap containing the files you want</span></span>
-<span class="at">        </span><span class="co"># to add to the container</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;/bin/sh&quot;, &quot;-c&quot;, &quot;ls /etc/config/&quot; ]
+      volumeMounts:
+      - name: config-volume
+        mountPath: /etc/config
+  volumes:
+    - name: config-volume
+      configMap:
+        # Provide the name of the ConfigMap containing the files you want
+        # to add to the container
+        name: special-config
+  restartPolicy: Never</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-volume.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-volume.yaml</code></pre>
 <p>When the pod runs, the command <code>ls /etc/config/</code> produces
 the output below:</p>
 <pre><code>SPECIAL_LEVEL
@@ -798,7 +798,7 @@ that container image, the volume mount will make those files from the
 image inaccessible.</p>
 </div>
 <p>Once you're happy to move on, delete that Pod:</p>
-<pre class="shell"><code>kubectl delete pod dapi-test-pod --now</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod dapi-test-pod --now</code></pre>
 <h3 id="add-configmap-data-to-a-specific-path-in-the-volume">Add
 ConfigMap data to a specific path in the Volume</h3>
 <p>Use the <code>path</code> field to specify the desired file path for
@@ -807,30 +807,29 @@ item will be mounted in the <code>config-volume</code> volume at
 <code>/etc/config/keys</code>.</p>
 <div class="code-sample">
 <p><code>pods/pod-configmap-volume-specific-key.yaml</code></p>
-<div class="sourceCode" id="cb66"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/busybox:1.27.2</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="st">&quot;cat /etc/config/keys&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">        </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">      </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> special-config</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> SPECIAL_LEVEL</span></span>
-<span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> keys</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: registry.k8s.io/busybox:1.27.2
+      command: [ &quot;/bin/sh&quot;,&quot;-c&quot;,&quot;cat /etc/config/keys&quot; ]
+      volumeMounts:
+      - name: config-volume
+        mountPath: /etc/config
+  volumes:
+    - name: config-volume
+      configMap:
+        name: special-config
+        items:
+        - key: SPECIAL_LEVEL
+          path: keys
+  restartPolicy: Never</code></pre>
 </div>
 <p>Create the Pod:</p>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-volume-specific-key.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/pods/pod-configmap-volume-specific-key.yaml</code></pre>
 <p>When the pod runs, the command <code>cat /etc/config/keys</code>
 produces the output below:</p>
 <pre><code>very</code></pre>
@@ -842,7 +841,7 @@ produces the output below:</p>
 directory will be inaccessible.</p>
 </div>
 <p>Delete that Pod:</p>
-<pre class="shell"><code>kubectl delete pod dapi-test-pod --now</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod dapi-test-pod --now</code></pre>
 <h3 id="project-keys-to-specific-paths-and-file-permissions">Project
 keys to specific paths and file permissions</h3>
 <p>You can project keys to specific paths. Refer to the corresponding
@@ -906,22 +905,21 @@ data. As shown in the example below, this can be simple (like individual
 properties defined using <code>--from-literal</code>) or complex (like
 configuration files or JSON blobs defined using
 <code>--from-file</code>).</p>
-<div class="sourceCode" id="cb70"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2016-02-18T19:14:38Z</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-config</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># example of a simple property defined using --from-literal</span></span>
-<span class="at">  </span><span class="fu">example.property.1</span><span class="kw">:</span><span class="at"> hello</span></span>
-<span class="at">  </span><span class="fu">example.property.2</span><span class="kw">:</span><span class="at"> world</span></span>
-<span class="at">  </span><span class="co"># example of a complex property defined using --from-file</span></span>
-<span class="at">  </span><span class="fu">example.property.file</span><span class="kw">:</span><span class="at"> </span><span class="ch">|-</span></span>
-<span class="at">    property.1=value-1</span></span>
-<span class="at">    property.2=value-2</span></span>
-<span class="at">    property.3=value-3</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  creationTimestamp: 2016-02-18T19:14:38Z
+  name: example-config
+  namespace: default
+data:
+  # example of a simple property defined using --from-literal
+  example.property.1: hello
+  example.property.2: world
+  # example of a complex property defined using --from-file
+  example.property.file: |-
+    property.1=value-1
+    property.2=value-2
+    property.3=value-3</code></pre>
 <p>When <code>kubectl</code> creates a ConfigMap from inputs that are
 not ASCII or UTF-8, the tool puts these into the <code>binaryData</code>
 field of the ConfigMap, and not in <code>data</code>. Both text and
@@ -939,24 +937,23 @@ mounted volume) will be empty. If the ConfigMap exists, but the
 referenced key is non-existent the data is also empty.</p>
 <p>For example, the following Pod specification marks an environment
 variable from a ConfigMap as optional:</p>
-<div class="sourceCode" id="cb71"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google_containers/busybox</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> SPECIAL_LEVEL_KEY</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> a-config</span></span>
-<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> akey</span></span>
-<span class="at">              </span><span class="fu">optional</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co"> # mark the variable as optional</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: gcr.io/google_containers/busybox
+      command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;env&quot;]
+      env:
+        - name: SPECIAL_LEVEL_KEY
+          valueFrom:
+            configMapKeyRef:
+              name: a-config
+              key: akey
+              optional: true # mark the variable as optional
+  restartPolicy: Never</code></pre>
 <p>If you run this pod, and there is no ConfigMap named
 <code>a-config</code>, the output is empty. If you run this pod, and
 there is a ConfigMap named <code>a-config</code> but that ConfigMap
@@ -968,25 +965,24 @@ optional. Kubernetes always creates the mount paths for the volume, even
 if the referenced ConfigMap or key doesn't exist. For example, the
 following Pod specification marks a volume that references a ConfigMap
 as optional:</p>
-<div class="sourceCode" id="cb72"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dapi-test-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google_containers/busybox</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;ls /etc/config&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">        </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
-<span class="at">      </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> no-config</span></span>
-<span class="at">        </span><span class="fu">optional</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="co"> # mark the source ConfigMap as optional</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dapi-test-pod
+spec:
+  containers:
+    - name: test-container
+      image: gcr.io/google_containers/busybox
+      command: [&quot;/bin/sh&quot;, &quot;-c&quot;, &quot;ls /etc/config&quot;]
+      volumeMounts:
+      - name: config-volume
+        mountPath: /etc/config
+  volumes:
+    - name: config-volume
+      configMap:
+        name: no-config
+        optional: true # mark the source ConfigMap as optional
+  restartPolicy: Never</code></pre>
 <h2 id="restrictions">Restrictions</h2>
 <ul>
 <li><p>You must create the <code>ConfigMap</code> object before you
@@ -1003,7 +999,7 @@ from ConfigMaps, keys that are considered invalid will be skipped. The
 pod will be allowed to start, but the invalid names will be recorded in
 the event log (<code>InvalidVariableNames</code>). The log message lists
 each skipped key. For example:</p>
-<pre class="shell"><code>kubectl get events</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get events</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>LASTSEEN FIRSTSEEN COUNT NAME          KIND  SUBOBJECT  TYPE      REASON                            SOURCE                MESSAGE
 0s       0s        1     dapi-test-pod Pod              Warning   InvalidEnvironmentVariableNames   {kubelet, 127.0.0.1}  Keys [1badkey, 2alsobad] from the EnvFrom configMap default/myconfig were skipped since they are considered invalid environment variable names.</code></pre></li>
@@ -1014,23 +1010,20 @@ support this.</p></li>
 </ul>
 <h2 id="cleaning-up">Cleaning up</h2>
 <p>Delete the ConfigMaps and Pods that you made:</p>
-<div class="sourceCode" id="cb75"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> delete configmaps/game-config configmaps/game-config-2 configmaps/game-config-3 <span class="dt">\</span></span>
-               configmaps/game-config-env-file</span>
-<span class="ex">kubectl</span> delete pod dapi-test-pod <span class="at">--now</span></span>
-</span>
-<span class="co"># You might already have removed the next set</span></span>
-<span class="ex">kubectl</span> delete configmaps/special-config configmaps/env-config</span>
-<span class="ex">kubectl</span> delete configmap <span class="at">-l</span> <span class="st">&#39;game-config in (config-4,config-5)&#39;</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl delete configmaps/game-config configmaps/game-config-2 configmaps/game-config-3 \
+               configmaps/game-config-env-file
+kubectl delete pod dapi-test-pod --now
+
+# You might already have removed the next set
+kubectl delete configmaps/special-config configmaps/env-config
+kubectl delete configmap -l &#39;game-config in (config-4,config-5)&#39;</code></pre>
 <p>Remove the <code>kustomization.yaml</code> file that you used to
 generate the ConfigMap:</p>
-<div class="sourceCode" id="cb76"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">rm</span> kustomization.yaml</span></code></pre></div>
+<pre class="bash"><code class="language-bash">rm kustomization.yaml</code></pre>
 <p>If you created a directory <code>configure-pod-container</code> and
 no longer need it, you should remove that too, or move it into the trash
 can / deleted files location.</p>
-<div class="sourceCode" id="cb77"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="fu">rm</span> <span class="at">-r</span> configure-pod-container</span></code></pre></div>
+<pre class="bash"><code class="language-bash">rm -r configure-pod-container</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>Follow a real world example of <a
@@ -1104,6 +1097,7 @@ configuration via a ConfigMap</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1112,6 +1106,8 @@ configuration via a ConfigMap</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

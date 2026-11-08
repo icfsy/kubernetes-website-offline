@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -147,9 +162,8 @@ scheduling cycle</a>.</p>
 startup but logically belong together, or to open the way for
 group-level constraints that do not imply "all-or-nothing"
 placement.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">basic</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">schedulingPolicy:
+  basic: {}</code></pre>
 <h3 id="gang-policy">Gang policy</h3>
 <p>The <code>gang</code> policy enforces "all-or-nothing" scheduling.
 This is essential for tightly-coupled workloads where partial startup
@@ -161,12 +175,11 @@ progress.</p>
 <p>The <code>gang</code> policy requires a <code>minCount</code> field,
 which is the minimum number of Pods that must be schedulable
 simultaneously for the group to be feasible:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># The number of Pods that must be schedulable simultaneously</span></span>
-<span class="at">    </span><span class="co"># for the group to be admitted.</span></span>
-<span class="at">    </span><span class="fu">minCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">schedulingPolicy:
+  gang:
+    # The number of Pods that must be schedulable simultaneously
+    # for the group to be admitted.
+    minCount: 4</code></pre>
 <h2 id="setting-policies-via-podgrouptemplates">Setting policies via
 PodGroupTemplates</h2>
 <p>When using the <a
@@ -214,12 +227,11 @@ all-or-nothing scheduling across child groups. The
 <code>minGroupCount</code> child groups can be scheduled
 simultaneously.</li>
 </ul>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># The minimum number of child groups that must be schedulable</span></span>
-<span class="at">    </span><span class="co"># simultaneously for this composite group to be admitted.</span></span>
-<span class="at">    </span><span class="fu">minGroupCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">schedulingPolicy:
+  gang:
+    # The minimum number of child groups that must be schedulable
+    # simultaneously for this composite group to be admitted.
+    minGroupCount: 2</code></pre>
 <h3 id="setting-composite-policies-via-templates">Setting composite
 policies via templates</h3>
 <p>When using the <a
@@ -313,6 +325,7 @@ to compile these policies.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -321,6 +334,8 @@ to compile these policies.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

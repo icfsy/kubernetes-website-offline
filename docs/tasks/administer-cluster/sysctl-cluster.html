@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -184,7 +199,7 @@ href="https://www.kernel.org/doc/Documentation/sysctl/README">Kernel
 docs</a>.</li>
 </ul>
 <p>To get a list of all parameters, you can run</p>
-<pre class="shell"><code>sudo sysctl -a</code></pre>
+<pre class="shell"><code class="language-shell">sudo sysctl -a</code></pre>
 <h2 id="safe-and-unsafe-sysctls">Safe and Unsafe Sysctls</h2>
 <p>Kubernetes classes sysctls as either <em>safe</em> or
 <em>unsafe</em>. In addition to proper namespacing, a <em>safe</em>
@@ -249,11 +264,11 @@ disabled unsafe sysctls will be scheduled, but will fail to launch.</p>
 high-performance or real-time application tuning. <em>Unsafe</em>
 sysctls are enabled on a node-by-node basis with a flag of the kubelet;
 for example:</p>
-<pre class="shell"><code>kubelet --allowed-unsafe-sysctls \
+<pre class="shell"><code class="language-shell">kubelet --allowed-unsafe-sysctls \
   &#39;kernel.msg*,net.core.somaxconn&#39; ...</code></pre>
 <p>For <a class="glossary-term" href="../../reference/glossary.html#term-minikube" title="Glossary: minikube">Minikube</a>,
 this can be done via the <code>extra-config</code> flag:</p>
-<pre class="shell"><code>minikube start --extra-config=&quot;kubelet.allowed-unsafe-sysctls=kernel.msg*,net.core.somaxconn&quot;...</code></pre>
+<pre class="shell"><code class="language-shell">minikube start --extra-config=&quot;kubelet.allowed-unsafe-sysctls=kernel.msg*,net.core.somaxconn&quot;...</code></pre>
 <p>Only <em>namespaced</em> sysctls can be enabled this way.</p>
 <h2 id="setting-sysctls-for-a-pod">Setting Sysctls for a Pod</h2>
 <p>A number of sysctls are <em>namespaced</em> in today's Linux kernels.
@@ -292,21 +307,20 @@ specification.</p>
 <p>Only modify sysctl parameters after you understand their effects, to
 avoid destabilizing your operating system.</p>
 </div>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sysctl-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">sysctls</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kernel.shm_rmid_forced</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> net.core.somaxconn</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1024&quot;</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kernel.msgmax</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;65536&quot;</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: sysctl-example
+spec:
+  securityContext:
+    sysctls:
+    - name: kernel.shm_rmid_forced
+      value: &quot;0&quot;
+    - name: net.core.somaxconn
+      value: &quot;1024&quot;
+    - name: kernel.msgmax
+      value: &quot;65536&quot;
+  ...</code></pre>
 <div class="admonition warning">
 <div class="admonition-title">
 <p>Warning:</p>
@@ -361,24 +375,23 @@ defaults are configured directly by the Node administrator on the
 <p>The following example configures the <code>kubelet</code> to apply
 default sysctls across multiple namespaced subsystems (networking, IPC,
 and user namespaces) to all Pods on the Node:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">featureGates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">DefaultPodSysctls</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="fu">defaultPodSysctls</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="co"># Network namespace sysctls (skipped if Pod uses hostNetwork: true)</span></span>
-<span class="at">  </span><span class="fu">net.ipv4.ip_forward</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">  </span><span class="fu">net.ipv4.tcp_rmem</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4096 87380 16777216&quot;</span></span>
-<span class="at">  </span><span class="fu">net.ipv4.tcp_wmem</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;4096 65536 16777216&quot;</span></span>
-<span class="at">  </span><span class="fu">net.core.somaxconn</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1024&quot;</span></span>
-<span class="at">  </span><span class="co"># IPC namespace sysctls (skipped if Pod uses hostIPC: true)</span></span>
-<span class="at">  </span><span class="fu">kernel.shmall</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1048576&quot;</span></span>
-<span class="at">  </span><span class="fu">kernel.msgmax</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;65536&quot;</span></span>
-<span class="at">  </span><span class="fu">kernel.sem</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;250 32000 32 128&quot;</span></span>
-<span class="at">  </span><span class="fu">fs.mqueue.msg_max</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1024&quot;</span></span>
-<span class="at">  </span><span class="co"># User namespace sysctls (skipped if Pod shares the host user namespace)</span></span>
-<span class="at">  </span><span class="fu">user.max_user_namespaces</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1000&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+featureGates:
+  DefaultPodSysctls: true
+defaultPodSysctls:
+  # Network namespace sysctls (skipped if Pod uses hostNetwork: true)
+  net.ipv4.ip_forward: &quot;1&quot;
+  net.ipv4.tcp_rmem: &quot;4096 87380 16777216&quot;
+  net.ipv4.tcp_wmem: &quot;4096 65536 16777216&quot;
+  net.core.somaxconn: &quot;1024&quot;
+  # IPC namespace sysctls (skipped if Pod uses hostIPC: true)
+  kernel.shmall: &quot;1048576&quot;
+  kernel.msgmax: &quot;65536&quot;
+  kernel.sem: &quot;250 32000 32 128&quot;
+  fs.mqueue.msg_max: &quot;1024&quot;
+  # User namespace sysctls (skipped if Pod shares the host user namespace)
+  user.max_user_namespaces: &quot;1000&quot;</code></pre>
 <h3 id="precedence-and-overriding">Precedence and Overriding</h3>
 <p>Values explicitly set in a Pod's
 <code>spec.securityContext.sysctls</code> always override the matching
@@ -490,6 +503,7 @@ Pods to adopt the updated default sysctls, you must recreate those Pods
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -498,6 +512,8 @@ Pods to adopt the updated default sysctls, you must recreate those Pods
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

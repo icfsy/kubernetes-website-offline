@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -180,56 +195,55 @@ repair</a>.</li>
 <p>The example below demonstrates the components of a StatefulSet.</p>
 <div class="code-sample">
 <p><code>controllers/statefulset.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span><span class="co"> # has to match .spec.template.metadata.labels</span></span>
-<span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;nginx&quot;</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="co"> # by default is 1</span></span>
-<span class="at">  </span><span class="fu">minReadySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span><span class="co"> # by default is 0</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span><span class="co"> # has to match .spec.selector.matchLabels</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">terminationGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/nginx-slim:0.24</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> www</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
-<span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> www</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;my-storage-class&quot;</span></span>
-<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  selector:
+    matchLabels:
+      app: nginx # has to match .spec.template.metadata.labels
+  serviceName: &quot;nginx&quot;
+  replicas: 3 # by default is 1
+  minReadySeconds: 10 # by default is 0
+  template:
+    metadata:
+      labels:
+        app: nginx # has to match .spec.selector.matchLabels
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: nginx
+        image: registry.k8s.io/nginx-slim:0.24
+        ports:
+        - containerPort: 80
+          name: web
+        volumeMounts:
+        - name: www
+          mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+  - metadata:
+      name: www
+    spec:
+      accessModes: [ &quot;ReadWriteOnce&quot; ]
+      storageClassName: &quot;my-storage-class&quot;
+      resources:
+        requests:
+          storage: 1Gi</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -656,14 +670,13 @@ to learn more about key properties and other details.</p>
 <h3 id="managing-revision-history">Managing Revision History</h3>
 <p>Control retained revisions with
 <code>.spec.revisionHistoryLimit</code>:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> webapp</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">revisionHistoryLimit</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span><span class="at">  # Keep last 5 revisions</span></span>
-<span class="at">  </span><span class="co"># ... other spec fields ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: webapp
+spec:
+  revisionHistoryLimit: 5  # Keep last 5 revisions
+  # ... other spec fields ...</code></pre>
 <ul>
 <li><strong>Default</strong>: 10 revisions retained if unspecified<br />
 </li>
@@ -672,12 +685,11 @@ when exceeding the limit</li>
 </ul>
 <h4 id="performing-rollbacks">Performing Rollbacks</h4>
 <p>You can revert to a previous configuration using:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># View revision history</span></span>
-<span class="ex">kubectl</span> rollout history statefulset/webapp</span>
-</span>
-<span class="co"># Rollback to a specific revision</span></span>
-<span class="ex">kubectl</span> rollout undo statefulset/webapp <span class="at">--to-revision</span><span class="op">=</span>3</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># View revision history
+kubectl rollout history statefulset/webapp
+
+# Rollback to a specific revision
+kubectl rollout undo statefulset/webapp --to-revision=3</code></pre>
 <p>This will:</p>
 <ul>
 <li>Apply the Pod template from revision 3<br />
@@ -687,12 +699,11 @@ class="sourceCode bash"><code class="sourceCode bash"><span class="co"># View re
 <h4 id="inspecting-controllerrevisions">Inspecting
 ControllerRevisions</h4>
 <p>To view associated ControllerRevisions:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># List all revisions for the StatefulSet</span></span>
-<span class="ex">kubectl</span> get controllerrevisions <span class="at">-l</span> app.kubernetes.io/name=webapp</span>
-</span>
-<span class="co"># View detailed configuration of a specific revision</span></span>
-<span class="ex">kubectl</span> get controllerrevision/webapp-3 <span class="at">-o</span> yaml</span></code></pre></div>
+<pre class="bash"><code class="language-bash"># List all revisions for the StatefulSet
+kubectl get controllerrevisions -l app.kubernetes.io/name=webapp
+
+# View detailed configuration of a specific revision
+kubectl get controllerrevision/webapp-3 -o yaml</code></pre>
 <h4 id="best-practices">Best Practices</h4>
 <h5 id="retention-policy">Retention Policy</h5>
 <ul>
@@ -705,8 +716,7 @@ required.</li>
 <h5 id="monitoring">Monitoring</h5>
 <ul>
 <li><p>Regularly check revisions with:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> get controllerrevisions</span></code></pre></div></li>
+<pre class="bash"><code class="language-bash">kubectl get controllerrevisions</code></pre></li>
 <li><p>Alert on <strong>rapid revision count growth</strong>.</p></li>
 </ul>
 <h5 id="avoid">Avoid</h5>
@@ -777,15 +787,14 @@ launch.</p>
 <p>The default for policies is <code>Retain</code>, matching the
 StatefulSet behavior before this new feature.</p>
 <p>Here is an example policy:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
-<span class="co">...</span></span>
-<span class="er">spec:</span></span>
-<span class="er">  persistentVolumeClaimRetentionPolicy:</span></span>
-<span class="er">    whenDeleted: Retain</span></span>
-<span class="er">    whenScaled: Delete</span></span>
-<span class="er">...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: StatefulSet
+...
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Delete
+...</code></pre>
 <p>The StatefulSet <a class="glossary-term" href="../../../reference/glossary.html#term-controller" title="Glossary: controller">controller</a> adds <a
 href="../../overview/working-with-objects/owners-dependents.html#owner-references-in-object-specifications">owner
 references</a> to its PVCs, which are then deleted by the <span
@@ -931,6 +940,7 @@ disruptions.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -939,6 +949,8 @@ disruptions.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

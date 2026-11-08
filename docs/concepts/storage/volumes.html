@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -209,26 +224,25 @@ in the volume. You can customize the path to use for a specific entry in
 the ConfigMap. The following configuration shows how to mount the
 <code>log-config</code> ConfigMap onto a Pod called
 <code>configmap-pod</code>:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;The app is running!&quot; &amp;&amp; tail -f /dev/null&#39;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-vol</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-vol</span></span>
-<span class="at">      </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> log-config</span></span>
-<span class="at">        </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> log_level</span></span>
-<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> log_level.conf</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: configmap-pod
+spec:
+  containers:
+    - name: test
+      image: busybox:1.28
+      command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;The app is running!&quot; &amp;&amp; tail -f /dev/null&#39;]
+      volumeMounts:
+        - name: config-vol
+          mountPath: /etc/config
+  volumes:
+    - name: config-vol
+      configMap:
+        name: log-config
+        items:
+          - key: log_level
+            path: log_level.conf</code></pre>
 <p>The <code>log-config</code> ConfigMap is mounted as a volume, and all
 contents stored in its <code>log_level</code> entry are mounted into the
 Pod at path <code>/etc/config/log_level.conf</code>. Note that this path
@@ -342,41 +356,39 @@ effect on Windows.</p>
 </div>
 <h4 id="emptydir-configuration-example">emptyDir configuration
 example</h4>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pd</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /cache</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cache-volume</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cache-volume</span></span>
-<span class="at">    </span><span class="fu">emptyDir</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">sizeLimit</span><span class="kw">:</span><span class="at"> 500Mi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd
+spec:
+  containers:
+  - image: registry.k8s.io/test-webserver
+    name: test-container
+    volumeMounts:
+    - mountPath: /cache
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    emptyDir:
+      sizeLimit: 500Mi</code></pre>
 <h4 id="emptydir-memory-configuration-example">emptyDir memory
 configuration example</h4>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pd</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /cache</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cache-volume</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cache-volume</span></span>
-<span class="at">    </span><span class="fu">emptyDir</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">sizeLimit</span><span class="kw">:</span><span class="at"> 500Mi</span></span>
-<span class="at">      </span><span class="fu">medium</span><span class="kw">:</span><span class="at"> Memory</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd
+spec:
+  containers:
+  - image: registry.k8s.io/test-webserver
+    name: test-container
+    volumeMounts:
+    - mountPath: /cache
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    emptyDir:
+      sizeLimit: 500Mi
+      medium: Memory</code></pre>
 <h4 id="emptydir-and-in-place-pod-resizing">emptyDir and in-place Pod
 resizing</h4>
 <div class="admonition feature-state">
@@ -396,22 +408,21 @@ href="../../tasks/configure-pod-container/resize-container-resources.html#resizi
 CPU and Memory Resources assigned to Containers</a>.</p>
 <h4 id="emptydir-permissions-configuration-example">emptyDir permissions
 configuration example</h4>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pd</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /cache</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cache-volume</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cache-volume</span></span>
-<span class="at">    </span><span class="fu">emptyDir</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="dv">01777</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd
+spec:
+  containers:
+  - image: registry.k8s.io/test-webserver
+    name: test-container
+    volumeMounts:
+    - mountPath: /cache
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    emptyDir:
+      mode: 01777</code></pre>
 <h3 id="fc">fc (fibre channel)</h3>
 <p>An <code>fc</code> volume type allows an existing fibre channel block
 storage volume to be mounted in a Pod. You can specify single or
@@ -458,7 +469,7 @@ cluster using <a href="../policy.html">policies</a>, such as <a
 href="../../reference/access-authn-authz/validating-admission-policy.html">ValidatingAdmissionPolicy</a>.
 You can use the following Common Expression Language (CEL) expression as
 part of a policy to reject use of <code>gitRepo</code> volumes:</p>
-<pre class="cel"><code>!has(object.spec.volumes) || !object.spec.volumes.exists(v, has(v.gitRepo))</code></pre>
+<pre class="cel"><code class="language-cel">!has(object.spec.volumes) || !object.spec.volumes.exists(v, has(v.gitRepo))</code></pre>
 </div>
 <h3 id="hostpath">hostPath</h3>
 <p>A <code>hostPath</code> volume mounts a file or directory from the
@@ -592,63 +603,61 @@ example</h4>
 <div class="tab-label">
 <p>Linux node</p>
 </div>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co"># This manifest mounts /data/foo on the host as /foo inside the</span></span>
-<span class="co"># single container that runs within the hostpath-example-linux Pod.</span></span>
-<span class="co">#</span></span>
-<span class="co"># The mount into the container is read-only.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hostpath-example-linux</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">os</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="fu"> </span><span class="at">linux </span><span class="kw">}</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/os</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /foo</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-volume</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-volume</span></span>
-<span class="at">    </span><span class="co"># mount /data/foo, but only if that directory already exists</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /data/foo</span><span class="co"> # directory location on host</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Directory</span><span class="co"> # this field is optional</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+# This manifest mounts /data/foo on the host as /foo inside the
+# single container that runs within the hostpath-example-linux Pod.
+#
+# The mount into the container is read-only.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-example-linux
+spec:
+  os: { name: linux }
+  nodeSelector:
+    kubernetes.io/os: linux
+  containers:
+  - name: example-container
+    image: registry.k8s.io/test-webserver
+    volumeMounts:
+    - mountPath: /foo
+      name: example-volume
+      readOnly: true
+  volumes:
+  - name: example-volume
+    # mount /data/foo, but only if that directory already exists
+    hostPath:
+      path: /data/foo # directory location on host
+      type: Directory # this field is optional</code></pre>
 <div class="tab-label">
 <p>Windows node</p>
 </div>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co"># This manifest mounts C:\Data\foo on the host as C:\foo, inside the</span></span>
-<span class="co"># single container that runs within the hostpath-example-windows Pod.</span></span>
-<span class="co">#</span></span>
-<span class="co"># The mount into the container is read-only.</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hostpath-example-windows</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">os</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="fu"> </span><span class="at">windows </span><span class="kw">}</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/os</span><span class="kw">:</span><span class="at"> windows</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-container</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> microsoft/windowsservercore:1709</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-volume</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">foo&quot;</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># mount C:\Data\foo from the host, but only if that directory already exists</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-volume</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;C:</span><span class="sc">\\</span><span class="st">Data</span><span class="sc">\\</span><span class="st">foo&quot;</span><span class="at"> </span><span class="co"># directory location on host</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Directory       # this field is optional</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+# This manifest mounts C:\Data\foo on the host as C:\foo, inside the
+# single container that runs within the hostpath-example-windows Pod.
+#
+# The mount into the container is read-only.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hostpath-example-windows
+spec:
+  os: { name: windows }
+  nodeSelector:
+    kubernetes.io/os: windows
+  containers:
+  - name: example-container
+    image: microsoft/windowsservercore:1709
+    volumeMounts:
+    - name: example-volume
+      mountPath: &quot;C:\\foo&quot;
+      readOnly: true
+  volumes:
+    # mount C:\Data\foo from the host, but only if that directory already exists
+  - name: example-volume
+    hostPath:
+      path: &quot;C:\\Data\\foo&quot; # directory location on host
+      type: Directory       # this field is optional</code></pre>
 </div>
 <h4 id="hostpath-fileorcreate-example">hostPath FileOrCreate
 configuration example</h4>
@@ -662,33 +671,32 @@ the Pod fails. Additionally, the kubelet attempts to make a file named
 the host); if something already exists at that path and isn't a regular
 file, the Pod fails.</p>
 <p>Here's the example manifest:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-webserver</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">os</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="fu"> </span><span class="at">linux </span><span class="kw">}</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/os</span><span class="kw">:</span><span class="at"> linux</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-webserver</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver:latest</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/local/aaa</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mydir</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/local/aaa/1.txt</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myfile</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mydir</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># Ensure the file directory is created.</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/local/aaa</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DirectoryOrCreate</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myfile</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/local/aaa/1.txt</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> FileOrCreate</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-webserver
+spec:
+  os: { name: linux }
+  nodeSelector:
+    kubernetes.io/os: linux
+  containers:
+  - name: test-webserver
+    image: registry.k8s.io/test-webserver:latest
+    volumeMounts:
+    - mountPath: /var/local/aaa
+      name: mydir
+    - mountPath: /var/local/aaa/1.txt
+      name: myfile
+  volumes:
+  - name: mydir
+    hostPath:
+      # Ensure the file directory is created.
+      path: /var/local/aaa
+      type: DirectoryOrCreate
+  - name: myfile
+    hostPath:
+      path: /var/local/aaa/1.txt
+      type: FileOrCreate</code></pre>
 <h3 id="image">image</h3>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -703,24 +711,23 @@ machine.</p>
 <p>An example of using the <code>image</code> volume source is:</p>
 <div class="code-sample">
 <p><code>pods/image-volumes.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> image-volume</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shell</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;infinity&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> debian</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volume</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /volume</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volume</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">reference</span><span class="kw">:</span><span class="at"> quay.io/crio/artifact:v2</span></span>
-<span class="at">      </span><span class="fu">pullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: image-volume
+spec:
+  containers:
+  - name: shell
+    command: [&quot;sleep&quot;, &quot;infinity&quot;]
+    image: debian
+    volumeMounts:
+    - name: volume
+      mountPath: /volume
+  volumes:
+  - name: volume
+    image:
+      reference: quay.io/crio/artifact:v2
+      pullPolicy: IfNotPresent</code></pre>
 </div>
 <p>The volume is resolved at Pod startup, depending on which
 <code>pullPolicy</code> value is provided:</p>
@@ -820,35 +827,34 @@ as a volume source.</p>
 <p>Here's a simplified example of a running Pod, represented as YAML,
 including the status update. Note the new <code>ImageRef</code> field
 under <code>volumeMounts</code> in the container status.</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-pod</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shell</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;infinity&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/debian:12</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> artifact</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> artifact</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">reference</span><span class="kw">:</span><span class="at"> quay.io/crio/artifact:v2</span></span>
-<span class="at">      </span><span class="fu">pullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containerStatuses</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">containerID</span><span class="kw">:</span><span class="at"> containerd://examplecontainerid1234567890abcdef</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/debian:12</span></span>
-<span class="at">    </span><span class="fu">imageID</span><span class="kw">:</span><span class="at"> docker-pullable://docker.io/library/debian@sha256:3f1d6c17773a45c97bd8f158d665c9709d7b29ed7917ac934086ad96f92e4510</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> artifact</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /data</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">imageRef</span><span class="kw">:</span><span class="at"> quay.io/crio/artifact@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: my-pod
+  namespace: default
+spec:
+  containers:
+  - name: shell
+    command: [&quot;sleep&quot;, &quot;infinity&quot;]
+    image: docker.io/library/debian:12
+    volumeMounts:
+    - name: artifact
+      mountPath: /data
+  volumes:
+  - name: artifact
+    image:
+      reference: quay.io/crio/artifact:v2
+      pullPolicy: IfNotPresent
+status:
+  containerStatuses:
+  - containerID: containerd://examplecontainerid1234567890abcdef
+    image: docker.io/library/debian:12
+    imageID: docker-pullable://docker.io/library/debian@sha256:3f1d6c17773a45c97bd8f158d665c9709d7b29ed7917ac934086ad96f92e4510
+    volumeMounts:
+    - name: artifact
+      mountPath: /data
+      readOnly: true
+      imageRef: quay.io/crio/artifact@sha256:abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890</code></pre>
 <h3 id="iscsi">iscsi</h3>
 <p>An <code>iscsi</code> volume allows an existing iSCSI (SCSI over IP)
 volume to be mounted into your Pod. Unlike <code>emptyDir</code>, which
@@ -886,29 +892,28 @@ this reduced availability, as well as potential data loss, depending on
 the durability characteristics of the underlying disk.</p>
 <p>The following example shows a PersistentVolume using a
 <code>local</code> volume and <code>nodeAffinity</code>:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolume</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-pv</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 100Gi</span></span>
-<span class="at">  </span><span class="fu">volumeMode</span><span class="kw">:</span><span class="at"> Filesystem</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">persistentVolumeReclaimPolicy</span><span class="kw">:</span><span class="at"> Delete</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> local-storage</span></span>
-<span class="at">  </span><span class="fu">local</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt/disks/ssd1</span></span>
-<span class="at">  </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">required</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> kubernetes.io/hostname</span></span>
-<span class="at">          </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">          </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">example-node</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: example-pv
+spec:
+  capacity:
+    storage: 100Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /mnt/disks/ssd1
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - example-node</code></pre>
 <p>You must set a PersistentVolume <code>nodeAffinity</code> when using
 <code>local</code> volumes. The Kubernetes scheduler uses the
 PersistentVolume <code>nodeAffinity</code> to schedule these Pods to the
@@ -946,24 +951,23 @@ which is erased when a Pod is removed, the contents of an
 unmounted. This means that an NFS volume can be pre-populated with data,
 and that data can be shared between Pods. NFS can be mounted by multiple
 writers simultaneously.</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-pd</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /my-nfs-data</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-volume</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-volume</span></span>
-<span class="at">    </span><span class="fu">nfs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">server</span><span class="kw">:</span><span class="at"> my-nfs-server.example.com</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /my-nfs-volume</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-pd
+spec:
+  containers:
+  - image: registry.k8s.io/test-webserver
+    name: test-container
+    volumeMounts:
+    - mountPath: /my-nfs-data
+      name: test-volume
+  volumes:
+  - name: test-volume
+    nfs:
+      server: my-nfs-server.example.com
+      path: /my-nfs-volume
+      readOnly: true</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1002,24 +1006,23 @@ virtual machines or on bare metal Linux nodes.</p>
 Kubernetes, or it can also be pre-provisioned and referenced inside a
 Pod. Here is an example Pod referencing a pre-provisioned Portworx
 volume:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-portworx-volume-pod</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/test-webserver</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pxvol</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pxvol</span></span>
-<span class="at">    </span><span class="co"># This Portworx volume must already exist.</span></span>
-<span class="at">    </span><span class="fu">portworxVolume</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">volumeID</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;pxvol&quot;</span></span>
-<span class="at">      </span><span class="fu">fsType</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;&lt;fs-type&gt;&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test-portworx-volume-pod
+spec:
+  containers:
+  - image: registry.k8s.io/test-webserver
+    name: test-container
+    volumeMounts:
+    - mountPath: /mnt
+      name: pxvol
+  volumes:
+  - name: pxvol
+    # This Portworx volume must already exist.
+    portworxVolume:
+      volumeID: &quot;pxvol&quot;
+      fsType: &quot;&lt;fs-type&gt;&quot;</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -1079,32 +1082,31 @@ use.</p>
 <p>The PHP application's code and assets map to the volume's
 <code>html</code> folder and the MySQL database is stored in the
 volume's <code>mysql</code> folder. For example:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-lamp-site</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_ROOT_PASSWORD</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;rootpasswd&quot;</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> site-data</span></span>
-<span class="at">        </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> mysql</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> php</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> php:7.0-apache</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/www/html</span></span>
-<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> site-data</span></span>
-<span class="at">        </span><span class="fu">subPath</span><span class="kw">:</span><span class="at"> html</span></span>
-<span class="at">    </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> site-data</span></span>
-<span class="at">      </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> my-lamp-site-data</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: my-lamp-site
+spec:
+    containers:
+    - name: mysql
+      image: mysql
+      env:
+      - name: MYSQL_ROOT_PASSWORD
+        value: &quot;rootpasswd&quot;
+      volumeMounts:
+      - mountPath: /var/lib/mysql
+        name: site-data
+        subPath: mysql
+    - name: php
+      image: php:7.0-apache
+      volumeMounts:
+      - mountPath: /var/www/html
+        name: site-data
+        subPath: html
+    volumes:
+    - name: site-data
+      persistentVolumeClaim:
+        claimName: my-lamp-site-data</code></pre>
 <h3 id="using-subpath-expanded-environment">Using subPath with expanded
 environment variables</h3>
 <div class="admonition feature-state">
@@ -1123,32 +1125,31 @@ volume <code>/var/log/pods</code>. The <code>hostPath</code> volume
 takes the <code>Pod</code> name from the <code>downwardAPI</code>. The
 host directory <code>/var/log/pods/pod1</code> is mounted at
 <code>/logs</code> in the container.</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod1</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> container1</span></span>
-<span class="at">    </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> POD_NAME</span></span>
-<span class="at">      </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="at">          </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.name</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;while [ true ]; do echo &#39;Hello&#39;; sleep 10; done | tee -a /logs/hello.txt&quot;</span><span class="at"> </span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workdir1</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /logs</span></span>
-<span class="at">      </span><span class="co"># The variable expansion uses round brackets (not curly brackets).</span></span>
-<span class="at">      </span><span class="fu">subPathExpr</span><span class="kw">:</span><span class="at"> $(POD_NAME)</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workdir1</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /var/log/pods</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod1
+spec:
+  containers:
+  - name: container1
+    env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    image: busybox:1.28
+    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;while [ true ]; do echo &#39;Hello&#39;; sleep 10; done | tee -a /logs/hello.txt&quot; ]
+    volumeMounts:
+    - name: workdir1
+      mountPath: /logs
+      # The variable expansion uses round brackets (not curly brackets).
+      subPathExpr: $(POD_NAME)
+  restartPolicy: Never
+  volumes:
+  - name: workdir1
+    hostPath:
+      path: /var/log/pods</code></pre>
 <h2 id="resources">Resources</h2>
 <p>The storage medium (such as Disk or SSD) of an <code>emptyDir</code>
 volume is determined by the medium of the filesystem holding the kubelet
@@ -1528,35 +1529,34 @@ by the kernel or the runtime class.</p></li>
 <p>Example:</p>
 <div class="code-sample">
 <p><code>storage/rro.yaml</code></p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rro</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mnt</span></span>
-<span class="at">      </span><span class="fu">hostPath</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># tmpfs is mounted on /mnt/tmpfs</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /mnt</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox</span></span>
-<span class="at">      </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;infinity&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="co"># /mnt-rro/tmpfs is not writable</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mnt</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt-rro</span></span>
-<span class="at">          </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">          </span><span class="fu">mountPropagation</span><span class="kw">:</span><span class="at"> None</span></span>
-<span class="at">          </span><span class="fu">recursiveReadOnly</span><span class="kw">:</span><span class="at"> Enabled</span></span>
-<span class="at">        </span><span class="co"># /mnt-ro/tmpfs is writable</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mnt</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt-ro</span></span>
-<span class="at">          </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">        </span><span class="co"># /mnt-rw/tmpfs is writable</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mnt</span></span>
-<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt-rw</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: rro
+spec:
+  volumes:
+    - name: mnt
+      hostPath:
+        # tmpfs is mounted on /mnt/tmpfs
+        path: /mnt
+  containers:
+    - name: busybox
+      image: busybox
+      args: [&quot;sleep&quot;, &quot;infinity&quot;]
+      volumeMounts:
+        # /mnt-rro/tmpfs is not writable
+        - name: mnt
+          mountPath: /mnt-rro
+          readOnly: true
+          mountPropagation: None
+          recursiveReadOnly: Enabled
+        # /mnt-ro/tmpfs is writable
+        - name: mnt
+          mountPath: /mnt-ro
+          readOnly: true
+        # /mnt-rw/tmpfs is writable
+        - name: mnt
+          mountPath: /mnt-rw</code></pre>
 </div>
 <p>When this property is recognized by kubelet and kube-apiserver, the
 <code>.status.containerStatuses[*].volumeMounts[*].recursiveReadOnly</code>
@@ -1587,49 +1587,48 @@ sets the owner UID for all its data files at creation time. At the item
 level, the <code>user</code> field controls owner UID of an individual
 file and takes precedence over <code>defaultUser</code>.</p>
 <p>Example:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volume-user-fields-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&#39;sh&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;-c&#39;</span><span class="kw">,</span><span class="at"> </span><span class="st">&#39;echo &quot;The app is running!&quot; &amp;&amp; tail -f /dev/null&#39;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volA</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/volA</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volB</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/volB</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volC</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /mnt/volC</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volA</span></span>
-<span class="at">    </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">defaultUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cm1</span></span>
-<span class="at">      </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> foo</span><span class="co"> # Owner=defaultUser</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> foo</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> bar</span><span class="co"> # Owner=user</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> bar</span></span>
-<span class="at">        </span><span class="fu">user</span><span class="kw">:</span><span class="at"> </span><span class="dv">1001</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volB</span></span>
-<span class="at">    </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> </span><span class="co"># Owner=defaultUser</span></span>
-<span class="at">      </span><span class="fu">defaultUser</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
-<span class="at">      </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> secret1</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> volC</span></span>
-<span class="at">    </span><span class="fu">projected</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">sources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">secret</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret2</span></span>
-<span class="at">          </span><span class="fu">items</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> moo</span><span class="co"> # Owner=root</span></span>
-<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> moo</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> baa</span><span class="co"> # Owner=user</span></span>
-<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> baa</span></span>
-<span class="at">            </span><span class="fu">user</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: volume-user-fields-example
+spec:
+  containers:
+  - name: test
+    image: busybox:1.28
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;echo &quot;The app is running!&quot; &amp;&amp; tail -f /dev/null&#39;]
+    volumeMounts:
+    - name: volA
+      mountPath: /mnt/volA
+    - name: volB
+      mountPath: /mnt/volB
+    - name: volC
+      mountPath: /mnt/volC
+  volumes:
+  - name: volA
+    configMap:
+      defaultUser: 1000
+      name: cm1
+      items:
+      - key: foo # Owner=defaultUser
+        path: foo
+      - key: bar # Owner=user
+        path: bar
+        user: 1001
+  - name: volB
+    secret: # Owner=defaultUser
+      defaultUser: 1000
+      secretName: secret1
+  - name: volC
+    projected:
+      sources:
+      - secret:
+          name: secret2
+          items:
+          - key: moo # Owner=root
+            path: moo
+          - key: baa # Owner=user
+            path: baa
+            user: 1000</code></pre>
 <h4 id="implementations-rro">Implementations</h4>
 <div class="admonition note">
 <div class="admonition-title">
@@ -1757,6 +1756,7 @@ WordPress and MySQL with Persistent Volumes</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1765,6 +1765,8 @@ WordPress and MySQL with Persistent Volumes</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

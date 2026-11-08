@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -212,7 +227,7 @@ Concepts</a>.</p>
 <p>From the most basic perspective, the HorizontalPodAutoscaler
 controller operates on the ratio between desired metric value and
 current metric value:</p>
-<pre class="math"><code>\begin{equation*}
+<pre class="math"><code class="language-math">\begin{equation*}
 desiredReplicas = ceil\left\lceil currentReplicas \times \frac{currentMetricValue}{desiredMetricValue} \right\rceil
 \end{equation*}</code></pre>
 <p>For example, if the current metric value is <code>200m</code>, and
@@ -385,13 +400,12 @@ requests like <code>cpu</code> and <code>memory</code> should be
 specified. This is used to determine the resource utilization and used
 by the HPA controller to scale the target up or down. To use resource
 utilization based scaling specify a metric source like this:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> Resource</span></span>
-<span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">  </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
-<span class="at">    </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: Resource
+resource:
+  name: cpu
+  target:
+    type: Utilization
+    averageUtilization: 60</code></pre>
 <p>With this metric the HPA controller will keep the average utilization
 of the pods in the scaling target at 60%. Utilization is the ratio
 between the current usage of resource to the requested resources of the
@@ -432,14 +446,13 @@ recommendation is recalculated. See <a
 href="#algorithm-details">Algorithm</a> for more details about the
 calculation. To use container resources for autoscaling define a metric
 source as follows:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">type</span><span class="kw">:</span><span class="at"> ContainerResource</span></span>
-<span class="fu">containerResource</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu</span></span>
-<span class="at">  </span><span class="fu">container</span><span class="kw">:</span><span class="at"> application</span></span>
-<span class="at">  </span><span class="fu">target</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Utilization</span></span>
-<span class="at">    </span><span class="fu">averageUtilization</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">type: ContainerResource
+containerResource:
+  name: cpu
+  container: application
+  target:
+    type: Utilization
+    averageUtilization: 60</code></pre>
 <p>In the above example the HPA controller scales the target such that
 the average utilization of the cpu in the <code>application</code>
 container of all the pods is 60%.</p>
@@ -564,16 +577,15 @@ minor metric fluctuations below a specified threshold.</p>
 specified the policy which allows the highest amount of change is the
 policy which is selected by default. The following example shows this
 behavior while scaling down:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Percent</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    policies:
+    - type: Pods
+      value: 4
+      periodSeconds: 60
+    - type: Percent
+      value: 10
+      periodSeconds: 60</code></pre>
 <p><code>periodSeconds</code> indicates the length of time in the past
 for which the policy must hold true. The maximum value that you can set
 for <code>periodSeconds</code> is 1800 (half an hour). The first policy
@@ -604,10 +616,9 @@ infer a previous desired state and avoid unwanted changes to workload
 scale.</p>
 <p>For example, in the following example snippet, a stabilization window
 is specified for <code>scaleDown</code>.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">stabilizationWindowSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    stabilizationWindowSeconds: 300</code></pre>
 <p>When the metrics indicate that the target should be scaled down the
 algorithm looks into previously computed desired states, and uses the
 highest value from the specified interval. In the above example, all
@@ -630,10 +641,9 @@ that value.</p>
 desired metric value under which no scaling will occur. For example,
 consider a HorizontalPodAutoscaler configured with a target memory
 consumption of 100MiB and a scale-up tolerance of 5%:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleUp</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">tolerance</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.05</span><span class="co"> # 5% tolerance for scale up</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleUp:
+    tolerance: 0.05 # 5% tolerance for scale up</code></pre>
 <p>With this configuration, the HPA algorithm will only consider scaling
 up if the memory consumption is higher than 105MiB (that is: 5% above
 the target).</p>
@@ -649,24 +659,23 @@ value.)</p>
 values which need to be customized can be specified. These custom values
 are merged with default values. The default values match the existing
 behavior in the HPA algorithm.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">stabilizationWindowSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span>
-<span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Percent</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">  </span><span class="fu">scaleUp</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">stabilizationWindowSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Percent</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
-<span class="at">    </span><span class="fu">selectPolicy</span><span class="kw">:</span><span class="at"> Max</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    stabilizationWindowSeconds: 300
+    policies:
+    - type: Percent
+      value: 100
+      periodSeconds: 15
+  scaleUp:
+    stabilizationWindowSeconds: 0
+    policies:
+    - type: Percent
+      value: 100
+      periodSeconds: 15
+    - type: Pods
+      value: 4
+      periodSeconds: 15
+    selectPolicy: Max</code></pre>
 <p>For scaling down the stabilization window is <em>300</em> seconds (or
 the value of the
 <code>--horizontal-pod-autoscaler-downscale-stabilization</code> command
@@ -682,45 +691,41 @@ till the HPA reaches its steady state.</p>
 downscale stabilization window</h3>
 <p>To provide a custom downscale stabilization window of 1 minute, the
 following behavior would be added to the HPA:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">stabilizationWindowSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    stabilizationWindowSeconds: 60</code></pre>
 <h3 id="example-limit-scale-down-rate">Example: limit scale down
 rate</h3>
 <p>To limit the rate at which pods are removed by the HPA to 10% per
 minute, the following behavior would be added to the HPA:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Percent</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    policies:
+    - type: Percent
+      value: 10
+      periodSeconds: 60</code></pre>
 <p>To ensure that no more than 5 Pods are removed per minute, you can
 add a second scale-down policy with a fixed size of 5, and set
 <code>selectPolicy</code> to minimum. Setting <code>selectPolicy</code>
 to <code>Min</code> means that the autoscaler chooses the policy that
 affects the smallest number of Pods:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">policies</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Percent</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Pods</span></span>
-<span class="at">      </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
-<span class="at">      </span><span class="fu">periodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span>
-<span class="at">    </span><span class="fu">selectPolicy</span><span class="kw">:</span><span class="at"> Min</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    policies:
+    - type: Percent
+      value: 10
+      periodSeconds: 60
+    - type: Pods
+      value: 5
+      periodSeconds: 60
+    selectPolicy: Min</code></pre>
 <h3 id="example-disable-scale-down">Example: disable scale down</h3>
 <p>The <code>selectPolicy</code> value of <code>Disabled</code> turns
 off scaling the given direction. So to prevent downscaling the following
 policy would be used:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">behavior</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scaleDown</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">selectPolicy</span><span class="kw">:</span><span class="at"> Disabled</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">behavior:
+  scaleDown:
+    selectPolicy: Disabled</code></pre>
 <h2 id="support-for-horizontalpodautoscaler-in-kubectl">Support for
 HorizontalPodAutoscaler in kubectl</h2>
 <p>HorizontalPodAutoscaler, like every API resource, is supported in a
@@ -916,6 +921,7 @@ reference</a> for HorizontalPodAutoscaler.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -924,6 +930,8 @@ reference</a> for HorizontalPodAutoscaler.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

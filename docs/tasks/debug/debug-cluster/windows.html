@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -173,12 +188,11 @@ the traffic originating from your Windows pods be SNAT'ed correctly to
 receive a response from the outside world. In this regard, your
 <code>ExceptionList</code> in <code>cni.conf</code> should look as
 follows:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode conf"><code class="sourceCode toml"><span class="dt">&quot;ExceptionList&quot;</span><span class="er">:</span> <span class="kw">[</span></span>
-                <span class="dt">&quot;10.244.0.0/16&quot;</span><span class="er">,</span>  <span class="co"># Cluster subnet</span></span>
-                <span class="dt">&quot;10.96.0.0/12&quot;</span><span class="er">,</span>   <span class="co"># Service subnet</span></span>
-                <span class="dt">&quot;10.127.130.0/24&quot;</span> <span class="co"># Management (host) subnet</span></span>
-            <span class="er">]</span></span></code></pre></div></li>
+<pre class="conf"><code class="language-conf">&quot;ExceptionList&quot;: [
+                &quot;10.244.0.0/16&quot;,  # Cluster subnet
+                &quot;10.96.0.0/12&quot;,   # Service subnet
+                &quot;10.127.130.0/24&quot; # Management (host) subnet
+            ]</code></pre></li>
 <li><p>My Windows node cannot access <code>NodePort</code> type
 Services</p>
 <p>Local NodePort access from the node itself fails. This is a known
@@ -190,8 +204,7 @@ parameter is not passed to <a
 href="../../../reference/command-line-tools-reference/kube-proxy.html">kube-proxy</a>.
 To resolve it, users need to pass the hostname to kube-proxy as
 follows:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode powershell"><code class="sourceCode powershell">C<span class="op">:</span>\k\kube-proxy<span class="op">.</span><span class="fu">exe</span> <span class="op">--</span>hostname-override<span class="op">=$(</span>hostname<span class="op">)</span></span></code></pre></div></li>
+<pre class="powershell"><code class="language-powershell">C:\k\kube-proxy.exe --hostname-override=$(hostname)</code></pre></li>
 <li><p>My Windows node cannot access my services using the service
 IP</p>
 <p>This is a known limitation of the networking stack on Windows.
@@ -201,9 +214,8 @@ However, Windows Pods can access the Service IP.</p></li>
 networking to work. If the following commands return no results (in an
 admin shell), virtual network creation — a necessary prerequisite for
 the kubelet to work — has failed:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode powershell"><code class="sourceCode powershell">Get-HnsNetwork <span class="op">|</span> <span class="op">?</span> Name <span class="op">-ieq</span> <span class="st">&quot;cbr0&quot;</span></span>
-Get-NetAdapter <span class="op">|</span> <span class="op">?</span> Name <span class="op">-</span>Like <span class="st">&quot;vEthernet (Ethernet*&quot;</span></span></code></pre></div>
+<pre class="powershell"><code class="language-powershell">Get-HnsNetwork | ? Name -ieq &quot;cbr0&quot;
+Get-NetAdapter | ? Name -Like &quot;vEthernet (Ethernet*&quot;</code></pre>
 <p>Often it is worthwhile to modify the <a
 href="https://github.com/microsoft/SDN/blob/master/Kubernetes/flannel/start.ps1#L7">InterfaceName</a>
 parameter of the <code>start.ps1</code> script, in cases where the
@@ -225,9 +237,8 @@ href="https://github.com/kubernetes/kubernetes/tree/master/build/pause/windows/w
 node is behind a proxy</p>
 <p>If you are behind a proxy, the following PowerShell environment
 variables must be defined:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode powershell"><code class="sourceCode powershell"><span class="op">[</span>Environment<span class="op">]::</span>SetEnvironmentVariable<span class="op">(</span><span class="st">&quot;HTTP_PROXY&quot;</span><span class="op">,</span> <span class="st">&quot;http://proxy.example.com:80/&quot;</span><span class="op">,</span> <span class="op">[</span>EnvironmentVariableTarget<span class="op">]::</span>Machine<span class="op">)</span></span>
-<span class="op">[</span>Environment<span class="op">]::</span>SetEnvironmentVariable<span class="op">(</span><span class="st">&quot;HTTPS_PROXY&quot;</span><span class="op">,</span> <span class="st">&quot;http://proxy.example.com:443/&quot;</span><span class="op">,</span> <span class="op">[</span>EnvironmentVariableTarget<span class="op">]::</span>Machine<span class="op">)</span></span></code></pre></div></li>
+<pre class="powershell"><code class="language-powershell">[Environment]::SetEnvironmentVariable(&quot;HTTP_PROXY&quot;, &quot;http://proxy.example.com:80/&quot;, [EnvironmentVariableTarget]::Machine)
+[Environment]::SetEnvironmentVariable(&quot;HTTPS_PROXY&quot;, &quot;http://proxy.example.com:443/&quot;, [EnvironmentVariableTarget]::Machine)</code></pre></li>
 </ol>
 <h3 id="flannel-troubleshooting">Flannel troubleshooting</h3>
 <ol type="1">
@@ -237,18 +248,16 @@ cluster</p>
 flannelD tries to assign a new pod subnet to the node. Users should
 remove the old pod subnet configuration files in the following
 paths:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode powershell"><code class="sourceCode powershell"><span class="fu">Remove-Item</span> C<span class="op">:</span>\k\SourceVip<span class="op">.</span><span class="fu">json</span></span>
-<span class="fu">Remove-Item</span> C<span class="op">:</span>\k\SourceVipRequest<span class="op">.</span><span class="fu">json</span></span></code></pre></div></li>
+<pre class="powershell"><code class="language-powershell">Remove-Item C:\k\SourceVip.json
+Remove-Item C:\k\SourceVipRequest.json</code></pre></li>
 <li><p>Flanneld is stuck in "Waiting for the Network to be created"</p>
 <p>There are numerous reports of this <a
 href="https://github.com/coreos/flannel/issues/1066">issue</a>; most
 likely it is a timing issue for when the management IP of the flannel
 network is set. A workaround is to relaunch <code>start.ps1</code> or
 relaunch it manually as follows:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode powershell"><code class="sourceCode powershell"><span class="op">[</span>Environment<span class="op">]::</span>SetEnvironmentVariable<span class="op">(</span><span class="st">&quot;NODE_NAME&quot;</span><span class="op">,</span> <span class="st">&quot;&lt;Windows_Worker_Hostname&gt;&quot;</span><span class="op">)</span></span>
-C<span class="op">:</span>\flannel\flanneld<span class="op">.</span><span class="fu">exe</span> <span class="op">--</span>kubeconfig-file<span class="op">=</span>c<span class="op">:</span>\k\config <span class="op">--</span>iface<span class="op">=&lt;</span>Windows_Worker_Node_IP<span class="op">&gt;</span> <span class="op">--</span>ip-masq<span class="op">=</span><span class="dv">1</span> <span class="op">--</span>kube-subnet-mgr<span class="op">=</span><span class="dv">1</span></span></code></pre></div></li>
+<pre class="powershell"><code class="language-powershell">[Environment]::SetEnvironmentVariable(&quot;NODE_NAME&quot;, &quot;&lt;Windows_Worker_Hostname&gt;&quot;)
+C:\flannel\flanneld.exe --kubeconfig-file=c:\k\config --iface=&lt;Windows_Worker_Node_IP&gt; --ip-masq=1 --kube-subnet-mgr=1</code></pre></li>
 <li><p>My Windows Pods cannot launch because of missing
 <code>/run/flannel/subnet.env</code></p>
 <p>This indicates that Flannel didn't launch correctly. You can either
@@ -257,7 +266,7 @@ manually from <code>/run/flannel/subnet.env</code> on the Kubernetes
 master to <code>C:\run\flannel\subnet.env</code> on the Windows worker
 node and modify the <code>FLANNEL_SUBNET</code> row to a different
 number. For example, if node subnet 10.244.4.1/24 is desired:</p>
-<pre class="env"><code>FLANNEL_NETWORK=10.244.0.0/16
+<pre class="env"><code class="language-env">FLANNEL_NETWORK=10.244.0.0/16
 FLANNEL_SUBNET=10.244.4.1/24
 FLANNEL_MTU=1500
 FLANNEL_IPMASQ=true</code></pre></li>
@@ -339,6 +348,7 @@ Channel</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -347,6 +357,8 @@ Channel</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

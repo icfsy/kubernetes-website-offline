@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -174,12 +189,12 @@ higher.</p>
 </div>
 <p>An example of the impersonation headers used when impersonating a
 user with groups:</p>
-<pre class="http"><code>Impersonate-User: jane.doe@example.com
+<pre class="http"><code class="language-http">Impersonate-User: jane.doe@example.com
 Impersonate-Group: developers
 Impersonate-Group: admins</code></pre>
 <p>An example of the impersonation headers used when impersonating a
 user with a UID and extra fields:</p>
-<pre class="http"><code>Impersonate-User: jane.doe@example.com
+<pre class="http"><code class="language-http">Impersonate-User: jane.doe@example.com
 Impersonate-Uid: 06f6ce97-e2c5-4ab8-7ba5-7654dd08d52b
 Impersonate-Extra-dn: cn=jane,ou=engineers,dc=example,dc=com
 Impersonate-Extra-acme.com%2Fproject: some-project
@@ -192,13 +207,11 @@ can also set the <code>--as-group</code> flag to configure the
 flag (1.23) to configure <code>Impersonate-Uid</code> header, and set
 the <code>--as-user-extra</code> flag (1.35) to configure
 <code>Impersonate-Extra-( extra name )</code> header.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> drain mynode</span></code></pre></div>
-<pre class="none"><code>Error from server (Forbidden): User &quot;clark&quot; cannot get nodes at the cluster scope. (get nodes mynode)</code></pre>
+<pre class="bash"><code class="language-bash">kubectl drain mynode</code></pre>
+<pre class="none"><code class="language-none">Error from server (Forbidden): User &quot;clark&quot; cannot get nodes at the cluster scope. (get nodes mynode)</code></pre>
 <p>Set the <code>--as</code> and <code>--as-group</code> flag:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> drain mynode <span class="at">--as</span><span class="op">=</span>superman <span class="at">--as-group</span><span class="op">=</span>system:masters</span></code></pre></div>
-<pre class="none"><code>node/mynode cordoned
+<pre class="bash"><code class="language-bash">kubectl drain mynode --as=superman --as-group=system:masters</code></pre>
+<pre class="none"><code class="language-none">node/mynode cordoned
 node/mynode drained</code></pre>
 <p>To impersonate a user, user identifier (UID), group or extra fields,
 the impersonating user must have the ability to perform the
@@ -206,61 +219,58 @@ the impersonating user must have the ability to perform the
 impersonated ("user", "uid", "group", etc.). For clusters that enable
 the RBAC authorization plugin, the following ClusterRole encompasses the
 rules needed to set user and group impersonation headers:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonator</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;users&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;groups&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;serviceaccounts&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonator
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;users&quot;, &quot;groups&quot;, &quot;serviceaccounts&quot;]
+  verbs: [&quot;impersonate&quot;]</code></pre>
 <p>For impersonation, extra fields and impersonated UIDs are both under
 the "authentication.k8s.io" <code>apiGroup</code>. Extra fields are
 evaluated as sub-resources of the resource "userextras". To allow a user
 to use impersonation headers for the extra field <code>scopes</code> and
 for UIDs, a user should be granted the following role:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> scopes-and-uid-impersonator</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="co"># Can set &quot;Impersonate-Extra-scopes&quot; header and the &quot;Impersonate-Uid&quot; header.</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;userextras/scopes&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;uids&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: scopes-and-uid-impersonator
+rules:
+# Can set &quot;Impersonate-Extra-scopes&quot; header and the &quot;Impersonate-Uid&quot; header.
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;userextras/scopes&quot;, &quot;uids&quot;]
+  verbs: [&quot;impersonate&quot;]</code></pre>
 <p>The values of impersonation headers can also be restricted by
 limiting the set of <code>resourceNames</code> a resource can take.</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> limited-impersonator</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="co"># Can impersonate the user &quot;jane.doe@example.com&quot;</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;users&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;jane.doe@example.com&quot;</span><span class="kw">]</span></span>
-</span>
-<span class="co"># Can impersonate the groups &quot;developers&quot; and &quot;admins&quot;</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;groups&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;developers&quot;</span><span class="kw">,</span><span class="st">&quot;admins&quot;</span><span class="kw">]</span></span>
-</span>
-<span class="co"># Can impersonate the extras field &quot;scopes&quot; with the values &quot;view&quot; and &quot;development&quot;</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;userextras/scopes&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;view&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;development&quot;</span><span class="kw">]</span></span>
-</span>
-<span class="co"># Can impersonate the uid &quot;06f6ce97-e2c5-4ab8-7ba5-7654dd08d52b&quot;</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;uids&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;06f6ce97-e2c5-4ab8-7ba5-7654dd08d52b&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: limited-impersonator
+rules:
+# Can impersonate the user &quot;jane.doe@example.com&quot;
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;users&quot;]
+  verbs: [&quot;impersonate&quot;]
+  resourceNames: [&quot;jane.doe@example.com&quot;]
+
+# Can impersonate the groups &quot;developers&quot; and &quot;admins&quot;
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;groups&quot;]
+  verbs: [&quot;impersonate&quot;]
+  resourceNames: [&quot;developers&quot;,&quot;admins&quot;]
+
+# Can impersonate the extras field &quot;scopes&quot; with the values &quot;view&quot; and &quot;development&quot;
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;userextras/scopes&quot;]
+  verbs: [&quot;impersonate&quot;]
+  resourceNames: [&quot;view&quot;, &quot;development&quot;]
+
+# Can impersonate the uid &quot;06f6ce97-e2c5-4ab8-7ba5-7654dd08d52b&quot;
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;uids&quot;]
+  verbs: [&quot;impersonate&quot;]
+  resourceNames: [&quot;06f6ce97-e2c5-4ab8-7ba5-7654dd08d52b&quot;]</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -381,57 +391,55 @@ user named <code>jane.doe@example.com</code>, but only to
 <code>RoleBinding</code> for the action permission</p>
 <p><strong>Step 1: Grant permission to impersonate the user
 identity</strong></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-jane-identity</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;users&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;jane.doe@example.com&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate:user-info&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-jane-identity</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-jane-identity</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-controller</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-jane-identity
+rules:
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;users&quot;]
+  resourceNames: [&quot;jane.doe@example.com&quot;]
+  verbs: [&quot;impersonate:user-info&quot;]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: impersonate-jane-identity
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: impersonate-jane-identity
+subjects:
+- kind: ServiceAccount
+  name: my-controller
+  namespace: default</code></pre>
 <p><strong>Step 2: Grant permission to perform specific actions when
 impersonating</strong></p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-watch-pods</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:user-info:list&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:user-info:watch&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-watch-pods</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-watch-pods</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-controller</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: impersonate-list-watch-pods
+  namespace: default
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;]
+  verbs:
+  - &quot;impersonate-on:user-info:list&quot;
+  - &quot;impersonate-on:user-info:watch&quot;
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: impersonate-list-watch-pods
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: impersonate-list-watch-pods
+subjects:
+- kind: ServiceAccount
+  name: my-controller
+  namespace: default</code></pre>
 <p>Now the <code>my-controller</code> service account can impersonate
 <code>jane.doe@example.com</code> to list and watch pods in the
 <code>default</code> namespace, but <strong>cannot</strong> perform
@@ -442,183 +450,177 @@ ServiceAccount</h4>
 <p>To allow impersonating a service account named <code>app-sa</code> in
 the <code>production</code> namespace to create and update
 deployments:</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-app-sa</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;serviceaccounts&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;app-sa&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="co"># For service accounts, you must specify the namespace in the RoleBinding</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate:serviceaccount&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-manage-deployments</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> production</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;deployments&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:serviceaccount:create&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:serviceaccount:update&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:serviceaccount:patch&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-app-sa</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-app-sa</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> deputy-controller</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-manage-deployments</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> production</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-manage-deployments</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> deputy-controller</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: impersonate-app-sa
+  namespace: default
+rules:
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;serviceaccounts&quot;]
+  resourceNames: [&quot;app-sa&quot;]
+  # For service accounts, you must specify the namespace in the RoleBinding
+  verbs: [&quot;impersonate:serviceaccount&quot;]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: impersonate-manage-deployments
+  namespace: production
+rules:
+- apiGroups: [&quot;apps&quot;]
+  resources: [&quot;deployments&quot;]
+  verbs:
+  - &quot;impersonate-on:serviceaccount:create&quot;
+  - &quot;impersonate-on:serviceaccount:update&quot;
+  - &quot;impersonate-on:serviceaccount:patch&quot;
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: impersonate-app-sa
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: impersonate-app-sa
+subjects:
+- kind: ServiceAccount
+  name: deputy-controller
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: impersonate-manage-deployments
+  namespace: production
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: impersonate-manage-deployments
+subjects:
+- kind: ServiceAccount
+  name: deputy-controller
+  namespace: default</code></pre>
 <h4 id="example-impersonate-a-node">Example: Impersonate a node</h4>
 <p>To allow <code>node-impersonator</code> ServiceAccount in
 <code>default</code> namespace impersonating a node named
 <code>mynode</code> to get and list pods:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-node-sa</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;nodes&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resourceNames</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;mynode&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate:arbitrary-node&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-pods</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;impersonate-on:arbitrary-node:list&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&quot;impersonate-on:arbitrary-node:get&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-node-sa</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-node-sa</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-impersonator</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-pods</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-pods</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-impersonator</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-node-sa
+rules:
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;nodes&quot;]
+  resourceNames: [&quot;mynode&quot;]
+  verbs: [&quot;impersonate:arbitrary-node&quot;]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-list-pods
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;pods&quot;]
+    verbs:
+      - &quot;impersonate-on:arbitrary-node:list&quot;
+      - &quot;impersonate-on:arbitrary-node:get&quot;
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: impersonate-node-sa
+  namespace: default
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: impersonate-node-sa
+subjects:
+- kind: ServiceAccount
+  name: node-impersonator
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: impersonate-list-pods
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: impersonate-list-pods
+subjects:
+  - kind: ServiceAccount
+    name: node-impersonator
+    namespace: default</code></pre>
 <h4 id="example-node-agent-impersonating-the-associated-node">Example:
 Node agent impersonating the associated node</h4>
 <p>This is a common pattern for node agents (like CNI plugins) that need
 to read pods on their node without having cluster-wide pod access.</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-associated-node-identity</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;authentication.k8s.io&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;nodes&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;impersonate:associated-node&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-pods-on-node</span></span>
-<span class="fu">rules</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
-<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:associated-node:list&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;impersonate-on:associated-node:get&quot;</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-agent-impersonate-node</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-associated-node-identity</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-agent</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-agent-impersonate-list-pods</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> impersonate-list-pods-on-node</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> node-agent</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-associated-node-identity
+rules:
+- apiGroups: [&quot;authentication.k8s.io&quot;]
+  resources: [&quot;nodes&quot;]
+  verbs: [&quot;impersonate:associated-node&quot;]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: impersonate-list-pods-on-node
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;]
+  verbs:
+  - &quot;impersonate-on:associated-node:list&quot;
+  - &quot;impersonate-on:associated-node:get&quot;
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-agent-impersonate-node
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: impersonate-associated-node-identity
+subjects:
+- kind: ServiceAccount
+  name: node-agent
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-agent-impersonate-list-pods
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: impersonate-list-pods-on-node
+subjects:
+- kind: ServiceAccount
+  name: node-agent
+  namespace: kube-system</code></pre>
 <p>The controller would get the node name using the downward API:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">env</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_NODE_NAME</span></span>
-<span class="at">  </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> spec.nodeName</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">env:
+- name: MY_NODE_NAME
+  valueFrom:
+    fieldRef:
+      fieldPath: spec.nodeName</code></pre>
 <p>Then configure the kubeconfig to impersonate:</p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode go"><code class="sourceCode go">kubeConfig<span class="op">,</span> _ <span class="op">:=</span> clientcmd<span class="op">.</span>BuildConfigFromFlags<span class="op">(</span><span class="st">&quot;&quot;</span><span class="op">,</span> <span class="st">&quot;&quot;</span><span class="op">)</span></span>
-kubeConfig<span class="op">.</span>Impersonate <span class="op">=</span> rest<span class="op">.</span>ImpersonationConfig<span class="op">{</span></span>
-    UserName<span class="op">:</span> <span class="st">&quot;system:node:&quot;</span> <span class="op">+</span> os<span class="op">.</span>Getenv<span class="op">(</span><span class="st">&quot;MY_NODE_NAME&quot;</span><span class="op">),</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">kubeConfig, _ := clientcmd.BuildConfigFromFlags(&quot;&quot;, &quot;&quot;)
+kubeConfig.Impersonate = rest.ImpersonationConfig{
+    UserName: &quot;system:node:&quot; + os.Getenv(&quot;MY_NODE_NAME&quot;),
+}</code></pre>
 <h3 id="using-constrained-impersonation">Using constrained
 impersonation</h3>
 <p>From a client perspective, using constrained impersonation is
 identical to using traditional impersonation. You use the same
 impersonation headers:</p>
-<pre class="http"><code>Impersonate-User: jane.doe@example.com</code></pre>
+<pre class="http"><code class="language-http">Impersonate-User: jane.doe@example.com</code></pre>
 <p>Or with kubectl:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> get pods <span class="at">-n</span> default <span class="at">--as</span><span class="op">=</span>jane.doe@example.com</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl get pods -n default --as=jane.doe@example.com</code></pre>
 <p>The difference is entirely in the authorization checks performed by
 the API server.</p>
 <h3 id="working-with-impersonate-verb">Working with
@@ -645,28 +647,27 @@ annotation to the audit event recording the time taken to process the
 impersonation (along with other handlers that contributed to the overall
 duration).</p>
 <p>Example audit event:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;Event&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;audit.k8s.io/v1&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;user&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;system:serviceaccount:default:my-controller&quot;</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;impersonatedUser&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;jane.doe@example.com&quot;</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;authenticationMetadata&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;impersonationConstraint&quot;</span><span class="fu">:</span> <span class="st">&quot;impersonate:user-info&quot;</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;annotations&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;apiserver.latency.k8s.io/impersonation&quot;</span><span class="fu">:</span> <span class="st">&quot;100ms&quot;</span></span>
-  <span class="fu">},</span></span>
-  <span class="dt">&quot;verb&quot;</span><span class="fu">:</span> <span class="st">&quot;list&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;objectRef&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-    <span class="dt">&quot;resource&quot;</span><span class="fu">:</span> <span class="st">&quot;pods&quot;</span><span class="fu">,</span></span>
-    <span class="dt">&quot;namespace&quot;</span><span class="fu">:</span> <span class="st">&quot;default&quot;</span></span>
-  <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;Event&quot;,
+  &quot;apiVersion&quot;: &quot;audit.k8s.io/v1&quot;,
+  &quot;user&quot;: {
+    &quot;username&quot;: &quot;system:serviceaccount:default:my-controller&quot;
+  },
+  &quot;impersonatedUser&quot;: {
+    &quot;username&quot;: &quot;jane.doe@example.com&quot;
+  },
+  &quot;authenticationMetadata&quot;: {
+    &quot;impersonationConstraint&quot;: &quot;impersonate:user-info&quot;
+  },
+  &quot;annotations&quot;: {
+    &quot;apiserver.latency.k8s.io/impersonation&quot;: &quot;100ms&quot;
+  },
+  &quot;verb&quot;: &quot;list&quot;,
+  &quot;objectRef&quot;: {
+    &quot;resource&quot;: &quot;pods&quot;,
+    &quot;namespace&quot;: &quot;default&quot;
+  }
+}</code></pre>
 <p>The <code>impersonationConstraint</code> value indicates which mode
 was used (for example, <code>impersonate:user-info</code>,
 <code>impersonate:associated-node</code>). The specific action (for
@@ -776,6 +777,7 @@ authentication</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -784,6 +786,8 @@ authentication</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

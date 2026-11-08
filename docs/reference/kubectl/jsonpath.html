@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -146,46 +161,45 @@ function.</p></li>
 </div>
 <h2 id="functions">Functions in Kubernetes JSONPath</h2>
 <p>Given the JSON input:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;List&quot;</span><span class="fu">,</span></span>
-  <span class="dt">&quot;items&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;kind&quot;</span><span class="fu">:</span><span class="st">&quot;None&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;metadata&quot;</span><span class="fu">:{</span></span>
-        <span class="dt">&quot;name&quot;</span><span class="fu">:</span><span class="st">&quot;127.0.0.1&quot;</span><span class="fu">,</span></span>
-        <span class="dt">&quot;labels&quot;</span><span class="fu">:{</span></span>
-          <span class="dt">&quot;kubernetes.io/hostname&quot;</span><span class="fu">:</span><span class="st">&quot;127.0.0.1&quot;</span></span>
-        <span class="fu">}</span></span>
-      <span class="fu">},</span></span>
-      <span class="dt">&quot;status&quot;</span><span class="fu">:{</span></span>
-        <span class="dt">&quot;capacity&quot;</span><span class="fu">:{</span><span class="dt">&quot;cpu&quot;</span><span class="fu">:</span><span class="st">&quot;4&quot;</span><span class="fu">},</span></span>
-        <span class="dt">&quot;addresses&quot;</span><span class="fu">:</span><span class="ot">[</span><span class="fu">{</span><span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;LegacyHostIP&quot;</span><span class="fu">,</span> <span class="dt">&quot;address&quot;</span><span class="fu">:</span><span class="st">&quot;127.0.0.1&quot;</span><span class="fu">}</span><span class="ot">]</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">}</span><span class="ot">,</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;kind&quot;</span><span class="fu">:</span><span class="st">&quot;None&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;metadata&quot;</span><span class="fu">:{</span><span class="dt">&quot;name&quot;</span><span class="fu">:</span><span class="st">&quot;127.0.0.2&quot;</span><span class="fu">},</span></span>
-      <span class="dt">&quot;status&quot;</span><span class="fu">:{</span></span>
-        <span class="dt">&quot;capacity&quot;</span><span class="fu">:{</span><span class="dt">&quot;cpu&quot;</span><span class="fu">:</span><span class="st">&quot;8&quot;</span><span class="fu">},</span></span>
-        <span class="dt">&quot;addresses&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
-          <span class="fu">{</span><span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;LegacyHostIP&quot;</span><span class="fu">,</span> <span class="dt">&quot;address&quot;</span><span class="fu">:</span><span class="st">&quot;127.0.0.2&quot;</span><span class="fu">}</span><span class="ot">,</span></span>
-          <span class="fu">{</span><span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;another&quot;</span><span class="fu">,</span> <span class="dt">&quot;address&quot;</span><span class="fu">:</span><span class="st">&quot;127.0.0.3&quot;</span><span class="fu">}</span></span>
-        <span class="ot">]</span></span>
-      <span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span><span class="fu">,</span></span>
-  <span class="dt">&quot;users&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;myself&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;user&quot;</span><span class="fu">:</span> <span class="fu">{}</span></span>
-    <span class="fu">}</span><span class="ot">,</span></span>
-    <span class="fu">{</span></span>
-      <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;e2e&quot;</span><span class="fu">,</span></span>
-      <span class="dt">&quot;user&quot;</span><span class="fu">:</span> <span class="fu">{</span><span class="dt">&quot;username&quot;</span><span class="fu">:</span> <span class="st">&quot;admin&quot;</span><span class="fu">,</span> <span class="dt">&quot;password&quot;</span><span class="fu">:</span> <span class="st">&quot;secret&quot;</span><span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-  <span class="ot">]</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+  &quot;kind&quot;: &quot;List&quot;,
+  &quot;items&quot;:[
+    {
+      &quot;kind&quot;:&quot;None&quot;,
+      &quot;metadata&quot;:{
+        &quot;name&quot;:&quot;127.0.0.1&quot;,
+        &quot;labels&quot;:{
+          &quot;kubernetes.io/hostname&quot;:&quot;127.0.0.1&quot;
+        }
+      },
+      &quot;status&quot;:{
+        &quot;capacity&quot;:{&quot;cpu&quot;:&quot;4&quot;},
+        &quot;addresses&quot;:[{&quot;type&quot;: &quot;LegacyHostIP&quot;, &quot;address&quot;:&quot;127.0.0.1&quot;}]
+      }
+    },
+    {
+      &quot;kind&quot;:&quot;None&quot;,
+      &quot;metadata&quot;:{&quot;name&quot;:&quot;127.0.0.2&quot;},
+      &quot;status&quot;:{
+        &quot;capacity&quot;:{&quot;cpu&quot;:&quot;8&quot;},
+        &quot;addresses&quot;:[
+          {&quot;type&quot;: &quot;LegacyHostIP&quot;, &quot;address&quot;:&quot;127.0.0.2&quot;},
+          {&quot;type&quot;: &quot;another&quot;, &quot;address&quot;:&quot;127.0.0.3&quot;}
+        ]
+      }
+    }
+  ],
+  &quot;users&quot;:[
+    {
+      &quot;name&quot;: &quot;myself&quot;,
+      &quot;user&quot;: {}
+    },
+    {
+      &quot;name&quot;: &quot;e2e&quot;,
+      &quot;user&quot;: {&quot;username&quot;: &quot;admin&quot;, &quot;password&quot;: &quot;secret&quot;}
+    }
+  ]
+}</code></pre>
 <table style="width:99%;">
 <colgroup>
 <col style="width: 15%" />
@@ -273,7 +287,7 @@ class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span><
 </table>
 <h2 id="use-with-kubectl">Using JSONPath expressions with kubectl</h2>
 <p>Examples using <code>kubectl</code> and JSONPath expressions:</p>
-<pre class="shell"><code>kubectl get pods -o json
+<pre class="shell"><code class="language-shell">kubectl get pods -o json
 kubectl get pods -o=jsonpath=&#39;{@}&#39;
 kubectl get pods -o=jsonpath=&#39;{.items[0]}&#39;
 kubectl get pods -o=jsonpath=&#39;{.items[0].metadata.name}&#39;
@@ -282,7 +296,7 @@ kubectl get pods -o=jsonpath=&#39;{range .items[*]}{.metadata.name}{&quot;\t&quo
 kubectl get pods -o=jsonpath=&#39;{.items[0].metadata.labels.kubernetes\.io/hostname}&#39;</code></pre>
 <p>Or, with a "my_pod" and "my_namespace" (adjust these names to your
 environment):</p>
-<pre class="shell"><code>kubectl get pod/my_pod -n my_namespace -o=jsonpath=&#39;{@}&#39;
+<pre class="shell"><code class="language-shell">kubectl get pod/my_pod -n my_namespace -o=jsonpath=&#39;{@}&#39;
 kubectl get pod/my_pod -n my_namespace -o=jsonpath=&#39;{.metadata.name}&#39;
 kubectl get pod/my_pod -n my_namespace -o=jsonpath=&#39;{.status}&#39;</code></pre>
 <div class="admonition note">
@@ -293,16 +307,15 @@ kubectl get pod/my_pod -n my_namespace -o=jsonpath=&#39;{.status}&#39;</code></p
 contains spaces (not single quote as shown above for bash). This in turn
 means that you must use a single quote or escaped double quote around
 any literals in the template. For example:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode cmd"><code class="sourceCode dosbat">kubectl get pods <span class="at">-o</span>=jsonpath=<span class="st">&quot;{range .items[*]}{.metadata.name}{&#39;\t&#39;}{.status.startTime}{&#39;\n&#39;}{end}&quot;</span></span>
-kubectl get pods <span class="at">-o</span>=jsonpath=<span class="st">&quot;{range .items[*]}{.metadata.name}{</span><span class="sc">\&quot;</span><span class="st">\t</span><span class="sc">\&quot;</span><span class="st">}{.status.startTime}{</span><span class="sc">\&quot;</span><span class="st">\n</span><span class="sc">\&quot;</span><span class="st">}{end}&quot;</span></span></code></pre></div>
+<pre class="cmd"><code class="language-cmd">kubectl get pods -o=jsonpath=&quot;{range .items[*]}{.metadata.name}{&#39;\t&#39;}{.status.startTime}{&#39;\n&#39;}{end}&quot;
+kubectl get pods -o=jsonpath=&quot;{range .items[*]}{.metadata.name}{\&quot;\t\&quot;}{.status.startTime}{\&quot;\n\&quot;}{end}&quot;</code></pre>
 </div>
 <h2 id="regular-expressions-in-jsonpath">Regular expressions in
 JSONPath</h2>
 <p>JSONPath regular expressions are not supported. If you want to match
 using regular expressions, you can use a tool such as
 <code>jq</code>.</p>
-<pre class="shell"><code># kubectl does not support regular expressions for JSONpath output
+<pre class="shell"><code class="language-shell"># kubectl does not support regular expressions for JSONpath output
 # The following command does not work
 kubectl get pods -o jsonpath=&#39;{.items[?(@.metadata.name=~/^test$/)].metadata.name}&#39;
 
@@ -372,6 +385,7 @@ kubectl get pods -o json | jq -r &#39;.items[] | select(.metadata.name | test(&q
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -380,6 +394,8 @@ kubectl get pods -o json | jq -r &#39;.items[] | select(.metadata.name | test(&q
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

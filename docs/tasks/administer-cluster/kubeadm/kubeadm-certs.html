@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -164,10 +179,9 @@ algorithm</h2>
 <p>kubeadm allows you to choose an encryption algorithm that is used for
 creating public and private keys. That can be done by using the
 <code>encryptionAlgorithm</code> field of the kubeadm configuration:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">encryptionAlgorithm</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;ALGORITHM&gt;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+encryptionAlgorithm: &lt;ALGORITHM&gt;</code></pre>
 <p><code>&lt;ALGORITHM&gt;</code> can be one of
 <code>RSA-2048</code> (default), <code>RSA-3072</code>,
 <code>RSA-4096</code> or <code>ECDSA-P256</code>.</p>
@@ -178,11 +192,10 @@ certificates. That can be done by using the
 <code>certificateValidityPeriod</code> and
 <code>caCertificateValidityPeriod</code> fields of the kubeadm
 configuration:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">certificateValidityPeriod</span><span class="kw">:</span><span class="at"> 8760h</span><span class="co"> # Default: 365 days × 24 hours = 1 year</span></span>
-<span class="fu">caCertificateValidityPeriod</span><span class="kw">:</span><span class="at"> 87600h</span><span class="co"> # Default: 365 days × 24 hours * 10 = 10 years</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+certificateValidityPeriod: 8760h # Default: 365 days × 24 hours = 1 year
+caCertificateValidityPeriod: 87600h # Default: 365 days × 24 hours * 10 = 10 years</code></pre>
 <p>The values of the fields follow the accepted format for <a
 href="https://pkg.go.dev/time#ParseDuration">Go's
 <code>time.Duration</code> values</a>, with the longest supported unit
@@ -272,9 +285,9 @@ CA.</p>
 </div>
 <p>You can use the <code>check-expiration</code> subcommand to check
 when certificates expire:</p>
-<pre class="shell"><code>kubeadm certs check-expiration</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm certs check-expiration</code></pre>
 <p>The output is similar to this:</p>
-<pre class="console"><code>CERTIFICATE                EXPIRES                  RESIDUAL TIME   CERTIFICATE AUTHORITY   EXTERNALLY MANAGED
+<pre class="console"><code class="language-console">CERTIFICATE                EXPIRES                  RESIDUAL TIME   CERTIFICATE AUTHORITY   EXTERNALLY MANAGED
 admin.conf                 Dec 30, 2020 23:36 UTC   364d                                    no
 apiserver                  Dec 30, 2020 23:36 UTC   364d            ca                      no
 apiserver-etcd-client      Dec 30, 2020 23:36 UTC   364d            etcd-ca                 no
@@ -318,9 +331,8 @@ After <code>kubeadm init</code> finishes, you should update
 <code>kubelet.conf</code> to point to the rotated kubelet client
 certificates, by replacing <code>client-certificate-data</code> and
 <code>client-key-data</code> with:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">client-certificate</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/pki/kubelet-client-current.pem</span></span>
-<span class="fu">client-key</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/pki/kubelet-client-current.pem</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">client-certificate: /var/lib/kubelet/pki/kubelet-client-current.pem
+client-key: /var/lib/kubelet/pki/kubelet-client-current.pem</code></pre>
 </div>
 <h2 id="automatic-certificate-renewal">Automatic certificate
 renewal</h2>
@@ -366,7 +378,7 @@ manifest directory. You can then move the file back and after another
 Pod and the certificate renewal for the component can complete.</p>
 <p><code>kubeadm certs renew</code> can renew any specific certificate
 or, with the subcommand <code>all</code>, it can renew all of them:</p>
-<pre class="shell"><code># If you are running cluster with a replicated control plane, this command
+<pre class="shell"><code class="language-shell"># If you are running cluster with a replicated control plane, this command
 # needs to be executed on all the control-plane nodes.
 kubeadm certs renew all</code></pre>
 <h3 id="admin-certificate-copy">Copying the administrator certificate
@@ -377,7 +389,7 @@ href="../../../setup/production-environment/tools/kubeadm/create-cluster-kubeadm
 a cluster with kubeadm</a>. On such a system, to update the contents of
 <code>$HOME/.kube/config</code> after renewing the
 <code>admin.conf</code>, you could run the following commands:</p>
-<pre class="shell"><code>sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+<pre class="shell"><code class="language-shell">sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
 <h2 id="renew-certificates-with-the-kubernetes-certificates-api">Renew
 certificates with the Kubernetes certificates API</h2>
@@ -405,15 +417,14 @@ href="../../../reference/command-line-tools-reference/kube-controller-manager.ht
 <p>If you're creating a new cluster, you can use a kubeadm <a
 href="../../../reference/config-api/kubeadm-config.v1beta4.html">configuration
 file</a>:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="fu">controllerManager</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">extraArgs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cluster-signing-cert-file&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki/ca.crt&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cluster-signing-key-file&quot;</span></span>
-<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki/ca.key&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+controllerManager:
+  extraArgs:
+  - name: &quot;cluster-signing-cert-file&quot;
+    value: &quot;/etc/kubernetes/pki/ca.crt&quot;
+  - name: &quot;cluster-signing-key-file&quot;
+    value: &quot;/etc/kubernetes/pki/ca.key&quot;</code></pre>
 <h3 id="create-certificate-signing-requests-csr">Create certificate
 signing requests (CSR)</h3>
 <p>See <a
@@ -451,13 +462,12 @@ to a kubelet cannot be secured with TLS.</p>
 <p>To configure the kubelets in a new kubeadm cluster to obtain properly
 signed serving certificates you must pass the following minimal
 configuration to <code>kubeadm init</code>:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="fu">serverTLSBootstrap</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+serverTLSBootstrap: true</code></pre>
 <p>If you have already created the cluster you must adapt it by doing
 the following:</p>
 <ul>
@@ -480,12 +490,12 @@ kube-controller-manager - <a
 href="../../../reference/access-authn-authz/certificate-signing-requests.html#kubernetes-signers"><code>kubernetes.io/kubelet-serving</code></a>.
 This will require action from the user or a third party controller.</p>
 <p>These CSRs can be viewed using:</p>
-<pre class="shell"><code>kubectl get csr</code></pre>
-<pre class="console"><code>NAME        AGE     SIGNERNAME                        REQUESTOR                      CONDITION
+<pre class="shell"><code class="language-shell">kubectl get csr</code></pre>
+<pre class="console"><code class="language-console">NAME        AGE     SIGNERNAME                        REQUESTOR                      CONDITION
 csr-9wvgt   112s    kubernetes.io/kubelet-serving     system:node:worker-1           Pending
 csr-lz97v   1m58s   kubernetes.io/kubelet-serving     system:node:control-plane-1    Pending</code></pre>
 <p>To approve them you can do the following:</p>
-<pre class="shell"><code>kubectl certificate approve &lt;CSR-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl certificate approve &lt;CSR-name&gt;</code></pre>
 <p>By default, these serving certificate will expire after one year.
 Kubeadm sets the <code>KubeletConfiguration</code> field
 <code>rotateCertificates</code> to <code>true</code>, which means that
@@ -558,26 +568,25 @@ stdout and can be piped to a file using
 <code>kubeadm kubeconfig user ... &gt; somefile.conf</code>.</p>
 <p>Example configuration file that can be used with
 <code>--config</code>:</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># example.yaml</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
-<span class="co"># Will be used as the target &quot;cluster&quot; in the kubeconfig</span></span>
-<span class="fu">clusterName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes&quot;</span></span>
-<span class="co"># Will be used as the &quot;server&quot; (IP or DNS name) of this cluster in the kubeconfig</span></span>
-<span class="fu">controlPlaneEndpoint</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;some-dns-address:6443&quot;</span></span>
-<span class="co"># The cluster CA key and certificate will be loaded from this local directory</span></span>
-<span class="fu">certificatesDir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># example.yaml
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+# Will be used as the target &quot;cluster&quot; in the kubeconfig
+clusterName: &quot;kubernetes&quot;
+# Will be used as the &quot;server&quot; (IP or DNS name) of this cluster in the kubeconfig
+controlPlaneEndpoint: &quot;some-dns-address:6443&quot;
+# The cluster CA key and certificate will be loaded from this local directory
+certificatesDir: &quot;/etc/kubernetes/pki&quot;</code></pre>
 <p>Make sure that these settings match the desired target cluster
 settings. To see the settings of an existing cluster use:</p>
-<pre class="shell"><code>kubectl get cm kubeadm-config -n kube-system -o=jsonpath=&quot;{.data.ClusterConfiguration}&quot;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get cm kubeadm-config -n kube-system -o=jsonpath=&quot;{.data.ClusterConfiguration}&quot;</code></pre>
 <p>The following example will generate a kubeconfig file with
 credentials valid for 24 hours for a new user <code>johndoe</code> that
 is part of the <code>appdevs</code> group:</p>
-<pre class="shell"><code>kubeadm kubeconfig user --config example.yaml --org appdevs --client-name johndoe --validity-period 24h</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm kubeconfig user --config example.yaml --org appdevs --client-name johndoe --validity-period 24h</code></pre>
 <p>The following example will generate a kubeconfig file with
 administrator credentials valid for 1 week:</p>
-<pre class="shell"><code>kubeadm kubeconfig user --config example.yaml --client-name admin --validity-period 168h</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm kubeconfig user --config example.yaml --client-name admin --validity-period 168h</code></pre>
 <h2 id="signing-csr">Signing certificate signing requests (CSR)
 generated by kubeadm</h2>
 <p>You can create certificate signing requests with
@@ -621,7 +630,7 @@ or <code>kubeadm join</code> will find them.</p>
 account files</h3>
 <p>On the primary control plane node, where <code>kubeadm init</code>
 will be executed, call the following commands:</p>
-<pre class="shell"><code>sudo kubeadm init phase certs ca
+<pre class="shell"><code class="language-shell">sudo kubeadm init phase certs ca
 sudo kubeadm init phase certs etcd-ca
 sudo kubeadm init phase certs front-proxy-ca
 sudo kubeadm init phase certs sa</code></pre>
@@ -688,7 +697,7 @@ pre-populated <code>kubelet.conf</code> is needed.</p>
 <p>Execute the following command on primary (<code>kubeadm init</code>)
 and secondary (<code>kubeadm join --control-plane</code>) control plane
 nodes to generate all CSR files:</p>
-<pre class="shell"><code>sudo kubeadm certs generate-csr</code></pre>
+<pre class="shell"><code class="language-shell">sudo kubeadm certs generate-csr</code></pre>
 <p>If external etcd is to be used, follow the <a
 href="../../../setup/production-environment/tools/kubeadm/high-availability.html#external-etcd-nodes">External
 etcd with kubeadm</a> guide to understand what CSR files are needed on
@@ -703,7 +712,7 @@ keep or delete the <code>kubelet.conf</code> and
 <p>Based on the explanation in <a
 href="#considerations-kubelet-conf">Considerations for kubelet.conf</a>,
 optionally call:</p>
-<pre class="shell"><code>sudo kubeadm certs generate-csr</code></pre>
+<pre class="shell"><code class="language-shell">sudo kubeadm certs generate-csr</code></pre>
 <p>and keep only the <code>kubelet.conf</code> and
 <code>kubelet.conf.csr</code> files. Alternatively skip the steps for
 worker nodes entirely.</p>
@@ -732,45 +741,44 @@ documentation for the <code>--CAserial</code> flag.</p>
 directory, navigate to the directory and execute the script. The script
 will generate certificates for all CSR files that are present in the
 <code>/etc/kubernetes</code> tree.</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
-</span>
-<span class="co"># Set certificate expiration time in days</span></span>
-<span class="va">DAYS</span><span class="op">=</span>365</span>
-</span>
-<span class="co"># Process all CSR files except those for front-proxy and etcd</span></span>
-<span class="fu">find</span> ./ <span class="at">-name</span> <span class="st">&quot;*.csr&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-v</span> <span class="st">&quot;pki/etcd&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-v</span> <span class="st">&quot;front-proxy&quot;</span> <span class="kw">|</span> <span class="cf">while</span> <span class="bu">read</span> <span class="at">-r</span> <span class="va">FILE</span><span class="kw">;</span></span>
-<span class="cf">do</span></span>
-    <span class="bu">echo</span> <span class="st">&quot;* Processing </span><span class="va">${FILE}</span><span class="st"> ...&quot;</span></span>
-    <span class="va">FILE</span><span class="op">=</span><span class="va">${FILE</span><span class="op">%</span>.<span class="pp">*</span><span class="va">}</span> <span class="co"># Trim the extension</span></span>
-    <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">&quot;./pki/ca.srl&quot;</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
-        <span class="va">SERIAL_FLAG</span><span class="op">=</span><span class="st">&quot;-CAserial ./pki/ca.srl&quot;</span></span>
-    <span class="cf">else</span></span>
-        <span class="va">SERIAL_FLAG</span><span class="op">=</span><span class="st">&quot;-CAcreateserial&quot;</span></span>
-    <span class="cf">fi</span></span>
-    <span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-days</span> <span class="st">&quot;</span><span class="va">${DAYS}</span><span class="st">&quot;</span> <span class="at">-CA</span> ./pki/ca.crt <span class="at">-CAkey</span> ./pki/ca.key <span class="va">${SERIAL_FLAG}</span> <span class="dt">\</span></span>
-        <span class="at">-in</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.csr&quot;</span> <span class="at">-out</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.crt&quot;</span></span>
-    <span class="fu">sleep</span> 2</span>
-<span class="cf">done</span></span>
-</span>
-<span class="co"># Process all etcd CSRs</span></span>
-<span class="fu">find</span> ./pki/etcd <span class="at">-name</span> <span class="st">&quot;*.csr&quot;</span> <span class="kw">|</span> <span class="cf">while</span> <span class="bu">read</span> <span class="at">-r</span> <span class="va">FILE</span><span class="kw">;</span></span>
-<span class="cf">do</span></span>
-    <span class="bu">echo</span> <span class="st">&quot;* Processing </span><span class="va">${FILE}</span><span class="st"> ...&quot;</span></span>
-    <span class="va">FILE</span><span class="op">=</span><span class="va">${FILE</span><span class="op">%</span>.<span class="pp">*</span><span class="va">}</span> <span class="co"># Trim the extension</span></span>
-    <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">&quot;./pki/etcd/ca.srl&quot;</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
-        <span class="va">SERIAL_FLAG</span><span class="op">=</span>-CAserial <span class="ex">./pki/etcd/ca.srl</span></span>
-    <span class="cf">else</span></span>
-        <span class="va">SERIAL_FLAG</span><span class="op">=</span>-CAcreateserial</span>
-    <span class="cf">fi</span></span>
-    <span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-days</span> <span class="st">&quot;</span><span class="va">${DAYS}</span><span class="st">&quot;</span> <span class="at">-CA</span> ./pki/etcd/ca.crt <span class="at">-CAkey</span> ./pki/etcd/ca.key <span class="va">${SERIAL_FLAG}</span> <span class="dt">\</span></span>
-        <span class="at">-in</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.csr&quot;</span> <span class="at">-out</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.crt&quot;</span></span>
-<span class="cf">done</span></span>
-</span>
-<span class="co"># Process front-proxy CSRs</span></span>
-<span class="bu">echo</span> <span class="st">&quot;* Processing ./pki/front-proxy-client.csr ...&quot;</span></span>
-<span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-days</span> <span class="st">&quot;</span><span class="va">${DAYS}</span><span class="st">&quot;</span> <span class="at">-CA</span> ./pki/front-proxy-ca.crt <span class="at">-CAkey</span> ./pki/front-proxy-ca.key <span class="at">-CAcreateserial</span> <span class="dt">\</span></span>
-    <span class="at">-in</span> ./pki/front-proxy-client.csr <span class="at">-out</span> ./pki/front-proxy-client.crt</span></code></pre></div>
+<pre class="bash"><code class="language-bash">#!/bin/bash
+
+# Set certificate expiration time in days
+DAYS=365
+
+# Process all CSR files except those for front-proxy and etcd
+find ./ -name &quot;*.csr&quot; | grep -v &quot;pki/etcd&quot; | grep -v &quot;front-proxy&quot; | while read -r FILE;
+do
+    echo &quot;* Processing ${FILE} ...&quot;
+    FILE=${FILE%.*} # Trim the extension
+    if [ -f &quot;./pki/ca.srl&quot; ]; then
+        SERIAL_FLAG=&quot;-CAserial ./pki/ca.srl&quot;
+    else
+        SERIAL_FLAG=&quot;-CAcreateserial&quot;
+    fi
+    openssl x509 -req -days &quot;${DAYS}&quot; -CA ./pki/ca.crt -CAkey ./pki/ca.key ${SERIAL_FLAG} \
+        -in &quot;${FILE}.csr&quot; -out &quot;${FILE}.crt&quot;
+    sleep 2
+done
+
+# Process all etcd CSRs
+find ./pki/etcd -name &quot;*.csr&quot; | while read -r FILE;
+do
+    echo &quot;* Processing ${FILE} ...&quot;
+    FILE=${FILE%.*} # Trim the extension
+    if [ -f &quot;./pki/etcd/ca.srl&quot; ]; then
+        SERIAL_FLAG=-CAserial ./pki/etcd/ca.srl
+    else
+        SERIAL_FLAG=-CAcreateserial
+    fi
+    openssl x509 -req -days &quot;${DAYS}&quot; -CA ./pki/etcd/ca.crt -CAkey ./pki/etcd/ca.key ${SERIAL_FLAG} \
+        -in &quot;${FILE}.csr&quot; -out &quot;${FILE}.crt&quot;
+done
+
+# Process front-proxy CSRs
+echo &quot;* Processing ./pki/front-proxy-client.csr ...&quot;
+openssl x509 -req -days &quot;${DAYS}&quot; -CA ./pki/front-proxy-ca.crt -CAkey ./pki/front-proxy-ca.key -CAcreateserial \
+    -in ./pki/front-proxy-client.csr -out ./pki/front-proxy-client.crt</code></pre>
 <h3 id="embedding-certificates-in-kubeconfig-files">Embedding
 certificates in kubeconfig files</h3>
 <p>Repeat this step for all nodes that have CSR files.</p>
@@ -779,29 +787,27 @@ directory, navigate to the directory and execute the script. The script
 will take the <code>.crt</code> files that were signed for kubeconfig
 files from CSRs in the previous step and will embed them in the
 kubeconfig files.</p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
-</span>
-<span class="va">CLUSTER</span><span class="op">=</span>kubernetes</span>
-<span class="fu">find</span> ./ <span class="at">-name</span> <span class="st">&quot;*.conf&quot;</span> <span class="kw">|</span> <span class="cf">while</span> <span class="bu">read</span> <span class="at">-r</span> <span class="va">FILE</span><span class="kw">;</span></span>
-<span class="cf">do</span></span>
-    <span class="bu">echo</span> <span class="st">&quot;* Processing </span><span class="va">${FILE}</span><span class="st"> ...&quot;</span></span>
-    <span class="va">KUBECONFIG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">&quot;</span> <span class="ex">kubectl</span> config set-cluster <span class="st">&quot;</span><span class="va">${CLUSTER}</span><span class="st">&quot;</span> <span class="at">--certificate-authority</span> ./pki/ca.crt <span class="at">--embed-certs</span></span>
-    <span class="va">USER</span><span class="op">=</span><span class="va">$(KUBECONFIG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">&quot;</span> <span class="ex">kubectl</span> config view <span class="at">-o</span> jsonpath=<span class="st">&#39;{.users[0].name}&#39;</span><span class="va">)</span></span>
-    <span class="va">KUBECONFIG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">&quot;</span> <span class="ex">kubectl</span> config set-credentials <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span> <span class="at">--client-certificate</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.crt&quot;</span> <span class="at">--embed-certs</span></span>
-<span class="cf">done</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash">#!/bin/bash
+
+CLUSTER=kubernetes
+find ./ -name &quot;*.conf&quot; | while read -r FILE;
+do
+    echo &quot;* Processing ${FILE} ...&quot;
+    KUBECONFIG=&quot;${FILE}&quot; kubectl config set-cluster &quot;${CLUSTER}&quot; --certificate-authority ./pki/ca.crt --embed-certs
+    USER=$(KUBECONFIG=&quot;${FILE}&quot; kubectl config view -o jsonpath=&#39;{.users[0].name}&#39;)
+    KUBECONFIG=&quot;${FILE}&quot; kubectl config set-credentials &quot;${USER}&quot; --client-certificate &quot;${FILE}.crt&quot; --embed-certs
+done</code></pre>
 <h3 id="post-csr-cleanup">Performing cleanup</h3>
 <p>Perform this step on all nodes that have CSR files.</p>
 <p>Write the following script in the <code>/etc/kubernetes</code>
 directory, navigate to the directory and execute the script.</p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
-</span>
-<span class="co"># Cleanup CSR files</span></span>
-<span class="fu">rm</span> <span class="at">-f</span> ./<span class="pp">*</span>.csr ./pki/<span class="pp">*</span>.csr ./pki/etcd/<span class="pp">*</span>.csr <span class="co"># Clean all CSR files</span></span>
-</span>
-<span class="co"># Cleanup CRT files that were already embedded in kubeconfig files</span></span>
-<span class="fu">rm</span> <span class="at">-f</span> ./<span class="pp">*</span>.crt</span></code></pre></div>
+<pre class="bash"><code class="language-bash">#!/bin/bash
+
+# Cleanup CSR files
+rm -f ./*.csr ./pki/*.csr ./pki/etcd/*.csr # Clean all CSR files
+
+# Cleanup CRT files that were already embedded in kubeconfig files
+rm -f ./*.crt</code></pre>
 <p>Optionally, move <code>.srl</code> files to the next node to be
 processed.</p>
 <p>Optionally, if using external CA remove the
@@ -879,6 +885,7 @@ tree on the host's local filesystem.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -887,6 +894,8 @@ tree on the host's local filesystem.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

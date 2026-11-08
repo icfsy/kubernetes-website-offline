@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -328,25 +343,23 @@ policy, specifying <code>reservedMemory</code> is obligatory.</p>
 syntax</h3>
 <p>Here are some examples of how to set the <code>reservedMemory</code>
 configuration for the kubelet.</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># Example 1</span></span>
-<span class="at">  </span><span class="fu">reservedMemory</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">numaNode</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span><span class="co"> # NUMA node index</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1Gi&quot;</span><span class="at"> </span><span class="co"># byte quantity</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">numaNode</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span><span class="at"> </span><span class="co"># byte quantity</span></span></code></pre></div>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># Example 2</span></span>
-<span class="at">  </span><span class="fu">reservedMemory</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">numaNode</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">&quot;memory&quot;</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Gi&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">numaNode</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">&quot;memory&quot;</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;512Gi&quot;</span></span>
-<span class="at">      </span><span class="fu">&quot;hugepages-1Gi&quot;</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2Gi&quot;</span><span class="at"> </span><span class="co"># only relevant on Linux</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  # Example 1
+  reservedMemory:
+  - numaNode: 0 # NUMA node index
+    limits:
+      memory: &quot;1Gi&quot; # byte quantity
+  - numaNode: 1
+    limits:
+      memory: &quot;2Gi&quot; # byte quantity</code></pre>
+<pre class="yaml"><code class="language-yaml">  # Example 2
+  reservedMemory:
+  - numaNode: 0
+    limits:
+      &quot;memory&quot;: &quot;512Gi&quot;
+  - numaNode: 1
+    limits:
+      &quot;memory&quot;: &quot;512Gi&quot;
+      &quot;hugepages-1Gi&quot;: &quot;2Gi&quot; # only relevant on Linux</code></pre>
 <h3 id="constraints-on-numa-memory-reservation">Constraints on NUMA
 memory reservation</h3>
 <p>When you specify values for <code>reservedMemory</code>, this must be
@@ -354,7 +367,7 @@ compatible with the <code>kubeReserved</code> and
 <code>systemReserved</code> values that are in effect, along with any
 <code>memory.available</code> setting you make as part of
 <code>evictionHard</code>.</p>
-<pre class="math"><code>\begin{equation*}
+<pre class="math"><code class="language-math">\begin{equation*}
 \sum_{ \textnormal{i} = 0}^{ \textnormal{node count}} { \textit{reservedMemory} [ \textnormal{i} ]} = \textit{kubeReserved} + \textit{systemReserved} + \textit{evictionHard} \, \boxed{\textnormal{memory.available}}
 \end{equation*}\\\
 \text{where i is an index of a NUMA node}</code></pre>
@@ -363,7 +376,7 @@ an error on startup.</p>
 <p>In other words, the example 1 (above) illustrates that for the
 conventional memory (<code>type=memory</code>), Kubernetes reserves 3GiB
 in total; that is:</p>
-<pre class="math"><code>\begin{equation*}
+<pre class="math"><code class="language-math">\begin{equation*}
 \sum_{ \textnormal{i} = 0}^{ \textnormal{node count}} \textit{reservedMemory}_{ [ \textnormal{i} ] }  =  \underbrace{\textit{reservedMemory} [ 0 ] + \textit{reservedMemory} [ 1 ] }_{\textnormal{type=memory}}
             = 1 \textnormal{GiB} + 2 \textnormal{GiB}
             = 3 \textnormal{GiB}
@@ -371,9 +384,8 @@ in total; that is:</p>
 \text{where i is an index of a NUMA node}</code></pre>
 <p>Some examples of kubelet configuration settings relevant to the node
 allocatable configuration:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="fu">kubeReserved</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">cpu</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;500m&quot;</span><span class="kw">,</span><span class="at"> </span><span class="fu">memory</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;50Mi&quot;</span><span class="at"> </span><span class="kw">}</span><span class="at"> </span><span class="co"># half a CPU, 50MiB of memory</span></span>
-<span class="at">  </span><span class="fu">systemReserved</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">cpu</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;500m&quot;</span><span class="kw">,</span><span class="at"> </span><span class="fu">memory</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;256Mi&quot;</span><span class="at"> </span><span class="kw">}</span><span class="at"> </span><span class="co"># half a CPU, 256MiB of memory</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  kubeReserved: { cpu: &quot;500m&quot;, memory: &quot;50Mi&quot; } # half a CPU, 50MiB of memory
+  systemReserved: { cpu: &quot;500m&quot;, memory: &quot;256Mi&quot; } # half a CPU, 256MiB of memory</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -385,18 +397,17 @@ eviction threshold. Otherwise, the kubelet will not start Memory Manager
 and display an error.</p>
 <p>Here is an example of a correct configuration that uses
 <code>reservedMemory</code>:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="co"># this snippet relies on the default value of evictionHard</span></span>
-<span class="at">  </span><span class="fu">memoryManagerPolicy</span><span class="kw">:</span><span class="at"> Static</span></span>
-<span class="at">  </span><span class="fu">kubeReserved</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">cpu</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;4&quot;</span><span class="kw">,</span><span class="at"> </span><span class="fu">memory</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;4Gi&quot;</span><span class="at"> </span><span class="kw">}</span></span>
-<span class="at">  </span><span class="fu">systemReserved</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="at"> </span><span class="fu">cpu</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;1&quot;</span><span class="kw">,</span><span class="at"> </span><span class="fu">memory</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;1Gi&quot;</span><span class="at"> </span><span class="kw">}</span></span>
-<span class="at">  </span><span class="fu">reservedMemory</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">numaNode</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;3Gi&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">numaNode</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2148Mi&quot;</span><span class="at"> </span><span class="co"># 3GiB minus 100MiB</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  # this snippet relies on the default value of evictionHard
+  memoryManagerPolicy: Static
+  kubeReserved: { cpu: &quot;4&quot;, memory: &quot;4Gi&quot; }
+  systemReserved: { cpu: &quot;1&quot;, memory: &quot;1Gi&quot; }
+  reservedMemory:
+  - numaNode: 0
+    limits:
+      memory: &quot;3Gi&quot;
+  - numaNode: 1
+    limits:
+      memory: &quot;2148Mi&quot; # 3GiB minus 100MiB</code></pre>
 </div>
 <h3 id="reserved-memory-configurations-to-avoid">Configurations to
 avoid</h3>
@@ -422,36 +433,34 @@ default topology hints to the Topology Manager.</p>
 <code>Guaranteed</code> QoS class.</p>
 <p>A Pod with integer CPU(s) runs in the <code>Guaranteed</code> QoS
 class, when <code>requests</code> are equal to <code>limits</code>:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">        </span><span class="fu">example.com/device</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">        </span><span class="fu">example.com/device</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      limits:
+        memory: &quot;200Mi&quot;
+        cpu: &quot;2&quot;
+        example.com/device: &quot;1&quot;
+      requests:
+        memory: &quot;200Mi&quot;
+        cpu: &quot;2&quot;
+        example.com/device: &quot;1&quot;</code></pre>
 <p>Also, a pod sharing CPU(s) runs in the <code>Guaranteed</code> QoS
 class, when <code>requests</code> are equal to <code>limits</code>.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;300m&quot;</span></span>
-<span class="at">        </span><span class="fu">example.com/device</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;300m&quot;</span></span>
-<span class="at">        </span><span class="fu">example.com/device</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  containers:
+  - name: nginx
+    image: nginx
+    resources:
+      limits:
+        memory: &quot;200Mi&quot;
+        cpu: &quot;300m&quot;
+        example.com/device: &quot;1&quot;
+      requests:
+        memory: &quot;200Mi&quot;
+        cpu: &quot;300m&quot;
+        example.com/device: &quot;1&quot;</code></pre>
 <p>Notice that both CPU and memory requests must be specified for a Pod
 to lend it to Guaranteed QoS class.</p>
 <h2 id="what-s-next">What's next</h2>
@@ -530,6 +539,7 @@ resource managers</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -538,6 +548,8 @@ resource managers</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

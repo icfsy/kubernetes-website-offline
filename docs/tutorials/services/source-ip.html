@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -185,7 +200,7 @@ follows:</p>
 <p>The image in the following command only runs on AMD64
 architectures.</p>
 </div>
-<pre class="shell"><code>kubectl create deployment source-ip-app --image=registry.k8s.io/echoserver:1.10</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create deployment source-ip-app --image=registry.k8s.io/echoserver:1.10</code></pre>
 <p>The output is:</p>
 <pre><code>deployment.apps/source-ip-app created</code></pre>
 <h2 id="objectives">Objectives</h2>
@@ -202,7 +217,7 @@ href="../../reference/networking/virtual-ips.html#proxy-mode-iptables">iptables
 mode</a>, (the default). You can query the kube-proxy mode by fetching
 <code>http://localhost:10249/proxyMode</code> on the node where
 kube-proxy is running.</p>
-<pre class="console"><code>kubectl get nodes</code></pre>
+<pre class="console"><code class="language-console">kubectl get nodes</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                           STATUS     ROLES    AGE     VERSION
 kubernetes-node-6jst   Ready      &lt;none&gt;   2h      v1.13.0
@@ -210,28 +225,28 @@ kubernetes-node-cx31   Ready      &lt;none&gt;   2h      v1.13.0
 kubernetes-node-jj1t   Ready      &lt;none&gt;   2h      v1.13.0</code></pre>
 <p>Get the proxy mode on one of the nodes (kube-proxy listens on port
 10249):</p>
-<pre class="shell"><code># Run this in a shell on the node you want to query.
+<pre class="shell"><code class="language-shell"># Run this in a shell on the node you want to query.
 curl http://localhost:10249/proxyMode</code></pre>
 <p>The output is:</p>
 <pre><code>iptables</code></pre>
 <p>You can test source IP preservation by creating a Service over the
 source IP app:</p>
-<pre class="shell"><code>kubectl expose deployment source-ip-app --name=clusterip --port=80 --target-port=8080</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment source-ip-app --name=clusterip --port=80 --target-port=8080</code></pre>
 <p>The output is:</p>
 <pre><code>service/clusterip exposed</code></pre>
-<pre class="shell"><code>kubectl get svc clusterip</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc clusterip</code></pre>
 <p>The output is similar to:</p>
 <pre><code>NAME         TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE
 clusterip    ClusterIP   10.0.170.92   &lt;none&gt;        80/TCP    51s</code></pre>
 <p>And hitting the <code>ClusterIP</code> from a pod in the same
 cluster:</p>
-<pre class="shell"><code>kubectl run busybox -it --image=busybox:1.28 --restart=Never --rm</code></pre>
+<pre class="shell"><code class="language-shell">kubectl run busybox -it --image=busybox:1.28 --restart=Never --rm</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>Waiting for pod default/busybox to be running, status is Pending, pod ready: false
 If you don&#39;t see a command prompt, try pressing enter.
 </code></pre>
 <p>You can then run a command inside that Pod:</p>
-<pre class="shell"><code># Run this inside the terminal from &quot;kubectl run&quot;
+<pre class="shell"><code class="language-shell"># Run this inside the terminal from &quot;kubectl run&quot;
 ip addr</code></pre>
 <pre><code>1: lo: &lt;LOOPBACK,UP,LOWER_UP&gt; mtu 65536 qdisc noqueue
     link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
@@ -246,7 +261,7 @@ ip addr</code></pre>
     inet6 fe80::188a:84ff:feb0:26a5/64 scope link
        valid_lft forever preferred_lft forever</code></pre>
 <p>…then use <code>wget</code> to query the local webserver</p>
-<pre class="shell"><code># Replace &quot;10.0.170.92&quot; with the IPv4 address of the Service named &quot;clusterip&quot;
+<pre class="shell"><code class="language-shell"># Replace &quot;10.0.170.92&quot; with the IPv4 address of the Service named &quot;clusterip&quot;
 wget -qO - 10.0.170.92</code></pre>
 <pre><code>CLIENT VALUES:
 client_address=10.244.3.8
@@ -261,16 +276,16 @@ Services with <code>Type=NodePort</code></h2>
 href="../../concepts/services-networking/service.html#type-nodeport"><code>Type=NodePort</code></a>
 are source NAT'd by default. You can test this by creating a
 <code>NodePort</code> Service:</p>
-<pre class="shell"><code>kubectl expose deployment source-ip-app --name=nodeport --port=80 --target-port=8080 --type=NodePort</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment source-ip-app --name=nodeport --port=80 --target-port=8080 --type=NodePort</code></pre>
 <p>The output is:</p>
 <pre><code>service/nodeport exposed</code></pre>
-<pre class="shell"><code>NODEPORT=$(kubectl get -o jsonpath=&quot;{.spec.ports[0].nodePort}&quot; services nodeport)
+<pre class="shell"><code class="language-shell">NODEPORT=$(kubectl get -o jsonpath=&quot;{.spec.ports[0].nodePort}&quot; services nodeport)
 NODES=$(kubectl get nodes -o jsonpath=&#39;{ $.items[*].status.addresses[?(@.type==&quot;InternalIP&quot;)].address }&#39;)</code></pre>
 <p>If you're running on a cloud provider, you may need to open up a
 firewall-rule for the <code>nodes:nodeport</code> reported above. Now
 you can try reaching the Service from outside the cluster through the
 node port allocated above.</p>
-<pre class="shell"><code>for node in $NODES; do curl -s $node:$NODEPORT | grep -i client_address; done</code></pre>
+<pre class="shell"><code class="language-shell">for node in $NODES; do curl -s $node:$NODEPORT | grep -i client_address; done</code></pre>
 <p>The output is similar to:</p>
 <pre><code>client_address=10.180.1.1
 client_address=10.240.0.5
@@ -306,11 +321,11 @@ correct source-ip in any packet processing rules you might apply a
 packet that make it through to the endpoint.</p>
 <p>Set the <code>service.spec.externalTrafficPolicy</code> field as
 follows:</p>
-<pre class="shell"><code>kubectl patch svc nodeport -p &#39;{&quot;spec&quot;:{&quot;externalTrafficPolicy&quot;:&quot;Local&quot;}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch svc nodeport -p &#39;{&quot;spec&quot;:{&quot;externalTrafficPolicy&quot;:&quot;Local&quot;}}&#39;</code></pre>
 <p>The output is:</p>
 <pre><code>service/nodeport patched</code></pre>
 <p>Now, re-run the test:</p>
-<pre class="shell"><code>for node in $NODES; do curl --connect-timeout 1 -s $node:$NODEPORT | grep -i client_address; done</code></pre>
+<pre class="shell"><code class="language-shell">for node in $NODES; do curl --connect-timeout 1 -s $node:$NODEPORT | grep -i client_address; done</code></pre>
 <p>The output is similar to:</p>
 <pre><code>client_address=198.51.100.79</code></pre>
 <p>Note that you only got one reply, with the <em>right</em> client IP,
@@ -343,16 +358,16 @@ packet with the IP of the node (as described in the previous
 section).</p>
 <p>You can test this by exposing the source-ip-app through a load
 balancer:</p>
-<pre class="shell"><code>kubectl expose deployment source-ip-app --name=loadbalancer --port=80 --target-port=8080 --type=LoadBalancer</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment source-ip-app --name=loadbalancer --port=80 --target-port=8080 --type=LoadBalancer</code></pre>
 <p>The output is:</p>
 <pre><code>service/loadbalancer exposed</code></pre>
 <p>Print out the IP addresses of the Service:</p>
-<pre class="console"><code>kubectl get svc loadbalancer</code></pre>
+<pre class="console"><code class="language-console">kubectl get svc loadbalancer</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME           TYPE           CLUSTER-IP    EXTERNAL-IP       PORT(S)   AGE
 loadbalancer   LoadBalancer   10.0.65.118   203.0.113.140     80/TCP    5m</code></pre>
 <p>Next, send a request to this Service's external-ip:</p>
-<pre class="shell"><code>curl 203.0.113.140</code></pre>
+<pre class="shell"><code class="language-shell">curl 203.0.113.140</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>CLIENT VALUES:
 client_address=10.240.0.5
@@ -366,28 +381,27 @@ traffic by deliberately failing health checks.</p>
 <p><img src="../../../assets/static/images/docs/sourceip-externaltrafficpolicy-18f2a732.svg"
 alt="Source IP with externalTrafficPolicy" /></p>
 <p>You can test this by setting the annotation:</p>
-<pre class="shell"><code>kubectl patch svc loadbalancer -p &#39;{&quot;spec&quot;:{&quot;externalTrafficPolicy&quot;:&quot;Local&quot;}}&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl patch svc loadbalancer -p &#39;{&quot;spec&quot;:{&quot;externalTrafficPolicy&quot;:&quot;Local&quot;}}&#39;</code></pre>
 <p>You should immediately see the
 <code>service.spec.healthCheckNodePort</code> field allocated by
 Kubernetes:</p>
-<pre class="shell"><code>kubectl get svc loadbalancer -o yaml | grep -i healthCheckNodePort</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc loadbalancer -o yaml | grep -i healthCheckNodePort</code></pre>
 <p>The output is similar to this:</p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="fu">healthCheckNodePort</span><span class="kw">:</span><span class="at"> </span><span class="dv">32122</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  healthCheckNodePort: 32122</code></pre>
 <p>The <code>service.spec.healthCheckNodePort</code> field points to a
 port on every node serving the health check at <code>/healthz</code>.
 You can test this:</p>
-<pre class="shell"><code>kubectl get pod -o wide -l app=source-ip-app</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pod -o wide -l app=source-ip-app</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>NAME                            READY     STATUS    RESTARTS   AGE       IP             NODE
 source-ip-app-826191075-qehz4   1/1       Running   0          20h       10.180.1.136   kubernetes-node-6jst</code></pre>
 <p>Use <code>curl</code> to fetch the <code>/healthz</code> endpoint on
 various nodes:</p>
-<pre class="shell"><code># Run this locally on a node you choose
+<pre class="shell"><code class="language-shell"># Run this locally on a node you choose
 curl localhost:32122/healthz</code></pre>
 <pre><code>1 Service Endpoints found</code></pre>
 <p>On a different node you might get a different result:</p>
-<pre class="shell"><code># Run this locally on a node you choose
+<pre class="shell"><code class="language-shell"># Run this locally on a node you choose
 curl localhost:32122/healthz</code></pre>
 <pre><code>No Service Endpoints Found</code></pre>
 <p>A controller running on the <a class="glossary-term" href="../../reference/glossary.html#term-control-plane" title="Glossary: control-plane">control plane</a> is responsible for
@@ -396,7 +410,7 @@ HTTP health checks pointing to this port/path on each node. Wait about
 10 seconds for the 2 nodes without endpoints to fail health checks, then
 use <code>curl</code> to query the IPv4 address of the load
 balancer:</p>
-<pre class="shell"><code>curl 203.0.113.140</code></pre>
+<pre class="shell"><code class="language-shell">curl 203.0.113.140</code></pre>
 <p>The output is similar to this:</p>
 <pre><code>CLIENT VALUES:
 client_address=198.51.100.79
@@ -428,9 +442,9 @@ port stored in the <code>service.spec.healthCheckNodePort</code> field
 on the Service.</p>
 <h2 id="cleaning-up">Cleaning up</h2>
 <p>Delete the Services:</p>
-<pre class="shell"><code>kubectl delete svc -l app=source-ip-app</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete svc -l app=source-ip-app</code></pre>
 <p>Delete the Deployment, ReplicaSet and Pod:</p>
-<pre class="shell"><code>kubectl delete deployment source-ip-app</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployment source-ip-app</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>Learn more about <a
@@ -504,6 +518,7 @@ an External Load Balancer</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -512,6 +527,8 @@ an External Load Balancer</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

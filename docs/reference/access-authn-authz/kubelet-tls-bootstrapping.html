@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -308,20 +323,20 @@ requirement for TLS bootstrapping.</p>
 href="bootstrap-tokens.html">here</a>.</p>
 <p>If you want to use bootstrap tokens, you must enable it on
 kube-apiserver with the flag:</p>
-<pre class="console"><code>--enable-bootstrap-token-auth=true</code></pre>
+<pre class="console"><code class="language-console">--enable-bootstrap-token-auth=true</code></pre>
 <h4 id="token-authentication-file">Token authentication file</h4>
 <p>kube-apiserver has the ability to accept tokens as authentication.
 These tokens are arbitrary but should represent at least 128 bits of
 entropy derived from a secure random number generator (such as
 <code>/dev/urandom</code> on most modern Linux systems). There are
 multiple ways you can generate a token. For example:</p>
-<pre class="shell"><code>head -c 16 /dev/urandom | od -An -t x | tr -d &#39; &#39;</code></pre>
+<pre class="shell"><code class="language-shell">head -c 16 /dev/urandom | od -An -t x | tr -d &#39; &#39;</code></pre>
 <p>This will generate tokens that look like
 <code>02b50b05283e98dd0fd71db496ef01e8</code>.</p>
 <p>The token file should look like the following example, where the
 first three values can be anything and the quoted group name should be
 as depicted:</p>
-<pre class="console"><code>02b50b05283e98dd0fd71db496ef01e8,kubelet-bootstrap,10001,&quot;system:bootstrappers&quot;</code></pre>
+<pre class="console"><code class="language-console">02b50b05283e98dd0fd71db496ef01e8,kubelet-bootstrap,10001,&quot;system:bootstrappers&quot;</code></pre>
 <p>Add the <code>--token-auth-file=FILENAME</code> flag to the
 kube-apiserver command (in your systemd unit file perhaps) to enable the
 token file. See docs <a
@@ -338,20 +353,19 @@ permissions, <code>system:node-bootstrapper</code>.</p>
 <p>To do this, you only need to create a <code>ClusterRoleBinding</code>
 that binds the <code>system:bootstrappers</code> group to the cluster
 role <code>system:node-bootstrapper</code>.</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># enable bootstrapping nodes to create CSR</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> create-csrs-for-bootstrapping</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:bootstrappers</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:node-bootstrapper</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># enable bootstrapping nodes to create CSR
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: create-csrs-for-bootstrapping
+subjects:
+- kind: Group
+  name: system:bootstrappers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: system:node-bootstrapper
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <h2 id="kube-controller-manager-configuration">kube-controller-manager
 configuration</h2>
 <p>While the apiserver receives the requests for certificates from the
@@ -383,12 +397,12 @@ example, <code>--client-ca-file=/var/lib/kubernetes/ca.pem</code>), as
 described in the kube-apiserver configuration section.</p>
 <p>To provide the Kubernetes CA key and certificate to
 kube-controller-manager, use the following flags:</p>
-<pre class="shell"><code>--cluster-signing-cert-file=&quot;/etc/path/to/kubernetes/ca/ca.crt&quot; --cluster-signing-key-file=&quot;/etc/path/to/kubernetes/ca/ca.key&quot;</code></pre>
+<pre class="shell"><code class="language-shell">--cluster-signing-cert-file=&quot;/etc/path/to/kubernetes/ca/ca.crt&quot; --cluster-signing-key-file=&quot;/etc/path/to/kubernetes/ca/ca.key&quot;</code></pre>
 <p>For example:</p>
-<pre class="shell"><code>--cluster-signing-cert-file=&quot;/var/lib/kubernetes/ca.pem&quot; --cluster-signing-key-file=&quot;/var/lib/kubernetes/ca-key.pem&quot;</code></pre>
+<pre class="shell"><code class="language-shell">--cluster-signing-cert-file=&quot;/var/lib/kubernetes/ca.pem&quot; --cluster-signing-key-file=&quot;/var/lib/kubernetes/ca-key.pem&quot;</code></pre>
 <p>The validity duration of signed certificates can be configured with
 flag:</p>
-<pre class="shell"><code>--cluster-signing-duration</code></pre>
+<pre class="shell"><code class="language-shell">--cluster-signing-duration</code></pre>
 <h3 id="approval">Approval</h3>
 <p>In order to approve CSRs, you need to tell the controller-manager
 that it is acceptable to approve them. This is done by granting RBAC
@@ -409,39 +423,37 @@ create a <code>ClusterRoleBinding</code> that binds the group in which
 the bootstrapping node is a member <code>system:bootstrappers</code> to
 the <code>ClusterRole</code> that grants it permission,
 <code>system:certificates.k8s.io:certificatesigningrequests:nodeclient</code>:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Approve all CSRs for the group &quot;system:bootstrappers&quot;</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> auto-approve-csrs-for-group</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:bootstrappers</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:certificates.k8s.io:certificatesigningrequests:nodeclient</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># Approve all CSRs for the group &quot;system:bootstrappers&quot;
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: auto-approve-csrs-for-group
+subjects:
+- kind: Group
+  name: system:bootstrappers
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: system:certificates.k8s.io:certificatesigningrequests:nodeclient
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>To enable the kubelet to renew its own client certificate, create a
 <code>ClusterRoleBinding</code> that binds the group in which the fully
 functioning node is a member <code>system:nodes</code> to the
 <code>ClusterRole</code> that grants it permission,
 <code>system:certificates.k8s.io:certificatesigningrequests:selfnodeclient</code>:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Approve renewal CSRs for the group &quot;system:nodes&quot;</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> auto-approve-renewals-for-nodes</span></span>
-<span class="fu">subjects</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:nodes</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
-<span class="fu">roleRef</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:certificates.k8s.io:certificatesigningrequests:selfnodeclient</span></span>
-<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml"># Approve renewal CSRs for the group &quot;system:nodes&quot;
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: auto-approve-renewals-for-nodes
+subjects:
+- kind: Group
+  name: system:nodes
+  apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: system:certificates.k8s.io:certificatesigningrequests:selfnodeclient
+  apiGroup: rbac.authorization.k8s.io</code></pre>
 <p>The <code>csrapproving</code> controller that ships as part of <a
 href="../command-line-tools-reference/kube-controller-manager.html">kube-controller-manager</a>
 and is enabled by default. The controller uses the <a
@@ -471,25 +483,24 @@ to the kubelet, for example
 <code>/var/lib/kubelet/bootstrap-kubeconfig</code>.</p>
 <p>Its format is identical to a normal <code>kubeconfig</code> file. A
 sample file might look as follows:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Config</span></span>
-<span class="fu">clusters</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">cluster</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">certificate-authority</span><span class="kw">:</span><span class="at"> /var/lib/kubernetes/ca.pem</span></span>
-<span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> https://my.server.example.com:6443</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
-<span class="fu">contexts</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">context</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
-<span class="at">    </span><span class="fu">user</span><span class="kw">:</span><span class="at"> kubelet-bootstrap</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
-<span class="fu">current-context</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
-<span class="fu">preferences</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="fu">users</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubelet-bootstrap</span></span>
-<span class="at">  </span><span class="fu">user</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">token</span><span class="kw">:</span><span class="at"> 07401b.f395accd246ae52d</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority: /var/lib/kubernetes/ca.pem
+    server: https://my.server.example.com:6443
+  name: bootstrap
+contexts:
+- context:
+    cluster: bootstrap
+    user: kubelet-bootstrap
+  name: bootstrap
+current-context: bootstrap
+preferences: {}
+users:
+- name: kubelet-bootstrap
+  user:
+    token: 07401b.f395accd246ae52d</code></pre>
 <p>The important elements to note are:</p>
 <ul>
 <li><code>certificate-authority</code>: path to a CA file, used to
@@ -690,6 +701,7 @@ can approve or deny a CSR with
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -698,6 +710,8 @@ can approve or deny a CSR with
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

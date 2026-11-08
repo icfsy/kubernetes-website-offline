@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -155,43 +170,42 @@ stream.</p>
 <p>Returns information for a specific pod identified by its UID.</p>
 <h2 id="api-definition">API Definition</h2>
 <p>The API uses the following protobuf definition:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode protobuf"><code class="sourceCode protobuf"><span class="kw">import</span> <span class="st">&quot;google/protobuf/field_mask.proto&quot;</span>;</span>
-<span class="kw">import</span> <span class="st">&quot;k8s.io/api/core/v1/generated.proto&quot;</span>;</span>
-</span>
-<span class="kw">service</span> Pods {</span>
-    <span class="co">// ListPods returns a list of v1.Pod, optionally filtered by field mask.</span></span>
-    <span class="kw">rpc</span> ListPods(PodListRequest) <span class="kw">returns</span> (PodListResponse) {}</span>
-    <span class="co">// WatchPods returns a stream of Pod updates, optionally filtered by field mask.</span></span>
-    <span class="kw">rpc</span> WatchPods(PodWatchRequest) <span class="kw">returns</span> (stream PodWatchResponse) {}</span>
-    <span class="co">// GetPod returns a v1.Pod for a given pod&#39;s UID, optionally filtered by field mask.</span></span>
-    <span class="kw">rpc</span> GetPod(PodGetRequest) <span class="kw">returns</span> (PodGetResponse) {}</span>
-}</span>
-</span>
-<span class="kw">message</span> PodListRequest {</span>
-    <span class="co">// Optional field mask in the gRPC metadata, to specify which pod fields to return.</span></span>
-}</span>
-</span>
-<span class="kw">message</span> PodListResponse {</span>
-    <span class="kw">repeated</span> v1.Pod pods <span class="op">=</span> <span class="dv">1</span>;</span>
-}</span>
-</span>
-<span class="kw">message</span> PodWatchRequest {</span>
-    <span class="co">// Optional field mask in the gRPC metadata, to specify which pod fields to return.</span></span>
-}</span>
-</span>
-<span class="kw">message</span> PodWatchResponse {</span>
-    v1.Pod pod <span class="op">=</span> <span class="dv">1</span>;</span>
-}</span>
-</span>
-<span class="kw">message</span> PodGetRequest {</span>
-    <span class="dt">string</span> podUID <span class="op">=</span> <span class="dv">1</span>;</span>
-    <span class="co">// Optional field mask in the gRPC metadata, to specify which pod fields to return.</span></span>
-}</span>
-</span>
-<span class="kw">message</span> PodGetResponse {</span>
-    v1.Pod pod <span class="op">=</span> <span class="dv">1</span>;</span>
-}</span></code></pre></div>
+<pre class="protobuf"><code class="language-protobuf">import &quot;google/protobuf/field_mask.proto&quot;;
+import &quot;k8s.io/api/core/v1/generated.proto&quot;;
+
+service Pods {
+    // ListPods returns a list of v1.Pod, optionally filtered by field mask.
+    rpc ListPods(PodListRequest) returns (PodListResponse) {}
+    // WatchPods returns a stream of Pod updates, optionally filtered by field mask.
+    rpc WatchPods(PodWatchRequest) returns (stream PodWatchResponse) {}
+    // GetPod returns a v1.Pod for a given pod&#39;s UID, optionally filtered by field mask.
+    rpc GetPod(PodGetRequest) returns (PodGetResponse) {}
+}
+
+message PodListRequest {
+    // Optional field mask in the gRPC metadata, to specify which pod fields to return.
+}
+
+message PodListResponse {
+    repeated v1.Pod pods = 1;
+}
+
+message PodWatchRequest {
+    // Optional field mask in the gRPC metadata, to specify which pod fields to return.
+}
+
+message PodWatchResponse {
+    v1.Pod pod = 1;
+}
+
+message PodGetRequest {
+    string podUID = 1;
+    // Optional field mask in the gRPC metadata, to specify which pod fields to return.
+}
+
+message PodGetResponse {
+    v1.Pod pod = 1;
+}</code></pre>
 <h2 id="field-selection">Field selection</h2>
 <p>The API supports <code>google.protobuf.FieldMask</code> to allow
 clients to request only the specific fields they need (e.g.,
@@ -299,6 +313,7 @@ quickly enough.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -307,6 +322,8 @@ quickly enough.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

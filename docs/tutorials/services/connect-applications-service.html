@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -138,36 +153,35 @@ focus on the networking perspective. Create an nginx Pod, and note that
 it has a container port specification:</p>
 <div class="code-sample">
 <p><code>service/networking/run-my-nginx.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+        ports:
+        - containerPort: 80</code></pre>
 </div>
 <p>This makes it accessible from any node in your cluster. Check the
 nodes the Pod is running on:</p>
-<pre class="shell"><code>kubectl apply -f ./run-my-nginx.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f ./run-my-nginx.yaml
 kubectl get pods -l run=my-nginx -o wide</code></pre>
 <pre><code>NAME                        READY     STATUS    RESTARTS   AGE       IP            NODE
 my-nginx-3800858182-jr4a2   1/1       Running   0          13s       10.244.3.4    kubernetes-minion-905m
 my-nginx-3800858182-kna2y   1/1       Running   0          13s       10.244.2.5    kubernetes-minion-ljyd</code></pre>
 <p>Check your pods' IPs:</p>
-<pre class="shell"><code>kubectl get pods -l run=my-nginx -o custom-columns=POD_IP:.status.podIPs
+<pre class="shell"><code class="language-shell">kubectl get pods -l run=my-nginx -o custom-columns=POD_IP:.status.podIPs
     POD_IP
     [map[ip:10.244.3.4]]
     [map[ip:10.244.2.5]]</code></pre>
@@ -200,25 +214,24 @@ Service will be automatically load-balanced out to some pod that is a
 member of the Service.</p>
 <p>You can create a Service for your 2 nginx replicas with
 <code>kubectl expose</code>:</p>
-<pre class="shell"><code>kubectl expose deployment/my-nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment/my-nginx</code></pre>
 <pre><code>service/my-nginx exposed</code></pre>
 <p>This is equivalent to <code>kubectl apply -f</code> in the following
 yaml:</p>
 <div class="code-sample">
 <p><code>service/networking/nginx-svc.yaml</code></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: my-nginx</code></pre>
 </div>
 <p>This specification will create a Service which targets TCP port 80 on
 any Pod with the <code>run: my-nginx</code> label, and expose it on an
@@ -229,7 +242,7 @@ Service). View <a
 href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#service-v1-core">Service</a>
 API object to see the list of supported fields in service definition.
 Check your Service:</p>
-<pre class="shell"><code>kubectl get svc my-nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc my-nginx</code></pre>
 <pre><code>NAME       TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
 my-nginx   ClusterIP   10.0.162.149   &lt;none&gt;        80/TCP    21s</code></pre>
 <p>As mentioned previously, a Service is backed by a group of Pods.
@@ -242,7 +255,7 @@ an endpoint. New Pods that match the Service's selector will
 automatically get added to an EndpointSlice for that Service. Check the
 endpoints, and note that the IPs are the same as the Pods created in the
 first step:</p>
-<pre class="shell"><code>kubectl describe svc my-nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe svc my-nginx</code></pre>
 <pre><code>Name:                my-nginx
 Namespace:           default
 Labels:              run=my-nginx
@@ -258,7 +271,7 @@ TargetPort:          80/TCP
 Endpoints:           10.244.2.5:80,10.244.3.4:80
 Session Affinity:    None
 Events:              &lt;none&gt;</code></pre>
-<pre class="shell"><code>kubectl get endpointslices -l kubernetes.io/service-name=my-nginx</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get endpointslices -l kubernetes.io/service-name=my-nginx</code></pre>
 <pre><code>NAME             ADDRESSTYPE   PORTS   ENDPOINTS               AGE
 my-nginx-7vzhx   IPv4          80      10.244.2.5,10.244.3.4   21s</code></pre>
 <p>You should now be able to curl the nginx Service on
@@ -289,7 +302,7 @@ spec</a>.</p>
 variables for each active Service. This introduces an ordering problem.
 To see why, inspect the environment of your running nginx Pods (your Pod
 name will be different):</p>
-<pre class="shell"><code>kubectl exec my-nginx-3800858182-jr4a2 -- printenv | grep SERVICE</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec my-nginx-3800858182-jr4a2 -- printenv | grep SERVICE</code></pre>
 <pre><code>KUBERNETES_SERVICE_HOST=10.0.0.1
 KUBERNETES_SERVICE_PORT=443
 KUBERNETES_SERVICE_PORT_HTTPS=443</code></pre>
@@ -302,7 +315,7 @@ This time the Service exists <em>before</em> the replicas. This will
 give you scheduler-level Service spreading of your Pods (provided all
 your nodes have equal capacity), as well as the right environment
 variables:</p>
-<pre class="shell"><code>kubectl scale deployment my-nginx --replicas=0; kubectl scale deployment my-nginx --replicas=2;
+<pre class="shell"><code class="language-shell">kubectl scale deployment my-nginx --replicas=0; kubectl scale deployment my-nginx --replicas=2;
 
 kubectl get pods -l run=my-nginx -o wide</code></pre>
 <pre><code>NAME                        READY     STATUS    RESTARTS   AGE     IP            NODE
@@ -310,7 +323,7 @@ my-nginx-3800858182-e9ihh   1/1       Running   0          5s      10.244.2.7   
 my-nginx-3800858182-j4rm4   1/1       Running   0          5s      10.244.3.8    kubernetes-minion-905m</code></pre>
 <p>You may notice that the pods have different names, since they are
 killed and recreated.</p>
-<pre class="shell"><code>kubectl exec my-nginx-3800858182-e9ihh -- printenv | grep SERVICE</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec my-nginx-3800858182-e9ihh -- printenv | grep SERVICE</code></pre>
 <pre><code>KUBERNETES_SERVICE_PORT=443
 MY_NGINX_SERVICE_HOST=10.0.162.149
 KUBERNETES_SERVICE_HOST=10.0.0.1
@@ -320,7 +333,7 @@ KUBERNETES_SERVICE_PORT_HTTPS=443</code></pre>
 <p>Kubernetes offers a DNS cluster addon Service that automatically
 assigns dns names to other Services. You can check if it's running on
 your cluster:</p>
-<pre class="shell"><code>kubectl get services kube-dns --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get services kube-dns --namespace=kube-system</code></pre>
 <pre><code>NAME       TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)         AGE
 kube-dns   ClusterIP   10.0.0.10    &lt;none&gt;        53/UDP,53/TCP   8m</code></pre>
 <p>The rest of this section will assume you have a Service with a long
@@ -333,11 +346,11 @@ href="https://github.com/coredns/deployment/tree/master/kubernetes">CoreDNS
 README</a> or <a
 href="../../tasks/administer-cluster/coredns.html#installing-coredns">Installing
 CoreDNS</a>. Let's run another curl application to test this:</p>
-<pre class="shell"><code>kubectl run curl --image=radial/busyboxplus:curl -i --tty --rm</code></pre>
+<pre class="shell"><code class="language-shell">kubectl run curl --image=radial/busyboxplus:curl -i --tty --rm</code></pre>
 <pre><code>Waiting for pod default/curl-131556218-9fnch to be running, status is Pending, pod ready: false
 Hit enter for command prompt</code></pre>
 <p>Then, hit enter and run <code>nslookup my-nginx</code>:</p>
-<pre class="shell"><code>[ root@curl-131556218-9fnch:/ ]$ nslookup my-nginx
+<pre class="shell"><code class="language-shell">[ root@curl-131556218-9fnch:/ ]$ nslookup my-nginx
 Server:    10.0.0.10
 Address 1: 10.0.0.10
 
@@ -359,26 +372,26 @@ href="https://github.com/kubernetes/examples/tree/master/_archived/https-nginx/"
 https example</a>. This requires having go and make tools installed. If
 you don't want to install those, then follow the manual steps later. In
 short:</p>
-<pre class="shell"><code>make keys KEY=/tmp/nginx.key CERT=/tmp/nginx.crt
+<pre class="shell"><code class="language-shell">make keys KEY=/tmp/nginx.key CERT=/tmp/nginx.crt
 kubectl create secret tls nginxsecret --key /tmp/nginx.key --cert /tmp/nginx.crt</code></pre>
 <pre><code>secret/nginxsecret created</code></pre>
-<pre class="shell"><code>kubectl get secrets</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get secrets</code></pre>
 <pre><code>NAME                  TYPE                                  DATA      AGE
 nginxsecret           kubernetes.io/tls                     2         1m</code></pre>
 <p>And also the configmap:</p>
-<pre class="shell"><code>kubectl create configmap nginxconfigmap --from-file=default.conf</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap nginxconfigmap --from-file=default.conf</code></pre>
 <p>You can find an example for <code>default.conf</code> in <a
 href="https://github.com/kubernetes/examples/tree/bc9ca4ca32bb28762ef216386934bef20f1f9930/staging/https-nginx/">the
 Kubernetes examples project repo</a>.</p>
 <pre><code>configmap/nginxconfigmap created</code></pre>
-<pre class="shell"><code>kubectl get configmaps</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get configmaps</code></pre>
 <pre><code>NAME             DATA   AGE
 nginxconfigmap   1      114s</code></pre>
 <p>You can view the details of the <code>nginxconfigmap</code> ConfigMap
 using the following command:</p>
-<pre class="shell"><code>kubectl describe configmap  nginxconfigmap</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe configmap  nginxconfigmap</code></pre>
 <p>The output is similar to:</p>
-<pre class="console"><code>Name:         nginxconfigmap
+<pre class="console"><code class="language-console">Name:         nginxconfigmap
 Namespace:    default
 Labels:       &lt;none&gt;
 Annotations:  &lt;none&gt;
@@ -411,26 +424,25 @@ BinaryData
 Events:  &lt;none&gt;</code></pre>
 <p>Following are the manual steps to follow in case you run into
 problems running make (on windows for example):</p>
-<pre class="shell"><code># Create a public private key pair
+<pre class="shell"><code class="language-shell"># Create a public private key pair
 openssl req -x509 -noenc -days 365 -newkey rsa:2048 -keyout /d/tmp/nginx.key -out /d/tmp/nginx.crt -subj &quot;/CN=my-nginx/O=my-nginx&quot;
 # Convert the keys to base64 encoding
 cat /d/tmp/nginx.crt | base64 | tr -d &#39;\n&#39;
 cat /d/tmp/nginx.key | base64 | tr -d &#39;\n&#39;</code></pre>
 <p>Use the output from the previous commands to create a yaml file as
 follows. The base64 encoded value should all be on a single line.</p>
-<div class="sourceCode" id="cb36"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;v1&quot;</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Secret&quot;</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;nginxsecret&quot;</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;default&quot;</span></span>
-<span class="fu">type</span><span class="kw">:</span><span class="at"> kubernetes.io/tls</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at"> </span><span class="co"># </span><span class="al">NOTE</span><span class="co">: Replace the following values with your own base64-encoded certificate and key.</span></span>
-<span class="at">  </span><span class="fu">tls.crt</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;REPLACE_WITH_BASE64_CERT&quot;</span><span class="at"> </span></span>
-<span class="at">  </span><span class="fu">tls.key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;REPLACE_WITH_BASE64_KEY&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: &quot;v1&quot;
+kind: &quot;Secret&quot;
+metadata:
+  name: &quot;nginxsecret&quot;
+  namespace: &quot;default&quot;
+type: kubernetes.io/tls
+data:
+ # NOTE: Replace the following values with your own base64-encoded certificate and key.
+  tls.crt: &quot;REPLACE_WITH_BASE64_CERT&quot; 
+  tls.key: &quot;REPLACE_WITH_BASE64_KEY&quot;</code></pre>
 <p>Now create the secrets using the file:</p>
-<pre class="shell"><code>kubectl apply -f nginxsecrets.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f nginxsecrets.yaml
 kubectl get secrets</code></pre>
 <pre><code>NAME                  TYPE                                  DATA      AGE
 nginxsecret           kubernetes.io/tls                     2         1m</code></pre>
@@ -439,58 +451,57 @@ certificate in the secret, and the Service, to expose both ports (80 and
 443):</p>
 <div class="code-sample">
 <p><code>service/networking/nginx-secure-app.yaml</code></p>
-<div class="sourceCode" id="cb39"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NodePort</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
-<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">443</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> https</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">run</span><span class="kw">:</span><span class="at"> my-nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-volume</span></span>
-<span class="at">        </span><span class="fu">secret</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> nginxsecret</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-volume</span></span>
-<span class="at">        </span><span class="fu">configMap</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginxconfigmap</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginxhttps</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> bprashanth/nginxhttps:1.0</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">443</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/nginx/ssl</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-volume</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/nginx/conf.d</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-volume</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  type: NodePort
+  ports:
+  - port: 8080
+    targetPort: 80
+    protocol: TCP
+    name: http
+  - port: 443
+    protocol: TCP
+    name: https
+  selector:
+    run: my-nginx
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: nginxsecret
+      - name: configmap-volume
+        configMap:
+          name: nginxconfigmap
+      containers:
+      - name: nginxhttps
+        image: bprashanth/nginxhttps:1.0
+        ports:
+        - containerPort: 443
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: /etc/nginx/ssl
+          name: secret-volume
+        - mountPath: /etc/nginx/conf.d
+          name: configmap-volume</code></pre>
 </div>
 <p>Noteworthy points about the nginx-secure-app manifest:</p>
 <ul>
@@ -504,12 +515,12 @@ nginx Service exposes both ports.</li>
 <code>/etc/nginx/ssl</code>. This is set up <em>before</em> the nginx
 server is started.</li>
 </ul>
-<pre class="shell"><code>kubectl delete deployments,svc my-nginx; kubectl create -f ./nginx-secure-app.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployments,svc my-nginx; kubectl create -f ./nginx-secure-app.yaml</code></pre>
 <p>At this point you can reach the nginx server from any node.</p>
-<pre class="shell"><code>kubectl get pods -l run=my-nginx -o custom-columns=POD_IP:.status.podIPs
+<pre class="shell"><code class="language-shell">kubectl get pods -l run=my-nginx -o custom-columns=POD_IP:.status.podIPs
     POD_IP
     [map[ip:10.244.3.5]]</code></pre>
-<pre class="shell"><code>node $ curl -k https://10.244.3.5
+<pre class="shell"><code class="language-shell">node $ curl -k https://10.244.3.5
 ...
 &lt;h1&gt;Welcome to nginx!&lt;/h1&gt;</code></pre>
 <p>Note how we supplied the <code>-k</code> parameter to curl in the
@@ -521,41 +532,40 @@ lookup. Let's test this from a pod (the same secret is being reused for
 simplicity, the pod only needs nginx.crt to access the Service):</p>
 <div class="code-sample">
 <p><code>service/networking/curlpod.yaml</code></p>
-<div class="sourceCode" id="cb43"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> curl-deployment</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> curlpod</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> curlpod</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-volume</span></span>
-<span class="at">        </span><span class="fu">secret</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> nginxsecret</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> curlpod</span></span>
-<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">sh</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">-c</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">while true; do sleep 1; done</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> radial/busyboxplus:curl</span></span>
-<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/nginx/ssl</span></span>
-<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> secret-volume</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: curl-deployment
+spec:
+  selector:
+    matchLabels:
+      app: curlpod
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: curlpod
+    spec:
+      volumes:
+      - name: secret-volume
+        secret:
+          secretName: nginxsecret
+      containers:
+      - name: curlpod
+        command:
+        - sh
+        - -c
+        - while true; do sleep 1; done
+        image: radial/busyboxplus:curl
+        volumeMounts:
+        - mountPath: /etc/nginx/ssl
+          name: secret-volume</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply -f ./curlpod.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f ./curlpod.yaml
 kubectl get pods -l app=curlpod</code></pre>
 <pre><code>NAME                               READY     STATUS    RESTARTS   AGE
 curl-deployment-1515033274-1410r   1/1       Running   0          1m</code></pre>
-<pre class="shell"><code>kubectl exec curl-deployment-1515033274-1410r -- curl https://my-nginx --cacert /etc/nginx/ssl/tls.crt
+<pre class="shell"><code class="language-shell">kubectl exec curl-deployment-1515033274-1410r -- curl https://my-nginx --cacert /etc/nginx/ssl/tls.crt
 ...
 &lt;title&gt;Welcome to nginx!&lt;/title&gt;
 ...</code></pre>
@@ -565,7 +575,7 @@ onto an external IP address. Kubernetes supports two ways of doing this:
 NodePorts and LoadBalancers. The Service created in the last section
 already used <code>NodePort</code>, so your nginx HTTPS replica is ready
 to serve traffic on the internet if your node has a public IP.</p>
-<pre class="shell"><code>kubectl get svc my-nginx -o yaml | grep nodePort -C 5
+<pre class="shell"><code class="language-shell">kubectl get svc my-nginx -o yaml | grep nodePort -C 5
   uid: 07191fb3-f61a-11e5-8ae5-42010af00002
 spec:
   clusterIP: 10.0.162.149
@@ -582,7 +592,7 @@ spec:
     targetPort: 443
   selector:
     run: my-nginx</code></pre>
-<pre class="shell"><code>kubectl get nodes -o yaml | grep ExternalIP -C 1
+<pre class="shell"><code class="language-shell">kubectl get nodes -o yaml | grep ExternalIP -C 1
     - address: 104.197.41.11
       type: ExternalIP
     allocatable:
@@ -598,7 +608,7 @@ $ curl https://&lt;EXTERNAL-IP&gt;:&lt;NODE-PORT&gt; -k
 <p>Let's now recreate the Service to use a cloud load balancer. Change
 the <code>Type</code> of <code>my-nginx</code> Service from
 <code>NodePort</code> to <code>LoadBalancer</code>:</p>
-<pre class="shell"><code>kubectl edit svc my-nginx
+<pre class="shell"><code class="language-shell">kubectl edit svc my-nginx
 kubectl get svc my-nginx</code></pre>
 <pre><code>NAME       TYPE           CLUSTER-IP     EXTERNAL-IP        PORT(S)               AGE
 my-nginx   LoadBalancer   10.0.162.149     xx.xxx.xxx.xxx     8080:30163/TCP        21s</code></pre>
@@ -613,7 +623,7 @@ which uses a (long) hostname, not an IP. It's too long to fit in the
 standard <code>kubectl get svc</code> output, in fact, so you'll need to
 do <code>kubectl describe service my-nginx</code> to see it. You'll see
 something like this:</p>
-<pre class="shell"><code>kubectl describe service my-nginx
+<pre class="shell"><code class="language-shell">kubectl describe service my-nginx
 ...
 LoadBalancer Ingress:   a320587ffd19711e5a37606cf4a74574-1142138393.us-east-1.elb.amazonaws.com
 ...</code></pre>
@@ -693,6 +703,7 @@ an External Load Balancer</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -701,6 +712,8 @@ an External Load Balancer</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

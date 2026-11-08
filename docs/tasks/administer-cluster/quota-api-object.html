@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -144,62 +159,59 @@ check the version, enter <code>kubectl version</code>.</li>
 <h2 id="create-a-namespace">Create a namespace</h2>
 <p>Create a namespace so that the resources you create in this exercise
 are isolated from the rest of your cluster.</p>
-<pre class="shell"><code>kubectl create namespace quota-object-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create namespace quota-object-example</code></pre>
 <h2 id="create-a-resourcequota">Create a ResourceQuota</h2>
 <p>Here is the configuration file for a ResourceQuota object:</p>
 <div class="code-sample">
 <p><code>admin/resource/quota-objects.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> object-quota-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">persistentvolumeclaims</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">    </span><span class="fu">services.loadbalancers</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">    </span><span class="fu">services.nodeports</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: object-quota-demo
+spec:
+  hard:
+    persistentvolumeclaims: &quot;1&quot;
+    services.loadbalancers: &quot;2&quot;
+    services.nodeports: &quot;0&quot;</code></pre>
 </div>
 <p>Create the ResourceQuota:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/admin/resource/quota-objects.yaml --namespace=quota-object-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/admin/resource/quota-objects.yaml --namespace=quota-object-example</code></pre>
 <p>View detailed information about the ResourceQuota:</p>
-<pre class="shell"><code>kubectl get resourcequota object-quota-demo --namespace=quota-object-example --output=yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get resourcequota object-quota-demo --namespace=quota-object-example --output=yaml</code></pre>
 <p>The output shows that in the quota-object-example namespace, there
 can be at most one PersistentVolumeClaim, at most two Services of type
 LoadBalancer, and no Services of type NodePort.</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">status</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">persistentvolumeclaims</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
-<span class="at">    </span><span class="fu">services.loadbalancers</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
-<span class="at">    </span><span class="fu">services.nodeports</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">  </span><span class="fu">used</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">persistentvolumeclaims</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">    </span><span class="fu">services.loadbalancers</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">    </span><span class="fu">services.nodeports</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">status:
+  hard:
+    persistentvolumeclaims: &quot;1&quot;
+    services.loadbalancers: &quot;2&quot;
+    services.nodeports: &quot;0&quot;
+  used:
+    persistentvolumeclaims: &quot;0&quot;
+    services.loadbalancers: &quot;0&quot;
+    services.nodeports: &quot;0&quot;</code></pre>
 <h2 id="create-a-persistentvolumeclaim">Create a
 PersistentVolumeClaim</h2>
 <p>Here is the configuration file for a PersistentVolumeClaim
 object:</p>
 <div class="code-sample">
 <p><code>admin/resource/quota-objects-pvc.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pvc-quota-demo</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> manual</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 3Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-quota-demo
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 3Gi</code></pre>
 </div>
 <p>Create the PersistentVolumeClaim:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/admin/resource/quota-objects-pvc.yaml --namespace=quota-object-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/admin/resource/quota-objects-pvc.yaml --namespace=quota-object-example</code></pre>
 <p>Verify that the PersistentVolumeClaim was created:</p>
-<pre class="shell"><code>kubectl get persistentvolumeclaims --namespace=quota-object-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get persistentvolumeclaims --namespace=quota-object-example</code></pre>
 <p>The output shows that the PersistentVolumeClaim exists and has status
 Pending:</p>
 <pre><code>NAME             STATUS
@@ -210,21 +222,20 @@ create a second PersistentVolumeClaim</h2>
 PersistentVolumeClaim:</p>
 <div class="code-sample">
 <p><code>admin/resource/quota-objects-pvc-2.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pvc-quota-demo-2</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> manual</span></span>
-<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
-<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 4Gi</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-quota-demo-2
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 4Gi</code></pre>
 </div>
 <p>Attempt to create the second PersistentVolumeClaim:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/admin/resource/quota-objects-pvc-2.yaml --namespace=quota-object-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/admin/resource/quota-objects-pvc-2.yaml --namespace=quota-object-example</code></pre>
 <p>The output shows that the second PersistentVolumeClaim was not
 created, because it would have exceeded the quota for the namespace.</p>
 <pre><code>persistentvolumeclaims &quot;pvc-quota-demo-2&quot; is forbidden:
@@ -317,7 +328,7 @@ Service of type LoadBalancer
 </table>
 <h2 id="clean-up">Clean up</h2>
 <p>Delete your namespace:</p>
-<pre class="shell"><code>kubectl delete namespace quota-object-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete namespace quota-object-example</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <h3 id="for-cluster-administrators">For cluster administrators</h3>
 <ul>
@@ -419,6 +430,7 @@ Quality of Service for Pods</a></p></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -427,6 +439,8 @@ Quality of Service for Pods</a></p></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

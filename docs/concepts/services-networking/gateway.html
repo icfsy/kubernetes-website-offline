@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -195,13 +210,12 @@ stable Gateway API kinds:</p>
 different configurations. A Gateway must reference a GatewayClass that
 contains the name of the controller that implements the class.</p>
 <p>A minimal GatewayClass example:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> GatewayClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-class</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">controllerName</span><span class="kw">:</span><span class="at"> example.com/gateway-controller</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: example-class
+spec:
+  controllerName: example.com/gateway-controller</code></pre>
 <p>In this example, a controller that has implemented Gateway API is
 configured to manage GatewayClasses with the controller name
 <code>example.com/gateway-controller</code>. Gateways of this class will
@@ -217,22 +231,21 @@ Service. For example, a Gateway may represent a cloud load balancer or
 an in-cluster proxy server that is configured to accept HTTP
 traffic.</p>
 <p>A typical Gateway resource example:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Gateway</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-gateway</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> example-namespace</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">gatewayClassName</span><span class="kw">:</span><span class="at"> example-class</span></span>
-<span class="at">  </span><span class="fu">listeners</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> http</span></span>
-<span class="at">    </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> HTTP</span></span>
-<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">    </span><span class="fu">hostname</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;www.example.com&quot;</span></span>
-<span class="at">    </span><span class="fu">allowedRoutes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">namespaces</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">from</span><span class="kw">:</span><span class="at"> Same</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+  namespace: example-namespace
+spec:
+  gatewayClassName: example-class
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    hostname: &quot;www.example.com&quot;
+    allowedRoutes:
+      namespaces:
+        from: Same</code></pre>
 <p>In this example, an instance of traffic handling infrastructure is
 programmed to listen for HTTP traffic on port 80. Since the
 <code>addresses</code> field is unspecified, an address or hostname is
@@ -263,24 +276,23 @@ For example, defining a new HTTPRoute may result in configuring
 additional traffic routes in a cloud load balancer or in-cluster proxy
 server.</p>
 <p>A typical HTTPRoute example:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> HTTPRoute</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-httproute</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parentRefs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-gateway</span></span>
-<span class="at">  </span><span class="fu">hostnames</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;www.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">matches</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> PathPrefix</span></span>
-<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> /login</span></span>
-<span class="at">    </span><span class="fu">backendRefs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-svc</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-httproute
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - &quot;www.example.com&quot;
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /login
+    backendRefs:
+    - name: example-svc
+      port: 8080</code></pre>
 <p>In this example, HTTP traffic from Gateway
 <code>example-gateway</code> with the Host: header set to
 <code>www.example.com</code> and the request path specified as
@@ -302,20 +314,19 @@ server.</p>
 an initial upgrade from HTTP/1, so gRPC traffic is guaranteed to flow
 properly.</p>
 <p>A typical GRPCRoute example:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> GRPCRoute</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-grpcroute</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parentRefs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-gateway</span></span>
-<span class="at">  </span><span class="fu">hostnames</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;svc.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">backendRefs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-svc</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">50051</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: example-grpcroute
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - &quot;svc.example.com&quot;
+  rules:
+  - backendRefs:
+    - name: example-svc
+      port: 50051</code></pre>
 <p>In this example, gRPC traffic from Gateway
 <code>example-gateway</code> with the host set to
 <code>svc.example.com</code> will be directed to the service
@@ -323,24 +334,23 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersio
 namespace.</p>
 <p>GRPCRoute allows matching specific gRPC services, as per the
 following example:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> GRPCRoute</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-grpcroute</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parentRefs</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-gateway</span></span>
-<span class="at">  </span><span class="fu">hostnames</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="st">&quot;svc.example.com&quot;</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">matches</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">method</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">service</span><span class="kw">:</span><span class="at"> com.example</span></span>
-<span class="at">        </span><span class="fu">method</span><span class="kw">:</span><span class="at"> Login</span></span>
-<span class="at">    </span><span class="fu">backendRefs</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> foo-svc</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">50051</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: gateway.networking.k8s.io/v1
+kind: GRPCRoute
+metadata:
+  name: example-grpcroute
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - &quot;svc.example.com&quot;
+  rules:
+  - matches:
+    - method:
+        service: com.example
+        method: Login
+    backendRefs:
+    - name: foo-svc
+      port: 50051</code></pre>
 <p>In this case, the GRPCRoute will match any traffic for
 svc.example.com and apply its routing rules to forward the traffic to
 the correct backend. Since there is only one match specified,only
@@ -480,6 +490,7 @@ specification</a> for additional details of all Gateway API kinds.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -488,6 +499,8 @@ specification</a> for additional details of all Gateway API kinds.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

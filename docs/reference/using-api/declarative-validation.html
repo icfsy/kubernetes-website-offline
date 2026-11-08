@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -589,10 +604,10 @@ which the validation was first shadowed.</li>
 declarative validation tag to shadow.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:alpha(since:&quot;1.36&quot;)=+k8s:minimum=1</span></span>
-    MyField <span class="dt">int</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:alpha(since:&quot;1.36&quot;)=+k8s:minimum=1
+    MyField int `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-beta"><code>+k8s:beta</code></h3>
 <p><strong>Description:</strong></p>
 <p>Puts a migrated validation rule in <em>enforced mode</em>, the second
@@ -616,10 +631,10 @@ which the validation was promoted to Beta.</li>
 declarative validation tag to enforce.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:beta(since:&quot;1.37&quot;)=+k8s:minimum=1</span></span>
-    MyField <span class="dt">int</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:beta(since:&quot;1.37&quot;)=+k8s:minimum=1
+    MyField int `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-customUnique"><code>+k8s:customUnique</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that custom, hand-written validation implements uniqueness
@@ -631,12 +646,12 @@ href="#tag-unique"><code>+k8s:unique</code></a> otherwise imply.</p>
 <p><strong>Scopes:</strong> struct fields, type definitions, list
 values, map keys, map values</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:listType=map</span></span>
-    <span class="co">// +k8s:listMapKey=key</span></span>
-    <span class="co">// +k8s:customUnique</span></span>
-    MyList <span class="op">[]</span>Item <span class="st">`json:&quot;myList&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:listType=map
+    // +k8s:listMapKey=key
+    // +k8s:customUnique
+    MyList []Item `json:&quot;myList&quot;`
+}</code></pre>
 <p>In this example, the generator records that <code>MyList</code> is a
 list-map but does not emit a uniqueness check for it; hand-written code
 is responsible for that check.</p>
@@ -647,7 +662,7 @@ code. Use this for logic that you cannot express with the other
 tags.</p>
 <p>The function must live in the generated package, with the following
 signature:</p>
-<div class="sourceCode" id="cb4"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">func</span><span class="op">(</span>ctx context<span class="op">.</span>Context<span class="op">,</span> op operation<span class="op">.</span>Operation<span class="op">,</span> fldPath <span class="op">*</span>field<span class="op">.</span>Path<span class="op">,</span> value<span class="op">,</span> oldValue <span class="op">&amp;</span>lt<span class="op">;</span>ValueType<span class="op">&amp;</span>gt<span class="op">;)</span> field<span class="op">.</span>ErrorList</span></code></pre></div>
+<pre class="go"><code class="language-go">func(ctx context.Context, op operation.Operation, fldPath *field.Path, value, oldValue &lt;ValueType&gt;) field.ErrorList</code></pre>
 <p><code>&lt;ValueType&gt;</code> is the value's type made
 nilable: a pointer such as <code>*string</code>, or the type itself if
 already nilable (slice, map, pointer). Each generated package needs its
@@ -670,16 +685,16 @@ loop inside the function.</p>
 <p><strong>Stability level:</strong> Stable</p>
 <p><strong>Scopes:</strong> struct fields, type definitions</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:customValidation</span></span>
-<span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:customValidation</span></span>
-    StringField <span class="dt">string</span> <span class="st">`json:&quot;stringField&quot;`</span></span>
-</span>
-    <span class="co">// Both validations run on this field.</span></span>
-    <span class="co">// +k8s:maxLength=3</span></span>
-    <span class="co">// +k8s:customValidation</span></span>
-    MaxLengthField <span class="dt">string</span> <span class="st">`json:&quot;maxLengthField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:customValidation
+type MyStruct struct {
+    // +k8s:customValidation
+    StringField string `json:&quot;stringField&quot;`
+
+    // Both validations run on this field.
+    // +k8s:maxLength=3
+    // +k8s:customValidation
+    MaxLengthField string `json:&quot;maxLengthField&quot;`
+}</code></pre>
 <h3
 id="tag-dependentForbidden"><code>+k8s:dependentForbidden</code></h3>
 <p><strong>Description:</strong></p>
@@ -695,18 +710,18 @@ one-directional. Repeat the tag to forbid multiple siblings.</p>
 required): the JSON name of the sibling field.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    <span class="co">// +k8s:dependentForbidden(&quot;dependentA&quot;)</span></span>
-    <span class="co">// +k8s:dependentForbidden(&quot;dependentB&quot;)</span></span>
-    Trigger <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;trigger&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:optional</span></span>
-    DependentA <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;dependentA&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:optional</span></span>
-    DependentB <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;dependentB&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:optional
+    // +k8s:dependentForbidden(&quot;dependentA&quot;)
+    // +k8s:dependentForbidden(&quot;dependentB&quot;)
+    Trigger *string `json:&quot;trigger&quot;`
+
+    // +k8s:optional
+    DependentA *string `json:&quot;dependentA&quot;`
+
+    // +k8s:optional
+    DependentB *string `json:&quot;dependentB&quot;`
+}</code></pre>
 <p>In this example, if <code>trigger</code> is set, neither
 <code>dependentA</code> nor <code>dependentB</code> may be set.</p>
 <h3 id="tag-dependentRequired"><code>+k8s:dependentRequired</code></h3>
@@ -723,14 +738,14 @@ one-directional. Repeat the tag to require multiple siblings.</p>
 required): the JSON name of the sibling field.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    <span class="co">// +k8s:dependentRequired(&quot;dependent&quot;)</span></span>
-    Trigger <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;trigger&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:optional</span></span>
-    Dependent <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;dependent&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:optional
+    // +k8s:dependentRequired(&quot;dependent&quot;)
+    Trigger *string `json:&quot;trigger&quot;`
+
+    // +k8s:optional
+    Dependent *string `json:&quot;dependent&quot;`
+}</code></pre>
 <p>In this example, if <code>trigger</code> is set,
 <code>dependent</code> must also be set. Setting <code>dependent</code>
 alone is allowed.</p>
@@ -746,10 +761,10 @@ values, map keys, map values</p>
 evaluate for each key.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:eachKey=+k8s:minimum=1</span></span>
-    MyMap <span class="kw">map</span><span class="op">[</span><span class="dt">int</span><span class="op">]</span><span class="dt">string</span> <span class="st">`json:&quot;myMap&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:eachKey=+k8s:minimum=1
+    MyMap map[int]string `json:&quot;myMap&quot;`
+}</code></pre>
 <h3 id="tag-eachVal"><code>+k8s:eachVal</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares a validation for each value in a map or list.</p>
@@ -762,13 +777,13 @@ values, map keys, map values</p>
 evaluate for each value.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:eachVal=+k8s:minimum=1</span></span>
-    MyMap <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">int</span> <span class="st">`json:&quot;myMap&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:eachVal=+k8s:maxLength=10</span></span>
-    MyList <span class="op">[]</span><span class="dt">string</span> <span class="st">`json:&quot;myList&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:eachVal=+k8s:minimum=1
+    MyMap map[string]int `json:&quot;myMap&quot;`
+
+    // +k8s:eachVal=+k8s:maxLength=10
+    MyList []string `json:&quot;myList&quot;`
+}</code></pre>
 <h3 id="tag-enum"><code>+k8s:enum</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a string type is an enum. All constant values of this
@@ -778,19 +793,17 @@ href="#tag-enumExclude"><code>+k8s:enumExclude</code></a>.</p>
 <p><strong>Scopes:</strong> type definitions</p>
 <p><strong>Usage example:</strong></p>
 <p>First, define a new string type and some constants of that type:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:enum</span></span>
-<span class="kw">type</span> MyEnum <span class="dt">string</span></span>
-</span>
-<span class="kw">const</span> <span class="op">(</span></span>
-    MyEnumA MyEnum <span class="op">=</span> <span class="st">&quot;A&quot;</span></span>
-    MyEnumB MyEnum <span class="op">=</span> <span class="st">&quot;B&quot;</span></span>
-<span class="op">)</span></span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:enum
+type MyEnum string
+
+const (
+    MyEnumA MyEnum = &quot;A&quot;
+    MyEnumB MyEnum = &quot;B&quot;
+)</code></pre>
 <p>Then, use this type in another struct:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    MyField MyEnum <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    MyField MyEnum `json:&quot;myField&quot;`
+}</code></pre>
 <p>The validation logic ensures that <code>MyField</code> is one of the
 defined enum values (<code>"A"</code> or <code>"B"</code>).</p>
 <h3 id="tag-enumExclude"><code>+k8s:enumExclude</code></h3>
@@ -805,32 +818,30 @@ several conditional tags, the generator excludes the value if
 <p><strong>Stability level:</strong> Alpha</p>
 <p><strong>Scopes:</strong> constant values</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:enum</span></span>
-<span class="kw">type</span> MyEnum <span class="dt">string</span></span>
-</span>
-<span class="kw">const</span> <span class="op">(</span></span>
-    MyEnumA MyEnum <span class="op">=</span> <span class="st">&quot;A&quot;</span></span>
-</span>
-    <span class="co">// Never a valid value.</span></span>
-    <span class="co">// +k8s:enumExclude</span></span>
-    MyEnumB MyEnum <span class="op">=</span> <span class="st">&quot;B&quot;</span></span>
-</span>
-    <span class="co">// Only a valid value while &quot;MyFeature&quot; is disabled.</span></span>
-    <span class="co">// +k8s:ifEnabled(MyFeature)=+k8s:enumExclude</span></span>
-    MyEnumC MyEnum <span class="op">=</span> <span class="st">&quot;C&quot;</span></span>
-<span class="op">)</span></span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:enum
+type MyEnum string
+
+const (
+    MyEnumA MyEnum = &quot;A&quot;
+
+    // Never a valid value.
+    // +k8s:enumExclude
+    MyEnumB MyEnum = &quot;B&quot;
+
+    // Only a valid value while &quot;MyFeature&quot; is disabled.
+    // +k8s:ifEnabled(MyFeature)=+k8s:enumExclude
+    MyEnumC MyEnum = &quot;C&quot;
+)</code></pre>
 <h3 id="tag-forbidden"><code>+k8s:forbidden</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a field may not be specified.</p>
 <p><strong>Stability level:</strong> Beta</p>
 <p><strong>Scopes:</strong> struct fields</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:forbidden</span></span>
-    MyField <span class="dt">string</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:forbidden
+    MyField string `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-format"><code>+k8s:format</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a string field has a particular format.</p>
@@ -903,17 +914,16 @@ name must be a C identifier of no more than 32 characters.</td>
 </tbody>
 </table>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:format=k8s-long-name</span></span>
-    Subdomain <span class="dt">string</span> <span class="st">`json:&quot;subdomain&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:format=k8s-short-name</span></span>
-    Label <span class="dt">string</span> <span class="st">`json:&quot;label&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:format=k8s-uuid</span></span>
-    ID <span class="dt">string</span> <span class="st">`json:&quot;id&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:format=k8s-long-name
+    Subdomain string `json:&quot;subdomain&quot;`
+
+    // +k8s:format=k8s-short-name
+    Label string `json:&quot;label&quot;`
+
+    // +k8s:format=k8s-uuid
+    ID string `json:&quot;id&quot;`
+}</code></pre>
 <h3 id="tag-ifDisabled"><code>+k8s:ifDisabled</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares a validation that only applies when an option is disabled.
@@ -933,11 +943,10 @@ option.</li>
 validation tag to evaluate only when the option is disabled.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:ifDisabled(MyFeature)=+k8s:required</span></span>
-    MyField <span class="dt">string</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:ifDisabled(MyFeature)=+k8s:required
+    MyField string `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-ifEnabled"><code>+k8s:ifEnabled</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares a validation that only applies when an option is enabled.
@@ -957,11 +966,10 @@ name of the option.</li>
 validation tag to evaluate only when the option is enabled.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:ifEnabled(MyFeature)=+k8s:required</span></span>
-    MyField <span class="dt">string</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:ifEnabled(MyFeature)=+k8s:required
+    MyField string `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-ifMode"><code>+k8s:ifMode</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares a validation that only applies when the struct's <a
@@ -988,20 +996,19 @@ named alternative to the positional argument.</li>
 evaluate when the mode matches.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:modeDiscriminator</span></span>
-    Mode <span class="dt">string</span> <span class="st">`json:&quot;mode&quot;`</span></span>
-</span>
-    <span class="co">// Required in mode &quot;A&quot;, and additionally length-limited.</span></span>
-    <span class="co">// +k8s:ifMode(&quot;A&quot;)=+k8s:required</span></span>
-    <span class="co">// +k8s:ifMode(&quot;A&quot;)=+k8s:maxLength=5</span></span>
-    FieldA <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;fieldA,omitempty&quot;`</span></span>
-</span>
-    <span class="co">// Optional in mode &quot;B&quot;, implicitly forbidden in every other mode.</span></span>
-    <span class="co">// +k8s:ifMode(&quot;B&quot;)=+k8s:optional</span></span>
-    FieldB <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;fieldB,omitempty&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:modeDiscriminator
+    Mode string `json:&quot;mode&quot;`
+
+    // Required in mode &quot;A&quot;, and additionally length-limited.
+    // +k8s:ifMode(&quot;A&quot;)=+k8s:required
+    // +k8s:ifMode(&quot;A&quot;)=+k8s:maxLength=5
+    FieldA *string `json:&quot;fieldA,omitempty&quot;`
+
+    // Optional in mode &quot;B&quot;, implicitly forbidden in every other mode.
+    // +k8s:ifMode(&quot;B&quot;)=+k8s:optional
+    FieldB *string `json:&quot;fieldB,omitempty&quot;`
+}</code></pre>
 <h3 id="tag-immutable"><code>+k8s:immutable</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a field may not be updated. Unlike <a
@@ -1012,17 +1019,16 @@ change to the value after creation.</p>
 <p><strong>Scopes:</strong> struct fields, type definitions, list
 values, map values</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:immutable</span></span>
-    StringField <span class="dt">string</span> <span class="st">`json:&quot;stringField&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:immutable</span></span>
-    SliceField <span class="op">[]</span><span class="dt">string</span> <span class="st">`json:&quot;sliceField&quot;`</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="co">// +k8s:immutable</span></span>
-<span class="kw">type</span> ImmutableType <span class="dt">string</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:immutable
+    StringField string `json:&quot;stringField&quot;`
+
+    // +k8s:immutable
+    SliceField []string `json:&quot;sliceField&quot;`
+}
+
+// +k8s:immutable
+type ImmutableType string</code></pre>
 <h3 id="tag-isSubresource"><code>+k8s:isSubresource</code></h3>
 <p><strong>Description:</strong></p>
 <p>A package-level tag that scopes the package's validation rules to one
@@ -1050,15 +1056,13 @@ subresource path, so nothing reaches it.</p>
 <p><strong>Usage example:</strong></p>
 <p>In <code>staging/src/k8s.io/api/apps/v1/doc.go</code>, declare that
 the type supports <code>/scale</code>:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:supportsSubresource=&quot;/scale&quot;</span></span>
-<span class="kw">package</span> v1</span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:supportsSubresource=&quot;/scale&quot;
+package v1</code></pre>
 <p>In
 <code>staging/src/k8s.io/api/apps/v1/validations/scale/doc.go</code>,
 define the rules that run only for <code>/scale</code>:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:isSubresource=&quot;/scale&quot;</span></span>
-<span class="kw">package</span> scale</span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:isSubresource=&quot;/scale&quot;
+package scale</code></pre>
 <h3 id="tag-item"><code>+k8s:item</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares a validation for an item of a slice declared as a
@@ -1080,19 +1084,18 @@ Values can be strings, integers, or booleans.</p>
 evaluate for the matching list item.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:listType=map</span></span>
-    <span class="co">// +k8s:listMapKey=type</span></span>
-    <span class="co">// +k8s:item(type: &quot;Approved&quot;)=+k8s:zeroOrOneOfMember</span></span>
-    <span class="co">// +k8s:item(type: &quot;Denied&quot;)=+k8s:zeroOrOneOfMember</span></span>
-    MyConditions <span class="op">[]</span>MyCondition <span class="st">`json:&quot;conditions&quot;`</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> MyCondition <span class="kw">struct</span> <span class="op">{</span></span>
-    Type   <span class="dt">string</span> <span class="st">`json:&quot;type&quot;`</span></span>
-    Status <span class="dt">string</span> <span class="st">`json:&quot;status&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:listType=map
+    // +k8s:listMapKey=type
+    // +k8s:item(type: &quot;Approved&quot;)=+k8s:zeroOrOneOfMember
+    // +k8s:item(type: &quot;Denied&quot;)=+k8s:zeroOrOneOfMember
+    MyConditions []MyCondition `json:&quot;conditions&quot;`
+}
+
+type MyCondition struct {
+    Type   string `json:&quot;type&quot;`
+    Status string `json:&quot;status&quot;`
+}</code></pre>
 <p>In this example, the conditions with <code>type</code> "Approved" and
 "Denied" are members of the same zero-or-one-of group, so at most one of
 them may be present.</p>
@@ -1112,17 +1115,16 @@ values, map keys, map values</p>
 name of the field to use as the key.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb22"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:listType=map</span></span>
-<span class="co">// +k8s:listMapKey=keyFieldOne</span></span>
-<span class="co">// +k8s:listMapKey=keyFieldTwo</span></span>
-<span class="kw">type</span> MyList <span class="op">[]</span>MyItem</span>
-</span>
-<span class="kw">type</span> MyItem <span class="kw">struct</span> <span class="op">{</span></span>
-    KeyFieldOne <span class="dt">string</span> <span class="st">`json:&quot;keyFieldOne&quot;`</span></span>
-    KeyFieldTwo <span class="dt">string</span> <span class="st">`json:&quot;keyFieldTwo&quot;`</span></span>
-    ValueField  <span class="dt">string</span> <span class="st">`json:&quot;valueField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:listType=map
+// +k8s:listMapKey=keyFieldOne
+// +k8s:listMapKey=keyFieldTwo
+type MyList []MyItem
+
+type MyItem struct {
+    KeyFieldOne string `json:&quot;keyFieldOne&quot;`
+    KeyFieldTwo string `json:&quot;keyFieldTwo&quot;`
+    ValueField  string `json:&quot;valueField&quot;`
+}</code></pre>
 <p>The key is the combination of <code>keyFieldOne</code> and
 <code>keyFieldTwo</code>.</p>
 <h3 id="tag-listType"><code>+k8s:listType</code></h3>
@@ -1145,15 +1147,14 @@ values, map keys, map values</p>
 <li><code>atomic | map | set</code> (required)</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:listType=map</span></span>
-<span class="co">// +k8s:listMapKey=keyField</span></span>
-<span class="kw">type</span> MyList <span class="op">[]</span>MyItem</span>
-</span>
-<span class="kw">type</span> MyItem <span class="kw">struct</span> <span class="op">{</span></span>
-    KeyField   <span class="dt">string</span> <span class="st">`json:&quot;keyField&quot;`</span></span>
-    ValueField <span class="dt">string</span> <span class="st">`json:&quot;valueField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:listType=map
+// +k8s:listMapKey=keyField
+type MyList []MyItem
+
+type MyItem struct {
+    KeyField   string `json:&quot;keyField&quot;`
+    ValueField string `json:&quot;valueField&quot;`
+}</code></pre>
 <p>Each element of <code>MyList</code> must have a unique
 <code>keyField</code>.</p>
 <h3 id="tag-maxBytes"><code>+k8s:maxBytes</code></h3>
@@ -1171,11 +1172,10 @@ values, map keys, map values</p>
 field must be no more than X bytes long.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb24"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:maxBytes=1024</span></span>
-    MyString <span class="dt">string</span> <span class="st">`json:&quot;myString&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:maxBytes=1024
+    MyString string `json:&quot;myString&quot;`
+}</code></pre>
 <h3 id="tag-maxItems"><code>+k8s:maxItems</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a list has a limit on its size.</p>
@@ -1188,11 +1188,10 @@ values, map values</p>
 list must be no more than X items long.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb25"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:maxItems=5</span></span>
-    MyList <span class="op">[]</span><span class="dt">string</span> <span class="st">`json:&quot;myList&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:maxItems=5
+    MyList []string `json:&quot;myList&quot;`
+}</code></pre>
 <h3 id="tag-maxLength"><code>+k8s:maxLength</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a string field has a limit on its length in
@@ -1208,11 +1207,10 @@ values, map keys, map values</p>
 field must be no more than X characters long.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:maxLength=10</span></span>
-    MyString <span class="dt">string</span> <span class="st">`json:&quot;myString&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:maxLength=10
+    MyString string `json:&quot;myString&quot;`
+}</code></pre>
 <h3 id="tag-maxProperties"><code>+k8s:maxProperties</code></h3>
 <p><strong>Description:</strong></p>
 <p>Provides a limit on the properties of an object, as defined by JSON
@@ -1226,11 +1224,10 @@ entries in a field defined as a Go map.</p>
 map must have no more than X properties (where X &lt;= 100000).</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb27"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:maxProperties=32</span></span>
-    MyMap <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span> <span class="st">`json:&quot;myMap&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:maxProperties=32
+    MyMap map[string]string `json:&quot;myMap&quot;`
+}</code></pre>
 <h3 id="tag-maximum"><code>+k8s:maximum</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a numeric field has a maximum value.</p>
@@ -1243,11 +1240,10 @@ values, map keys, map values</p>
 less than or equal to X.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb28"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:maximum=100</span></span>
-    MyInt <span class="dt">int</span> <span class="st">`json:&quot;myInt&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:maximum=100
+    MyInt int `json:&quot;myInt&quot;`
+}</code></pre>
 <h3 id="tag-minItems"><code>+k8s:minItems</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a list has a minimum size.</p>
@@ -1260,11 +1256,10 @@ values, map values</p>
 list must be at least X items long.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb29"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:minItems=1</span></span>
-    MyList <span class="op">[]</span><span class="dt">string</span> <span class="st">`json:&quot;myList&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:minItems=1
+    MyList []string `json:&quot;myList&quot;`
+}</code></pre>
 <h3 id="tag-minLength"><code>+k8s:minLength</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a string field has a minimum length in characters. If
@@ -1279,11 +1274,10 @@ values, map keys, map values</p>
 at least X characters long.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:minLength=3</span></span>
-    MyString <span class="dt">string</span> <span class="st">`json:&quot;myString&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:minLength=3
+    MyString string `json:&quot;myString&quot;`
+}</code></pre>
 <h3 id="tag-minProperties"><code>+k8s:minProperties</code></h3>
 <p><strong>Description:</strong></p>
 <p>Provides a lower limit on the properties of an object, as defined by
@@ -1297,11 +1291,10 @@ of entries in a field defined as a Go map.</p>
 map must have at least X properties (where X &lt;= 100000).</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:minProperties=1</span></span>
-    MyMap <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span> <span class="st">`json:&quot;myMap&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:minProperties=1
+    MyMap map[string]string `json:&quot;myMap&quot;`
+}</code></pre>
 <h3 id="tag-minimum"><code>+k8s:minimum</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a numeric field has a minimum value.</p>
@@ -1314,11 +1307,10 @@ values, map keys, map values</p>
 greater than or equal to X.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb32"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:minimum=0</span></span>
-    MyInt <span class="dt">int</span> <span class="st">`json:&quot;myInt&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:minimum=0
+    MyInt int `json:&quot;myInt&quot;`
+}</code></pre>
 <h3 id="tag-modeDiscriminator"><code>+k8s:modeDiscriminator</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that this field is a discriminator for state-based
@@ -1338,32 +1330,30 @@ name <code>default</code> is reserved, and group names must match
 discriminator group, if more than one exists.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb33"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:modeDiscriminator</span></span>
-    Mode <span class="dt">string</span> <span class="st">`json:&quot;mode&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:modeDiscriminator(modality:&quot;Legacy&quot;)</span></span>
-    Legacy <span class="dt">bool</span> <span class="st">`json:&quot;legacy&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:ifMode(&quot;A&quot;)=+k8s:required</span></span>
-    FieldA <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;fieldA,omitempty&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:ifMode(modality:&quot;Legacy&quot;, mode:&quot;true&quot;)=+k8s:required</span></span>
-    FieldB <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;fieldB,omitempty&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:modeDiscriminator
+    Mode string `json:&quot;mode&quot;`
+
+    // +k8s:modeDiscriminator(modality:&quot;Legacy&quot;)
+    Legacy bool `json:&quot;legacy&quot;`
+
+    // +k8s:ifMode(&quot;A&quot;)=+k8s:required
+    FieldA *string `json:&quot;fieldA,omitempty&quot;`
+
+    // +k8s:ifMode(modality:&quot;Legacy&quot;, mode:&quot;true&quot;)=+k8s:required
+    FieldB *string `json:&quot;fieldB,omitempty&quot;`
+}</code></pre>
 <h3 id="tag-monotonic"><code>+k8s:monotonic</code></h3>
 <p><strong>Description:</strong></p>
 <p>Ensures that a numeric field's value never decreases on update.</p>
 <p><strong>Stability level:</strong> Alpha</p>
 <p><strong>Scopes:</strong> struct fields, type definitions</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb34"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:minimum=0</span></span>
-    <span class="co">// +k8s:monotonic</span></span>
-    Generation <span class="dt">int64</span> <span class="st">`json:&quot;generation&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:minimum=0
+    // +k8s:monotonic
+    Generation int64 `json:&quot;generation&quot;`
+}</code></pre>
 <h3 id="tag-neq"><code>+k8s:neq</code></h3>
 <p><strong>Description:</strong></p>
 <p>Verifies that the field's value is not equal to a specific disallowed
@@ -1377,17 +1367,16 @@ values, map keys, map values</p>
 The parser infers the type (string, int, bool).</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb35"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:neq=&quot;disallowed&quot;</span></span>
-    MyString <span class="dt">string</span> <span class="st">`json:&quot;myString&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:neq=0</span></span>
-    MyInt <span class="dt">int</span> <span class="st">`json:&quot;myInt&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:neq=true</span></span>
-    MyBool <span class="dt">bool</span> <span class="st">`json:&quot;myBool&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:neq=&quot;disallowed&quot;
+    MyString string `json:&quot;myString&quot;`
+
+    // +k8s:neq=0
+    MyInt int `json:&quot;myInt&quot;`
+
+    // +k8s:neq=true
+    MyBool bool `json:&quot;myBool&quot;`
+}</code></pre>
 <h3 id="tag-opaqueType"><code>+k8s:opaqueType</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that the generator ignores any validations declared on the
@@ -1400,35 +1389,32 @@ the <code>--readonly-pkg</code> flag.</p>
 <p><strong>Scopes:</strong> struct fields, type definitions, list
 values, map keys, map values</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb36"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">import</span> <span class="st">&quot;some/external/package&quot;</span></span>
-</span>
-<span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:opaqueType</span></span>
-    ExternalField <span class="kw">package</span><span class="op">.</span>ExternalType <span class="st">`json:&quot;externalField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">import &quot;some/external/package&quot;
+
+type MyStruct struct {
+    // +k8s:opaqueType
+    ExternalField package.ExternalType `json:&quot;externalField&quot;`
+}</code></pre>
 <h3 id="tag-optional"><code>+k8s:optional</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a field is optional to clients.</p>
 <p><strong>Stability level:</strong> Stable</p>
 <p><strong>Scopes:</strong> struct fields</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb37"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    MyField <span class="dt">string</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:optional
+    MyField string `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-required"><code>+k8s:required</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that a field must be specified by clients.</p>
 <p><strong>Stability level:</strong> Stable</p>
 <p><strong>Scopes:</strong> struct fields</p>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb38"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:required</span></span>
-    MyField <span class="dt">string</span> <span class="st">`json:&quot;myField&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:required
+    MyField string `json:&quot;myField&quot;`
+}</code></pre>
 <h3 id="tag-subfield"><code>+k8s:subfield</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares a validation for a subfield of a struct. The named subfield
@@ -1447,15 +1433,14 @@ JSON name of the subfield.</li>
 evaluate for the subfield.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb39"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:subfield(mySubfield)=+k8s:required</span></span>
-    Inner MyInnerStruct <span class="st">`json:&quot;inner&quot;`</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> MyInnerStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    MySubfield <span class="dt">string</span> <span class="st">`json:&quot;mySubfield&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:subfield(mySubfield)=+k8s:required
+    Inner MyInnerStruct `json:&quot;inner&quot;`
+}
+
+type MyInnerStruct struct {
+    MySubfield string `json:&quot;mySubfield&quot;`
+}</code></pre>
 <h3
 id="tag-supportsSubresource"><code>+k8s:supportsSubresource</code></h3>
 <p><strong>Description:</strong></p>
@@ -1479,10 +1464,9 @@ subresource to support (for example, <code>"/status"</code> or
 <p>In <code>staging/src/k8s.io/api/core/v1/doc.go</code>, to handle
 <code>/status</code> and <code>/scale</code> for the types in package
 <code>v1</code>:</p>
-<div class="sourceCode" id="cb40"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="co">// +k8s:supportsSubresource=&quot;/status&quot;</span></span>
-<span class="co">// +k8s:supportsSubresource=&quot;/scale&quot;</span></span>
-<span class="kw">package</span> v1</span></code></pre></div>
+<pre class="go"><code class="language-go">// +k8s:supportsSubresource=&quot;/status&quot;
+// +k8s:supportsSubresource=&quot;/scale&quot;
+package v1</code></pre>
 <h3
 id="tag-unionDiscriminator"><code>+k8s:unionDiscriminator</code></h3>
 <p><strong>Description:</strong></p>
@@ -1496,32 +1480,31 @@ discriminator's value selects which union member must be present.</p>
 more than one exists.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb41"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    TypeMeta <span class="dt">int</span></span>
-</span>
-    <span class="co">// +k8s:unionDiscriminator</span></span>
-    D D <span class="st">`json:&quot;d&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:unionMember</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    M1 <span class="op">*</span>M1 <span class="st">`json:&quot;m1&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:unionMember</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    M2 <span class="op">*</span>M2 <span class="st">`json:&quot;m2&quot;`</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> D <span class="dt">string</span></span>
-</span>
-<span class="kw">const</span> <span class="op">(</span></span>
-    DM1 D <span class="op">=</span> <span class="st">&quot;M1&quot;</span></span>
-    DM2 D <span class="op">=</span> <span class="st">&quot;M2&quot;</span></span>
-<span class="op">)</span></span>
-</span>
-<span class="kw">type</span> M1 <span class="kw">struct</span><span class="op">{}</span></span>
-</span>
-<span class="kw">type</span> M2 <span class="kw">struct</span><span class="op">{}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    TypeMeta int
+
+    // +k8s:unionDiscriminator
+    D D `json:&quot;d&quot;`
+
+    // +k8s:unionMember
+    // +k8s:optional
+    M1 *M1 `json:&quot;m1&quot;`
+
+    // +k8s:unionMember
+    // +k8s:optional
+    M2 *M2 `json:&quot;m2&quot;`
+}
+
+type D string
+
+const (
+    DM1 D = &quot;M1&quot;
+    DM2 D = &quot;M2&quot;
+)
+
+type M1 struct{}
+
+type M2 struct{}</code></pre>
 <p>The value of <code>D</code> determines which member, <code>M1</code>
 or <code>M2</code>, must be present.</p>
 <h3 id="tag-unionMember"><code>+k8s:unionMember</code></h3>
@@ -1538,20 +1521,19 @@ more than one exists.</li>
 for this member. Defaults to the field's name.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb42"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:unionMember(union: &quot;union1&quot;)</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    M1 <span class="op">*</span>M1 <span class="st">`json:&quot;u1m1&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:unionMember(union: &quot;union1&quot;)</span></span>
-    <span class="co">// +k8s:optional</span></span>
-    M2 <span class="op">*</span>M2 <span class="st">`json:&quot;u1m2&quot;`</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> M1 <span class="kw">struct</span><span class="op">{}</span></span>
-</span>
-<span class="kw">type</span> M2 <span class="kw">struct</span><span class="op">{}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:unionMember(union: &quot;union1&quot;)
+    // +k8s:optional
+    M1 *M1 `json:&quot;u1m1&quot;`
+
+    // +k8s:unionMember(union: &quot;union1&quot;)
+    // +k8s:optional
+    M2 *M2 `json:&quot;u1m2&quot;`
+}
+
+type M1 struct{}
+
+type M2 struct{}</code></pre>
 <h3 id="tag-unique"><code>+k8s:unique</code></h3>
 <p><strong>Description:</strong></p>
 <p>Declares that a list field's elements are unique. You can use this
@@ -1569,17 +1551,16 @@ href="#tag-listMapKey"><code>+k8s:listMapKey</code></a> fields; with
 <code>set</code>, from the whole element value.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb43"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:listType=atomic</span></span>
-    <span class="co">// +k8s:unique=set</span></span>
-    Names <span class="op">[]</span><span class="dt">string</span> <span class="st">`json:&quot;names&quot;`</span></span>
-</span>
-    <span class="co">// +k8s:listType=atomic</span></span>
-    <span class="co">// +k8s:unique=map</span></span>
-    <span class="co">// +k8s:listMapKey=key</span></span>
-    Items <span class="op">[]</span>Item <span class="st">`json:&quot;items&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:listType=atomic
+    // +k8s:unique=set
+    Names []string `json:&quot;names&quot;`
+
+    // +k8s:listType=atomic
+    // +k8s:unique=map
+    // +k8s:listMapKey=key
+    Items []Item `json:&quot;items&quot;`
+}</code></pre>
 <h3 id="tag-update"><code>+k8s:update</code></h3>
 <p><strong>Description:</strong></p>
 <p>Provides constraints on the allowed update operations of a field. You
@@ -1638,24 +1619,23 @@ otherwise content changes are not detectable.</p>
 <li><code>NoSet | NoUnset | NoModify | NoAddItem | NoRemoveItem</code></li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb44"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// Set-once: may be set at any time, but never changed or cleared.</span></span>
-    <span class="co">// +k8s:update=NoModify</span></span>
-    <span class="co">// +k8s:update=NoUnset</span></span>
-    SetOnce <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;setOnce,omitempty&quot;`</span></span>
-</span>
-    <span class="co">// Must be set at creation or never.</span></span>
-    <span class="co">// +k8s:update=NoSet</span></span>
-    AtCreationOnly <span class="op">*</span><span class="dt">string</span> <span class="st">`json:&quot;atCreationOnly,omitempty&quot;`</span></span>
-</span>
-    <span class="co">// Freeze the shape of the list; individual items may still change.</span></span>
-    <span class="co">// +k8s:listType=map</span></span>
-    <span class="co">// +k8s:listMapKey=key</span></span>
-    <span class="co">// +k8s:update=NoAddItem</span></span>
-    <span class="co">// +k8s:update=NoRemoveItem</span></span>
-    FrozenShape <span class="op">[]</span>Item <span class="st">`json:&quot;frozenShape&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // Set-once: may be set at any time, but never changed or cleared.
+    // +k8s:update=NoModify
+    // +k8s:update=NoUnset
+    SetOnce *string `json:&quot;setOnce,omitempty&quot;`
+
+    // Must be set at creation or never.
+    // +k8s:update=NoSet
+    AtCreationOnly *string `json:&quot;atCreationOnly,omitempty&quot;`
+
+    // Freeze the shape of the list; individual items may still change.
+    // +k8s:listType=map
+    // +k8s:listMapKey=key
+    // +k8s:update=NoAddItem
+    // +k8s:update=NoRemoveItem
+    FrozenShape []Item `json:&quot;frozenShape&quot;`
+}</code></pre>
 <h3 id="tag-zeroOrOneOfMember"><code>+k8s:zeroOrOneOfMember</code></h3>
 <p><strong>Description:</strong></p>
 <p>Indicates that this field is a member of a zero-or-one-of union. A
@@ -1679,19 +1659,18 @@ more than one exists.</li>
 for this member. Defaults to the field's name.</li>
 </ul>
 <p><strong>Usage example:</strong></p>
-<div class="sourceCode" id="cb45"><pre
-class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> MyStruct <span class="kw">struct</span> <span class="op">{</span></span>
-    <span class="co">// +k8s:listType=map</span></span>
-    <span class="co">// +k8s:listMapKey=type</span></span>
-    <span class="co">// +k8s:item(type: &quot;Approved&quot;)=+k8s:zeroOrOneOfMember</span></span>
-    <span class="co">// +k8s:item(type: &quot;Denied&quot;)=+k8s:zeroOrOneOfMember</span></span>
-    Conditions <span class="op">[]</span>MyCondition <span class="st">`json:&quot;conditions&quot;`</span></span>
-<span class="op">}</span></span>
-</span>
-<span class="kw">type</span> MyCondition <span class="kw">struct</span> <span class="op">{</span></span>
-    Type   <span class="dt">string</span> <span class="st">`json:&quot;type&quot;`</span></span>
-    Status <span class="dt">string</span> <span class="st">`json:&quot;status&quot;`</span></span>
-<span class="op">}</span></span></code></pre></div>
+<pre class="go"><code class="language-go">type MyStruct struct {
+    // +k8s:listType=map
+    // +k8s:listMapKey=type
+    // +k8s:item(type: &quot;Approved&quot;)=+k8s:zeroOrOneOfMember
+    // +k8s:item(type: &quot;Denied&quot;)=+k8s:zeroOrOneOfMember
+    Conditions []MyCondition `json:&quot;conditions&quot;`
+}
+
+type MyCondition struct {
+    Type   string `json:&quot;type&quot;`
+    Status string `json:&quot;status&quot;`
+}</code></pre>
 <p>In this example, at most one of the "Approved" and "Denied"
 conditions can be present. It is also valid for neither to be
 present.</p>
@@ -1767,6 +1746,7 @@ Validation Of Kubernetes Native Types</a> </option></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1775,6 +1755,8 @@ Validation Of Kubernetes Native Types</a> </option></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

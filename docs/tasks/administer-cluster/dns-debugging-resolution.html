@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -144,18 +159,17 @@ check the version, enter <code>kubectl version</code>.</p>
 simple Pod to use as a test environment</h3>
 <div class="code-sample">
 <p><code>admin/dns/dnsutils.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dnsutils</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> dnsutils</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.39</span></span>
-<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
-<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: dnsutils
+  namespace: default
+spec:
+  containers:
+  - name: dnsutils
+    image: registry.k8s.io/e2e-test-images/agnhost:2.39
+    imagePullPolicy: IfNotPresent
+  restartPolicy: Always</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -168,16 +182,16 @@ href="../../concepts/services-networking/dns-pod-service.html">DNS
 for Services and Pods</a>.</p>
 </div>
 <p>Use that manifest to create a Pod:</p>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/admin/dns/dnsutils.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/admin/dns/dnsutils.yaml</code></pre>
 <pre><code>pod/dnsutils created</code></pre>
 <p>…and verify its status:</p>
-<pre class="shell"><code>kubectl get pods dnsutils</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods dnsutils</code></pre>
 <pre><code>NAME       READY     STATUS    RESTARTS   AGE
 dnsutils   1/1       Running   0          &lt;some-time&gt;</code></pre>
 <p>Once that Pod is running, you can exec <code>nslookup</code> in that
 environment. If you see something like the following, DNS is working
 correctly.</p>
-<pre class="shell"><code>kubectl exec -i -t dnsutils -- nslookup kubernetes.default</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -i -t dnsutils -- nslookup kubernetes.default</code></pre>
 <pre><code>Server:    10.0.0.10
 Address 1: 10.0.0.10
 
@@ -190,7 +204,7 @@ configuration first</h3>
 href="dns-custom-nameservers.html">Customizing
 DNS Service</a> and <a href="#known-issues">Known issues</a> below for
 more information)</p>
-<pre class="shell"><code>kubectl exec -ti dnsutils -- cat /etc/resolv.conf</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -ti dnsutils -- cat /etc/resolv.conf</code></pre>
 <p>Verify that the search path and name server are set up like the
 following (note that search path may vary for different cloud
 providers):</p>
@@ -199,13 +213,13 @@ nameserver 10.0.0.10
 options ndots:5</code></pre>
 <p>Errors such as the following indicate a problem with the CoreDNS
 add-on or with associated Services:</p>
-<pre class="shell"><code>kubectl exec -i -t dnsutils -- nslookup kubernetes.default</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -i -t dnsutils -- nslookup kubernetes.default</code></pre>
 <pre><code>Server:    10.0.0.10
 Address 1: 10.0.0.10
 
 nslookup: can&#39;t resolve &#39;kubernetes.default&#39;</code></pre>
 <p>or</p>
-<pre class="shell"><code>kubectl exec -i -t dnsutils -- nslookup kubernetes.default</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -i -t dnsutils -- nslookup kubernetes.default</code></pre>
 <pre><code>Server:    10.0.0.10
 Address 1: 10.0.0.10 kube-dns.kube-system.svc.cluster.local
 
@@ -214,7 +228,7 @@ nslookup: can&#39;t resolve &#39;kubernetes.default&#39;</code></pre>
 running</h3>
 <p>Use the <code>kubectl get pods</code> command to verify that the DNS
 pod is running.</p>
-<pre class="shell"><code>kubectl get pods --namespace=kube-system -l k8s-app=kube-dns</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods --namespace=kube-system -l k8s-app=kube-dns</code></pre>
 <pre><code>NAME                       READY     STATUS    RESTARTS   AGE
 ...
 coredns-7b96bf9f76-5hsxb   1/1       Running   0           1h
@@ -236,7 +250,7 @@ pod</h3>
 <p>Use the <code>kubectl logs</code> command to see logs for the DNS
 containers.</p>
 <p>For CoreDNS:</p>
-<pre class="shell"><code>kubectl logs --namespace=kube-system -l k8s-app=kube-dns</code></pre>
+<pre class="shell"><code class="language-shell">kubectl logs --namespace=kube-system -l k8s-app=kube-dns</code></pre>
 <p>Here is an example of a healthy CoreDNS log:</p>
 <pre><code>.:53
 2018/08/15 14:37:17 [INFO] CoreDNS-1.2.2
@@ -249,7 +263,7 @@ logs.</p>
 <h3 id="is-dns-service-up">Is DNS service up?</h3>
 <p>Verify that the DNS service is up by using the
 <code>kubectl get service</code> command.</p>
-<pre class="shell"><code>kubectl get svc --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get svc --namespace=kube-system</code></pre>
 <pre><code>NAME         TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)             AGE
 ...
 kube-dns     ClusterIP   10.0.0.10      &lt;none&gt;        53/UDP,53/TCP        1h
@@ -268,7 +282,7 @@ Services</a> for more information.</p>
 <h3 id="are-dns-endpoints-exposed">Are DNS endpoints exposed?</h3>
 <p>You can verify that DNS endpoints are exposed by using the
 <code>kubectl get endpointslice</code> command.</p>
-<pre class="shell"><code>kubectl get endpointslice -l kubernetes.io/service-name=kube-dns --namespace=kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get endpointslice -l kubernetes.io/service-name=kube-dns --namespace=kube-system</code></pre>
 <pre><code>NAME             ADDRESSTYPE   PORTS   ENDPOINTS                  AGE
 coredns-zxoja    IPv4          53      10.180.3.17,10.180.3.17    1h</code></pre>
 <p>If you do not see the endpoints, see the endpoints section in the <a
@@ -283,30 +297,29 @@ edit it, use the command:</p>
 <pre><code>kubectl -n kube-system edit configmap coredns</code></pre>
 <p>Then add <code>log</code> in the Corefile section per the example
 below:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> coredns</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">Corefile</span><span class="kw">:</span><span class="at"> </span><span class="ch">|</span></span>
-<span class="at">    .:53 {</span></span>
-<span class="at">        log</span></span>
-<span class="at">        errors</span></span>
-<span class="at">        health</span></span>
-<span class="at">        kubernetes cluster.local in-addr.arpa ip6.arpa {</span></span>
-<span class="at">          pods insecure</span></span>
-<span class="at">          upstream</span></span>
-<span class="at">          fallthrough in-addr.arpa ip6.arpa</span></span>
-<span class="at">        </span><span class="er">}</span></span>
-<span class="at">        prometheus :9153</span></span>
-<span class="at">        forward . /etc/resolv.conf</span></span>
-<span class="at">        cache 30</span></span>
-<span class="at">        loop</span></span>
-<span class="at">        reload</span></span>
-<span class="at">        loadbalance</span></span>
-<span class="at">    </span><span class="er">}</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coredns
+  namespace: kube-system
+data:
+  Corefile: |
+    .:53 {
+        log
+        errors
+        health
+        kubernetes cluster.local in-addr.arpa ip6.arpa {
+          pods insecure
+          upstream
+          fallthrough in-addr.arpa ip6.arpa
+        }
+        prometheus :9153
+        forward . /etc/resolv.conf
+        cache 30
+        loop
+        reload
+        loadbalance
+    }</code></pre>
 <p>After saving the changes, it may take up to minute or two for
 Kubernetes to propagate these changes to the CoreDNS pods.</p>
 <p>Next, make some queries and view the logs per the sections above in
@@ -329,7 +342,7 @@ properly resolve service names.</p>
 <pre><code>2022-03-18T07:12:15.699431183Z [INFO] 10.96.144.227:52299 - 3686 &quot;A IN serverproxy.contoso.net.cluster.local. udp 52 false 512&quot; SERVFAIL qr,aa,rd 145 0.000091221s</code></pre>
 <p>First, get the current ClusterRole of
 <code>system:coredns</code>:</p>
-<pre class="shell"><code>kubectl describe clusterrole system:coredns -n kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe clusterrole system:coredns -n kube-system</code></pre>
 <p>Expected output:</p>
 <pre><code>PolicyRule:
   Resources                        Non-Resource URLs  Resource Names  Verbs
@@ -340,7 +353,7 @@ properly resolve service names.</p>
   services                         []                 []              [list watch]
   endpointslices.discovery.k8s.io  []                 []              [list watch]</code></pre>
 <p>If any permissions are missing, edit the ClusterRole to add them:</p>
-<pre class="shell"><code>kubectl edit clusterrole system:coredns -n kube-system</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit clusterrole system:coredns -n kube-system</code></pre>
 <p>Example insertion of EndpointSlices permissions:</p>
 <pre><code>...
 - apiGroups:
@@ -358,9 +371,9 @@ namespace.</p>
 <p>If the namespace of the pod and service differ, the DNS query must
 include the namespace of the service.</p>
 <p>This query is limited to the pod's namespace:</p>
-<pre class="shell"><code>kubectl exec -i -t dnsutils -- nslookup &lt;service-name&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -i -t dnsutils -- nslookup &lt;service-name&gt;</code></pre>
 <p>This query specifies the namespace:</p>
-<pre class="shell"><code>kubectl exec -i -t dnsutils -- nslookup &lt;service-name&gt;.&lt;namespace&gt;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl exec -i -t dnsutils -- nslookup &lt;service-name&gt;.&lt;namespace&gt;</code></pre>
 <p>To learn more about name resolution, see <a
 href="../../concepts/services-networking/dns-pod-service.html">DNS
 for Services and Pods</a>.</p>
@@ -464,6 +477,7 @@ Services and Pods</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -472,6 +486,8 @@ Services and Pods</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

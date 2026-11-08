@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -172,17 +187,15 @@ documentation for your specific network implementation.)</p>
 <h3 id="prerequisite-ipv4-forwarding-optional">Enable IPv4 packet
 forwarding</h3>
 <p>To manually enable IPv4 packet forwarding:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="co"># sysctl params required by setup, params persist across reboots</span></span>
-<span class="fu">cat</span> <span class="op">&lt;&lt;EOF</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /etc/sysctl.d/k8s.conf</span>
-<span class="st">net.ipv4.ip_forward = 1</span></span>
-<span class="op">EOF</span></span>
-</span>
-<span class="co"># Apply sysctl params without reboot</span></span>
-<span class="fu">sudo</span> sysctl <span class="at">--system</span></span></code></pre></div>
+<pre class="bash"><code class="language-bash"># sysctl params required by setup, params persist across reboots
+cat &lt;&lt;EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.ipv4.ip_forward = 1
+EOF
+
+# Apply sysctl params without reboot
+sudo sysctl --system</code></pre>
 <p>Verify that <code>net.ipv4.ip_forward</code> is set to 1 with:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">sysctl</span> net.ipv4.ip_forward</span></code></pre></div>
+<pre class="bash"><code class="language-bash">sysctl net.ipv4.ip_forward</code></pre>
 <h2 id="cgroup-drivers">cgroup drivers</h2>
 <p>On Linux, <a class="glossary-term" href="../../reference/glossary.html#term-cgroup" title="Glossary: cgroup">control
 groups</a> are used to constrain resources that are allocated to
@@ -235,11 +248,10 @@ container runtime when systemd is the selected init system.</p>
 href="../../tasks/administer-cluster/kubelet-config-file.html"><code>KubeletConfiguration</code></a>
 option of <code>cgroupDriver</code> and set it to <code>systemd</code>.
 For example:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
-<span class="co">...</span></span>
-<span class="er">cgroupDriver: systemd</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+...
+cgroupDriver: systemd</code></pre>
 <p>If you configure <code>systemd</code> as the cgroup driver for the
 kubelet, you must also configure <code>systemd</code> as the cgroup
 driver for the container runtime. Refer to the documentation for your
@@ -360,7 +372,7 @@ and then set the configuration parameters specified above
 accordingly.</p>
 </div>
 <p>If you apply this change, make sure to restart containerd:</p>
-<pre class="shell"><code>sudo systemctl restart containerd</code></pre>
+<pre class="shell"><code class="language-shell">sudo systemctl restart containerd</code></pre>
 <p>In Kubernetes v1.28, you can enable automatic detection of the cgroup
 driver as an alpha feature. See <a href="#systemd-cgroup-driver">systemd
 cgroup driver</a> for more details.</p>
@@ -370,9 +382,8 @@ image</h4>
 href="https://github.com/containerd/containerd/blob/main/docs/cri/config.md">containerd
 config</a> you can overwrite the sandbox image by setting the following
 config:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode toml"><code class="sourceCode toml"><span class="kw">[plugins.&quot;</span><span class="dt">io.containerd.grpc.v1.cri&quot;</span><span class="kw">]</span></span>
-  <span class="dt">sandbox_image</span> <span class="op">=</span> <span class="st">&quot;registry.k8s.io/pause:3.10&quot;</span></span></code></pre></div>
+<pre class="toml"><code class="language-toml">[plugins.&quot;io.containerd.grpc.v1.cri&quot;]
+  sandbox_image = &quot;registry.k8s.io/pause:3.10&quot;</code></pre>
 <p>You might need to restart <code>containerd</code> as well once you've
 updated the config file: <code>systemctl restart containerd</code>.</p>
 <h3 id="cri-o">CRI-O</h3>
@@ -388,10 +399,9 @@ either edit <code>/etc/crio/crio.conf</code> or place a drop-in
 configuration in
 <code>/etc/crio/crio.conf.d/02-cgroup-manager.conf</code>, for
 example:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode toml"><code class="sourceCode toml"><span class="kw">[crio.runtime]</span></span>
-<span class="dt">conmon_cgroup</span> <span class="op">=</span> <span class="st">&quot;pod&quot;</span></span>
-<span class="dt">cgroup_manager</span> <span class="op">=</span> <span class="st">&quot;cgroupfs&quot;</span></span></code></pre></div>
+<pre class="toml"><code class="language-toml">[crio.runtime]
+conmon_cgroup = &quot;pod&quot;
+cgroup_manager = &quot;cgroupfs&quot;</code></pre>
 <p>You should also note the changed <code>conmon_cgroup</code>, which
 has to be set to the value <code>pod</code> when using CRI-O with
 <code>cgroupfs</code>. It is generally necessary to keep the cgroup
@@ -407,9 +417,8 @@ image</h4>
 <p>In your <a
 href="https://github.com/cri-o/cri-o/blob/main/docs/crio.conf.5.md">CRI-O
 config</a> you can set the following config value:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode toml"><code class="sourceCode toml"><span class="kw">[crio.image]</span></span>
-<span class="dt">pause_image</span><span class="op">=</span><span class="st">&quot;registry.k8s.io/pause:3.10&quot;</span></span></code></pre></div>
+<pre class="toml"><code class="language-toml">[crio.image]
+pause_image=&quot;registry.k8s.io/pause:3.10&quot;</code></pre>
 <p>This config option supports live configuration reload to apply this
 change: <code>systemctl reload crio</code> or by sending
 <code>SIGHUP</code> to the <code>crio</code> process.</p>
@@ -520,6 +529,7 @@ plugin</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -528,6 +538,8 @@ plugin</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -558,8 +573,8 @@ exhausts the cluster's supply of Pod IPs.</p>
 href="#viewing-and-setting-quotas">Viewing and Setting Quotas</a>.</p>
 <h2 id="viewing-and-setting-quotas">Viewing and Setting Quotas</h2>
 <p>kubectl supports creating, updating, and viewing quotas:</p>
-<pre class="shell"><code>kubectl create namespace myspace</code></pre>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt; compute-resources.yaml
+<pre class="shell"><code class="language-shell">kubectl create namespace myspace</code></pre>
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt; compute-resources.yaml
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -572,8 +587,8 @@ spec:
     limits.memory: &quot;2Gi&quot;
     requests.nvidia.com/gpu: 4
 EOF</code></pre>
-<pre class="shell"><code>kubectl create -f ./compute-resources.yaml --namespace=myspace</code></pre>
-<pre class="shell"><code>cat &lt;&lt;EOF &gt; object-counts.yaml
+<pre class="shell"><code class="language-shell">kubectl create -f ./compute-resources.yaml --namespace=myspace</code></pre>
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF &gt; object-counts.yaml
 apiVersion: v1
 kind: ResourceQuota
 metadata:
@@ -588,13 +603,13 @@ spec:
     services: &quot;10&quot;
     services.loadbalancers: &quot;2&quot;
 EOF</code></pre>
-<pre class="shell"><code>kubectl create -f ./object-counts.yaml --namespace=myspace</code></pre>
-<pre class="shell"><code>kubectl get quota --namespace=myspace</code></pre>
-<pre class="none"><code>NAME                    AGE
+<pre class="shell"><code class="language-shell">kubectl create -f ./object-counts.yaml --namespace=myspace</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get quota --namespace=myspace</code></pre>
+<pre class="none"><code class="language-none">NAME                    AGE
 compute-resources       30s
 object-counts           32s</code></pre>
-<pre class="shell"><code>kubectl describe quota compute-resources --namespace=myspace</code></pre>
-<pre class="none"><code>Name:                    compute-resources
+<pre class="shell"><code class="language-shell">kubectl describe quota compute-resources --namespace=myspace</code></pre>
+<pre class="none"><code class="language-none">Name:                    compute-resources
 Namespace:               myspace
 Resource                 Used  Hard
 --------                 ----  ----
@@ -603,8 +618,8 @@ limits.memory            0     2Gi
 requests.cpu             0     1
 requests.memory          0     1Gi
 requests.nvidia.com/gpu  0     4</code></pre>
-<pre class="shell"><code>kubectl describe quota object-counts --namespace=myspace</code></pre>
-<pre class="none"><code>Name:                   object-counts
+<pre class="shell"><code class="language-shell">kubectl describe quota object-counts --namespace=myspace</code></pre>
+<pre class="none"><code class="language-none">Name:                   object-counts
 Namespace:              myspace
 Resource                Used    Hard
 --------                ----    ----
@@ -618,10 +633,10 @@ services.loadbalancers  0       2</code></pre>
 <p>kubectl also supports object count quota for all standard namespaced
 resources using the syntax
 <code>count/&lt;resource&gt;.&lt;group&gt;</code>:</p>
-<pre class="shell"><code>kubectl create namespace myspace</code></pre>
-<pre class="shell"><code>kubectl create quota test --hard=count/deployments.apps=2,count/replicasets.apps=4,count/pods=3,count/secrets=4 --namespace=myspace</code></pre>
-<pre class="shell"><code>kubectl create deployment nginx --image=nginx --namespace=myspace --replicas=2</code></pre>
-<pre class="shell"><code>kubectl describe quota --namespace=myspace</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create namespace myspace</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create quota test --hard=count/deployments.apps=2,count/replicasets.apps=4,count/pods=3,count/secrets=4 --namespace=myspace</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create deployment nginx --image=nginx --namespace=myspace --replicas=2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe quota --namespace=myspace</code></pre>
 <pre><code>Name:                         test
 Namespace:                    myspace
 Resource                      Used  Hard
@@ -718,11 +733,10 @@ attributes class</a>.</td>
 <code>scopeSelector</code> field. You define one or more <em>match
 expressions</em> that specify an <code>operators</code> and, if
 relevant, a set of <code>values</code> to match. For example:</p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> BestEffort</span><span class="co"> # Match pods that have best effort quality of service</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span><span class="co"> # optional; &quot;Exists&quot; is implied for BestEffort scope</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  scopeSelector:
+    matchExpressions:
+      - scopeName: BestEffort # Match pods that have best effort quality of service
+        operator: Exists # optional; &quot;Exists&quot; is implied for BestEffort scope</code></pre>
 <p>The <code>scopeSelector</code> supports the following values in the
 <code>operator</code> field:</p>
 <ul>
@@ -734,13 +748,12 @@ class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span>
 <p>If the <code>operator</code> is <code>In</code> or
 <code>NotIn</code>, the <code>values</code> field must have at least one
 value. For example:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">middle</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  scopeSelector:
+    matchExpressions:
+      - scopeName: PriorityClass
+        operator: In
+        values:
+          - middle</code></pre>
 <p>If the <code>operator</code> is <code>Exists</code> or
 <code>DoesNotExist</code>, the <code>values</code> field must
 <em>NOT</em> be specified.</p>
@@ -821,38 +834,36 @@ certain namespaces - such as <code>foo-ns</code> in the example below -
 from having pods that use cross-namespace pod affinity. You configure
 this creating a ResourceQuota object in that namespace with
 <code>CrossNamespacePodAffinity</code> scope and hard limit of 0:</p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> disable-cross-namespace-affinity</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> foo-ns</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0&quot;</span></span>
-<span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> CrossNamespacePodAffinity</span></span>
-<span class="at">      </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: disable-cross-namespace-affinity
+  namespace: foo-ns
+spec:
+  hard:
+    pods: &quot;0&quot;
+  scopeSelector:
+    matchExpressions:
+    - scopeName: CrossNamespacePodAffinity
+      operator: Exists</code></pre>
 <p>If you want to disallow using <code>namespaces</code> and
 <code>namespaceSelector</code> by default, and only allow it for
 specific namespaces, you could configure
 <code>CrossNamespacePodAffinity</code> as a limited resource by setting
 the kube-apiserver flag <code>--admission-control-config-file</code> to
 the path of the following configuration file:</p>
-<div class="sourceCode" id="cb20"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ResourceQuota&quot;</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuotaConfiguration</span></span>
-<span class="at">    </span><span class="fu">limitedResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> pods</span></span>
-<span class="at">      </span><span class="fu">matchScopes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> CrossNamespacePodAffinity</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: &quot;ResourceQuota&quot;
+  configuration:
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: ResourceQuotaConfiguration
+    limitedResources:
+    - resource: pods
+      matchScopes:
+      - scopeName: CrossNamespacePodAffinity
+        operator: Exists</code></pre>
 <p>With the above configuration, pods can use <code>namespaces</code>
 and <code>namespaceSelector</code> in pod affinity only if the namespace
 where they are created have a resource quota object with
@@ -906,60 +917,59 @@ three PriorityClasses before you continue.</li>
 <p>Inspect this set of ResourceQuotas:</p>
 <div class="code-sample">
 <p><code>policy/quota.yaml</code></p>
-<div class="sourceCode" id="cb21"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pods-high</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1000&quot;</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10&quot;</span></span>
-<span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">      </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="at">      </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;high&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pods-medium</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10&quot;</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;20Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10&quot;</span></span>
-<span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">      </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="at">      </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;medium&quot;</span><span class="kw">]</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pods-low</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">hard</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5&quot;</span></span>
-<span class="at">    </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10Gi&quot;</span></span>
-<span class="at">    </span><span class="fu">pods</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10&quot;</span></span>
-<span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">      </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="at">      </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;low&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pods-high
+spec:
+  hard:
+    cpu: &quot;1000&quot;
+    memory: &quot;200Gi&quot;
+    pods: &quot;10&quot;
+  scopeSelector:
+    matchExpressions:
+    - operator: In
+      scopeName: PriorityClass
+      values: [&quot;high&quot;]
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pods-medium
+spec:
+  hard:
+    cpu: &quot;10&quot;
+    memory: &quot;20Gi&quot;
+    pods: &quot;10&quot;
+  scopeSelector:
+    matchExpressions:
+    - operator: In
+      scopeName: PriorityClass
+      values: [&quot;medium&quot;]
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pods-low
+spec:
+  hard:
+    cpu: &quot;5&quot;
+    memory: &quot;10Gi&quot;
+    pods: &quot;10&quot;
+  scopeSelector:
+    matchExpressions:
+    - operator: In
+      scopeName: PriorityClass
+      values: [&quot;low&quot;]</code></pre>
 </div>
 <p>Apply the YAML using <code>kubectl create</code>.</p>
-<pre class="shell"><code>kubectl create -f https://k8s.io/examples/policy/quota.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://k8s.io/examples/policy/quota.yaml</code></pre>
 <pre><code>resourcequota/pods-high created
 resourcequota/pods-medium created
 resourcequota/pods-low created</code></pre>
 <p>Verify that <code>Used</code> quota is <code>0</code> using
 <code>kubectl describe quota</code>.</p>
-<pre class="shell"><code>kubectl describe quota</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe quota</code></pre>
 <pre><code>Name:       pods-high
 Namespace:  default
 Resource    Used  Hard
@@ -988,33 +998,32 @@ pods        0     10</code></pre>
 <p>Create a pod with priority "high".</p>
 <div class="code-sample">
 <p><code>policy/high-priority-pod.yaml</code></p>
-<div class="sourceCode" id="cb26"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> ubuntu</span></span>
-<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;while true; do echo hello; sleep 10;done&quot;</span><span class="kw">]</span></span>
-<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10Gi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10Gi&quot;</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
-<span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> high</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: high-priority
+spec:
+  containers:
+  - name: high-priority
+    image: ubuntu
+    command: [&quot;/bin/sh&quot;]
+    args: [&quot;-c&quot;, &quot;while true; do echo hello; sleep 10;done&quot;]
+    resources:
+      requests:
+        memory: &quot;10Gi&quot;
+        cpu: &quot;500m&quot;
+      limits:
+        memory: &quot;10Gi&quot;
+        cpu: &quot;500m&quot;
+  priorityClassName: high</code></pre>
 </div>
 <p>To create the Pod:</p>
-<pre class="shell"><code>kubectl create -f https://k8s.io/examples/policy/high-priority-pod.yaml
+<pre class="shell"><code class="language-shell">kubectl create -f https://k8s.io/examples/policy/high-priority-pod.yaml
 </code></pre>
 <p>Verify that "Used" stats for "high" priority quota,
 <code>pods-high</code>, has changed and that the other two quotas are
 unchanged.</p>
-<pre class="shell"><code>kubectl describe quota</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe quota</code></pre>
 <pre><code>Name:       pods-high
 Namespace:  default
 Resource    Used  Hard
@@ -1051,38 +1060,36 @@ namespace will be able to consume these priority classes by default.</p>
 <p>To enforce this, <code>kube-apiserver</code> flag
 <code>--admission-control-config-file</code> should be used to pass path
 to the following configuration file:</p>
-<div class="sourceCode" id="cb30"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> AdmissionConfiguration</span></span>
-<span class="fu">plugins</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ResourceQuota&quot;</span></span>
-<span class="at">  </span><span class="fu">configuration</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuotaConfiguration</span></span>
-<span class="at">    </span><span class="fu">limitedResources</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">resource</span><span class="kw">:</span><span class="at"> pods</span></span>
-<span class="at">      </span><span class="fu">matchScopes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;cluster-services&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: &quot;ResourceQuota&quot;
+  configuration:
+    apiVersion: apiserver.config.k8s.io/v1
+    kind: ResourceQuotaConfiguration
+    limitedResources:
+    - resource: pods
+      matchScopes:
+      - scopeName: PriorityClass
+        operator: In
+        values: [&quot;cluster-services&quot;]</code></pre>
 <p>Then, create a resource quota object in the <code>kube-system</code>
 namespace:</p>
 <div class="code-sample">
 <p><code>policy/priority-class-resourcequota.yaml</code></p>
-<div class="sourceCode" id="cb31"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceQuota</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pods-cluster-services</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">scopeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">operator </span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">scopeName</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;cluster-services&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: pods-cluster-services
+spec:
+  scopeSelector:
+    matchExpressions:
+      - operator : In
+        scopeName: PriorityClass
+        values: [&quot;cluster-services&quot;]</code></pre>
 </div>
-<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/policy/priority-class-resourcequota.yaml -n kube-system</code></pre>
-<pre class="none"><code>resourcequota/pods-cluster-services created</code></pre>
+<pre class="shell"><code class="language-shell">kubectl apply -f https://k8s.io/examples/policy/priority-class-resourcequota.yaml -n kube-system</code></pre>
+<pre class="none"><code class="language-none">resourcequota/pods-cluster-services created</code></pre>
 <p>In this case, a pod creation will be allowed if:</p>
 <ol type="1">
 <li>the Pod's <code>priorityClassName</code> is not specified.</li>
@@ -1213,6 +1220,7 @@ support for priority class design document</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1221,6 +1229,8 @@ support for priority class design document</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

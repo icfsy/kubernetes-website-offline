@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -194,41 +209,40 @@ reference for a full definition of the resource.</p>
 <p>An example NetworkPolicy might look like this:</p>
 <div class="code-sample">
 <p><code>service/networking/networkpolicy.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-network-policy</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">role</span><span class="kw">:</span><span class="at"> db</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Ingress</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Egress</span></span>
-<span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">from</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">ipBlock</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cidr</span><span class="kw">:</span><span class="at"> 172.17.0.0/16</span></span>
-<span class="at">        </span><span class="fu">except</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">172.17.1.0/24</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">project</span><span class="kw">:</span><span class="at"> myproject</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">role</span><span class="kw">:</span><span class="at"> frontend</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">6379</span></span>
-<span class="at">  </span><span class="fu">egress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">to</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">ipBlock</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cidr</span><span class="kw">:</span><span class="at"> 10.0.0.0/24</span></span>
-<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">5978</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: test-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      role: db
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - ipBlock:
+        cidr: 172.17.0.0/16
+        except:
+        - 172.17.1.0/24
+    - namespaceSelector:
+        matchLabels:
+          project: myproject
+    - podSelector:
+        matchLabels:
+          role: frontend
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  - to:
+    - ipBlock:
+        cidr: 10.0.0.0/24
+    ports:
+    - protocol: TCP
+      port: 5978</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -316,32 +330,30 @@ egress destinations.</p>
 entry that specifies both <code>namespaceSelector</code> and
 <code>podSelector</code> selects particular Pods within particular
 namespaces. Be careful to use correct YAML syntax. For example:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">from</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">user</span><span class="kw">:</span><span class="at"> alice</span></span>
-<span class="at">      </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">role</span><span class="kw">:</span><span class="at"> client</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  ...
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          user: alice
+      podSelector:
+        matchLabels:
+          role: client
+  ...</code></pre>
 <p>This policy contains a single <code>from</code> element allowing
 connections from Pods with the label <code>role=client</code> in
 namespaces with the label <code>user=alice</code>. But the following
 policy is different:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">from</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">user</span><span class="kw">:</span><span class="at"> alice</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">role</span><span class="kw">:</span><span class="at"> client</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  ...
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          user: alice
+    - podSelector:
+        matchLabels:
+          role: client
+  ...</code></pre>
 <p>It contains two elements in the <code>from</code> array, and allows
 connections from Pods in the local Namespace with the label
 <code>role=client</code>, <em>or</em> from any Pod in any namespace with
@@ -377,16 +389,15 @@ by creating a NetworkPolicy that selects all pods but does not allow any
 ingress traffic to those pods.</p>
 <div class="code-sample">
 <p><code>service/networking/network-policy-default-deny-ingress.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-deny-ingress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Ingress</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress</code></pre>
 </div>
 <p>This ensures that even pods that aren't selected by any other
 NetworkPolicy will still be isolated for ingress. This policy does not
@@ -396,18 +407,17 @@ affect isolation for egress from any pod.</p>
 namespace, you can create a policy that explicitly allows that.</p>
 <div class="code-sample">
 <p><code>service/networking/network-policy-allow-all-ingress.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-all-ingress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- {}</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Ingress</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-ingress
+spec:
+  podSelector: {}
+  ingress:
+  - {}
+  policyTypes:
+  - Ingress</code></pre>
 </div>
 <p>With this policy in place, no additional policy or policies can cause
 any incoming connection to those pods to be denied. This policy has no
@@ -419,16 +429,15 @@ creating a NetworkPolicy that selects all pods but does not allow any
 egress traffic from those pods.</p>
 <div class="code-sample">
 <p><code>service/networking/network-policy-default-deny-egress.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-deny-egress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Egress</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-egress
+spec:
+  podSelector: {}
+  policyTypes:
+  - Egress</code></pre>
 </div>
 <p>This ensures that even pods that aren't selected by any other
 NetworkPolicy will not be allowed egress traffic. This policy does not
@@ -447,18 +456,17 @@ you can create a policy that explicitly allows all outgoing connections
 from pods in that namespace.</p>
 <div class="code-sample">
 <p><code>service/networking/network-policy-allow-all-egress.yaml</code></p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> allow-all-egress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="fu">egress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- {}</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Egress</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-all-egress
+spec:
+  podSelector: {}
+  egress:
+  - {}
+  policyTypes:
+  - Egress</code></pre>
 </div>
 <p>With this policy in place, no additional policy or policies can cause
 any outgoing connection from those pods to be denied. This policy has no
@@ -470,17 +478,16 @@ ingress AND egress traffic by creating the following NetworkPolicy in
 that namespace.</p>
 <div class="code-sample">
 <p><code>service/networking/network-policy-default-deny-all.yaml</code></p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-deny-all</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Ingress</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Egress</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+spec:
+  podSelector: {}
+  policyTypes:
+  - Ingress
+  - Egress</code></pre>
 </div>
 <p>This ensures that even pods that aren't selected by any other
 NetworkPolicy will not be allowed ingress or egress traffic.</p>
@@ -516,26 +523,25 @@ of a single port.</p>
 as the following example:</p>
 <div class="code-sample">
 <p><code>service/networking/networkpolicy-multiport-egress.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> multi-port-egress</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">role</span><span class="kw">:</span><span class="at"> db</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">Egress</span></span>
-<span class="at">  </span><span class="fu">egress</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">to</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">ipBlock</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">cidr</span><span class="kw">:</span><span class="at"> 10.0.0.0/24</span></span>
-<span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">          </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">32000</span></span>
-<span class="at">          </span><span class="fu">endPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">32768</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: multi-port-egress
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      role: db
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: 10.0.0.0/24
+      ports:
+        - protocol: TCP
+          port: 32000
+          endPort: 32768</code></pre>
 </div>
 <p>The above rule allows any Pod with label <code>role=db</code> on the
 namespace <code>default</code> to communicate with any IP within the
@@ -565,28 +571,27 @@ namespaces by label</h2>
 <p>In this scenario, your <code>Egress</code> NetworkPolicy targets more
 than one namespace using their label names. For this to work, you need
 to label the target namespaces. For example:</p>
-<pre class="shell"><code>kubectl label namespace frontend namespace=frontend
+<pre class="shell"><code class="language-shell">kubectl label namespace frontend namespace=frontend
 kubectl label namespace backend namespace=backend</code></pre>
 <p>Add the labels under <code>namespaceSelector</code> in your
 NetworkPolicy document. For example:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> egress-namespaces</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> myapp</span></span>
-<span class="at">  </span><span class="fu">policyTypes</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="at">Egress</span></span>
-<span class="at">  </span><span class="fu">egress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">to</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">namespaceSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> namespace</span></span>
-<span class="at">          </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">          </span><span class="fu">values</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;frontend&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;backend&quot;</span><span class="kw">]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-namespaces
+spec:
+  podSelector:
+    matchLabels:
+      app: myapp
+  policyTypes:
+  - Egress
+  egress:
+  - to:
+    - namespaceSelector:
+        matchExpressions:
+        - key: namespace
+          operator: In
+          values: [&quot;frontend&quot;, &quot;backend&quot;]</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -670,24 +675,22 @@ is the most common implementation.)</li>
 <ol type="1">
 <li><p>a <code>hostNetwork</code> pod is selected by
 <code>spec.podSelector</code>.</p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">role</span><span class="kw">:</span><span class="at"> client</span></span>
-<span class="at">  ...</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  ...
+  spec:
+    podSelector:
+      matchLabels:
+        role: client
+  ...</code></pre></li>
 <li><p>a <code>hostNetwork</code> pod is selected by a
 <code>podSelector</code> or <code>namespaceSelector</code> in an
 <code>ingress</code> or <code>egress</code> rule.</p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  ...</span></span>
-<span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">from</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">role</span><span class="kw">:</span><span class="at"> client</span></span>
-<span class="at">  ...</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">  ...
+  ingress:
+    - from:
+      - podSelector:
+          matchLabels:
+            role: client
+  ...</code></pre></li>
 </ol>
 <p>At the same time, since <code>hostNetwork</code> pods have the same
 IP addresses as the nodes they reside on, their connections will be
@@ -814,6 +817,7 @@ for common scenarios enabled by the NetworkPolicy resource.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -822,6 +826,8 @@ for common scenarios enabled by the NetworkPolicy resource.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

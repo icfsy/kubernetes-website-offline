@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -192,80 +207,80 @@ to a new version, and also perform a rollback.</p>
 app</h3>
 <p>To list your Deployments, run the <code>get deployments</code>
 subcommand:</p>
-<pre class="shell"><code>kubectl get deployments</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployments</code></pre>
 <p>To list the running Pods, run the <code>get pods</code>
 subcommand:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>To view the current image version of the app, run the
 <code>describe pods</code> subcommand and look for the
 <code>Image</code> field:</p>
-<pre class="shell"><code>kubectl describe pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pods</code></pre>
 <p>To update the image of the application to version 2, use the
 <code>set image</code> subcommand, followed by the deployment name and
 the new image version:</p>
-<pre class="shell"><code>kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=docker.io/jocatalin/kubernetes-bootcamp:v2</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=docker.io/jocatalin/kubernetes-bootcamp:v2</code></pre>
 <p>The command notified the Deployment to use a different image for your
 app and initiated a rolling update. Check the status of the new Pods,
 and view the old one terminating with the <code>get pods</code>
 subcommand:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <h3 id="verify-an-update">Verify an update</h3>
 <p>First, check that the service is running, as you might have deleted
 it in previous tutorial step, run
 <code>describe services/kubernetes-bootcamp</code>. If it's missing, you
 can create it again with:</p>
-<pre class="shell"><code>kubectl expose deployment/kubernetes-bootcamp --type=&quot;NodePort&quot; --port 8080</code></pre>
+<pre class="shell"><code class="language-shell">kubectl expose deployment/kubernetes-bootcamp --type=&quot;NodePort&quot; --port 8080</code></pre>
 <p>Create an environment variable called <code>NODE_PORT</code> that has
 the value of the Node port assigned:</p>
-<pre class="shell"><code>export NODE_PORT=&quot;$(kubectl get services/kubernetes-bootcamp -o go-template=&#39;{{(index .spec.ports 0).nodePort}}&#39;)&quot;
+<pre class="shell"><code class="language-shell">export NODE_PORT=&quot;$(kubectl get services/kubernetes-bootcamp -o go-template=&#39;{{(index .spec.ports 0).nodePort}}&#39;)&quot;
 echo &quot;NODE_PORT=$NODE_PORT&quot;</code></pre>
 <p>Next, do a <code>curl</code> to the exposed IP and port:</p>
-<pre class="shell"><code>curl http://&quot;$(minikube ip):$NODE_PORT&quot;</code></pre>
+<pre class="shell"><code class="language-shell">curl http://&quot;$(minikube ip):$NODE_PORT&quot;</code></pre>
 <p>Every time you run the <code>curl</code> command, you will hit a
 different Pod. Notice that all Pods are now running the latest version
 (<code>v2</code>).</p>
 <p>You can also confirm the update by running the
 <code>rollout status</code> subcommand:</p>
-<pre class="shell"><code>kubectl rollout status deployments/kubernetes-bootcamp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout status deployments/kubernetes-bootcamp</code></pre>
 <p>To view the current image version of the app, run the describe pods
 subcommand:</p>
-<pre class="shell"><code>kubectl describe pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pods</code></pre>
 <p>In the <code>Image</code> field of the output, verify that you are
 running the latest image version (<code>v2</code>).</p>
 <h3 id="roll-back-an-update">Roll back an update</h3>
 <p>Let’s perform another update, and try to deploy an image tagged with
 <code>v10</code>:</p>
-<pre class="shell"><code>kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v10</code></pre>
+<pre class="shell"><code class="language-shell">kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v10</code></pre>
 <p>Use <code>get deployments</code> to see the status of the
 deployment:</p>
-<pre class="shell"><code>kubectl get deployments</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get deployments</code></pre>
 <p>Notice that the output doesn't list the desired number of available
 Pods. Run the <code>get pods</code> subcommand to list all Pods:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>Notice that some of the Pods have a status of
 <code>ImagePullBackOff</code>.</p>
 <p>To get more insight into the problem, run the
 <code>describe pods</code> subcommand:</p>
-<pre class="shell"><code>kubectl describe pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pods</code></pre>
 <p>In the <code>Events</code> section of the output for the affected
 Pods, notice that the <code>v10</code> image version did not exist in
 the repository.</p>
 <p>To roll back the deployment to your last working version, use the
 <code>rollout undo</code> subcommand:</p>
-<pre class="shell"><code>kubectl rollout undo deployments/kubernetes-bootcamp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl rollout undo deployments/kubernetes-bootcamp</code></pre>
 <p>The <code>rollout undo</code> command reverts the deployment to the
 previous known state (<code>v2</code> of the image). Updates are
 versioned and you can revert to any previously known state of a
 Deployment.</p>
 <p>Use the <code>get pods</code> subcommand to list the Pods again:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>To check the image deployed on the running Pods, use the
 <code>describe pods</code> subcommand:</p>
-<pre class="shell"><code>kubectl describe pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe pods</code></pre>
 <p>The Deployment is once again using a stable version of the app
 (<code>v2</code>). The rollback was successful.</p>
 <p>Remember to clean up your local cluster.</p>
-<pre class="shell"><code>kubectl delete deployments/kubernetes-bootcamp services/kubernetes-bootcamp</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete deployments/kubernetes-bootcamp services/kubernetes-bootcamp</code></pre>
 <h2 id="what-s-next">What's next</h2>
 <ul>
 <li>Learn more about <a
@@ -335,6 +350,7 @@ href="../../../concepts/workloads/controllers/deployment.html">Deployments</a>.<
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -343,6 +359,8 @@ href="../../../concepts/workloads/controllers/deployment.html">Deployments</a>.<
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

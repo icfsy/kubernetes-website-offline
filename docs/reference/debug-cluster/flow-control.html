@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -133,7 +148,7 @@ assigned, respectively. The API objects' names are not included in these
 headers (to avoid revealing details in case the requesting user does not
 have permission to view them). When debugging, you can use a command
 such as:</p>
-<pre class="shell"><code>kubectl get flowschemas -o custom-columns=&quot;uid:{metadata.uid},name:{metadata.name}&quot;
+<pre class="shell"><code class="language-shell">kubectl get flowschemas -o custom-columns=&quot;uid:{metadata.uid},name:{metadata.name}&quot;
 kubectl get prioritylevelconfigurations -o custom-columns=&quot;uid:{metadata.uid},name:{metadata.name}&quot;</code></pre>
 <p>to get a mapping of UIDs to names for both FlowSchemas and
 PriorityLevelConfigurations.</p>
@@ -151,9 +166,9 @@ href="../access-authn-authz/rbac.html">RBAC</a> doc to access
 <li><p><code>/debug/api_priority_and_fairness/dump_priority_levels</code>
 - a listing of all the priority levels and the current state of each.
 You can fetch like this:</p>
-<pre class="shell"><code>kubectl get --raw /debug/api_priority_and_fairness/dump_priority_levels</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get --raw /debug/api_priority_and_fairness/dump_priority_levels</code></pre>
 <p>The output will be in CSV and similar to this:</p>
-<pre class="none"><code>PriorityLevelName, ActiveQueues, IsIdle, IsQuiescing, WaitingRequests, ExecutingRequests, DispatchedRequests, RejectedRequests, TimedoutRequests, CancelledRequests
+<pre class="none"><code class="language-none">PriorityLevelName, ActiveQueues, IsIdle, IsQuiescing, WaitingRequests, ExecutingRequests, DispatchedRequests, RejectedRequests, TimedoutRequests, CancelledRequests
 catch-all,         0,            true,   false,       0,               0,                 1,                  0,                0,                0
 exempt,            0,            true,   false,       0,               0,                 0,                  0,                0,                0
 global-default,    0,            true,   false,       0,               0,                 46,                 0,                0,                0
@@ -170,9 +185,9 @@ removed when its queues have been drained.</li>
 <li><p><code>/debug/api_priority_and_fairness/dump_queues</code> - a
 listing of all the queues and their current state. You can fetch like
 this:</p>
-<pre class="shell"><code>kubectl get --raw /debug/api_priority_and_fairness/dump_queues</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get --raw /debug/api_priority_and_fairness/dump_queues</code></pre>
 <p>The output will be in CSV and similar to this:</p>
-<pre class="none"><code>PriorityLevelName, Index,  PendingRequests, ExecutingRequests, SeatsInUse, NextDispatchR,   InitialSeatsSum, MaxSeatsSum, TotalWorkSum
+<pre class="none"><code class="language-none">PriorityLevelName, Index,  PendingRequests, ExecutingRequests, SeatsInUse, NextDispatchR,   InitialSeatsSum, MaxSeatsSum, TotalWorkSum
 workload-low,      14,     27,              0,                 0,          77.64342019ss,   270,             270,         0.81000000ss
 workload-low,      74,     26,              0,                 0,          76.95387841ss,   260,             260,         0.78000000ss
 ...
@@ -197,16 +212,16 @@ measure of work, in units of seat-seconds, in the APF world.</p></li>
 <li><p><code>/debug/api_priority_and_fairness/dump_requests</code> - a
 listing of all the requests including requests waiting in a queue and
 requests being executing. You can fetch like this:</p>
-<pre class="shell"><code>kubectl get --raw /debug/api_priority_and_fairness/dump_requests</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get --raw /debug/api_priority_and_fairness/dump_requests</code></pre>
 <p>The output will be in CSV and similar to this:</p>
-<pre class="none"><code>PriorityLevelName, FlowSchemaName,   QueueIndex, RequestIndexInQueue, FlowDistingsher,                        ArriveTime,                     InitialSeats, FinalSeats, AdditionalLatency, StartTime
+<pre class="none"><code class="language-none">PriorityLevelName, FlowSchemaName,   QueueIndex, RequestIndexInQueue, FlowDistingsher,                        ArriveTime,                     InitialSeats, FinalSeats, AdditionalLatency, StartTime
 exempt,            exempt,           -1,         -1,                  ,                                       2023-07-15T04:51:25.596404345Z, 1,            0,          0s,                2023-07-15T04:51:25.596404345Z
 workload-low,      service-accounts, 14,         0,                   system:serviceaccount:default:loadtest, 2023-07-18T00:12:51.386556253Z, 10,           0,          0s,                0001-01-01T00:00:00Z
 workload-low,      service-accounts, 14,         1,                   system:serviceaccount:default:loadtest, 2023-07-18T00:12:51.487092539Z, 10,           0,          0s,                0001-01-01T00:00:00Z</code></pre>
 <p>You can get a more detailed listing with a command like this:</p>
-<pre class="shell"><code>kubectl get --raw &#39;/debug/api_priority_and_fairness/dump_requests?includeRequestDetails=1&#39;</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get --raw &#39;/debug/api_priority_and_fairness/dump_requests?includeRequestDetails=1&#39;</code></pre>
 <p>The output will be in CSV and similar to this:</p>
-<pre class="none"><code>PriorityLevelName, FlowSchemaName,   QueueIndex, RequestIndexInQueue, FlowDistingsher,                        ArriveTime,                     InitialSeats, FinalSeats, AdditionalLatency, StartTime,                      UserName,                               Verb,   APIPath,                                   Namespace,   Name,   APIVersion, Resource,   SubResource
+<pre class="none"><code class="language-none">PriorityLevelName, FlowSchemaName,   QueueIndex, RequestIndexInQueue, FlowDistingsher,                        ArriveTime,                     InitialSeats, FinalSeats, AdditionalLatency, StartTime,                      UserName,                               Verb,   APIPath,                                   Namespace,   Name,   APIVersion, Resource,   SubResource
 exempt,            exempt,           -1,         -1,                  ,                                       2023-07-15T04:51:25.596404345Z, 1,            0,          0s,                2023-07-15T04:51:25.596404345Z, system:serviceaccount:system:admin,     list,   /api/v1/namespaces/kube-stress/configmaps, kube-stress, ,       v1,         configmaps,
 workload-low,      service-accounts, 14,         0,                   system:serviceaccount:default:loadtest, 2023-07-18T00:13:08.986534842Z, 10,           0,          0s,                0001-01-01T00:00:00Z,           system:serviceaccount:default:loadtest, list,   /api/v1/namespaces/kube-stress/configmaps, kube-stress, ,       v1,         configmaps,
 workload-low,      service-accounts, 14,         1,                   system:serviceaccount:default:loadtest, 2023-07-18T00:13:09.086476021Z, 10,           0,          0s,                0001-01-01T00:00:00Z,           system:serviceaccount:default:loadtest, list,   /api/v1/namespaces/kube-stress/configmaps, kube-stress, ,       v1,         configmaps,</code></pre>
@@ -330,6 +345,7 @@ proposal</a>.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -338,6 +354,8 @@ proposal</a>.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

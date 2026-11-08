@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -143,66 +158,64 @@ of Pods</a> document.</p>
 purposes) and a Service:</p>
 <div class="code-sample">
 <p><code>service/pod-with-graceful-termination.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">terminationGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">120</span><span class="co"> # extra long grace period</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:latest</span></span>
-<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">preStop</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="co"># Real life termination may take any time up to terminationGracePeriodSeconds.</span></span>
-<span class="at">            </span><span class="co"># In this example - just hang around for at least the duration of terminationGracePeriodSeconds,</span></span>
-<span class="at">            </span><span class="co"># at 120 seconds container will be forcibly terminated.</span></span>
-<span class="at">            </span><span class="co"># Note, all this time nginx will keep processing requests.</span></span>
-<span class="at">            </span><span class="fu">sleep</span><span class="kw">:</span><span class="at"> </span><span class="dv">180</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      terminationGracePeriodSeconds: 120 # extra long grace period
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        lifecycle:
+          preStop:
+            # Real life termination may take any time up to terminationGracePeriodSeconds.
+            # In this example - just hang around for at least the duration of terminationGracePeriodSeconds,
+            # at 120 seconds container will be forcibly terminated.
+            # Note, all this time nginx will keep processing requests.
+            sleep: 180</code></pre>
 </div>
 <div class="code-sample">
 <p><code>service/explore-graceful-termination-nginx.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-service</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">      </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80</code></pre>
 </div>
 <p>Now create the Deployment Pod and Service using the above files:</p>
-<pre class="shell"><code>kubectl apply -f pod-with-graceful-termination.yaml
+<pre class="shell"><code class="language-shell">kubectl apply -f pod-with-graceful-termination.yaml
 kubectl apply -f explore-graceful-termination-nginx.yaml</code></pre>
 <p>Once the Pod and Service are running, you can get the name of any
 associated EndpointSlices:</p>
-<pre class="shell"><code>kubectl get endpointslice</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get endpointslice</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>NAME                  ADDRESSTYPE   PORTS   ENDPOINTS                 AGE
+<pre class="none"><code class="language-none">NAME                  ADDRESSTYPE   PORTS   ENDPOINTS                 AGE
 nginx-service-6tjbr   IPv4          80      10.12.1.199,10.12.1.201   22m</code></pre>
 <p>You can see its status, and validate that there is one endpoint
 registered:</p>
-<pre class="shell"><code>kubectl get endpointslices -o json -l kubernetes.io/service-name=nginx-service</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get endpointslices -o json -l kubernetes.io/service-name=nginx-service</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>{
+<pre class="none"><code class="language-none">{
     &quot;addressType&quot;: &quot;IPv4&quot;,
     &quot;apiVersion&quot;: &quot;discovery.k8s.io/v1&quot;,
     &quot;endpoints&quot;: [
@@ -216,19 +229,19 @@ registered:</p>
                 &quot;terminating&quot;: false</code></pre>
 <p>Now let's terminate the Pod and validate that the Pod is being
 terminated respecting the graceful termination period configuration:</p>
-<pre class="shell"><code>kubectl delete pod nginx-deployment-7768647bf9-b4b9s</code></pre>
+<pre class="shell"><code class="language-shell">kubectl delete pod nginx-deployment-7768647bf9-b4b9s</code></pre>
 <p>All pods:</p>
-<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get pods</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>NAME                                READY   STATUS        RESTARTS      AGE
+<pre class="none"><code class="language-none">NAME                                READY   STATUS        RESTARTS      AGE
 nginx-deployment-7768647bf9-b4b9s   1/1     Terminating   0             4m1s
 nginx-deployment-7768647bf9-rkxlw   1/1     Running       0             8s</code></pre>
 <p>You can see that the new pod got scheduled.</p>
 <p>While the new endpoint is being created for the new Pod, the old
 endpoint is still around in the terminating state:</p>
-<pre class="shell"><code>kubectl get endpointslice -o json nginx-service-6tjbr</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get endpointslice -o json nginx-service-6tjbr</code></pre>
 <p>The output is similar to this:</p>
-<pre class="none"><code>{
+<pre class="none"><code class="language-none">{
     &quot;addressType&quot;: &quot;IPv4&quot;,
     &quot;apiVersion&quot;: &quot;discovery.k8s.io/v1&quot;,
     &quot;endpoints&quot;: [
@@ -357,6 +370,7 @@ an External Load Balancer</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -365,6 +379,8 @@ an External Load Balancer</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

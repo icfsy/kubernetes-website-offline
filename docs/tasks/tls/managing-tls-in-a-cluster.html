@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -203,7 +218,7 @@ href="https://blog.cloudflare.com/introducing-cfssl/">Introducing CFSSL
 signing request</h2>
 <p>Generate a private key and certificate signing request (or CSR) by
 running the following command:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF | cfssl genkey - | cfssljson -bare server
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF | cfssl genkey - | cfssljson -bare server
 {
   &quot;hosts&quot;: [
     &quot;my-svc.my-namespace.svc.cluster.local&quot;,
@@ -237,7 +252,7 @@ id="create-a-certificatesigningrequest-object-to-send-to-the-kubernetes-api">Cre
 a CertificateSigningRequest object to send to the Kubernetes API</h2>
 <p>Generate a CSR manifest (in YAML) and send it to the API server. You
 can do that by running the following command:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF | kubectl apply -f -
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF | kubectl apply -f -
 apiVersion: certificates.k8s.io/v1
 kind: CertificateSigningRequest
 metadata:
@@ -260,8 +275,8 @@ href="../../reference/access-authn-authz/certificate-signing-requests.html#signe
 signer names</a> for more information.</p>
 <p>The CSR should now be visible in the API in a Pending state. You can
 see it by running:</p>
-<pre class="shell"><code>kubectl describe csr my-svc.my-namespace</code></pre>
-<pre class="none"><code>Name:                   my-svc.my-namespace
+<pre class="shell"><code class="language-shell">kubectl describe csr my-svc.my-namespace</code></pre>
+<pre class="none"><code class="language-none">Name:                   my-svc.my-namespace
 Labels:                 &lt;none&gt;
 Annotations:            &lt;none&gt;
 CreationTimestamp:      Tue, 01 Feb 2022 11:49:15 -0500
@@ -285,11 +300,11 @@ signing request</a> is either done by an automated approval process or
 on a one-off basis by a cluster administrator. If you're authorized to
 approve a certificate request, you can do that manually using
 <code>kubectl</code>; for example:</p>
-<pre class="shell"><code>kubectl certificate approve my-svc.my-namespace</code></pre>
-<pre class="none"><code>certificatesigningrequest.certificates.k8s.io/my-svc.my-namespace approved</code></pre>
+<pre class="shell"><code class="language-shell">kubectl certificate approve my-svc.my-namespace</code></pre>
+<pre class="none"><code class="language-none">certificatesigningrequest.certificates.k8s.io/my-svc.my-namespace approved</code></pre>
 <p>You should now see the following:</p>
-<pre class="shell"><code>kubectl get csr</code></pre>
-<pre class="none"><code>NAME                  AGE   SIGNERNAME            REQUESTOR              REQUESTEDDURATION   CONDITION
+<pre class="shell"><code class="language-shell">kubectl get csr</code></pre>
+<pre class="none"><code class="language-none">NAME                  AGE   SIGNERNAME            REQUESTOR              REQUESTEDDURATION   CONDITION
 my-svc.my-namespace   10m   example.com/serving   yourname@example.com   &lt;none&gt;              Approved</code></pre>
 <p>This means the certificate request has been approved and is waiting
 for the requested signer to sign it.</p>
@@ -306,7 +321,7 @@ Authority</h3>
 <p>You need an authority to provide the digital signature on the new
 certificate.</p>
 <p>First, create a signing certificate by running the following:</p>
-<pre class="shell"><code>cat &lt;&lt;EOF | cfssl gencert -initca - | cfssljson -bare ca
+<pre class="shell"><code class="language-shell">cat &lt;&lt;EOF | cfssl gencert -initca - | cfssljson -bare ca
 {
   &quot;CN&quot;: &quot;My Example Signer&quot;,
   &quot;key&quot;: {
@@ -316,7 +331,7 @@ certificate.</p>
 }
 EOF</code></pre>
 <p>You should see output similar to:</p>
-<pre class="none"><code>2022/02/01 11:50:39 [INFO] generating a new CA key and certificate from CSR
+<pre class="none"><code class="language-none">2022/02/01 11:50:39 [INFO] generating a new CA key and certificate from CSR
 2022/02/01 11:50:39 [INFO] generate received request
 2022/02/01 11:50:39 [INFO] received CSR
 2022/02/01 11:50:39 [INFO] generating key: rsa-2048
@@ -327,27 +342,26 @@ EOF</code></pre>
 <h3 id="issue-a-certificate">Issue a certificate</h3>
 <div class="code-sample">
 <p><code>tls/server-signing-config.json</code></p>
-<div class="sourceCode" id="cb12"><pre
-class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
-    <span class="dt">&quot;signing&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-        <span class="dt">&quot;default&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-            <span class="dt">&quot;usages&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
-                <span class="st">&quot;digital signature&quot;</span><span class="ot">,</span></span>
-                <span class="st">&quot;key encipherment&quot;</span><span class="ot">,</span></span>
-                <span class="st">&quot;server auth&quot;</span></span>
-            <span class="ot">]</span><span class="fu">,</span></span>
-            <span class="dt">&quot;expiry&quot;</span><span class="fu">:</span> <span class="st">&quot;876000h&quot;</span><span class="fu">,</span></span>
-            <span class="dt">&quot;ca_constraint&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
-                <span class="dt">&quot;is_ca&quot;</span><span class="fu">:</span> <span class="kw">false</span></span>
-            <span class="fu">}</span></span>
-        <span class="fu">}</span></span>
-    <span class="fu">}</span></span>
-<span class="fu">}</span></span></code></pre></div>
+<pre class="json"><code class="language-json">{
+    &quot;signing&quot;: {
+        &quot;default&quot;: {
+            &quot;usages&quot;: [
+                &quot;digital signature&quot;,
+                &quot;key encipherment&quot;,
+                &quot;server auth&quot;
+            ],
+            &quot;expiry&quot;: &quot;876000h&quot;,
+            &quot;ca_constraint&quot;: {
+                &quot;is_ca&quot;: false
+            }
+        }
+    }
+}</code></pre>
 </div>
 <p>Use a <code>server-signing-config.json</code> signing configuration
 and the certificate authority key file and certificate to sign the
 certificate request:</p>
-<pre class="shell"><code>kubectl get csr my-svc.my-namespace -o jsonpath=&#39;{.spec.request}&#39; | \
+<pre class="shell"><code class="language-shell">kubectl get csr my-svc.my-namespace -o jsonpath=&#39;{.spec.request}&#39; | \
   base64 --decode | \
   cfssl sign -ca ca.pem -ca-key ca-key.pem -config server-signing-config.json - | \
   cfssljson -bare ca-signed-server</code></pre>
@@ -359,7 +373,7 @@ certificate request:</p>
 certificate</h3>
 <p>Finally, populate the signed certificate in the API object's
 status:</p>
-<pre class="shell"><code>kubectl get csr my-svc.my-namespace -o json | \
+<pre class="shell"><code class="language-shell">kubectl get csr my-svc.my-namespace -o json | \
   jq &#39;.status.certificate = &quot;&#39;$(base64 ca-signed-server.pem | tr -d &#39;\n&#39;)&#39;&quot;&#39; | \
   kubectl replace --raw /apis/certificates.k8s.io/v1/certificatesigningrequests/my-svc.my-namespace/status -f -</code></pre>
 <div class="admonition note">
@@ -374,27 +388,27 @@ file, populate this field manually, and upload the resulting file.</p>
 </div>
 <p>Once the CSR is approved and the signed certificate is uploaded,
 run:</p>
-<pre class="shell"><code>kubectl get csr</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get csr</code></pre>
 <p>The output is similar to:</p>
-<pre class="none"><code>NAME                  AGE   SIGNERNAME            REQUESTOR              REQUESTEDDURATION   CONDITION
+<pre class="none"><code class="language-none">NAME                  AGE   SIGNERNAME            REQUESTOR              REQUESTEDDURATION   CONDITION
 my-svc.my-namespace   20m   example.com/serving   yourname@example.com   &lt;none&gt;              Approved,Issued</code></pre>
 <h2 id="download-the-certificate-and-use-it">Download the certificate
 and use it</h2>
 <p>Now, as the requesting user, you can download the issued certificate
 and save it to a <code>server.crt</code> file by running the
 following:</p>
-<pre class="shell"><code>kubectl get csr my-svc.my-namespace -o jsonpath=&#39;{.status.certificate}&#39; \
+<pre class="shell"><code class="language-shell">kubectl get csr my-svc.my-namespace -o jsonpath=&#39;{.status.certificate}&#39; \
     | base64 --decode &gt; server.crt</code></pre>
 <p>Now you can populate <code>server.crt</code> and
 <code>server-key.pem</code> in a <a class="glossary-term" href="../../reference/glossary.html#term-secret" title="Glossary: secret">Secret</a> that you could later mount into a Pod
 (for example, to use with a webserver that serves HTTPS).</p>
-<pre class="shell"><code>kubectl create secret tls server --cert server.crt --key server-key.pem</code></pre>
-<pre class="none"><code>secret/server created</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create secret tls server --cert server.crt --key server-key.pem</code></pre>
+<pre class="none"><code class="language-none">secret/server created</code></pre>
 <p>Finally, you can store <code>ca.pem</code> in a <span
 class="glossary-term" data-term="configmap">ConfigMap</span> and use it
 as the trust root to verify the serving certificate:</p>
-<pre class="shell"><code>kubectl create configmap example-serving-ca --from-file ca.crt=ca.pem</code></pre>
-<pre class="none"><code>configmap/example-serving-ca created</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create configmap example-serving-ca --from-file ca.crt=ca.pem</code></pre>
+<pre class="none"><code class="language-none">configmap/example-serving-ca created</code></pre>
 <h2 id="approving-certificate-signing-requests">Approving
 CertificateSigningRequests</h2>
 <p>A Kubernetes administrator (with appropriate permissions) can
@@ -506,6 +520,7 @@ manager with paths to your Certificate Authority's keypair.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -514,6 +529,8 @@ manager with paths to your Certificate Authority's keypair.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

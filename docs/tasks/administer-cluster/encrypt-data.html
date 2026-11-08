@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -197,59 +212,58 @@ encrypted</a>.</p>
 <h2
 id="understanding-the-encryption-at-rest-configuration">Understanding
 the encryption at rest configuration</h2>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co">#</span></span>
-<span class="co"># </span><span class="al">CAUTION</span><span class="co">: this is an example configuration.</span></span>
-<span class="co">#          Do not use this for your own cluster!</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">configmaps</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">pandas.awesome.bears.example</span><span class="co"> # a custom resource API</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># This configuration does not provide data confidentiality. The first</span></span>
-<span class="at">      </span><span class="co"># configured provider is specifying the &quot;identity&quot; mechanism, which</span></span>
-<span class="at">      </span><span class="co"># stores resources as plain text.</span></span>
-<span class="at">      </span><span class="co">#</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># plain text, in other words NO encryption</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aesgcm</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZQ==</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key2</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> dGhpcyBpcyBwYXNzd29yZA==</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZQ==</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key2</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> dGhpcyBpcyBwYXNzd29yZA==</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">secretbox</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">events</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># do not encrypt Events even though *.* is specified below</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&#39;*.apps&#39;</span><span class="at"> </span><span class="co"># wildcard match requires Kubernetes 1.27 or later</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key2</span></span>
-<span class="at">            </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZSwgb3IgaXMgaXQ/Cg==</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="st">&#39;*.*&#39;</span><span class="at"> </span><span class="co"># wildcard match requires Kubernetes 1.27 or later</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key3</span></span>
-<span class="at">            </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZSwgSSB0aGluaw==</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+#
+# CAUTION: this is an example configuration.
+#          Do not use this for your own cluster!
+#
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+      - configmaps
+      - pandas.awesome.bears.example # a custom resource API
+    providers:
+      # This configuration does not provide data confidentiality. The first
+      # configured provider is specifying the &quot;identity&quot; mechanism, which
+      # stores resources as plain text.
+      #
+      - identity: {} # plain text, in other words NO encryption
+      - aesgcm:
+          keys:
+            - name: key1
+              secret: c2VjcmV0IGlzIHNlY3VyZQ==
+            - name: key2
+              secret: dGhpcyBpcyBwYXNzd29yZA==
+      - aescbc:
+          keys:
+            - name: key1
+              secret: c2VjcmV0IGlzIHNlY3VyZQ==
+            - name: key2
+              secret: dGhpcyBpcyBwYXNzd29yZA==
+      - secretbox:
+          keys:
+            - name: key1
+              secret: YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=
+  - resources:
+      - events
+    providers:
+      - identity: {} # do not encrypt Events even though *.* is specified below
+  - resources:
+      - &#39;*.apps&#39; # wildcard match requires Kubernetes 1.27 or later
+    providers:
+      - aescbc:
+          keys:
+          - name: key2
+            secret: c2VjcmV0IGlzIHNlY3VyZSwgb3IgaXMgaXQ/Cg==
+  - resources:
+      - &#39;*.*&#39; # wildcard match requires Kubernetes 1.27 or later
+    providers:
+      - aescbc:
+          keys:
+          - name: key3
+            secret: c2VjcmV0IGlzIHNlY3VyZSwgSSB0aGluaw==</code></pre>
 <p>Each <code>resources</code> array item is a separate config and
 contains a complete configuration. The <code>resources.resources</code>
 field is an array of Kubernetes resource names (<code>resource</code> or
@@ -308,15 +322,14 @@ of encryption for Events and ConfigMaps, add a new
 the providers array item with <code>identity</code> as the provider. The
 more specific entry must come before the wildcard entry.</p>
 <p>The new item would look similar to:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  ...</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">configmaps.</span><span class="co"> # specifically from the core API group,</span></span>
-<span class="at">                    </span><span class="co"># because of trailing &quot;.&quot;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">events</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">  </span><span class="co"># and then other entries in resources</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">  ...
+  - resources:
+      - configmaps. # specifically from the core API group,
+                    # because of trailing &quot;.&quot;
+      - events
+    providers:
+      - identity: {}
+  # and then other entries in resources</code></pre>
 <p>Ensure that the exemption is listed <em>before</em> the wildcard
 '<code>*.*</code>' item in the resources array to give it
 precedence.</p>
@@ -591,7 +604,7 @@ base64:</p>
 </div>
 <p>Generate a 32-byte random key and base64 encode it. You can use this
 command:</p>
-<pre class="shell"><code>head -c 32 /dev/urandom | base64</code></pre>
+<pre class="shell"><code class="language-shell">head -c 32 /dev/urandom | base64</code></pre>
 <p>You can use <code>/dev/hwrng</code> instead of
 <code>/dev/urandom</code> if you want to use your PC's built-in hardware
 entropy source. Not all Linux devices provide a hardware random
@@ -601,16 +614,15 @@ generator.</p>
 </div>
 <p>Generate a 32-byte random key and base64 encode it. You can use this
 command:</p>
-<pre class="shell"><code>head -c 32 /dev/urandom | base64</code></pre>
+<pre class="shell"><code class="language-shell">head -c 32 /dev/urandom | base64</code></pre>
 <div class="tab-label">
 <p>Windows</p>
 </div>
 <p>Generate a 32-byte random key and base64 encode it. You can use this
 command:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode powershell"><code class="sourceCode powershell"><span class="co"># Do not run this in a session where you have set a random number</span></span>
-<span class="co"># generator seed.</span></span>
-<span class="op">[</span>Convert<span class="op">]::</span>ToBase64String<span class="op">((</span><span class="dv">1</span><span class="op">..</span><span class="dv">32</span><span class="op">|%{[</span><span class="dt">byte</span><span class="op">](</span><span class="fu">Get-Random</span> <span class="op">-</span>Max <span class="dv">256</span><span class="op">)}))</span></span></code></pre></div>
+<pre class="powershell"><code class="language-powershell"># Do not run this in a session where you have set a random number
+# generator seed.
+[Convert]::ToBase64String((1..32|%{[byte](Get-Random -Max 256)}))</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -640,23 +652,22 @@ configuration.</p>
 </div>
 <p>Create a new encryption configuration file. The contents should be
 similar to:</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">configmaps</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">pandas.awesome.bears.example</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
-<span class="at">              </span><span class="co"># See the following text for more details about the secret value</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># this fallback allows reading unencrypted secrets;</span></span>
-<span class="at">                     </span><span class="co"># for example, during initial migration</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+      - configmaps
+      - pandas.awesome.bears.example
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              # See the following text for more details about the secret value
+              secret: &lt;BASE 64 ENCODED SECRET&gt;
+      - identity: {} # this fallback allows reading unencrypted secrets;
+                     # for example, during initial migration</code></pre>
 <p>To create a new encryption key (that does not use KMS), see <a
 href="#generate-key-no-kms">Generate the encryption key</a>.</p>
 <h3 id="use-the-new-encryption-configuration-file">Use the new
@@ -671,42 +682,41 @@ node.</p></li>
 <li><p>Edit the manifest for the <code>kube-apiserver</code> static pod:
 <code>/etc/kubernetes/manifests/kube-apiserver.yaml</code> so that it is
 similar to:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="co">#</span></span>
-<span class="co"># This is a fragment of a manifest for a static Pod.</span></span>
-<span class="co"># Check whether this is correct for your cluster and for your API server.</span></span>
-<span class="co">#</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint</span><span class="kw">:</span><span class="at"> 10.20.30.40:443</span></span>
-<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/component</span><span class="kw">:</span><span class="at"> kube-apiserver</span></span>
-<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> control-plane</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-apiserver</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">kube-apiserver</span></span>
-<span class="at">    ...</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="at">--encryption-provider-config=/etc/kubernetes/enc/enc.yaml  # add this line</span></span>
-<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
-<span class="at">    ...</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> enc                           # add this line</span></span>
-<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/enc      # add this line</span></span>
-<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at">                      # add this line</span></span>
-<span class="at">    ...</span></span>
-<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
-<span class="at">  ...</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> enc                             # add this line</span></span>
-<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span><span class="at">                             </span><span class="co"># add this line</span></span>
-<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /etc/kubernetes/enc           # add this line</span></span>
-<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DirectoryOrCreate             # add this line</span></span>
-<span class="at">  ...</span></span></code></pre></div></li>
+<pre class="yaml"><code class="language-yaml">---
+#
+# This is a fragment of a manifest for a static Pod.
+# Check whether this is correct for your cluster and for your API server.
+#
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint: 10.20.30.40:443
+  creationTimestamp: null
+  labels:
+    app.kubernetes.io/component: kube-apiserver
+    tier: control-plane
+  name: kube-apiserver
+  namespace: kube-system
+spec:
+  containers:
+  - command:
+    - kube-apiserver
+    ...
+    - --encryption-provider-config=/etc/kubernetes/enc/enc.yaml  # add this line
+    volumeMounts:
+    ...
+    - name: enc                           # add this line
+      mountPath: /etc/kubernetes/enc      # add this line
+      readOnly: true                      # add this line
+    ...
+  volumes:
+  ...
+  - name: enc                             # add this line
+    hostPath:                             # add this line
+      path: /etc/kubernetes/enc           # add this line
+      type: DirectoryOrCreate             # add this line
+  ...</code></pre></li>
 <li><p>Restart your API server.</p></li>
 </ol>
 <div class="admonition caution">
@@ -754,20 +764,20 @@ API.</p>
 <ol type="1">
 <li><p>Create a new Secret called <code>secret1</code> in the
 <code>default</code> namespace:</p>
-<pre class="shell"><code>kubectl create secret generic secret1 -n default --from-literal=mykey=mydata</code></pre></li>
+<pre class="shell"><code class="language-shell">kubectl create secret generic secret1 -n default --from-literal=mykey=mydata</code></pre></li>
 <li><p>Using the <code>etcdctl</code> command line tool, read that
 Secret out of etcd:</p>
 <pre><code>ETCDCTL_API=3 etcdctl get /registry/secrets/default/secret1 [...] | hexdump -C</code></pre>
 <p>where <code>[...]</code> must be the additional arguments for
 connecting to the etcd server.</p>
 <p>For example:</p>
-<pre class="shell"><code>ETCDCTL_API=3 etcdctl \
+<pre class="shell"><code class="language-shell">ETCDCTL_API=3 etcdctl \
    --cacert=/etc/kubernetes/pki/etcd/ca.crt   \
    --cert=/etc/kubernetes/pki/etcd/server.crt \
    --key=/etc/kubernetes/pki/etcd/server.key  \
    get /registry/secrets/default/secret1 | hexdump -C</code></pre>
 <p>The output is similar to this (abbreviated):</p>
-<pre class="hexdump"><code>00000000  2f 72 65 67 69 73 74 72  79 2f 73 65 63 72 65 74  |/registry/secret|
+<pre class="hexdump"><code class="language-hexdump">00000000  2f 72 65 67 69 73 74 72  79 2f 73 65 63 72 65 74  |/registry/secret|
 00000010  73 2f 64 65 66 61 75 6c  74 2f 73 65 63 72 65 74  |s/default/secret|
 00000020  31 0a 6b 38 73 3a 65 6e  63 3a 61 65 73 63 62 63  |1.k8s:enc:aescbc|
 00000030  3a 76 31 3a 6b 65 79 31  3a c7 6c e7 d3 09 bc 06  |:v1:key1:.l.....|
@@ -787,7 +797,7 @@ you can see that the encryption key named <code>key1</code> is used in
 <code>etcd</code> and in <code>EncryptionConfiguration</code>.</p></li>
 <li><p>Verify the Secret is correctly decrypted when retrieved via the
 API:</p>
-<pre class="shell"><code>kubectl get secret secret1 -n default -o yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get secret secret1 -n default -o yaml</code></pre>
 <p>The output should contain <code>mykey: bXlkYXRh</code>, with contents
 of <code>mydata</code> encoded using base64; read <a
 href="../configmap-secret/managing-secret-using-kubectl.html#decoding-secret">decoding
@@ -802,7 +812,7 @@ stored.</p>
 are encrypted on write. Performing a replace operation for each Secret
 will encrypt that content at rest, where the objects are unchanged.</p>
 <p>You can make this change across all Secrets in your cluster:</p>
-<pre class="shell"><code># Run this as an administrator that can read and write all Secrets
+<pre class="shell"><code class="language-shell"># Run this as an administrator that can read and write all Secrets
 kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
 <p>The command above reads all Secrets and then updates them with the
 same data, in order to apply server side encryption.</p>
@@ -835,19 +845,18 @@ this before you carry on with the next steps.</p>
 <p>Once all Secrets in your cluster are encrypted, you can remove the
 <code>identity</code> part of the encryption configuration. For
 example:</p>
-<div class="sourceCode" id="cb14"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># REMOVE THIS LINE</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      - aescbc:
+          keys:
+            - name: key1
+              secret: &lt;BASE 64 ENCODED SECRET&gt;
+      - identity: {} # REMOVE THIS LINE</code></pre>
 <p>…and then restart each API server in turn. This change prevents the
 API server from accessing a plain-text Secret, even by accident.</p>
 <h2 id="rotating-a-decryption-key">Rotate a decryption key</h2>
@@ -881,25 +890,24 @@ from the configuration.</li>
 you are encrypting other API kinds, adjust the steps to match.</p>
 <p>To disable encryption at rest, place the <code>identity</code>
 provider as the first entry in your encryption configuration file:</p>
-<div class="sourceCode" id="cb15"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
-<span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
-<span class="at">      </span><span class="co"># list any other resources here that you previously were</span></span>
-<span class="at">      </span><span class="co"># encrypting at rest</span></span>
-<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># add this line</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
-<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span><span class="co"> # keep this in place</span></span>
-<span class="at">                                               </span><span class="co"># make sure it comes after &quot;identity&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+      # list any other resources here that you previously were
+      # encrypting at rest
+    providers:
+      - identity: {} # add this line
+      - aescbc:
+          keys:
+            - name: key1
+              secret: &lt;BASE 64 ENCODED SECRET&gt; # keep this in place
+                                               # make sure it comes after &quot;identity&quot;</code></pre>
 <p>Then run the following command to force decryption of all
 Secrets:</p>
-<pre class="shell"><code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
 <p>Once you have replaced all existing encrypted resources with backing
 data that don't use encryption, you can remove the encryption settings
 from the <code>kube-apiserver</code>.</p>
@@ -993,6 +1001,7 @@ configuration API (v1)</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1001,6 +1010,8 @@ configuration API (v1)</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

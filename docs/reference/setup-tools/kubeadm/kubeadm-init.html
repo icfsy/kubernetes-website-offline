@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -593,16 +608,16 @@ that by calling <code>kubeadm init</code> all of the phases and
 sub-phases will be executed in this exact order.</p>
 <p>Some phases have unique flags, so if you want to have a look at the
 list of available options add <code>--help</code>, for example:</p>
-<pre class="shell"><code>sudo kubeadm init phase control-plane controller-manager --help</code></pre>
+<pre class="shell"><code class="language-shell">sudo kubeadm init phase control-plane controller-manager --help</code></pre>
 <p>You can also use <code>--help</code> to see the list of sub-phases
 for a certain parent phase:</p>
-<pre class="shell"><code>sudo kubeadm init phase control-plane --help</code></pre>
+<pre class="shell"><code class="language-shell">sudo kubeadm init phase control-plane --help</code></pre>
 <p><code>kubeadm init</code> also exposes a flag called
 <code>--skip-phases</code> that can be used to skip certain phases. The
 flag accepts a list of phase names and the names can be taken from the
 above ordered list.</p>
 <p>An example:</p>
-<pre class="shell"><code>sudo kubeadm init phase control-plane all --config=configfile.yaml
+<pre class="shell"><code class="language-shell">sudo kubeadm init phase control-plane all --config=configfile.yaml
 sudo kubeadm init phase etcd local --config=configfile.yaml
 # you can now modify the control plane and etcd manifest files
 sudo kubeadm init --skip-phases=control-plane,etcd --config=configfile.yaml</code></pre>
@@ -902,7 +917,7 @@ connection</h3>
 pre-pull the required control plane images.</p>
 <p>You can list and pull the images using the
 <code>kubeadm config images</code> sub-command:</p>
-<pre class="shell"><code>kubeadm config images list
+<pre class="shell"><code class="language-shell">kubeadm config images list
 kubeadm config images pull</code></pre>
 <p>You can pass <code>--config</code> to the above commands with a <a
 href="#config-file">kubeadm configuration file</a> to control the
@@ -966,7 +981,7 @@ certificates when additional control plane nodes are joining, by passing
 <code>kubeadm join</code>.</p>
 <p>The following phase command can be used to re-upload the certificates
 after expiration:</p>
-<pre class="shell"><code>kubeadm init phase upload-certs --upload-certs --config=SOME_YAML_FILE</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm init phase upload-certs --upload-certs --config=SOME_YAML_FILE</code></pre>
 <div class="admonition note">
 <div class="admonition-title">
 <p>Note:</p>
@@ -982,7 +997,7 @@ file</a> with <code>--config</code>.</p>
 automatically.</p>
 <p>The following command can be used to generate a new key on
 demand:</p>
-<pre class="shell"><code>kubeadm certs certificate-key</code></pre>
+<pre class="shell"><code class="language-shell">kubeadm certs certificate-key</code></pre>
 <h3 id="certificate-management-with-kubeadm">Certificate management with
 kubeadm</h3>
 <p>For detailed information on certificate management with kubeadm see
@@ -1028,7 +1043,7 @@ use a DNS name or an address of a load balancer.</p>
 More formally, it must match the regex:
 <code>[a-z0-9]{6}\.[a-z0-9]{16}</code>.</p>
 <p>kubeadm can generate a token for you:</p>
-<pre class="shell"><code>kubeadm token generate</code></pre></li>
+<pre class="shell"><code class="language-shell">kubeadm token generate</code></pre></li>
 <li><p>Start both the control plane node and the worker nodes
 concurrently with this token. As they come up they should find each
 other and form the cluster. The same <code>--token</code> argument can
@@ -1037,7 +1052,7 @@ be used on both <code>kubeadm init</code> and
 <li><p>Similar can be done for <code>--certificate-key</code> when
 joining additional control plane nodes. The key can be generated
 using:</p>
-<pre class="shell"><code>kubeadm certs certificate-key</code></pre></li>
+<pre class="shell"><code class="language-shell">kubeadm certs certificate-key</code></pre></li>
 </ol>
 <p>Once the cluster is up, you can use the
 <code>/etc/kubernetes/admin.conf</code> file from a control plane node
@@ -1131,6 +1146,7 @@ reset</a> to revert any changes made to this host by
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1139,6 +1155,8 @@ reset</a> to revert any changes made to this host by
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

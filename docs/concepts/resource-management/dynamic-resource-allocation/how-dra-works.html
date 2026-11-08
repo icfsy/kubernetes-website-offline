@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../../" href="../../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -203,15 +218,14 @@ be used for other Pods while the Pod is stuck. To make a Pod run on a
 specific node while still going through the normal scheduling flow,
 create the Pod with a node selector that exactly matches the desired
 node:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-cats</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">kubernetes.io/hostname</span><span class="kw">:</span><span class="at"> name-of-the-intended-node</span></span>
-<span class="at">  ...</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-cats
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: name-of-the-intended-node
+  ...</code></pre>
 <p>You may also be able to mutate the incoming Pod, at admission time,
 to unset the <code>.spec.nodeName</code> field and to use a node
 selector instead.</p>
@@ -279,51 +293,49 @@ the Pod. A cluster administration can configure this timeout duration by
 editing the kube-scheduler configuration file.</p>
 <p>An example of configuring this timeout in
 <code>KubeSchedulerConfiguration</code> is given below:</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> default-scheduler</span></span>
-<span class="at">  </span><span class="fu">pluginConfig</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> DynamicResources</span></span>
-<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="at">      </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> DynamicResourcesArgs</span></span>
-<span class="at">      </span><span class="fu">bindingTimeout</span><span class="kw">:</span><span class="at"> 60s</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+profiles:
+- schedulerName: default-scheduler
+  pluginConfig:
+  - name: DynamicResources
+    args:
+      apiVersion: kubescheduler.config.k8s.io/v1
+      kind: DynamicResourcesArgs
+      bindingTimeout: 60s</code></pre>
 <h3 id="device-binding-conditions-example">Example</h3>
 <p>Here is an example of a ResourceSlice that you might see in a cluster
 where there's a DRA driver in use, and that driver supports binding
 conditions:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-slice-1</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> dra.example.com</span></span>
-<span class="at">  </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> accelerator-type</span></span>
-<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">        </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="st">&quot;high-performance&quot;</span></span>
-<span class="at">  </span><span class="fu">pool</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-pool</span></span>
-<span class="at">    </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">resourceSliceCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> gpu-1</span></span>
-<span class="at">      </span><span class="fu">attributes</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">vendor</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">string</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example&quot;</span></span>
-<span class="at">        </span><span class="fu">model</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">string</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;example-gpu&quot;</span></span>
-<span class="at">      </span><span class="fu">bindsToNode</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">      </span><span class="fu">bindingConditions</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">dra.example.com/is-prepared</span></span>
-<span class="at">      </span><span class="fu">bindingFailureConditions</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">dra.example.com/preparing-failed</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+metadata:
+  name: gpu-slice-1
+spec:
+  driver: dra.example.com
+  nodeSelector:
+    nodeSelectorTerms:
+    - matchExpressions:
+      - key: accelerator-type
+        operator: In
+        values:
+        - &quot;high-performance&quot;
+  pool:
+    name: gpu-pool
+    generation: 1
+    resourceSliceCount: 1
+  devices:
+    - name: gpu-1
+      attributes:
+        vendor:
+          string: &quot;example&quot;
+        model:
+          string: &quot;example-gpu&quot;
+      bindsToNode: true
+      bindingConditions:
+        - dra.example.com/is-prepared
+      bindingFailureConditions:
+        - dra.example.com/preparing-failed</code></pre>
 <p>This example ResourceSlice has the following properties:</p>
 <ul>
 <li>The ResourceSlice targets nodes labeled with
@@ -434,61 +446,59 @@ pool of 128 CPUs using <a href="#">DRA consumable
 capacity</a>. The <code>capacityKey</code> links the consumed
 <code>cpu.example.com/cpu</code> capacity directly to the node's
 standard <code>cpu</code> allocatable resource:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-node-cpus</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> cpu.example.com</span></span>
-<span class="at">  </span><span class="fu">nodeName</span><span class="kw">:</span><span class="at"> my-node</span></span>
-<span class="at">  </span><span class="fu">pool</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> socket-cpus</span></span>
-<span class="at">    </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">resourceSliceCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> socket0cpus</span></span>
-<span class="at">    </span><span class="fu">allowMultipleAllocations</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">&quot;cpu.example.com/cpu&quot;</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128&quot;</span></span>
-<span class="at">    </span><span class="fu">nodeAllocatableResources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">mapping</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">capacityKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cpu.example.com/cpu&quot;</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> socket1cpus</span></span>
-<span class="at">    </span><span class="fu">allowMultipleAllocations</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
-<span class="at">    </span><span class="fu">capacity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">&quot;cpu.example.com/cpu&quot;</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128&quot;</span></span>
-<span class="at">    </span><span class="fu">nodeAllocatableResources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">mapping</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">capacityKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cpu.example.com/cpu&quot;</span></span>
-<span class="at">          </span><span class="fu">capacityMultiplier</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+metadata:
+  name: my-node-cpus
+spec:
+  driver: cpu.example.com
+  nodeName: my-node
+  pool:
+    name: socket-cpus
+    generation: 1
+    resourceSliceCount: 1
+  devices:
+  - name: socket0cpus
+    allowMultipleAllocations: true
+    capacity:
+      &quot;cpu.example.com/cpu&quot;: &quot;128&quot;
+    nodeAllocatableResources:
+      mapping:
+        cpu:
+          capacityKey: &quot;cpu.example.com/cpu&quot;
+  - name: socket1cpus
+    allowMultipleAllocations: true
+    capacity:
+      &quot;cpu.example.com/cpu&quot;: &quot;128&quot;
+    nodeAllocatableResources:
+      mapping:
+        cpu:
+          capacityKey: &quot;cpu.example.com/cpu&quot;
+          capacityMultiplier: 1</code></pre>
 <h4 id="example-accelerator-with-auxiliary-resources-overhead">Example:
 Accelerator with Auxiliary Resources (Overhead)</h4>
 <p>Here is an example of a resource slice where an accelerator requires
 an additional 8Gi of memory per Pod to function:</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> my-node-xpus</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> xpu.example.com</span></span>
-<span class="at">  </span><span class="fu">nodeName</span><span class="kw">:</span><span class="at"> my-node</span></span>
-<span class="at">  </span><span class="fu">pool</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> xpu-pool</span></span>
-<span class="at">    </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">    </span><span class="fu">resourceSliceCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">  </span><span class="fu">devices</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> xpu-model-x-001</span></span>
-<span class="at">    </span><span class="fu">attributes</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">example.com/model</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">string</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;model-x&quot;</span></span>
-<span class="at">    </span><span class="fu">nodeAllocatableResources</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">overhead</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">perPod</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;8Gi&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: resource.k8s.io/v1
+kind: ResourceSlice
+metadata:
+  name: my-node-xpus
+spec:
+  driver: xpu.example.com
+  nodeName: my-node
+  pool:
+    name: xpu-pool
+    generation: 1
+    resourceSliceCount: 1
+  devices:
+  - name: xpu-model-x-001
+    attributes:
+      example.com/model:
+        string: &quot;model-x&quot;
+    nodeAllocatableResources:
+      overhead:
+        memory:
+          perPod: &quot;8Gi&quot;</code></pre>
 <p>After a Pod is successfully bound to the node, the exact quantities
 of node allocatable resources allocated via DRA are aggregated by the
 <code>kube-scheduler</code> and embedded directly into the Pod's
@@ -573,6 +583,7 @@ feature gate</a> is enabled in the <code>kube-apiserver</code>,
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -581,6 +592,8 @@ feature gate</a> is enabled in the <code>kube-apiserver</code>,
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../../assets/code-themes/manifest.js"></script>
 <script src="../../../../assets/nav.js"></script>
 <script src="../../../../assets/site.js"></script>
 </body>

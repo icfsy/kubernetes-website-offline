@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -245,33 +260,32 @@ Pod continues to run.</p>
 <p>For example, consider the following Pod spec:</p>
 <div class="code-sample">
 <p><code>pods/pod-with-node-affinity.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">antarctica-east1</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">antarctica-west1</span></span>
-<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> another-node-label-key</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">another-node-label-value</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values:
+            - antarctica-east1
+            - antarctica-west1
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: another-node-label-key
+            operator: In
+            values:
+            - another-node-label-value
+  containers:
+  - name: with-node-affinity
+    image: registry.k8s.io/pause:3.8</code></pre>
 </div>
 <p>In this example, the following rules apply:</p>
 <ul>
@@ -327,39 +341,38 @@ scheduler makes a scheduling decision for the Pod.</p>
 <p>For example, consider the following Pod spec:</p>
 <div class="code-sample">
 <p><code>pods/pod-with-affinity-preferred-weight.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-affinity-preferred-weight</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> kubernetes.io/os</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">linux</span></span>
-<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
-<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> label-1</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">key-1</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
-<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> label-2</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">key-2</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-affinity-preferred-weight
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/os
+            operator: In
+            values:
+            - linux
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: label-1
+            operator: In
+            values:
+            - key-1
+      - weight: 50
+        preference:
+          matchExpressions:
+          - key: label-2
+            operator: In
+            values:
+            - key-2
+  containers:
+  - name: with-node-affinity
+    image: registry.k8s.io/pause:3.8</code></pre>
 </div>
 <p>If there are two possible nodes that match the
 <code>preferredDuringSchedulingIgnoredDuringExecution</code> rule, one
@@ -394,24 +407,23 @@ href="../../reference/scheduling/config.html#scheduling-plugins"><code>NodeAffin
 plugin</a> in the <a
 href="../../reference/scheduling/config.html">scheduler configuration</a>.
 For example:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
-</span>
-<span class="fu">profiles</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> default-scheduler</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> foo-scheduler</span></span>
-<span class="at">    </span><span class="fu">pluginConfig</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NodeAffinity</span></span>
-<span class="at">        </span><span class="fu">args</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">addedAffinity</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> scheduler-profile</span></span>
-<span class="at">                  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">                  </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">                  </span><span class="kw">- </span><span class="at">foo</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: kubescheduler.config.k8s.io/v1
+kind: KubeSchedulerConfiguration
+
+profiles:
+  - schedulerName: default-scheduler
+  - schedulerName: foo-scheduler
+    pluginConfig:
+      - name: NodeAffinity
+        args:
+          addedAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+              nodeSelectorTerms:
+              - matchExpressions:
+                - key: scheduler-profile
+                  operator: In
+                  values:
+                  - foo</code></pre>
 <p>The <code>addedAffinity</code> is applied to all Pods that set
 <code>.spec.schedulerName</code> to <code>foo-scheduler</code>, in
 addition to the NodeAffinity specified in the PodSpec. That is, in order
@@ -547,36 +559,35 @@ Example</h4>
 <p>Consider the following Pod spec:</p>
 <div class="code-sample">
 <p><code>pods/pod-with-pod-affinity.yaml</code></p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-pod-affinity</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> security</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">S1</span></span>
-<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">    </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
-<span class="at">        </span><span class="fu">podAffinityTerm</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> security</span></span>
-<span class="at">              </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">              </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="at">S2</span></span>
-<span class="at">          </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-pod-affinity</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: security
+            operator: In
+            values:
+            - S1
+        topologyKey: topology.kubernetes.io/zone
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: security
+              operator: In
+              values:
+              - S2
+          topologyKey: topology.kubernetes.io/zone
+  containers:
+  - name: with-pod-affinity
+    image: registry.k8s.io/pause:3.8</code></pre>
 </div>
 <p>This example defines one Pod affinity rule and one Pod anti-affinity
 rule. The Pod affinity rule uses the "hard"
@@ -697,30 +708,29 @@ Deployment, where the value is unique for each revision). Using
 <code>pod-template-hash</code> in <code>matchLabelKeys</code> allows you
 to target the Pods that belong to the same revision as the incoming Pod,
 so that a rolling upgrade won't break affinity.</p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> application-server</span></span>
-<span class="co">...</span></span>
-<span class="er">spec:</span></span>
-<span class="er">  template:</span></span>
-<span class="er">    spec:</span></span>
-<span class="er">      affinity:</span></span>
-<span class="er">        podAffinity:</span></span>
-<span class="er">          requiredDuringSchedulingIgnoredDuringExecution:</span></span>
-<span class="er">          - labelSelector:</span></span>
-<span class="er">              matchExpressions:</span></span>
-<span class="er">              - key: app</span></span>
-<span class="er">                operator: In</span></span>
-<span class="er">                values:</span></span>
-<span class="er">                - database</span></span>
-<span class="er">            topologyKey: topology.kubernetes.io/zone</span></span>
-<span class="er">            </span><span class="co"># Only Pods from a given rollout are taken into consideration when calculating pod affinity.</span></span>
-<span class="at">            </span><span class="co"># If you update the Deployment, the replacement Pods follow their own affinity rules</span></span>
-<span class="at">            </span><span class="co"># (if there are any defined in the new Pod template)</span></span>
-<span class="at">            </span><span class="fu">matchLabelKeys</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="kw">- </span><span class="at">pod-template-hash</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: application-server
+...
+spec:
+  template:
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - database
+            topologyKey: topology.kubernetes.io/zone
+            # Only Pods from a given rollout are taken into consideration when calculating pod affinity.
+            # If you update the Deployment, the replacement Pods follow their own affinity rules
+            # (if there are any defined in the new Pod template)
+            matchLabelKeys:
+            - pod-template-hash</code></pre>
 <h4 id="mismatchlabelkeys">mismatchLabelKeys</h4>
 <div class="admonition feature-state">
 <div class="admonition-title">
@@ -759,38 +769,37 @@ kube-apiserver doesn't reflect the label update onto the merged
 (node, zone, etc) where only Pods from the same tenant or team are
 scheduled in. In other words, you want to avoid running Pods from two
 different tenants on the same topology domain at the same time.</p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># Assume that all relevant Pods have a &quot;tenant&quot; label set</span></span>
-<span class="at">    </span><span class="fu">tenant</span><span class="kw">:</span><span class="at"> tenant-a</span></span>
-<span class="co">...</span></span>
-<span class="er">spec:</span></span>
-<span class="er">  affinity:</span></span>
-<span class="er">    podAffinity:</span></span>
-<span class="er">      requiredDuringSchedulingIgnoredDuringExecution:</span></span>
-<span class="er">      </span><span class="co"># ensure that Pods associated with this tenant land on the correct node pool</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">matchLabelKeys</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="at">tenant</span></span>
-<span class="at">        </span><span class="fu">labelSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
-<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> node-pool</span></span>
-<span class="at">    </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="co"># ensure that Pods associated with this tenant can&#39;t schedule to nodes used for another tenant</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">mismatchLabelKeys</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="at">tenant</span><span class="co"> # whatever the value of the &quot;tenant&quot; label for this Pod, prevent</span></span>
-<span class="at">                 </span><span class="co"># scheduling to nodes in any pool where any Pod from a different</span></span>
-<span class="at">                 </span><span class="co"># tenant is running.</span></span>
-<span class="at">        </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="co"># We have to have the labelSelector which selects only Pods with the tenant label,</span></span>
-<span class="at">          </span><span class="co"># otherwise this Pod would have anti-affinity against Pods from daemonsets as well, for example,</span></span>
-<span class="at">          </span><span class="co"># which aren&#39;t supposed to have the tenant label.</span></span>
-<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> tenant</span></span>
-<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span>
-<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> node-pool</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    # Assume that all relevant Pods have a &quot;tenant&quot; label set
+    tenant: tenant-a
+...
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      # ensure that Pods associated with this tenant land on the correct node pool
+      - matchLabelKeys:
+          - tenant
+        labelSelector: {}
+        topologyKey: node-pool
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      # ensure that Pods associated with this tenant can&#39;t schedule to nodes used for another tenant
+      - mismatchLabelKeys:
+        - tenant # whatever the value of the &quot;tenant&quot; label for this Pod, prevent
+                 # scheduling to nodes in any pool where any Pod from a different
+                 # tenant is running.
+        labelSelector:
+          # We have to have the labelSelector which selects only Pods with the tenant label,
+          # otherwise this Pod would have anti-affinity against Pods from daemonsets as well, for example,
+          # which aren&#39;t supposed to have the tenant label.
+          matchExpressions:
+          - key: tenant
+            operator: Exists
+        topologyKey: node-pool</code></pre>
 <h4 id="more-practical-use-cases">More practical use-cases</h4>
 <p>Inter-pod affinity and anti-affinity can be even more useful when
 they are used with higher level collections such as ReplicaSets,
@@ -809,77 +818,75 @@ get the label <code>app=store</code>. The <code>podAntiAffinity</code>
 rule tells the scheduler to avoid placing multiple replicas with the
 <code>app=store</code> label on a single node. This creates each cache
 in a separate node.</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-cache</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> store</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> store</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">                </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">                </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="kw">- </span><span class="at">store</span></span>
-<span class="at">            </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-server</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:3.2-alpine</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+spec:
+  selector:
+    matchLabels:
+      app: store
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: store
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - store
+            topologyKey: &quot;kubernetes.io/hostname&quot;
+      containers:
+      - name: redis-server
+        image: redis:3.2-alpine</code></pre>
 <p>The following example Deployment for the web servers creates replicas
 with the label <code>app=web-store</code>. The Pod affinity rule tells
 the scheduler to place each replica on a node that has a Pod with the
 label <code>app=store</code>. The Pod anti-affinity rule tells the
 scheduler never to place multiple <code>app=web-store</code> servers on
 a single node.</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-server</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> web-store</span></span>
-<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> web-store</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">affinity</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">                </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">                </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="kw">- </span><span class="at">web-store</span></span>
-<span class="at">            </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span>
-<span class="at">        </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">                </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
-<span class="at">                </span><span class="fu">values</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="kw">- </span><span class="at">store</span></span>
-<span class="at">            </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-app</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16-alpine</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-server
+spec:
+  selector:
+    matchLabels:
+      app: web-store
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: web-store
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - web-store
+            topologyKey: &quot;kubernetes.io/hostname&quot;
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - store
+            topologyKey: &quot;kubernetes.io/hostname&quot;
+      containers:
+      - name: web-app
+        image: nginx:1.16-alpine</code></pre>
 <p>Creating the two preceding Deployments results in the following
 cluster layout, where each web server is co-located with a cache, on
 three separate nodes.</p>
@@ -944,16 +951,15 @@ schedulers.</p>
 </div>
 <p>Here is an example of a Pod spec using the <code>nodeName</code>
 field:</p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">nodeName</span><span class="kw">:</span><span class="at"> kube-01</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+  nodeName: kube-01</code></pre>
 <p>The above Pod will only run on the node <code>kube-01</code>.</p>
 <h2 id="nominatednodename">nominatedNodeName</h2>
 <div class="admonition feature-state">
@@ -980,14 +986,13 @@ when the pod has to go through <code>WaitOnPermit</code> or
 </ul>
 <p>Here is an example of a Pod status using the
 <code>nominatedNodeName</code> field:</p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="co">...</span></span>
-<span class="er">status:</span></span>
-<span class="er">  nominatedNodeName: kube-01</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+...
+status:
+  nominatedNodeName: kube-01</code></pre>
 <h2 id="pod-topology-spread-constraints">Pod topology spread
 constraints</h2>
 <p>You can use <em>topology spread constraints</em> to control how <span
@@ -1013,25 +1018,24 @@ those labels are present. These labels can then be utilized via the
 Downward API to provide the workload with node topology awareness.</p>
 <p>Here is an example of a Pod using downward API for it's zone and
 region:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-topology-labels</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
-<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine</span></span>
-<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="kw">]</span></span>
-<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_ZONE</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.labels[&#39;topology.kubernetes.io/zone&#39;]</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_REGION</span></span>
-<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.labels[&#39;topology.kubernetes.io/region&#39;]</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-with-topology-labels
+spec:
+  containers:
+    - name: app
+      image: alpine
+      command: [&quot;sh&quot;, &quot;-c&quot;, &quot;env&quot;]
+      env:
+        - name: MY_ZONE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels[&#39;topology.kubernetes.io/zone&#39;]
+        - name: MY_REGION
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.labels[&#39;topology.kubernetes.io/region&#39;]</code></pre>
 <h2 id="operators">Operators</h2>
 <p>The following are all the logical operators that you can use in the
 <code>operator</code> field for <code>nodeAffinity</code> and
@@ -1190,6 +1194,7 @@ and anti-affinity</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1198,6 +1203,8 @@ and anti-affinity</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

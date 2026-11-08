@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -217,23 +232,22 @@ understand the caveats of choosing it.</p>
 <p>A minimal Ingress resource example:</p>
 <div class="code-sample">
 <p><code>service/networking/minimal-ingress.yaml</code></p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> minimal-ingress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">ingressClassName</span><span class="kw">:</span><span class="at"> nginx-example</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /testpath</span></span>
-<span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minimal-ingress
+spec:
+  ingressClassName: nginx-example
+  rules:
+  - http:
+      paths:
+      - path: /testpath
+        pathType: Prefix
+        backend:
+          service:
+            name: test
+            port:
+              number: 80</code></pre>
 </div>
 <p>An Ingress needs <code>apiVersion</code>, <code>kind</code>,
 <code>metadata</code> and <code>spec</code> fields. The name of an
@@ -309,32 +323,30 @@ will fail validation if both are specified. A common usage for a
 backend with static assets.</p>
 <div class="code-sample">
 <p><code>service/networking/ingress-resource-backend.yaml</code></p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ingress-resource-backend</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">defaultBackend</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> k8s.example.com</span></span>
-<span class="at">      </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageBucket</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> static-assets</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /icons</span></span>
-<span class="at">            </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> ImplementationSpecific</span></span>
-<span class="at">            </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">resource</span><span class="kw">:</span></span>
-<span class="at">                </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> k8s.example.com</span></span>
-<span class="at">                </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageBucket</span></span>
-<span class="at">                </span><span class="fu">name</span><span class="kw">:</span><span class="at"> icon-assets</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-resource-backend
+spec:
+  defaultBackend:
+    resource:
+      apiGroup: k8s.example.com
+      kind: StorageBucket
+      name: static-assets
+  rules:
+    - http:
+        paths:
+          - path: /icons
+            pathType: ImplementationSpecific
+            backend:
+              resource:
+                apiGroup: k8s.example.com
+                kind: StorageBucket
+                name: icon-assets</code></pre>
 </div>
 <p>After creating the Ingress above, you can view it with the following
 command:</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> describe ingress ingress-resource-backend</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl describe ingress ingress-resource-backend</code></pre>
 <pre><code>Name:             ingress-resource-backend
 Namespace:        default
 Address:
@@ -545,33 +557,32 @@ rule.</p>
 </table>
 <div class="code-sample">
 <p><code>service/networking/ingress-wildcard-host.yaml</code></p>
-<div class="sourceCode" id="cb5"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ingress-wildcard-host</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;foo.bar.com&quot;</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/bar&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service1</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;*.foo.com&quot;</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/foo&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service2</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: ingress-wildcard-host
+spec:
+  rules:
+  - host: &quot;foo.bar.com&quot;
+    http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/bar&quot;
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80
+  - host: &quot;*.foo.com&quot;
+    http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/foo&quot;
+        backend:
+          service:
+            name: service2
+            port:
+              number: 80</code></pre>
 </div>
 <h2 id="ingress-class">Ingress class</h2>
 <p>Ingresses can be implemented by different controllers, often with
@@ -581,17 +592,16 @@ configuration including the name of the controller that should implement
 the class.</p>
 <div class="code-sample">
 <p><code>service/networking/external-lb.yaml</code></p>
-<div class="sourceCode" id="cb6"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> IngressClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-lb</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">controller</span><span class="kw">:</span><span class="at"> example.com/ingress-controller</span></span>
-<span class="at">  </span><span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> k8s.example.com</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> IngressParameters</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-lb</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: external-lb
+spec:
+  controller: example.com/ingress-controller
+  parameters:
+    apiGroup: k8s.example.com
+    kind: IngressParameters
+    name: external-lb</code></pre>
 </div>
 <p>The <code>.spec.parameters</code> field of an IngressClass lets you
 reference another resource that provides configuration related to that
@@ -616,23 +626,22 @@ cluster-scoped API (possibly a custom resource), and the
 <code>name</code> of the parameters identifies a specific cluster scoped
 resource for that API.</p>
 <p>For example:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> IngressClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-lb-1</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">controller</span><span class="kw">:</span><span class="at"> example.com/ingress-controller</span></span>
-<span class="at">  </span><span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># The parameters for this IngressClass are specified in a</span></span>
-<span class="at">    </span><span class="co"># ClusterIngressParameter (API group k8s.example.net) named</span></span>
-<span class="at">    </span><span class="co"># &quot;external-config-1&quot;. This definition tells Kubernetes to</span></span>
-<span class="at">    </span><span class="co"># look for a cluster-scoped parameter resource.</span></span>
-<span class="at">    </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Cluster</span></span>
-<span class="at">    </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> k8s.example.net</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterIngressParameter</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-config-1</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: external-lb-1
+spec:
+  controller: example.com/ingress-controller
+  parameters:
+    # The parameters for this IngressClass are specified in a
+    # ClusterIngressParameter (API group k8s.example.net) named
+    # &quot;external-config-1&quot;. This definition tells Kubernetes to
+    # look for a cluster-scoped parameter resource.
+    scope: Cluster
+    apiGroup: k8s.example.net
+    kind: ClusterIngressParameter
+    name: external-config-1</code></pre>
 <div class="tab-label">
 <p>Namespaced</p>
 </div>
@@ -667,23 +676,22 @@ cluster-scoped parameters resource.</li>
 <p>The IngressClass API itself is always cluster-scoped.</p>
 <p>Here is an example of an IngressClass that refers to parameters that
 are namespaced:</p>
-<div class="sourceCode" id="cb8"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> IngressClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-lb-2</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">controller</span><span class="kw">:</span><span class="at"> example.com/ingress-controller</span></span>
-<span class="at">  </span><span class="fu">parameters</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="co"># The parameters for this IngressClass are specified in an</span></span>
-<span class="at">    </span><span class="co"># IngressParameter (API group k8s.example.com) named &quot;external-config&quot;,</span></span>
-<span class="at">    </span><span class="co"># that&#39;s in the &quot;external-configuration&quot; namespace.</span></span>
-<span class="at">    </span><span class="fu">scope</span><span class="kw">:</span><span class="at"> Namespace</span></span>
-<span class="at">    </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> k8s.example.com</span></span>
-<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> IngressParameter</span></span>
-<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> external-configuration</span></span>
-<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> external-config</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">---
+apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  name: external-lb-2
+spec:
+  controller: example.com/ingress-controller
+  parameters:
+    # The parameters for this IngressClass are specified in an
+    # IngressParameter (API group k8s.example.com) named &quot;external-config&quot;,
+    # that&#39;s in the &quot;external-configuration&quot; namespace.
+    scope: Namespace
+    apiGroup: k8s.example.com
+    kind: IngressParameter
+    namespace: external-configuration
+    name: external-config</code></pre>
 </div>
 <h3 id="deprecated-annotation">Deprecated annotation</h3>
 <p>Before the IngressClass resource and <code>ingressClassName</code>
@@ -717,17 +725,16 @@ default in your cluster.</p>
 to specify the default IngressClass:</p>
 <div class="code-sample">
 <p><code>service/networking/default-ingressclass.yaml</code></p>
-<div class="sourceCode" id="cb9"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> IngressClass</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">app.kubernetes.io/component</span><span class="kw">:</span><span class="at"> controller</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-class</span></span>
-<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">ingressclass.kubernetes.io/is-default-class</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">controller</span><span class="kw">:</span><span class="at"> k8s.io/example-class</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: IngressClass
+metadata:
+  labels:
+    app.kubernetes.io/component: controller
+  name: example-class
+  annotations:
+    ingressclass.kubernetes.io/is-default-class: &quot;true&quot;
+spec:
+  controller: k8s.io/example-class</code></pre>
 </div>
 <h2 id="types-of-ingress">Types of Ingress</h2>
 <h3 id="single-service-ingress">Ingress backed by a single Service</h3>
@@ -737,22 +744,20 @@ also do this with an Ingress by specifying a <em>default backend</em>
 with no rules.</p>
 <div class="code-sample">
 <p><code>service/networking/test-ingress.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-ingress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">defaultBackend</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test</span></span>
-<span class="at">      </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: test-ingress
+spec:
+  defaultBackend:
+    service:
+      name: test
+      port:
+        number: 80</code></pre>
 </div>
 <p>If you create it using <code>kubectl apply -f</code> you should be
 able to view the state of the Ingress you added:</p>
-<div class="sourceCode" id="cb11"><pre
-class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> get ingress test-ingress</span></code></pre></div>
+<pre class="bash"><code class="language-bash">kubectl get ingress test-ingress</code></pre>
 <pre><code>NAME           CLASS         HOSTS   ADDRESS         PORTS   AGE
 test-ingress   external-lb   *       203.0.113.123   80      59s</code></pre>
 <p>Where <code>203.0.113.123</code> is the IP allocated by the Ingress
@@ -779,33 +784,32 @@ Figure. Ingress Fan Out
 <p>It would require an Ingress such as:</p>
 <div class="code-sample">
 <p><code>service/networking/simple-fanout-example.yaml</code></p>
-<div class="sourceCode" id="cb13"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> simple-fanout-example</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> foo.bar.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /foo</span></span>
-<span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service1</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">4200</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /bar</span></span>
-<span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service2</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: simple-fanout-example
+spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - path: /foo
+        pathType: Prefix
+        backend:
+          service:
+            name: service1
+            port:
+              number: 4200
+      - path: /bar
+        pathType: Prefix
+        backend:
+          service:
+            name: service2
+            port:
+              number: 8080</code></pre>
 </div>
 <p>When you create the Ingress with <code>kubectl apply -f</code>:</p>
-<pre class="shell"><code>kubectl describe ingress simple-fanout-example</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe ingress simple-fanout-example</code></pre>
 <pre><code>Name:             simple-fanout-example
 Namespace:        default
 Address:          178.91.123.132
@@ -850,33 +854,32 @@ href="https://tools.ietf.org/html/rfc7230#section-5.4">Host
 header</a>.</p>
 <div class="code-sample">
 <p><code>service/networking/name-virtual-host-ingress.yaml</code></p>
-<div class="sourceCode" id="cb16"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-virtual-host-ingress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> foo.bar.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service1</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> bar.foo.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service2</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: name-virtual-host-ingress
+spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/&quot;
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80
+  - host: bar.foo.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/&quot;
+        backend:
+          service:
+            name: service2
+            port:
+              number: 80</code></pre>
 </div>
 <p>If you create an Ingress resource without any hosts defined in the
 rules, then any web traffic to the IP address of your Ingress controller
@@ -888,42 +891,41 @@ whose request host header doesn't match <code>first.bar.com</code> and
 <code>second.bar.com</code> to <code>service3</code>.</p>
 <div class="code-sample">
 <p><code>service/networking/name-virtual-host-ingress-no-third-host.yaml</code></p>
-<div class="sourceCode" id="cb17"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> name-virtual-host-ingress-no-third-host</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> first.bar.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service1</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> second.bar.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service2</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/&quot;</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service3</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: name-virtual-host-ingress-no-third-host
+spec:
+  rules:
+  - host: first.bar.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/&quot;
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80
+  - host: second.bar.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/&quot;
+        backend:
+          service:
+            name: service2
+            port:
+              number: 80
+  - http:
+      paths:
+      - pathType: Prefix
+        path: &quot;/&quot;
+        backend:
+          service:
+            name: service3
+            port:
+              number: 80</code></pre>
 </div>
 <h3 id="tls">TLS</h3>
 <p>You can secure an Ingress by specifying a <a class="glossary-term" href="../../reference/glossary.html#term-secret" title="Glossary: secret">Secret</a> that contains a TLS private key and
@@ -935,16 +937,15 @@ according to the hostname specified through the SNI TLS extension
 (provided the Ingress controller supports SNI). The TLS secret must
 contain keys named <code>tls.crt</code> and <code>tls.key</code> that
 contain the certificate and private key to use for TLS. For example:</p>
-<div class="sourceCode" id="cb18"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> testsecret-tls</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">data</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">tls.crt</span><span class="kw">:</span><span class="at"> base64 encoded cert</span></span>
-<span class="at">  </span><span class="fu">tls.key</span><span class="kw">:</span><span class="at"> base64 encoded key</span></span>
-<span class="fu">type</span><span class="kw">:</span><span class="at"> kubernetes.io/tls</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: v1
+kind: Secret
+metadata:
+  name: testsecret-tls
+  namespace: default
+data:
+  tls.crt: base64 encoded cert
+  tls.key: base64 encoded key
+type: kubernetes.io/tls</code></pre>
 <p>Referencing this secret in an Ingress tells the Ingress controller to
 secure the channel from the client to the load balancer using TLS. You
 need to make sure the TLS secret you created came from a certificate
@@ -962,27 +963,26 @@ section.</p>
 </div>
 <div class="code-sample">
 <p><code>service/networking/tls-example-ingress.yaml</code></p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Ingress</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> tls-example-ingress</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">tls</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">hosts</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="at">https-example.foo.com</span></span>
-<span class="at">    </span><span class="fu">secretName</span><span class="kw">:</span><span class="at"> testsecret-tls</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> https-example.foo.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /</span></span>
-<span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">        </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service1</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: tls-example-ingress
+spec:
+  tls:
+  - hosts:
+      - https-example.foo.com
+    secretName: testsecret-tls
+  rules:
+  - host: https-example.foo.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: service1
+            port:
+              number: 80</code></pre>
 </div>
 <div class="admonition note">
 <div class="admonition-title">
@@ -1010,7 +1010,7 @@ checks.</p>
 <h2 id="updating-an-ingress">Updating an Ingress</h2>
 <p>To update an existing Ingress to add a new Host, you can update it by
 editing the resource:</p>
-<pre class="shell"><code>kubectl describe ingress test</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe ingress test</code></pre>
 <pre><code>Name:             test
 Namespace:        default
 Address:          178.91.123.132
@@ -1024,38 +1024,37 @@ Events:
   Type     Reason  Age                From                     Message
   ----     ------  ----               ----                     -------
   Normal   ADD     35s                loadbalancer-controller  default/test</code></pre>
-<pre class="shell"><code>kubectl edit ingress test</code></pre>
+<pre class="shell"><code class="language-shell">kubectl edit ingress test</code></pre>
 <p>This pops up an editor with the existing configuration in YAML
 format. Modify it to include the new Host:</p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> foo.bar.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service1</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /foo</span></span>
-<span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">host</span><span class="kw">:</span><span class="at"> bar.baz.com</span></span>
-<span class="at">    </span><span class="fu">http</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">paths</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">backend</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">service</span><span class="kw">:</span></span>
-<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> service2</span></span>
-<span class="at">            </span><span class="fu">port</span><span class="kw">:</span></span>
-<span class="at">              </span><span class="fu">number</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
-<span class="at">        </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /foo</span></span>
-<span class="at">        </span><span class="fu">pathType</span><span class="kw">:</span><span class="at"> Prefix</span></span>
-<span class="at">..</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  rules:
+  - host: foo.bar.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: service1
+            port:
+              number: 80
+        path: /foo
+        pathType: Prefix
+  - host: bar.baz.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: service2
+            port:
+              number: 80
+        path: /foo
+        pathType: Prefix
+..</code></pre>
 <p>After you save your changes, kubectl updates the resource in the API
 server, which tells the Ingress controller to reconfigure the load
 balancer.</p>
 <p>Verify this:</p>
-<pre class="shell"><code>kubectl describe ingress test</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe ingress test</code></pre>
 <pre><code>Name:             test
 Namespace:        default
 Address:          178.91.123.132
@@ -1162,6 +1161,7 @@ controllers</a></li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -1170,6 +1170,8 @@ controllers</a></li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

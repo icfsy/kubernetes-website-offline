@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -170,18 +185,18 @@ href="network-policy-provider/kube-router-network-policy.html">Kube-router</a></
 an <code>nginx</code> deployment and expose it via a service</h2>
 <p>To see how Kubernetes network policy works, start off by creating an
 <code>nginx</code> Deployment.</p>
-<pre class="console"><code>kubectl create deployment nginx --image=nginx</code></pre>
-<pre class="none"><code>deployment.apps/nginx created</code></pre>
+<pre class="console"><code class="language-console">kubectl create deployment nginx --image=nginx</code></pre>
+<pre class="none"><code class="language-none">deployment.apps/nginx created</code></pre>
 <p>Expose the Deployment through a Service called
 <code>nginx</code>.</p>
-<pre class="console"><code>kubectl expose deployment nginx --port=80</code></pre>
-<pre class="none"><code>service/nginx exposed</code></pre>
+<pre class="console"><code class="language-console">kubectl expose deployment nginx --port=80</code></pre>
+<pre class="none"><code class="language-none">service/nginx exposed</code></pre>
 <p>The above commands create a Deployment with an nginx Pod and expose
 the Deployment through a Service named <code>nginx</code>. The
 <code>nginx</code> Pod and Deployment are found in the
 <code>default</code> namespace.</p>
-<pre class="console"><code>kubectl get svc,pod</code></pre>
-<pre class="none"><code>NAME                        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
+<pre class="console"><code class="language-console">kubectl get svc,pod</code></pre>
+<pre class="none"><code class="language-none">NAME                        CLUSTER-IP    EXTERNAL-IP   PORT(S)    AGE
 service/kubernetes          10.100.0.1    &lt;none&gt;        443/TCP    46m
 service/nginx               10.100.0.16   &lt;none&gt;        80/TCP     33s
 
@@ -192,10 +207,10 @@ service by accessing it from another Pod</h2>
 <p>You should be able to access the new <code>nginx</code> service from
 other Pods. To access the <code>nginx</code> Service from another Pod in
 the <code>default</code> namespace, start a busybox container:</p>
-<pre class="console"><code>kubectl run busybox --rm -ti --image=busybox -- /bin/sh</code></pre>
+<pre class="console"><code class="language-console">kubectl run busybox --rm -ti --image=busybox -- /bin/sh</code></pre>
 <p>In your shell, run the following command:</p>
-<pre class="shell"><code>wget --spider --timeout=1 nginx</code></pre>
-<pre class="none"><code>Connecting to nginx (10.100.0.16:80)
+<pre class="shell"><code class="language-shell">wget --spider --timeout=1 nginx</code></pre>
+<pre class="none"><code class="language-none">Connecting to nginx (10.100.0.16:80)
 remote file exists</code></pre>
 <h2 id="limit-access-to-the-nginx-service">Limit access to the
 <code>nginx</code> service</h2>
@@ -204,20 +219,19 @@ Pods with the label <code>access: true</code> can query it, create a
 NetworkPolicy object as follows:</p>
 <div class="code-sample">
 <p><code>service/networking/nginx-policy.yaml</code></p>
-<div class="sourceCode" id="cb10"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> networking.k8s.io/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> NetworkPolicy</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> access-nginx</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
-<span class="at">  </span><span class="fu">ingress</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">from</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">podSelector</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">access</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: access-nginx
+spec:
+  podSelector:
+    matchLabels:
+      app: nginx
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          access: &quot;true&quot;</code></pre>
 </div>
 <p>The name of a NetworkPolicy object must be a valid <a
 href="../../concepts/overview/working-with-objects/names.html#dns-subdomain-names">DNS
@@ -236,26 +250,26 @@ empty <code>podSelector</code> selects all pods in the namespace.</p>
 service</h2>
 <p>Use kubectl to create a NetworkPolicy from the above
 <code>nginx-policy.yaml</code> file:</p>
-<pre class="console"><code>kubectl apply -f https://k8s.io/examples/service/networking/nginx-policy.yaml</code></pre>
-<pre class="none"><code>networkpolicy.networking.k8s.io/access-nginx created</code></pre>
+<pre class="console"><code class="language-console">kubectl apply -f https://k8s.io/examples/service/networking/nginx-policy.yaml</code></pre>
+<pre class="none"><code class="language-none">networkpolicy.networking.k8s.io/access-nginx created</code></pre>
 <h2
 id="test-access-to-the-service-when-access-label-is-not-defined">Test
 access to the service when access label is not defined</h2>
 <p>When you attempt to access the <code>nginx</code> Service from a Pod
 without the correct labels, the request times out:</p>
-<pre class="console"><code>kubectl run busybox --rm -ti --image=busybox -- /bin/sh</code></pre>
+<pre class="console"><code class="language-console">kubectl run busybox --rm -ti --image=busybox -- /bin/sh</code></pre>
 <p>In your shell, run the command:</p>
-<pre class="shell"><code>wget --spider --timeout=1 nginx</code></pre>
-<pre class="none"><code>Connecting to nginx (10.100.0.16:80)
+<pre class="shell"><code class="language-shell">wget --spider --timeout=1 nginx</code></pre>
+<pre class="none"><code class="language-none">Connecting to nginx (10.100.0.16:80)
 wget: download timed out</code></pre>
 <h2 id="define-access-label-and-test-again">Define access label and test
 again</h2>
 <p>You can create a Pod with the correct labels to see that the request
 is allowed:</p>
-<pre class="console"><code>kubectl run busybox --rm -ti --labels=&quot;access=true&quot; --image=busybox -- /bin/sh</code></pre>
+<pre class="console"><code class="language-console">kubectl run busybox --rm -ti --labels=&quot;access=true&quot; --image=busybox -- /bin/sh</code></pre>
 <p>In your shell, run the command:</p>
-<pre class="shell"><code>wget --spider --timeout=1 nginx</code></pre>
-<pre class="none"><code>Connecting to nginx (10.100.0.16:80)
+<pre class="shell"><code class="language-shell">wget --spider --timeout=1 nginx</code></pre>
+<pre class="none"><code class="language-none">Connecting to nginx (10.100.0.16:80)
 remote file exists</code></pre>
 
         </article>
@@ -321,6 +335,7 @@ remote file exists</code></pre>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -329,6 +344,8 @@ remote file exists</code></pre>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

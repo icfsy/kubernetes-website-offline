@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -166,10 +181,10 @@ another AMQP-type message service.</p>
 cluster and reuse it for many jobs, as well as for long-running
 services.</p>
 <p>Start RabbitMQ as follows:</p>
-<pre class="shell"><code># make a Service for the StatefulSet to use
+<pre class="shell"><code class="language-shell"># make a Service for the StatefulSet to use
 kubectl create -f https://kubernetes.io/examples/application/job/rabbitmq/rabbitmq-service.yaml</code></pre>
 <pre><code>service &quot;rabbitmq-service&quot; created</code></pre>
-<pre class="shell"><code>kubectl create -f https://kubernetes.io/examples/application/job/rabbitmq/rabbitmq-statefulset.yaml</code></pre>
+<pre class="shell"><code class="language-shell">kubectl create -f https://kubernetes.io/examples/application/job/rabbitmq/rabbitmq-statefulset.yaml</code></pre>
 <pre><code>statefulset &quot;rabbitmq&quot; created</code></pre>
 <h2 id="testing-the-message-queue-service">Testing the message queue
 service</h2>
@@ -177,7 +192,7 @@ service</h2>
 create a temporary interactive pod, install some tools on it, and
 experiment with queues.</p>
 <p>First create a temporary interactive Pod.</p>
-<pre class="shell"><code># Create a temporary interactive container
+<pre class="shell"><code class="language-shell"># Create a temporary interactive container
 kubectl run -i --tty temp --image ubuntu:22.04</code></pre>
 <pre><code>Waiting for pod default/temp-loe07 to be running, status is Pending, pod ready: false
 ... [ previous line repeats several times .. hit return when it stops ] ...</code></pre>
@@ -185,7 +200,7 @@ kubectl run -i --tty temp --image ubuntu:22.04</code></pre>
 <p>Next install the <code>amqp-tools</code> so you can work with message
 queues. The next commands show what you need to run inside the
 interactive shell in that Pod:</p>
-<pre class="shell"><code>apt-get update &amp;&amp; apt-get install -y curl ca-certificates amqp-tools python3 dnsutils</code></pre>
+<pre class="shell"><code class="language-shell">apt-get update &amp;&amp; apt-get install -y curl ca-certificates amqp-tools python3 dnsutils</code></pre>
 <p>Later, you will make a container image that includes these
 packages.</p>
 <p>Next, you will check that you can discover the Service for
@@ -202,13 +217,13 @@ Address: 10.0.147.152</code></pre>
 <p>If the cluster DNS addon is not set up correctly, the previous step
 may not work for you. You can also find the IP address for that Service
 in an environment variable:</p>
-<pre class="shell"><code># run this check inside the Pod
+<pre class="shell"><code class="language-shell"># run this check inside the Pod
 env | grep RABBITMQ_SERVICE | grep HOST</code></pre>
 <pre><code>RABBITMQ_SERVICE_SERVICE_HOST=10.0.147.152</code></pre>
 <p>(the IP address will vary)</p>
 <p>Next you will verify that you can create a queue, and publish and
 consume messages.</p>
-<pre class="shell"><code># Run these commands inside the Pod
+<pre class="shell"><code class="language-shell"># Run these commands inside the Pod
 # In the next line, rabbitmq-service is the hostname where the rabbitmq-service
 # can be reached.  5672 is the standard port for rabbitmq.
 export BROKER_URL=amqp://guest:guest@rabbitmq-service:5672
@@ -221,7 +236,7 @@ BROKER_URL=amqp://guest:guest@$RABBITMQ_SERVICE_SERVICE_HOST:5672
 /usr/bin/amqp-declare-queue --url=$BROKER_URL -q foo -d</code></pre>
 <pre><code>foo</code></pre>
 <p>Publish one message to the queue:</p>
-<pre class="shell"><code>/usr/bin/amqp-publish --url=$BROKER_URL -r foo -p -b Hello
+<pre class="shell"><code class="language-shell">/usr/bin/amqp-publish --url=$BROKER_URL -r foo -p -b Hello
 
 # And get it back.
 
@@ -251,11 +266,11 @@ HDFS).</p>
 <p>For this example, you will create the queue and fill it using the
 AMQP command line tools. In practice, you might write a program to fill
 the queue using an AMQP client library.</p>
-<pre class="shell"><code># Run this on your computer, not in the Pod
+<pre class="shell"><code class="language-shell"># Run this on your computer, not in the Pod
 /usr/bin/amqp-declare-queue --url=$BROKER_URL -q job1  -d</code></pre>
 <pre><code>job1</code></pre>
 <p>Add items to the queue:</p>
-<pre class="shell"><code>for f in apple banana cherry date fig grape lemon melon
+<pre class="shell"><code class="language-shell">for f in apple banana cherry date fig grape lemon melon
 do
   /usr/bin/amqp-publish --url=$BROKER_URL -r job1 -p -b $f
 done</code></pre>
@@ -267,29 +282,28 @@ message from the queue and run the actual work. Here is a very simple
 example program:</p>
 <div class="code-sample">
 <p><code>application/job/rabbitmq/worker.py</code></p>
-<div class="sourceCode" id="cb19"><pre
-class="sourceCode python"><code class="sourceCode python"><span class="co">#!/usr/bin/env python</span></span>
-</span>
-<span class="co"># Just prints standard out and sleeps for 10 seconds.</span></span>
-<span class="im">import</span> sys</span>
-<span class="im">import</span> time</span>
-<span class="bu">print</span>(<span class="st">&quot;Processing &quot;</span> <span class="op">+</span> sys.stdin.readlines()[<span class="dv">0</span>])</span>
-time.sleep(<span class="dv">10</span>)</span></code></pre></div>
+<pre class="python"><code class="language-python">#!/usr/bin/env python
+
+# Just prints standard out and sleeps for 10 seconds.
+import sys
+import time
+print(&quot;Processing &quot; + sys.stdin.readlines()[0])
+time.sleep(10)</code></pre>
 </div>
 <p>Give the script execution permission:</p>
-<pre class="shell"><code>chmod +x worker.py</code></pre>
+<pre class="shell"><code class="language-shell">chmod +x worker.py</code></pre>
 <p>Now, build an image. Make a temporary directory, change to it,
 download the <a
 href="https://kubernetes.io/examples/application/job/rabbitmq/Dockerfile">Dockerfile</a>,
 and <a
 href="https://kubernetes.io/examples/application/job/rabbitmq/worker.py">worker.py</a>.
 In either case, build the image with this command:</p>
-<pre class="shell"><code>docker build -t job-wq-1 .</code></pre>
+<pre class="shell"><code class="language-shell">docker build -t job-wq-1 .</code></pre>
 <p>For the <a target="_blank" rel="noopener" href="https://hub.docker.com/">Docker Hub</a>, tag your
 app image with your username and push to the Hub with the below
 commands. Replace <code>&lt;username&gt;</code> with your Hub
 username.</p>
-<pre class="shell"><code>docker tag job-wq-1 &lt;username&gt;/job-wq-1
+<pre class="shell"><code class="language-shell">docker tag job-wq-1 &lt;username&gt;/job-wq-1
 docker push &lt;username&gt;/job-wq-1</code></pre>
 <p>If you are using an alternative container image registry, tag the
 image and push it there instead.</p>
@@ -299,27 +313,26 @@ manifest (call it <code>./job.yaml</code>), and edit the name of the
 container image to match the name you used.</p>
 <div class="code-sample">
 <p><code>application/job/rabbitmq/job.yaml</code></p>
-<div class="sourceCode" id="cb23"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-wq-1</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">completions</span><span class="kw">:</span><span class="at"> </span><span class="dv">8</span></span>
-<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-wq-1</span></span>
-<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> c</span></span>
-<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/&lt;project&gt;/job-wq-1</span></span>
-<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> BROKER_URL</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> amqp://guest:guest@rabbitmq-service:5672</span></span>
-<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> QUEUE</span></span>
-<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> job1</span></span>
-<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+metadata:
+  name: job-wq-1
+spec:
+  completions: 8
+  parallelism: 2
+  template:
+    metadata:
+      name: job-wq-1
+    spec:
+      containers:
+      - name: c
+        image: gcr.io/&lt;project&gt;/job-wq-1
+        env:
+        - name: BROKER_URL
+          value: amqp://guest:guest@rabbitmq-service:5672
+        - name: QUEUE
+          value: job1
+      restartPolicy: OnFailure</code></pre>
 </div>
 <p>In this example, each pod works on one item from the queue and then
 exits. So, the completion count of the Job corresponds to the number of
@@ -327,13 +340,13 @@ work items done. That is why the example manifest has
 <code>.spec.completions</code> set to <code>8</code>.</p>
 <h2 id="running-the-job">Running the Job</h2>
 <p>Now, run the Job:</p>
-<pre class="shell"><code># this assumes you downloaded and then edited the manifest already
+<pre class="shell"><code class="language-shell"># this assumes you downloaded and then edited the manifest already
 kubectl apply -f ./job.yaml</code></pre>
 <p>You can wait for the Job to succeed, with a timeout:</p>
-<pre class="shell"><code># The check for condition name is case insensitive
+<pre class="shell"><code class="language-shell"># The check for condition name is case insensitive
 kubectl wait --for=condition=complete --timeout=300s job/job-wq-1</code></pre>
 <p>Next, check on the Job:</p>
-<pre class="shell"><code>kubectl describe jobs/job-wq-1</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe jobs/job-wq-1</code></pre>
 <pre><code>Name:             job-wq-1
 Namespace:        default
 Selector:         controller-uid=41d75705-92df-11e7-b85e-fa163ee3c11f
@@ -470,6 +483,7 @@ processed.</p>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -478,6 +492,8 @@ processed.</p>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>

@@ -7,6 +7,7 @@
 <meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
 <meta name="color-scheme" content="light dark">
 <link rel="stylesheet" href="../../../assets/site.css">
+<link id="k8s-code-theme" rel="stylesheet" data-prefix="../../../" href="../../../assets/code-themes/github.css">
 <script>
 /* Apply stored preferences before the first paint (theme, text size, layout). */
 (function () {
@@ -14,10 +15,19 @@
   var prefix = 'k8sdocs:';
   function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
   var theme = read('theme') || 'auto';
-  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  var systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var pageDark = theme === 'dark' || (theme === 'auto' && systemDark);
+  if (pageDark) {
     root.setAttribute('data-theme', 'dark');
   } else if (theme === 'light') {
     root.setAttribute('data-theme', 'light');
+  }
+  var codeStyle = read('code-style') || 'auto';
+  var codeTheme = codeStyle === 'auto' ? (pageDark ? 'github-dark' : 'github') : codeStyle;
+  var codeLink = document.getElementById('k8s-code-theme');
+  if (codeLink) {
+    codeLink.setAttribute('href', (codeLink.getAttribute('data-prefix') || '') +
+      'assets/code-themes/' + codeTheme + '.css');
   }
   var fs = parseFloat(read('font-scale'));
   if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
@@ -49,6 +59,11 @@
   <div class="toolgroup" role="group" aria-label="Reading options">
     <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
     <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <span class="code-style-group" role="group" aria-label="Code block style">
+      <button id="k8s-code-prev" class="icon-btn code-style-btn" type="button" title="Previous code block style (Alt+[)" aria-label="Previous code block style">‹</button>
+      <span class="code-style-glyph" title="Code block style" aria-hidden="true">{ }</span>
+      <button id="k8s-code-next" class="icon-btn code-style-btn" type="button" title="Next code block style (Alt+])" aria-label="Next code block style">›</button>
+    </span>
     <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
       <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -157,28 +172,25 @@ creation time.</p>
 <p>For a <code>gang</code> policy on a <code>CompositePodGroup</code>,
 the <code>minGroupCount</code> field specifies the minimum number of
 child groups that must be schedulable simultaneously:</p>
-<div class="sourceCode" id="cb1"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">minGroupCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  schedulingPolicy:
+    gang:
+      minGroupCount: 2</code></pre>
 <h3 id="parent-group-reference">Parent group reference</h3>
 <p>Non-root <code>CompositePodGroup</code> resources specify their
 parent group using <code>spec.parentCompositePodGroupName</code>. Root
 <code>CompositePodGroup</code> objects leave this field unset.</p>
-<div class="sourceCode" id="cb2"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parentCompositePodGroupName</span><span class="kw">:</span><span class="at"> root-group-0</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  parentCompositePodGroupName: root-group-0</code></pre>
 <h3 id="workload-reference">Workload reference</h3>
 <p>The <code>spec.workloadRef</code> field links the
 <code>CompositePodGroup</code> back to the
 <code>CompositePodGroupTemplate</code> in the <code>Workload</code>
 object it was derived from.</p>
-<div class="sourceCode" id="cb3"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">workloadRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">workloadName</span><span class="kw">:</span><span class="at"> hierarchical-workload</span></span>
-<span class="at">    </span><span class="fu">templateName</span><span class="kw">:</span><span class="at"> replica-group</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">spec:
+  workloadRef:
+    workloadName: hierarchical-workload
+    templateName: replica-group</code></pre>
 <h3 id="status">Status</h3>
 <p>The <code>CompositePodGroup</code> API schema includes a
 <code>status</code> subresource. In the alpha release, the
@@ -192,24 +204,23 @@ automatically from <code>Workload</code> templates at runtime.</p>
 <p>The following manifest creates a root <code>CompositePodGroup</code>
 with a gang scheduling policy that requires at least 2 child groups to
 be schedulable simultaneously:</p>
-<div class="sourceCode" id="cb4"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CompositePodGroup</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> root-group-0</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">workloadRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">workloadName</span><span class="kw">:</span><span class="at"> hierarchical-workload</span></span>
-<span class="at">    </span><span class="fu">templateName</span><span class="kw">:</span><span class="at"> root</span></span>
-<span class="at">  </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">minGroupCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1alpha3
+kind: CompositePodGroup
+metadata:
+  name: root-group-0
+  namespace: default
+spec:
+  workloadRef:
+    workloadName: hierarchical-workload
+    templateName: root
+  schedulingPolicy:
+    gang:
+      minGroupCount: 2</code></pre>
 <p>You can inspect <code>CompositePodGroup</code> resources in your
 cluster:</p>
-<pre class="shell"><code>kubectl get compositepodgroups</code></pre>
+<pre class="shell"><code class="language-shell">kubectl get compositepodgroups</code></pre>
 <p>To view details for a specific composite group:</p>
-<pre class="shell"><code>kubectl describe compositepodgroup root-group-0</code></pre>
+<pre class="shell"><code class="language-shell">kubectl describe compositepodgroup root-group-0</code></pre>
 <h2 id="how-it-fits-together">How it fits together</h2>
 <p>The relationship between controllers, Workloads, CompositePodGroups,
 PodGroups, and Pods follows this pattern:</p>
@@ -227,80 +238,79 @@ objects in a top-down manner.</li>
 </ol>
 <p>The following example illustrates a complete manifest hierarchy for a
 two-level workload:</p>
-<div class="sourceCode" id="cb7"><pre
-class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Workload</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hierarchical-workload</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">compositePodGroupTemplates</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> root</span></span>
-<span class="at">    </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">minGroupCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="at">    </span><span class="fu">podGroupTemplates</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workers-a</span></span>
-<span class="at">      </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">minCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workers-b</span></span>
-<span class="at">      </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">        </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">          </span><span class="fu">minCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> CompositePodGroup</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> root-group-0</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">workloadRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">workloadName</span><span class="kw">:</span><span class="at"> hierarchical-workload</span></span>
-<span class="at">    </span><span class="fu">templateName</span><span class="kw">:</span><span class="at"> root</span></span>
-<span class="at">  </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">minGroupCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PodGroup</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workers-a-0</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parentCompositePodGroupName</span><span class="kw">:</span><span class="at"> root-group-0</span></span>
-<span class="at">  </span><span class="fu">workloadRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">workloadName</span><span class="kw">:</span><span class="at"> hierarchical-workload</span></span>
-<span class="at">    </span><span class="fu">templateName</span><span class="kw">:</span><span class="at"> workers-a</span></span>
-<span class="at">  </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">minCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1alpha3</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> PodGroup</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> workers-b-0</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">parentCompositePodGroupName</span><span class="kw">:</span><span class="at"> root-group-0</span></span>
-<span class="at">  </span><span class="fu">workloadRef</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">workloadName</span><span class="kw">:</span><span class="at"> hierarchical-workload</span></span>
-<span class="at">    </span><span class="fu">templateName</span><span class="kw">:</span><span class="at"> workers-b</span></span>
-<span class="at">  </span><span class="fu">schedulingPolicy</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">gang</span><span class="kw">:</span></span>
-<span class="at">      </span><span class="fu">minCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">4</span></span>
-<span class="pp">---</span></span>
-<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
-<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
-<span class="fu">metadata</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> worker-a-0</span></span>
-<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
-<span class="fu">spec</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="fu">schedulingGroup</span><span class="kw">:</span></span>
-<span class="at">    </span><span class="fu">podGroupName</span><span class="kw">:</span><span class="at"> workers-a-0</span></span>
-<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
-<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> worker</span></span>
-<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.9</span></span></code></pre></div>
+<pre class="yaml"><code class="language-yaml">apiVersion: scheduling.k8s.io/v1alpha3
+kind: Workload
+metadata:
+  name: hierarchical-workload
+  namespace: default
+spec:
+  compositePodGroupTemplates:
+  - name: root
+    schedulingPolicy:
+      gang:
+        minGroupCount: 2
+    podGroupTemplates:
+    - name: workers-a
+      schedulingPolicy:
+        gang:
+          minCount: 4
+    - name: workers-b
+      schedulingPolicy:
+        gang:
+          minCount: 4
+---
+apiVersion: scheduling.k8s.io/v1alpha3
+kind: CompositePodGroup
+metadata:
+  name: root-group-0
+  namespace: default
+spec:
+  workloadRef:
+    workloadName: hierarchical-workload
+    templateName: root
+  schedulingPolicy:
+    gang:
+      minGroupCount: 2
+---
+apiVersion: scheduling.k8s.io/v1alpha3
+kind: PodGroup
+metadata:
+  name: workers-a-0
+  namespace: default
+spec:
+  parentCompositePodGroupName: root-group-0
+  workloadRef:
+    workloadName: hierarchical-workload
+    templateName: workers-a
+  schedulingPolicy:
+    gang:
+      minCount: 4
+---
+apiVersion: scheduling.k8s.io/v1alpha3
+kind: PodGroup
+metadata:
+  name: workers-b-0
+  namespace: default
+spec:
+  parentCompositePodGroupName: root-group-0
+  workloadRef:
+    workloadName: hierarchical-workload
+    templateName: workers-b
+  schedulingPolicy:
+    gang:
+      minCount: 4
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: worker-a-0
+  namespace: default
+spec:
+  schedulingGroup:
+    podGroupName: workers-a-0
+  containers:
+  - name: worker
+    image: registry.k8s.io/pause:3.9</code></pre>
 <p>The <code>Workload</code> acts as a long-lived policy template, while
 <code>CompositePodGroup</code> and <code>PodGroup</code> resources
 handle per-instance runtime scheduling state.</p>
@@ -385,6 +395,7 @@ preemption</a>.</li>
       <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
       <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
       <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Alt [</kbd> / <kbd>Alt ]</kbd></dt><dd>Previous / next code block style</dd>
       <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
       <dt><kbd>?</kbd></dt><dd>This help</dd>
     </dl>
@@ -393,6 +404,8 @@ preemption</a>.</li>
 
 <div id="k8s-toast" class="toast" hidden></div>
 
+<script src="../../../assets/vendor/highlight.min.js"></script>
+<script src="../../../assets/code-themes/manifest.js"></script>
 <script src="../../../assets/nav.js"></script>
 <script src="../../../assets/site.js"></script>
 </body>
