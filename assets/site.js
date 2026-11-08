@@ -249,10 +249,14 @@
 
   /* ------------------------------------------------------------- navigation */
   function defaultExpanded(node, depth) {
+    // The path to the page being viewed is always open: a previously collapsed
+    // sidebar (or "Collapse all" on another page) must not hide the current
+    // page.  Other groups keep whatever the user chose.
+    if (depth === 0 || currentChain.has(node.k) || node.k === PAGE_KEY) return true;
     if (Object.prototype.hasOwnProperty.call(state.collapsed, node.k)) {
       return !state.collapsed[node.k];
     }
-    return depth === 0 || currentChain.has(node.k) || node.k === PAGE_KEY;
+    return false;
   }
 
   function renderNode(node, depth) {
@@ -285,6 +289,8 @@
     if (node.k === PAGE_KEY) {
       link.classList.add("active");
       link.setAttribute("aria-current", "page");
+    } else if (currentChain.has(node.k)) {
+      link.classList.add("in-path");
     }
     if (state.visited[node.k]) {
       const dot = document.createElement("span");
@@ -316,7 +322,11 @@
     ul.appendChild(renderNode(NAV.root, 0));
     tree.replaceChildren(ul);
     const active = tree.querySelector(".active");
-    if (active) active.scrollIntoView({ block: "center" });
+    if (active) {
+      requestAnimationFrame(() => {
+        active.scrollIntoView({ block: "center", inline: "nearest" });
+      });
+    }
     updateNavStatus("");
   }
 
