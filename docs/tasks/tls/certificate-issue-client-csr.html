@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Issue a Certificate for a Kubernetes API Client Using a CertificateSigningRequest · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/tls/certificate-issue-client-csr" data-title="Issue a Certificate for a Kubernetes API Client Using a CertificateSigningRequest" data-canonical="https://kubernetes.io/docs/tasks/tls/certificate-issue-client-csr/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../tls.html">TLS</a></nav></nav>
+        <header class="page-head">
+          <h1>Issue a Certificate for a Kubernetes API Client Using a CertificateSigningRequest</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Page</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/tls/certificate-issue-client-csr/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>Kubernetes lets you use a public key infrastructure (PKI) to
+authenticate to your cluster as a client.</p>
+<p>A few steps are required in order to get a normal user to be able to
+authenticate and invoke an API. First, this user must have an <a
+href="https://www.itu.int/rec/T-REC-X.509">X.509</a> certificate issued
+by an authority that your Kubernetes cluster trusts. The client must
+then present that certificate to the Kubernetes API.</p>
+<p>You use a <a
+href="../../reference/access-authn-authz/certificate-signing-requests.html">CertificateSigningRequest</a>
+as part of this process, either you or some other principal must approve
+the request.</p>
+<p>You will create a private key, and then get a certificate issued, and
+finally configure that private key for a client.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li><p>You need to have a Kubernetes cluster, and the kubectl
+command-line tool must be configured to communicate with your cluster.
+It is recommended to run this tutorial on a cluster with at least two
+nodes that are not acting as control plane hosts. If you do not already
+have a cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p></li>
+<li><p><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></p></li>
+<li><p><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></p></li>
+<li><p><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></p></li>
+<li><p>You need the <code>kubectl</code>, <code>openssl</code> and
+<code>base64</code> utilities.</p></li>
+</ul>
+<p>This page assumes you are using Kubernetes <span
+class="glossary-term" data-term="rbac">role based access control</span>
+(RBAC). If you have alternative or additional security mechanisms around
+authorization, you need to account for those as well.</p>
+<h2 id="create-private-key">Create private key</h2>
+<p>In this step, you create a private key. You need to keep this private
+key secret; anyone who has it can impersonate the user.</p>
+<pre class="shell"><code># Create a private key
+openssl genrsa -out myuser.key 3072</code></pre>
+<h2 id="create-x.509-certificatessigningrequest">Create an X.509
+certificate signing request</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This is not the same as the similarly-named CertificateSigningRequest
+API; the file you generate here goes into the
+CertificateSigningRequest.</p>
+</div>
+<p>It is important to set the CN and O attributes of the CSR. CN is the
+name of the user, and O is the group that this user will belong to. You
+can refer to <a
+href="../../reference/access-authn-authz/rbac.html">RBAC</a> for standard
+groups.</p>
+<pre class="shell"><code># Change the common name &quot;myuser&quot; to the actual username that you want to use
+openssl req -new -key myuser.key -out myuser.csr -subj &quot;/CN=myuser&quot;</code></pre>
+<h2 id="create-k8s-certificatessigningrequest">Create a Kubernetes
+CertificateSigningRequest</h2>
+<p>Encode the CSR document using this command:</p>
+<pre class="shell"><code>cat myuser.csr | base64 | tr -d &quot;\n&quot;</code></pre>
+<p>Create a <a
+href="https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/certificate-signing-request-v1/">CertificateSigningRequest</a>
+and submit it to a Kubernetes cluster via kubectl. Below is a snippet of
+shell that you can use to generate the CertificateSigningRequest.</p>
+<pre class="shell"><code>cat &lt;&lt;EOF | kubectl apply -f -
+apiVersion: certificates.k8s.io/v1
+kind: CertificateSigningRequest
+metadata:
+  name: myuser # example
+spec:
+  # This is an encoded CSR. Change this to the base64-encoded contents of myuser.csr
+  request: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0dZVzVuWld4aE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTByczhJTHRHdTYxakx2dHhWTTJSVlRWMDNHWlJTWWw0dWluVWo4RElaWjBOCnR2MUZtRVFSd3VoaUZsOFEzcWl0Qm0wMUFSMkNJVXBGd2ZzSjZ4MXF3ckJzVkhZbGlBNVhwRVpZM3ExcGswSDQKM3Z3aGJlK1o2MVNrVHF5SVBYUUwrTWM5T1Nsbm0xb0R2N0NtSkZNMUlMRVI3QTVGZnZKOEdFRjJ6dHBoaUlFMwpub1dtdHNZb3JuT2wzc2lHQ2ZGZzR4Zmd4eW8ybmlneFNVekl1bXNnVm9PM2ttT0x1RVF6cXpkakJ3TFJXbWlECklmMXBMWnoyalVnald4UkhCM1gyWnVVV1d1T09PZnpXM01LaE8ybHEvZi9DdS8wYk83c0x0MCt3U2ZMSU91TFcKcW90blZtRmxMMytqTy82WDNDKzBERHk5aUtwbXJjVDBnWGZLemE1dHJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBR05WdmVIOGR4ZzNvK21VeVRkbmFjVmQ1N24zSkExdnZEU1JWREkyQTZ1eXN3ZFp1L1BVCkkwZXpZWFV0RVNnSk1IRmQycVVNMjNuNVJsSXJ3R0xuUXFISUh5VStWWHhsdnZsRnpNOVpEWllSTmU3QlJvYXgKQVlEdUI5STZXT3FYbkFvczFqRmxNUG5NbFpqdU5kSGxpT1BjTU1oNndLaTZzZFhpVStHYTJ2RUVLY01jSVUyRgpvU2djUWdMYTk0aEpacGk3ZnNMdm1OQUxoT045UHdNMGM1dVJVejV4T0dGMUtCbWRSeEgvbUNOS2JKYjFRQm1HCkkwYitEUEdaTktXTU0xMzhIQXdoV0tkNjVoVHdYOWl4V3ZHMkh4TG1WQzg0L1BHT0tWQW9FNkpsYWFHdTlQVmkKdjlOSjVaZlZrcXdCd0hKbzZXdk9xVlA3SVFjZmg3d0drWm89Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=
+  signerName: kubernetes.io/kube-apiserver-client
+  expirationSeconds: 86400  # one day
+  usages:
+  - client auth
+EOF</code></pre>
+<p>You can alternatively, create a YAML manifest file and apply it with
+<code>kubectl</code>:</p>
+<div class="code-sample">
+<p><code>tls/myuser.yaml</code></p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> certificates.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> CertificateSigningRequest</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myuser</span><span class="co"> # example</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="co"># This is an encoded CSR. Change this to the base64-encoded contents of myuser.csr</span></span>
+<span class="at">  </span><span class="fu">request</span><span class="kw">:</span><span class="at"> LS0tLS1CRUdJTiBDRVJUSUZJQ0FURSBSRVFVRVNULS0tLS0KTUlJQ1ZqQ0NBVDRDQVFBd0VURVBNQTBHQTFVRUF3d0dZVzVuWld4aE1JSUJJakFOQmdrcWhraUc5dzBCQVFFRgpBQU9DQVE4QU1JSUJDZ0tDQVFFQTByczhJTHRHdTYxakx2dHhWTTJSVlRWMDNHWlJTWWw0dWluVWo4RElaWjBOCnR2MUZtRVFSd3VoaUZsOFEzcWl0Qm0wMUFSMkNJVXBGd2ZzSjZ4MXF3ckJzVkhZbGlBNVhwRVpZM3ExcGswSDQKM3Z3aGJlK1o2MVNrVHF5SVBYUUwrTWM5T1Nsbm0xb0R2N0NtSkZNMUlMRVI3QTVGZnZKOEdFRjJ6dHBoaUlFMwpub1dtdHNZb3JuT2wzc2lHQ2ZGZzR4Zmd4eW8ybmlneFNVekl1bXNnVm9PM2ttT0x1RVF6cXpkakJ3TFJXbWlECklmMXBMWnoyalVnald4UkhCM1gyWnVVV1d1T09PZnpXM01LaE8ybHEvZi9DdS8wYk83c0x0MCt3U2ZMSU91TFcKcW90blZtRmxMMytqTy82WDNDKzBERHk5aUtwbXJjVDBnWGZLemE1dHJRSURBUUFCb0FBd0RRWUpLb1pJaHZjTgpBUUVMQlFBRGdnRUJBR05WdmVIOGR4ZzNvK21VeVRkbmFjVmQ1N24zSkExdnZEU1JWREkyQTZ1eXN3ZFp1L1BVCkkwZXpZWFV0RVNnSk1IRmQycVVNMjNuNVJsSXJ3R0xuUXFISUh5VStWWHhsdnZsRnpNOVpEWllSTmU3QlJvYXgKQVlEdUI5STZXT3FYbkFvczFqRmxNUG5NbFpqdU5kSGxpT1BjTU1oNndLaTZzZFhpVStHYTJ2RUVLY01jSVUyRgpvU2djUWdMYTk0aEpacGk3ZnNMdm1OQUxoT045UHdNMGM1dVJVejV4T0dGMUtCbWRSeEgvbUNOS2JKYjFRQm1HCkkwYitEUEdaTktXTU0xMzhIQXdoV0tkNjVoVHdYOWl4V3ZHMkh4TG1WQzg0L1BHT0tWQW9FNkpsYWFHdTlQVmkKdjlOSjVaZlZrcXdCd0hKbzZXdk9xVlA3SVFjZmg3d0drWm89Ci0tLS0tRU5EIENFUlRJRklDQVRFIFJFUVVFU1QtLS0tLQo=</span></span>
+<span class="at">  </span><span class="fu">signerName</span><span class="kw">:</span><span class="at"> kubernetes.io/kube-apiserver-client</span></span>
+<span class="at">  </span><span class="fu">expirationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">86400</span><span class="co"> # one day</span></span>
+<span class="at">  </span><span class="fu">usages</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="at">client auth</span></span></code></pre></div>
+</div>
+<p>Apply the manifest:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> apply <span class="at">-f</span> myuser.yaml <span class="at">--server-side</span></span></code></pre></div>
+<p>Some points to note:</p>
+<ul>
+<li><code>usages</code> has to be <code>client auth</code></li>
+<li><code>expirationSeconds</code> could be made longer (i.e.
+<code>864000</code> for ten days) or shorter (i.e. <code>3600</code> for
+one hour). You cannot request a duration shorter than 10 minutes.</li>
+<li><code>request</code> is the base64 encoded value of the CSR file
+content.</li>
+</ul>
+<h2 id="approve-certificate-signing-request">Approve the
+CertificateSigningRequest</h2>
+<p>Use kubectl to find the CSR you made, and manually approve it.</p>
+<p>Get the list of CSRs:</p>
+<pre class="shell"><code>kubectl get csr</code></pre>
+<p>Approve the CSR:</p>
+<pre class="shell"><code>kubectl certificate approve myuser</code></pre>
+<h2 id="get-the-certificate">Get the certificate</h2>
+<p>Retrieve the certificate from the CSR to check that it looks OK.</p>
+<pre class="shell"><code>kubectl get csr/myuser -o yaml</code></pre>
+<p>The certificate value is in Base64-encoded format under
+<code>.status.certificate</code>.</p>
+<p>Export the issued certificate from the CertificateSigningRequest.</p>
+<pre class="shell"><code>kubectl get csr myuser -o jsonpath=&#39;{.status.certificate}&#39;| base64 -d &gt; myuser.crt</code></pre>
+<h2 id="configure-the-certificate-into-kubeconfig">Configure the
+certificate into kubeconfig</h2>
+<p>The next step is to add this user to the kubeconfig file.</p>
+<p>First, you need to add new credentials:</p>
+<pre class="shell"><code>kubectl config set-credentials myuser --client-key=myuser.key --client-certificate=myuser.crt --embed-certs=true
+</code></pre>
+<p>Then, you need to add the context:</p>
+<pre class="shell"><code>kubectl config set-context myuser --cluster=kubernetes --user=myuser</code></pre>
+<p>To test it:</p>
+<pre class="shell"><code>kubectl --context myuser auth whoami</code></pre>
+<p>You should see output confirming that you are “myuser“.</p>
+<h2 id="create-role-and-rolebinding">Create Role and RoleBinding</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you don't use Kubernetes RBAC, skip this step and make the
+appropriate changes for the authorization mechanism your cluster
+actually uses.</p>
+</div>
+<p>With the certificate created, it is time to define the Role and
+RoleBinding for this user to access Kubernetes cluster resources.</p>
+<p>This is a sample command to create a Role for this new user:</p>
+<pre class="shell"><code>kubectl create role developer --verb=create --verb=get --verb=list --verb=update --verb=delete --resource=pods</code></pre>
+<p>Equivalent YAML:</p>
+<div class="code-sample">
+<p><code>tls/role.yaml</code></p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> developer</span></span>
+<span class="fu">rules</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;pods&quot;</span><span class="kw">]</span></span>
+<span class="at">  </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;create&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;delete&quot;</span><span class="kw">]</span></span></code></pre></div>
+</div>
+<p>This is a sample command to create a RoleBinding for this new
+user:</p>
+<pre class="shell"><code>kubectl create rolebinding developer-binding-myuser --role=developer --user=myuser</code></pre>
+<p>Equivalent YAML:</p>
+<div class="code-sample">
+<p><code>tls/rolebinding.yaml</code></p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> RoleBinding</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> developer-binding-myuser</span></span>
+<span class="fu">subjects</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> User</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myuser</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+<span class="fu">roleRef</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Role</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> developer</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+</div>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read <a href="managing-tls-in-a-cluster.html">Manage
+TLS Certificates in a Cluster</a></li>
+<li>For details of X.509 itself, refer to <a
+href="https://tools.ietf.org/html/rfc5280#section-3.1">RFC 5280</a>
+section 3.1</li>
+<li>For information on the syntax of PKCS#10 certificate signing
+requests, refer to <a target="_blank" rel="noopener" href="https://tools.ietf.org/html/rfc2986">RFC
+2986</a></li>
+<li>Read about <a
+href="../../reference/access-authn-authz/certificate-signing-requests.html#cluster-trust-bundles">ClusterTrustBundles</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../tls.html"><span>Previous</span>TLS</a><a class="page-nav-link next" href="certificate-rotation.html"><span>Next</span>Configure Certificate Rotation for the Kubelet</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#create-private-key">Create private key</a></li><li class="toc-l2"><a href="#create-x.509-certificatessigningrequest">Create an X.509 certificate signing request</a></li><li class="toc-l2"><a href="#create-k8s-certificatessigningrequest">Create a Kubernetes CertificateSigningRequest</a></li><li class="toc-l2"><a href="#approve-certificate-signing-request">Approve the CertificateSigningRequest</a></li><li class="toc-l2"><a href="#get-the-certificate">Get the certificate</a></li><li class="toc-l2"><a href="#configure-the-certificate-into-kubeconfig">Configure the certificate into kubeconfig</a></li><li class="toc-l2"><a href="#create-role-and-rolebinding">Create Role and RoleBinding</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

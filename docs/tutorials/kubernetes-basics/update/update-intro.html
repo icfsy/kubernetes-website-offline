@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Performing a Rolling Update · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="tutorials/kubernetes-basics/update/update-intro" data-title="Performing a Rolling Update" data-canonical="https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../tutorials.html">Tutorials</a><span>/</span><a href="../../kubernetes-basics.html">Learn Kubernetes Basics</a><span>/</span><a href="../update.html">Update Your App</a></nav></nav>
+        <header class="page-head">
+          <h1>Performing a Rolling Update</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Page</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/kubernetes-basics/update/update-intro/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <h2 id="objectives">Objectives</h2>
+<p>Perform a rolling update using kubectl.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>The shell commands in this tutorial use POSIX shell syntax, which is
+supported by the default shells on most Linux and macOS systems (for
+example, bash, zsh, or sh). Windows users must use a POSIX-compatible
+shell such as <a
+href="https://learn.microsoft.com/en-us/windows/wsl/install">Windows
+Subsystem for Linux (WSL)</a> or <a
+href="https://gitforwindows.org/">Git Bash</a> to run the commands as
+written. Commands that use <code>export</code>, <code>$()</code>, and
+similar constructs are <strong>not</strong> compatible with PowerShell
+or the Windows Command Prompt.</p>
+<h2 id="updating-an-application">Updating an application</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><em>Rolling updates allow Deployments' update to take place with zero
+downtime by incrementally updating Pods instances with new
+ones.</em></p>
+</div>
+<p>Users expect applications to be available all the time, and
+developers are expected to deploy new versions of them several times a
+day. In Kubernetes this is done with rolling updates. A <strong>rolling
+update</strong> allows a Deployment update to take place with zero
+downtime. It does this by incrementally replacing the current Pods with
+new ones. The new Pods are scheduled on Nodes with available resources,
+and Kubernetes waits for those new Pods to start before removing the old
+Pods.</p>
+<p>In the previous module we scaled our application to run multiple
+instances. This is a requirement for performing updates without
+affecting application availability. By default, the maximum number of
+Pods that can be unavailable during the update and the maximum number of
+new Pods that can be created, is one. Both options can be configured to
+either numbers or percentages (of Pods). In Kubernetes, updates are
+versioned and any Deployment update can be reverted to a previous
+(stable) version.</p>
+<h2 id="rolling-updates-overview">Rolling updates overview</h2>
+<div class="carousel">
+<p><img src="../../../../assets/content/en/docs/tutorials/kubernetes-basics/public/images/module_06_rollingupdates1-7c3cf193.svg"
+alt="Tutorial illustration" /></p>
+<p><img src="../../../../assets/content/en/docs/tutorials/kubernetes-basics/public/images/module_06_rollingupdates2-95e1a167.svg"
+alt="Tutorial illustration" /></p>
+<p><img src="../../../../assets/content/en/docs/tutorials/kubernetes-basics/public/images/module_06_rollingupdates3-c4d01d7e.svg"
+alt="Tutorial illustration" /></p>
+<p><img src="../../../../assets/content/en/docs/tutorials/kubernetes-basics/public/images/module_06_rollingupdates4-9d481300.svg"
+alt="Tutorial illustration" /></p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If a Deployment is publicly exposed, the Service will send traffic
+only to Pods that can handle requests.<br />
+This ensures users continue to access the application during an
+update.</p>
+</div>
+<p>During a rolling update, this behavior keeps the application
+available by routing traffic only to Pods that are serving requests.
+Rolling updates allow the following actions:</p>
+<ul>
+<li>Promote an application from one environment to another (via
+container image updates)</li>
+<li>Rollback to previous versions</li>
+<li>Continuous Integration and Continuous Delivery of applications with
+zero downtime</li>
+</ul>
+<p>In the following interactive tutorial, we'll update our application
+to a new version, and also perform a rollback.</p>
+<h3 id="update-the-version-of-the-app">Update the version of the
+app</h3>
+<p>To list your Deployments, run the <code>get deployments</code>
+subcommand:</p>
+<pre class="shell"><code>kubectl get deployments</code></pre>
+<p>To list the running Pods, run the <code>get pods</code>
+subcommand:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<p>To view the current image version of the app, run the
+<code>describe pods</code> subcommand and look for the
+<code>Image</code> field:</p>
+<pre class="shell"><code>kubectl describe pods</code></pre>
+<p>To update the image of the application to version 2, use the
+<code>set image</code> subcommand, followed by the deployment name and
+the new image version:</p>
+<pre class="shell"><code>kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=docker.io/jocatalin/kubernetes-bootcamp:v2</code></pre>
+<p>The command notified the Deployment to use a different image for your
+app and initiated a rolling update. Check the status of the new Pods,
+and view the old one terminating with the <code>get pods</code>
+subcommand:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<h3 id="verify-an-update">Verify an update</h3>
+<p>First, check that the service is running, as you might have deleted
+it in previous tutorial step, run
+<code>describe services/kubernetes-bootcamp</code>. If it's missing, you
+can create it again with:</p>
+<pre class="shell"><code>kubectl expose deployment/kubernetes-bootcamp --type=&quot;NodePort&quot; --port 8080</code></pre>
+<p>Create an environment variable called <code>NODE_PORT</code> that has
+the value of the Node port assigned:</p>
+<pre class="shell"><code>export NODE_PORT=&quot;$(kubectl get services/kubernetes-bootcamp -o go-template=&#39;{{(index .spec.ports 0).nodePort}}&#39;)&quot;
+echo &quot;NODE_PORT=$NODE_PORT&quot;</code></pre>
+<p>Next, do a <code>curl</code> to the exposed IP and port:</p>
+<pre class="shell"><code>curl http://&quot;$(minikube ip):$NODE_PORT&quot;</code></pre>
+<p>Every time you run the <code>curl</code> command, you will hit a
+different Pod. Notice that all Pods are now running the latest version
+(<code>v2</code>).</p>
+<p>You can also confirm the update by running the
+<code>rollout status</code> subcommand:</p>
+<pre class="shell"><code>kubectl rollout status deployments/kubernetes-bootcamp</code></pre>
+<p>To view the current image version of the app, run the describe pods
+subcommand:</p>
+<pre class="shell"><code>kubectl describe pods</code></pre>
+<p>In the <code>Image</code> field of the output, verify that you are
+running the latest image version (<code>v2</code>).</p>
+<h3 id="roll-back-an-update">Roll back an update</h3>
+<p>Let’s perform another update, and try to deploy an image tagged with
+<code>v10</code>:</p>
+<pre class="shell"><code>kubectl set image deployments/kubernetes-bootcamp kubernetes-bootcamp=gcr.io/google-samples/kubernetes-bootcamp:v10</code></pre>
+<p>Use <code>get deployments</code> to see the status of the
+deployment:</p>
+<pre class="shell"><code>kubectl get deployments</code></pre>
+<p>Notice that the output doesn't list the desired number of available
+Pods. Run the <code>get pods</code> subcommand to list all Pods:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<p>Notice that some of the Pods have a status of
+<code>ImagePullBackOff</code>.</p>
+<p>To get more insight into the problem, run the
+<code>describe pods</code> subcommand:</p>
+<pre class="shell"><code>kubectl describe pods</code></pre>
+<p>In the <code>Events</code> section of the output for the affected
+Pods, notice that the <code>v10</code> image version did not exist in
+the repository.</p>
+<p>To roll back the deployment to your last working version, use the
+<code>rollout undo</code> subcommand:</p>
+<pre class="shell"><code>kubectl rollout undo deployments/kubernetes-bootcamp</code></pre>
+<p>The <code>rollout undo</code> command reverts the deployment to the
+previous known state (<code>v2</code> of the image). Updates are
+versioned and you can revert to any previously known state of a
+Deployment.</p>
+<p>Use the <code>get pods</code> subcommand to list the Pods again:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<p>To check the image deployed on the running Pods, use the
+<code>describe pods</code> subcommand:</p>
+<pre class="shell"><code>kubectl describe pods</code></pre>
+<p>The Deployment is once again using a stable version of the app
+(<code>v2</code>). The rollback was successful.</p>
+<p>Remember to clean up your local cluster.</p>
+<pre class="shell"><code>kubectl delete deployments/kubernetes-bootcamp services/kubernetes-bootcamp</code></pre>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn more about <a
+href="../../../concepts/workloads/controllers/deployment.html">Deployments</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../update.html"><span>Previous</span>Update Your App</a><a class="page-nav-link next" href="../../configuration.html"><span>Next</span>Configuration</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#updating-an-application">Updating an application</a></li><li class="toc-l2"><a href="#rolling-updates-overview">Rolling updates overview</a></li><li class="toc-l3"><a href="#update-the-version-of-the-app">Update the version of the app</a></li><li class="toc-l3"><a href="#verify-an-update">Verify an update</a></li><li class="toc-l3"><a href="#roll-back-an-update">Roll back an update</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Communication between Nodes and the Control Plane · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/architecture/control-plane-node-communication" data-title="Communication between Nodes and the Control Plane" data-canonical="https://kubernetes.io/docs/concepts/architecture/control-plane-node-communication/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../architecture.html">Cluster Architecture</a></nav></nav>
+        <header class="page-head">
+          <h1>Communication between Nodes and the Control Plane</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/architecture/control-plane-node-communication/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This document catalogs the communication paths between the <span
+class="glossary-term" data-term="kube-apiserver">API server</span> and
+the Kubernetes <a class="glossary-term" href="../../reference/glossary.html#term-cluster" title="Glossary: cluster">cluster</a>. The intent is to allow users to
+customize their installation to harden the network configuration such
+that the cluster can be run on an untrusted network (or on fully public
+IPs on a cloud provider).</p>
+<h2 id="node-to-control-plane">Node to Control Plane</h2>
+<p>Kubernetes has a "hub-and-spoke" API pattern. All API usage from
+nodes (or the pods they run) terminates at the API server. None of the
+other control plane components are designed to expose remote services.
+The API server is configured to listen for remote connections on a
+secure HTTPS port (typically 443) with one or more forms of client <a
+href="../../reference/access-authn-authz/authentication.html">authentication</a>
+enabled. One or more forms of <a
+href="../../reference/access-authn-authz/authorization.html">authorization</a>
+should be enabled, especially if <a
+href="../../reference/access-authn-authz/authentication.html#anonymous-requests">anonymous
+requests</a> or <a
+href="../../reference/access-authn-authz/authentication.html#service-account-tokens">service
+account tokens</a> are allowed.</p>
+<p>Nodes should be provisioned with the public root <span
+class="glossary-term" data-term="certificate">certificate</span> for the
+cluster such that they can connect securely to the API server along with
+valid client credentials. A good approach is that the client credentials
+provided to the kubelet are in the form of a client certificate. See <a
+href="../../reference/access-authn-authz/kubelet-tls-bootstrapping.html">kubelet
+TLS bootstrapping</a> for automated provisioning of kubelet client
+certificates.</p>
+<p><a class="glossary-term" href="../../reference/glossary.html#term-pod" title="Glossary: pod">Pods</a> that wish to
+connect to the API server can do so securely by leveraging a service
+account so that Kubernetes will automatically inject the public root
+certificate and a valid bearer token into the pod when it is
+instantiated. The <code>kubernetes</code> service (in
+<code>default</code> namespace) is configured with a virtual IP address
+that is redirected (via
+<code>&lt;span class="glossary-term" data-term="kube-proxy"&gt;kube-proxy&lt;/span&gt;</code>)
+to the HTTPS endpoint on the API server.</p>
+<p>The control plane components also communicate with the API server
+over the secure port.</p>
+<p>As a result, the default operating mode for connections from the
+nodes and pod running on the nodes to the control plane is secured by
+default and can run over untrusted and/or public networks.</p>
+<h2 id="control-plane-to-node">Control plane to node</h2>
+<p>There are two primary communication paths from the control plane (the
+API server) to the nodes. The first is from the API server to the <span
+class="glossary-term" data-term="kubelet">kubelet</span> process which
+runs on each node in the cluster. The second is from the API server to
+any node, pod, or service through the API server's <em>proxy</em>
+functionality.</p>
+<h3 id="api-server-to-kubelet">API server to kubelet</h3>
+<p>The connections from the API server to the kubelet are used for:</p>
+<ul>
+<li>Fetching logs for pods.</li>
+<li>Attaching (usually through <code>kubectl</code>) to running
+pods.</li>
+<li>Providing the kubelet's port-forwarding functionality.</li>
+</ul>
+<p>These connections terminate at the kubelet's HTTPS endpoint. By
+default, the API server does not verify the kubelet's serving
+certificate, which makes the connection subject to man-in-the-middle
+attacks and <strong>unsafe</strong> to run over untrusted and/or public
+networks.</p>
+<p>To verify this connection, use the
+<code>--kubelet-certificate-authority</code> flag to provide the API
+server with a root certificate bundle to use to verify the kubelet's
+serving certificate.</p>
+<p>If that is not possible, use <a href="#ssh-tunnels">SSH tunneling</a>
+between the API server and kubelet if required to avoid connecting over
+an untrusted or public network.</p>
+<p>Finally, <a
+href="../../reference/access-authn-authz/kubelet-authn-authz.html">Kubelet
+authentication and/or authorization</a> should be enabled to secure the
+kubelet API.</p>
+<h3 id="api-server-to-nodes-pods-and-services">API server to nodes,
+pods, and services</h3>
+<p>The connections from the API server to a node, pod, or service
+default to plain HTTP connections and are therefore neither
+authenticated nor encrypted. They can be run over a secure HTTPS
+connection by prefixing <code>https:</code> to the node, pod, or service
+name in the API URL, but they will not validate the certificate provided
+by the HTTPS endpoint nor provide client credentials. So while the
+connection will be encrypted, it will not provide any guarantees of
+integrity. These connections <strong>are not currently safe</strong> to
+run over untrusted or public networks.</p>
+<h3 id="ssh-tunnels">SSH tunnels</h3>
+<p>Kubernetes supports <a
+href="https://www.ssh.com/academy/ssh/tunneling">SSH tunnels</a> to
+protect the control plane to nodes communication paths. In this
+configuration, the API server initiates an SSH tunnel to each node in
+the cluster (connecting to the SSH server listening on port 22) and
+passes all traffic destined for a kubelet, node, pod, or service through
+the tunnel. This tunnel ensures that the traffic is not exposed outside
+of the network in which the nodes are running.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>SSH tunnels are currently deprecated, so you shouldn't opt to use
+them unless you know what you are doing. The <a
+href="#konnectivity-service">Konnectivity service</a> is a replacement
+for this communication channel.</p>
+</div>
+<h3 id="konnectivity-service">Konnectivity service</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.18</p>
+</div>
+<p>As a replacement to the SSH tunnels, the Konnectivity service
+provides TCP level proxy for the control plane to cluster communication.
+The Konnectivity service consists of two parts: the Konnectivity server
+in the control plane network and the Konnectivity agents in the nodes
+network. The Konnectivity agents initiate connections to the
+Konnectivity server and maintain the network connections. After enabling
+the Konnectivity service, all control plane to nodes traffic goes
+through these connections.</p>
+<p>Follow the <a
+href="../../tasks/extend-kubernetes/setup-konnectivity.html">Konnectivity
+service task</a> to set up the Konnectivity service in your cluster.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read about the <a
+href="../architecture.html#control-plane-components">Kubernetes
+control plane components</a></li>
+<li>Learn more about <a
+href="https://book.kubebuilder.io/multiversion-tutorial/conversion-concepts.html#hubs-spokes-and-other-wheel-metaphors">Hubs
+and Spoke model</a></li>
+<li>Learn how to <a
+href="../../tasks/administer-cluster/securing-a-cluster.html">Secure a
+Cluster</a></li>
+<li>Learn more about the <a
+href="../overview/kubernetes-api.html">Kubernetes API</a></li>
+<li><a href="../../tasks/extend-kubernetes/setup-konnectivity.html">Set up
+Konnectivity service</a></li>
+<li><a
+href="../../tasks/access-application-cluster/port-forward-access-application-cluster.html">Use
+Port Forwarding to Access Applications in a Cluster</a></li>
+<li>Learn how to <a
+href="../../tasks/debug/debug-application/debug-running-pod.html#examine-pod-logs">Fetch
+logs for Pods</a>, <a
+href="../../tasks/access-application-cluster/port-forward-access-application-cluster.html#forward-a-local-port-to-a-port-on-the-pod">use
+kubectl port-forward</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="nodes.html"><span>Previous</span>Nodes</a><a class="page-nav-link next" href="controller.html"><span>Next</span>Controllers</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#node-to-control-plane">Node to Control Plane</a></li><li class="toc-l2"><a href="#control-plane-to-node">Control plane to node</a></li><li class="toc-l3"><a href="#api-server-to-kubelet">API server to kubelet</a></li><li class="toc-l3"><a href="#api-server-to-nodes-pods-and-services">API server to nodes, pods, and services</a></li><li class="toc-l3"><a href="#ssh-tunnels">SSH tunnels</a></li><li class="toc-l3"><a href="#konnectivity-service">Konnectivity service</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

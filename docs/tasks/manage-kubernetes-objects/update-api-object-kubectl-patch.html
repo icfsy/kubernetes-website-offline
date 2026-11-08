@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Update API Objects in Place Using kubectl patch · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/manage-kubernetes-objects/update-api-object-kubectl-patch" data-title="Update API Objects in Place Using kubectl patch" data-canonical="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../manage-kubernetes-objects.html">Manage Kubernetes Objects</a></nav></nav>
+        <header class="page-head">
+          <h1>Update API Objects in Place Using kubectl patch</h1>
+          <p class="lead">Use kubectl patch to update Kubernetes API objects in place. Do a strategic merge patch or a JSON merge patch.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/manage-kubernetes-objects/update-api-object-kubectl-patch/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This task shows how to use <code>kubectl patch</code> to update an
+API object in place. The exercises in this task demonstrate a strategic
+merge patch and a JSON merge patch.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a target="_blank" rel="noopener" href="https://kodekloud.com/public-playgrounds">KodeKloud</a> To
+check the version, enter <code>kubectl version</code>.</li>
+</ul>
+<h2 id="use-a-strategic-merge-patch-to-update-a-deployment">Use a
+strategic merge patch to update a Deployment</h2>
+<p>Here's the configuration file for a Deployment that has two replicas.
+Each replica is a Pod that has one container:</p>
+<div class="code-sample">
+<p><code>application/deployment-patch.yaml</code></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo-ctr</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">      </span><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoSchedule</span></span>
+<span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> dedicated</span></span>
+<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> test-team</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/deployment-patch.yaml</code></pre>
+<p>View the Pods associated with your Deployment:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<p>The output shows that the Deployment has two Pods. The
+<code>1/1</code> indicates that each Pod has one container:</p>
+<pre><code>NAME                        READY     STATUS    RESTARTS   AGE
+patch-demo-28633765-670qr   1/1       Running   0          23s
+patch-demo-28633765-j5qs3   1/1       Running   0          23s</code></pre>
+<p>Make a note of the names of the running Pods. Later, you will see
+that these Pods get terminated and replaced by new ones.</p>
+<p>At this point, each Pod has one Container that runs the nginx image.
+Now suppose you want each Pod to have two containers: one that runs
+nginx and one that runs redis.</p>
+<p>Create a file named <code>patch-file.yaml</code> that has this
+content:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo-ctr-2</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis</span></span></code></pre></div>
+<p>Patch your Deployment:</p>
+<pre class="shell"><code>kubectl patch deployment patch-demo --patch-file patch-file.yaml</code></pre>
+<p>View the patched Deployment:</p>
+<pre class="shell"><code>kubectl get deployment patch-demo --output yaml</code></pre>
+<p>The output shows that the PodSpec in the Deployment has two
+Containers:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis</span></span>
+<span class="at">  </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo-ctr-2</span></span>
+<span class="at">  ...</span></span>
+<span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo-ctr</span></span>
+<span class="at">  ...</span></span></code></pre></div>
+<p>View the Pods associated with your patched Deployment:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<p>The output shows that the running Pods have different names from the
+Pods that were running previously. The Deployment terminated the old
+Pods and created two new Pods that comply with the updated Deployment
+spec. The <code>2/2</code> indicates that each Pod has two
+Containers:</p>
+<pre><code>NAME                          READY     STATUS    RESTARTS   AGE
+patch-demo-1081991389-2wrn5   2/2       Running   0          1m
+patch-demo-1081991389-jmg7b   2/2       Running   0          1m</code></pre>
+<p>Take a closer look at one of the patch-demo Pods:</p>
+<pre class="shell"><code>kubectl get pod &lt;your-pod-name&gt; --output yaml</code></pre>
+<p>The output shows that the Pod has two Containers: one running nginx
+and one running redis:</p>
+<pre><code>containers:
+- image: redis
+  ...
+- image: nginx
+  ...</code></pre>
+<h3 id="notes-on-the-strategic-merge-patch">Notes on the strategic merge
+patch</h3>
+<p>The patch you did in the preceding exercise is called a <em>strategic
+merge patch</em>. Notice that the patch did not replace the
+<code>containers</code> list. Instead it added a new Container to the
+list. In other words, the list in the patch was merged with the existing
+list. This is not always what happens when you use a strategic merge
+patch on a list. In some cases, the list is replaced, not merged.</p>
+<p>With a strategic merge patch, a list is either replaced or merged
+depending on its patch strategy. The patch strategy is specified by the
+value of the <code>patchStrategy</code> key in a field tag in the
+Kubernetes source code. For example, the <code>Containers</code> field
+of <code>PodSpec</code> struct has a <code>patchStrategy</code> of
+<code>merge</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> PodSpec <span class="kw">struct</span> <span class="op">{</span></span>
+  <span class="op">...</span></span>
+  Containers <span class="op">[]</span>Container <span class="st">`json:&quot;containers&quot; patchStrategy:&quot;merge&quot; patchMergeKey:&quot;name&quot; ...`</span></span>
+  <span class="op">...</span></span>
+<span class="op">}</span></span></code></pre></div>
+<p>You can also see the patch strategy in the <a
+href="https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json">OpenApi
+spec</a>:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">&quot;io.k8s.api.core.v1.PodSpec&quot;</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span></span>
+<span class="at">    ...</span><span class="kw">,</span></span>
+<span class="at">    </span><span class="fu">&quot;containers&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
+<span class="at">        </span><span class="fu">&quot;description&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;List of containers belonging to the pod.  ....&quot;</span></span>
+<span class="at">    </span><span class="kw">},</span></span>
+<span class="at">    </span><span class="fu">&quot;x-kubernetes-patch-merge-key&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;name&quot;</span><span class="kw">,</span></span>
+<span class="at">    </span><span class="fu">&quot;x-kubernetes-patch-strategy&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;merge&quot;</span></span>
+<span class="kw">}</span></span></code></pre></div>
+<p>And you can see the patch strategy in the <a
+href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#podspec-v1-core">Kubernetes
+API documentation</a>.</p>
+<p>Create a file named <code>patch-file-tolerations.yaml</code> that has
+this content:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoSchedule</span></span>
+<span class="at">        </span><span class="fu">key</span><span class="kw">:</span><span class="at"> disktype</span></span>
+<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> ssd</span></span></code></pre></div>
+<p>Patch your Deployment:</p>
+<pre class="shell"><code>kubectl patch deployment patch-demo --patch-file patch-file-tolerations.yaml</code></pre>
+<p>View the patched Deployment:</p>
+<pre class="shell"><code>kubectl get deployment patch-demo --output yaml</code></pre>
+<p>The output shows that the PodSpec in the Deployment has only one
+Toleration:</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoSchedule</span></span>
+<span class="at">  </span><span class="fu">key</span><span class="kw">:</span><span class="at"> disktype</span></span>
+<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> ssd</span></span></code></pre></div>
+<p>Notice that the <code>tolerations</code> list in the PodSpec was
+replaced, not merged. This is because the Tolerations field of PodSpec
+does not have a <code>patchStrategy</code> key in its field tag. So the
+strategic merge patch uses the default patch strategy, which is
+<code>replace</code>.</p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> PodSpec <span class="kw">struct</span> <span class="op">{</span></span>
+  <span class="op">...</span></span>
+  Tolerations <span class="op">[]</span>Toleration <span class="st">`json:&quot;tolerations,omitempty&quot; protobuf:&quot;bytes,22,opt,name=tolerations&quot;`</span></span>
+  <span class="op">...</span></span>
+<span class="op">}</span></span></code></pre></div>
+<h2 id="use-a-json-merge-patch-to-update-a-deployment">Use a JSON merge
+patch to update a Deployment</h2>
+<p>A strategic merge patch is different from a <a
+href="https://tools.ietf.org/html/rfc7386">JSON merge patch</a>. With a
+JSON merge patch, if you want to update a list, you have to specify the
+entire new list. And the new list completely replaces the existing
+list.</p>
+<p>The <code>kubectl patch</code> command has a <code>type</code>
+parameter that you can set to one of these values:</p>
+<table>
+<tr>
+<th>
+Parameter value
+</th>
+<th>
+Merge type
+</th>
+</tr>
+<tr>
+<td>
+json
+</td>
+<td>
+<a target="_blank" rel="noopener" href="https://tools.ietf.org/html/rfc6902">JSON Patch, RFC 6902</a>
+</td>
+</tr>
+<tr>
+<td>
+merge
+</td>
+<td>
+<a target="_blank" rel="noopener" href="https://tools.ietf.org/html/rfc7386">JSON Merge Patch, RFC
+7386</a>
+</td>
+</tr>
+<tr>
+<td>
+strategic
+</td>
+<td>
+Strategic merge patch
+</td>
+</tr>
+</table>
+<p>For a comparison of JSON patch and JSON merge patch, see <a
+href="https://erosb.github.io/post/json-patch-vs-merge-patch/">JSON
+Patch and JSON Merge Patch</a>.</p>
+<p>The default value for the <code>type</code> parameter is
+<code>strategic</code>. So in the preceding exercise, you did a
+strategic merge patch.</p>
+<p>Next, do a JSON merge patch on your same Deployment. Create a file
+named <code>patch-file-2.yaml</code> that has this content:</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo-ctr-3</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span></code></pre></div>
+<p>In your patch command, set <code>type</code> to
+<code>merge</code>:</p>
+<pre class="shell"><code>kubectl patch deployment patch-demo --type merge --patch-file patch-file-2.yaml</code></pre>
+<p>View the patched Deployment:</p>
+<pre class="shell"><code>kubectl get deployment patch-demo --output yaml</code></pre>
+<p>The <code>containers</code> list that you specified in the patch has
+only one Container. The output shows that your list of one Container
+replaced the existing <code>containers</code> list.</p>
+<div class="sourceCode" id="cb23"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span>
+<span class="at">    ...</span></span>
+<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> patch-demo-ctr-3</span></span></code></pre></div>
+<p>List the running Pods:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<p>In the output, you can see that the existing Pods were terminated,
+and new Pods were created. The <code>1/1</code> indicates that each new
+Pod is running only one Container.</p>
+<pre class="shell"><code>NAME                          READY     STATUS    RESTARTS   AGE
+patch-demo-1307768864-69308   1/1       Running   0          1m
+patch-demo-1307768864-c86dc   1/1       Running   0          1m</code></pre>
+<h2
+id="use-strategic-merge-patch-to-update-a-deployment-using-the-retainkeys-strategy">Use
+strategic merge patch to update a Deployment using the retainKeys
+strategy</h2>
+<p>Here's the configuration file for a Deployment that uses the
+<code>RollingUpdate</code> strategy:</p>
+<div class="code-sample">
+<p><code>application/deployment-retainkeys.yaml</code></p>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> retainkeys-demo</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">rollingUpdate</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">maxSurge</span><span class="kw">:</span><span class="at"> 30%</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> retainkeys-demo-ctr</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span></code></pre></div>
+</div>
+<p>Create the deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/deployment-retainkeys.yaml</code></pre>
+<p>At this point, the deployment is created and is using the
+<code>RollingUpdate</code> strategy.</p>
+<p>Create a file named <code>patch-file-no-retainkeys.yaml</code> that
+has this content:</p>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span></span></code></pre></div>
+<p>Patch your Deployment:</p>
+<pre class="shell"><code>kubectl patch deployment retainkeys-demo --type strategic --patch-file patch-file-no-retainkeys.yaml</code></pre>
+<p>In the output, you can see that it is not possible to set
+<code>type</code> as <code>Recreate</code> when a value is defined for
+<code>spec.strategy.rollingUpdate</code>:</p>
+<pre><code>The Deployment &quot;retainkeys-demo&quot; is invalid: spec.strategy.rollingUpdate: Forbidden: may not be specified when strategy `type` is &#39;Recreate&#39;</code></pre>
+<p>The way to remove the value for
+<code>spec.strategy.rollingUpdate</code> when updating the value for
+<code>type</code> is to use the <code>retainKeys</code> strategy for the
+strategic merge.</p>
+<p>Create another file named <code>patch-file-retainkeys.yaml</code>
+that has this content:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">$retainKeys</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">type</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span></span></code></pre></div>
+<p>With this patch, we indicate that we want to retain only the
+<code>type</code> key of the <code>strategy</code> object. Thus, the
+<code>rollingUpdate</code> will be removed during the patch
+operation.</p>
+<p>Patch your Deployment again with this new patch:</p>
+<pre class="shell"><code>kubectl patch deployment retainkeys-demo --type strategic --patch-file patch-file-retainkeys.yaml</code></pre>
+<p>Examine the content of the Deployment:</p>
+<pre class="shell"><code>kubectl get deployment retainkeys-demo --output yaml</code></pre>
+<p>The output shows that the strategy object in the Deployment does not
+contain the <code>rollingUpdate</code> key anymore:</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span></code></pre></div>
+<h3
+id="notes-on-the-strategic-merge-patch-using-the-retainkeys-strategy">Notes
+on the strategic merge patch using the retainKeys strategy</h3>
+<p>The patch you did in the preceding exercise is called a <em>strategic
+merge patch with retainKeys strategy</em>. This method introduces a new
+directive <code>$retainKeys</code> that has the following
+strategies:</p>
+<ul>
+<li>It contains a list of strings.</li>
+<li>All fields needing to be preserved must be present in the
+<code>$retainKeys</code> list.</li>
+<li>The fields that are present will be merged with live object.</li>
+<li>All of the missing fields will be cleared when patching.</li>
+<li>All fields in the <code>$retainKeys</code> list must be a superset
+or the same as the fields present in the patch.</li>
+</ul>
+<p>The <code>retainKeys</code> strategy does not work for all objects.
+It only works when the value of the <code>patchStrategy</code> key in a
+field tag in the Kubernetes source code contains
+<code>retainKeys</code>. For example, the <code>Strategy</code> field of
+the <code>DeploymentSpec</code> struct has a <code>patchStrategy</code>
+of <code>retainKeys</code>:</p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode go"><code class="sourceCode go"><span class="kw">type</span> DeploymentSpec <span class="kw">struct</span> <span class="op">{</span></span>
+  <span class="op">...</span></span>
+  <span class="co">// +patchStrategy=retainKeys</span></span>
+  Strategy DeploymentStrategy <span class="st">`json:&quot;strategy,omitempty&quot; patchStrategy:&quot;retainKeys&quot; ...`</span></span>
+  <span class="op">...</span></span>
+<span class="op">}</span></span></code></pre></div>
+<p>You can also see the <code>retainKeys</code> strategy in the <a
+href="https://raw.githubusercontent.com/kubernetes/kubernetes/master/api/openapi-spec/swagger.json">OpenApi
+spec</a>:</p>
+<div class="sourceCode" id="cb36"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">&quot;io.k8s.api.apps.v1.DeploymentSpec&quot;</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span></span>
+<span class="at">    ...</span><span class="kw">,</span></span>
+<span class="at">    </span><span class="fu">&quot;strategy&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="kw">{</span></span>
+<span class="at">        </span><span class="fu">&quot;$ref&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;#/definitions/io.k8s.api.apps.v1.DeploymentStrategy&quot;</span><span class="kw">,</span></span>
+<span class="at">        </span><span class="fu">&quot;description&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;The deployment strategy to use to replace existing pods with new ones.&quot;</span><span class="kw">,</span></span>
+<span class="at">        </span><span class="fu">&quot;x-kubernetes-patch-strategy&quot;</span><span class="kw">:</span><span class="fu"> </span><span class="st">&quot;retainKeys&quot;</span></span>
+<span class="at">    </span><span class="kw">},</span></span>
+<span class="at">    ....</span></span>
+<span class="kw">}</span></span></code></pre></div>
+<p>And you can see the <code>retainKeys</code> strategy in the <a
+href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/#deploymentspec-v1-apps">Kubernetes
+API documentation</a>.</p>
+<h3 id="alternate-forms-of-the-kubectl-patch-command">Alternate forms of
+the kubectl patch command</h3>
+<p>The <code>kubectl patch</code> command takes YAML or JSON. It can
+take the patch as a file or directly on the command line.</p>
+<p>Create a file named <code>patch-file.json</code> that has this
+content:</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+   <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+      <span class="dt">&quot;template&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+         <span class="dt">&quot;spec&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+            <span class="dt">&quot;containers&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+               <span class="fu">{</span></span>
+                  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;patch-demo-ctr-2&quot;</span><span class="fu">,</span></span>
+                  <span class="dt">&quot;image&quot;</span><span class="fu">:</span> <span class="st">&quot;redis&quot;</span></span>
+               <span class="fu">}</span></span>
+            <span class="ot">]</span></span>
+         <span class="fu">}</span></span>
+      <span class="fu">}</span></span>
+   <span class="fu">}</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<p>The following commands are equivalent:</p>
+<pre class="shell"><code>kubectl patch deployment patch-demo --patch-file patch-file.yaml
+kubectl patch deployment patch-demo --patch &#39;spec:\n template:\n  spec:\n   containers:\n   - name: patch-demo-ctr-2\n     image: redis&#39;
+
+kubectl patch deployment patch-demo --patch-file patch-file.json
+kubectl patch deployment patch-demo --patch &#39;{&quot;spec&quot;: {&quot;template&quot;: {&quot;spec&quot;: {&quot;containers&quot;: [{&quot;name&quot;: &quot;patch-demo-ctr-2&quot;,&quot;image&quot;: &quot;redis&quot;}]}}}}&#39;</code></pre>
+<h3 id="scale-kubectl-patch">Update an object's replica count using
+<code>kubectl patch</code> with <code>--subresource</code></h3>
+<p>The flag <code>--subresource=[subresource-name]</code> is used with
+kubectl commands like get, patch, edit, apply and replace to fetch and
+update <code>status</code>, <code>scale</code> and <code>resize</code>
+subresource of the resources you specify. You can specify a subresource
+for any of the Kubernetes API resources (built-in and CRs) that have
+<code>status</code>, <code>scale</code> or <code>resize</code>
+subresource.</p>
+<p>For example, a Deployment has a <code>status</code> subresource and a
+<code>scale</code> subresource, so you can use <code>kubectl</code> to
+get or modify just the <code>status</code> subresource of a
+Deployment.</p>
+<p>Here's a manifest for a Deployment that has two replicas:</p>
+<div class="code-sample">
+<p><code>application/deployment.yaml</code></p>
+<div class="sourceCode" id="cb39"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span><span class="co"> # tells deployment to run 2 pods matching the template</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.14.2</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/deployment.yaml</code></pre>
+<p>View the Pods associated with your Deployment:</p>
+<pre class="shell"><code>kubectl get pods -l app=nginx</code></pre>
+<p>In the output, you can see that Deployment has two Pods. For
+example:</p>
+<pre><code>NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-7fb96c846b-22567   1/1     Running   0          47s
+nginx-deployment-7fb96c846b-mlgns   1/1     Running   0          47s</code></pre>
+<p>Now, patch that Deployment with
+<code>--subresource=[subresource-name]</code> flag:</p>
+<pre class="shell"><code>kubectl patch deployment nginx-deployment --subresource=&#39;scale&#39; --type=&#39;merge&#39; -p &#39;{&quot;spec&quot;:{&quot;replicas&quot;:3}}&#39;</code></pre>
+<p>The output is:</p>
+<pre class="shell"><code>scale.autoscaling/nginx-deployment patched</code></pre>
+<p>View the Pods associated with your patched Deployment:</p>
+<pre class="shell"><code>kubectl get pods -l app=nginx</code></pre>
+<p>In the output, you can see one new pod is created, so now you have 3
+running pods.</p>
+<pre><code>NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-7fb96c846b-22567   1/1     Running   0          107s
+nginx-deployment-7fb96c846b-lxfr2   1/1     Running   0          14s
+nginx-deployment-7fb96c846b-mlgns   1/1     Running   0          107s</code></pre>
+<p>View the patched Deployment:</p>
+<pre class="shell"><code>kubectl get deployment nginx-deployment -o yaml</code></pre>
+<div class="sourceCode" id="cb48"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
+<span class="er">spec:</span></span>
+<span class="er">  replicas: 3</span></span>
+<span class="er">  ...</span></span>
+<span class="er">status:</span></span>
+<span class="er">  ...</span></span>
+<span class="er">  availableReplicas: 3</span></span>
+<span class="er">  readyReplicas: 3</span></span>
+<span class="er">  replicas: 3</span></span></code></pre></div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you run <code>kubectl patch</code> and specify
+<code>--subresource</code> flag for resource that doesn't support that
+particular subresource, the API server returns a 404 Not Found
+error.</p>
+</div>
+<h2 id="summary">Summary</h2>
+<p>In this exercise, you used <code>kubectl patch</code> to change the
+live configuration of a Deployment object. You did not change the
+configuration file that you originally used to create the Deployment
+object. Other commands for updating API objects include <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#annotate">kubectl
+annotate</a>, <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#edit">kubectl
+edit</a>, <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#replace">kubectl
+replace</a>, <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#scale">kubectl
+scale</a>, and <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#apply">kubectl
+apply</a>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Strategic merge patch is not supported for custom resources.</p>
+</div>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li><a
+href="../../concepts/overview/working-with-objects/object-management.html">Kubernetes
+Object Management</a></li>
+<li><a
+href="imperative-command.html">Managing
+Kubernetes Objects Using Imperative Commands</a></li>
+<li><a
+href="imperative-config.html">Imperative
+Management of Kubernetes Objects Using Configuration Files</a></li>
+<li><a
+href="declarative-config.html">Declarative
+Management of Kubernetes Objects Using Configuration Files</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="imperative-config.html"><span>Previous</span>Imperative Management of Kubernetes Objects Using Configuration Files</a><a class="page-nav-link next" href="storage-version-migration.html"><span>Next</span>Migrate Kubernetes Objects Using Storage Version Migration</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#use-a-strategic-merge-patch-to-update-a-deployment">Use a strategic merge patch to update a Deployment</a></li><li class="toc-l3"><a href="#notes-on-the-strategic-merge-patch">Notes on the strategic merge patch</a></li><li class="toc-l2"><a href="#use-a-json-merge-patch-to-update-a-deployment">Use a JSON merge patch to update a Deployment</a></li><li class="toc-l2"><a href="#use-strategic-merge-patch-to-update-a-deployment-using-the-retainkeys-strategy">Use strategic merge patch to update a Deployment using the retainKeys strategy</a></li><li class="toc-l3"><a href="#notes-on-the-strategic-merge-patch-using-the-retainkeys-strategy">Notes on the strategic merge patch using the retainKeys strategy</a></li><li class="toc-l3"><a href="#alternate-forms-of-the-kubectl-patch-command">Alternate forms of the kubectl patch command</a></li><li class="toc-l3"><a href="#scale-kubectl-patch">Update an object&#x27;s replica count using kubectl patch with --subresource</a></li><li class="toc-l2"><a href="#summary">Summary</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

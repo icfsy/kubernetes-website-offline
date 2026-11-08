@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pull an Image from a Private Registry · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/configure-pod-container/pull-image-private-registry" data-title="Pull an Image from a Private Registry" data-canonical="https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../configure-pod-container.html">Configure Pods and Containers</a></nav></nav>
+        <header class="page-head">
+          <h1>Pull an Image from a Private Registry</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Page</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page shows how to create a Pod that uses a <span
+class="glossary-term" data-term="secret">Secret</span> to pull an image
+from a private container image registry or repository. There are many
+private registries in use. This task uses <a
+href="https://www.docker.com/products/docker-hub">Docker Hub</a> as an
+example registry.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>🛇 This item links to a third party project or product that is not
+part of Kubernetes itself.
+<a target="_blank" rel="noopener" class="alert-more-info" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content-disclaimer">More
+information</a></p>
+</div>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li><p>You need to have a Kubernetes cluster, and the kubectl
+command-line tool must be configured to communicate with your cluster.
+It is recommended to run this tutorial on a cluster with at least two
+nodes that are not acting as control plane hosts. If you do not already
+have a cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p></li>
+<li><p><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></p></li>
+<li><p><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></p></li>
+<li><p><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></p></li>
+<li><p>To do this exercise, you need the <code>docker</code> command
+line tool, and a <a target="_blank" rel="noopener" href="https://docs.docker.com/docker-id/">Docker
+ID</a> for which you know the password.</p></li>
+<li><p>If you are using a different private container registry, you need
+the command line tool for that registry and any login information for
+the registry.</p></li>
+</ul>
+<h2 id="log-in-to-docker-hub">Log in to Docker Hub</h2>
+<p>On your laptop, you must authenticate with a registry in order to
+pull a private image.</p>
+<p>Use the <code>docker</code> tool to log in to Docker Hub. See the
+<em>log in</em> section of <a
+href="https://docs.docker.com/docker-id/#log-in">Docker ID accounts</a>
+for more information.</p>
+<pre class="shell"><code>docker login</code></pre>
+<p>When prompted, enter your Docker ID, and then the credential you want
+to use (access token, or the password for your Docker ID).</p>
+<p>The login process creates or updates a <code>config.json</code> file
+that holds an authorization token. Review <a
+href="../../concepts/containers/images.html#config-json">how Kubernetes
+interprets this file</a>.</p>
+<p>View the <code>config.json</code> file:</p>
+<pre class="shell"><code>cat ~/.docker/config.json</code></pre>
+<p>The output contains a section similar to this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+    <span class="dt">&quot;auths&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;https://index.docker.io/v1/&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+            <span class="dt">&quot;auth&quot;</span><span class="fu">:</span> <span class="st">&quot;c3R...zE2&quot;</span></span>
+        <span class="fu">}</span></span>
+    <span class="fu">}</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you use a Docker credentials store, you won't see that
+<code>auth</code> entry but a <code>credsStore</code> entry with the
+name of the store as value. In that case, you can create a secret
+directly. See <a
+href="#create-a-secret-by-providing-credentials-on-the-command-line">Create
+a Secret by providing credentials on the command line</a>.</p>
+</div>
+<h2 id="registry-secret-existing-credentials">Create a Secret based on
+existing credentials</h2>
+<p>A Kubernetes cluster uses the Secret of
+<code>kubernetes.io/dockerconfigjson</code> type to authenticate with a
+container registry to pull a private image.</p>
+<p>If you already ran <code>docker login</code>, you can copy that
+credential into Kubernetes:</p>
+<pre class="shell"><code>kubectl create secret generic regcred \
+    --from-file=.dockerconfigjson=&lt;path/to/.docker/config.json&gt; \
+    --type=kubernetes.io/dockerconfigjson</code></pre>
+<p>If you need more control (for example, to set a namespace or a label
+on the new secret) then you can customise the Secret before storing it.
+Be sure to:</p>
+<ul>
+<li>set the name of the data item to <code>.dockerconfigjson</code></li>
+<li>base64 encode the Docker configuration file and then paste that
+string, unbroken as the value for field
+<code>data[".dockerconfigjson"]</code></li>
+<li>set <code>type</code> to
+<code>kubernetes.io/dockerconfigjson</code></li>
+</ul>
+<p>Example:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myregistrykey</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> awesomeapps</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">.dockerconfigjson</span><span class="kw">:</span><span class="at"> UmVhbGx5IHJlYWxseSByZWVlZWVlZWVlZWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGxsbGx5eXl5eXl5eXl5eXl5eXl5eXl5eSBsbGxsbGxsbGxsbGxsbG9vb29vb29vb29vb29vb29vb29vb29vb29vb25ubm5ubm5ubm5ubm5ubm5ubm5ubm5ubmdnZ2dnZ2dnZ2dnZ2dnZ2dnZ2cgYXV0aCBrZXlzCg==</span></span>
+<span class="fu">type</span><span class="kw">:</span><span class="at"> kubernetes.io/dockerconfigjson</span></span></code></pre></div>
+<p>If you get the error message
+<code>error: no objects passed to create</code>, it may mean the base64
+encoded string is invalid. If you get an error message like
+<code>Secret "myregistrykey" is invalid: data[.dockerconfigjson]: invalid value ...</code>,
+it means the base64 encoded string in the data was successfully decoded,
+but could not be parsed as a <code>.docker/config.json</code> file.</p>
+<h2
+id="create-a-secret-by-providing-credentials-on-the-command-line">Create
+a Secret by providing credentials on the command line</h2>
+<p>Create this Secret, naming it <code>regcred</code>:</p>
+<pre class="shell"><code>kubectl create secret docker-registry regcred --docker-server=&lt;your-registry-server&gt; --docker-username=&lt;your-name&gt; --docker-password=&lt;your-pword&gt; --docker-email=&lt;your-email&gt;</code></pre>
+<p>where:</p>
+<ul>
+<li><code>&lt;your-registry-server&gt;</code> is your Private
+Docker Registry FQDN. Use <code>https://index.docker.io/v1/</code> for
+DockerHub.</li>
+<li><code>&lt;your-name&gt;</code> is your Docker username.</li>
+<li><code>&lt;your-pword&gt;</code> is your Docker
+password.</li>
+<li><code>&lt;your-email&gt;</code> is your Docker email.</li>
+</ul>
+<p>You have successfully set your Docker credentials in the cluster as a
+Secret called <code>regcred</code>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Typing secrets on the command line may store them in your shell
+history unprotected, and those secrets might also be visible to other
+users on your PC during the time that <code>kubectl</code> is
+running.</p>
+</div>
+<h2 id="inspecting-the-secret-regcred">Inspecting the Secret
+<code>regcred</code></h2>
+<p>To understand the contents of the <code>regcred</code> Secret you
+created, start by viewing the Secret in YAML format:</p>
+<pre class="shell"><code>kubectl get secret regcred --output=yaml</code></pre>
+<p>The output is similar to this:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Secret</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  ...</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> regcred</span></span>
+<span class="at">  ...</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">.dockerconfigjson</span><span class="kw">:</span><span class="at"> eyJodHRwczovL2luZGV4L ... J0QUl6RTIifX0=</span></span>
+<span class="fu">type</span><span class="kw">:</span><span class="at"> kubernetes.io/dockerconfigjson</span></span></code></pre></div>
+<p>The value of the <code>.dockerconfigjson</code> field is a base64
+representation of your Docker credentials.</p>
+<p>To understand what is in the <code>.dockerconfigjson</code> field,
+convert the secret data to a readable format:</p>
+<pre class="shell"><code>kubectl get secret regcred --output=&quot;jsonpath={.data.\.dockerconfigjson}&quot; | base64 --decode</code></pre>
+<p>The output is similar to this:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span><span class="dt">&quot;auths&quot;</span><span class="fu">:{</span><span class="dt">&quot;your.private.registry.example.com&quot;</span><span class="fu">:{</span><span class="dt">&quot;username&quot;</span><span class="fu">:</span><span class="st">&quot;janedoe&quot;</span><span class="fu">,</span><span class="dt">&quot;password&quot;</span><span class="fu">:</span><span class="st">&quot;xxxxxxxxxxx&quot;</span><span class="fu">,</span><span class="dt">&quot;email&quot;</span><span class="fu">:</span><span class="st">&quot;jdoe@example.com&quot;</span><span class="fu">,</span><span class="dt">&quot;auth&quot;</span><span class="fu">:</span><span class="st">&quot;c3R...zE2&quot;</span><span class="fu">}}}</span></span></code></pre></div>
+<p>To understand what is in the <code>auth</code> field, convert the
+base64-encoded data to a readable format:</p>
+<pre class="shell"><code>echo &quot;c3R...zE2&quot; | base64 --decode</code></pre>
+<p>The output, username and password concatenated with a <code>:</code>,
+is similar to this:</p>
+<pre class="none"><code>janedoe:xxxxxxxxxxx</code></pre>
+<p>Notice that the Secret data contains the authorization token similar
+to your local <code>~/.docker/config.json</code> file.</p>
+<p>You have successfully set your Docker credentials as a Secret called
+<code>regcred</code> in the cluster.</p>
+<h2 id="create-a-pod-that-uses-your-secret">Create a Pod that uses your
+Secret</h2>
+<p>Here is a manifest for an example Pod that needs access to your
+Docker credentials in <code>regcred</code>:</p>
+<div class="code-sample">
+<p><code>pods/private-reg-pod.yaml</code></p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> private-reg</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> private-reg-container</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;your-private-image&gt;</span></span>
+<span class="at">  </span><span class="fu">imagePullSecrets</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> regcred</span></span></code></pre></div>
+</div>
+<p>Download the above file onto your computer:</p>
+<pre class="shell"><code>curl -L -o my-private-reg-pod.yaml https://k8s.io/examples/pods/private-reg-pod.yaml</code></pre>
+<p>In file <code>my-private-reg-pod.yaml</code>, replace
+<code>&lt;your-private-image&gt;</code> with the path to an
+image in a private registry such as:</p>
+<pre class="none"><code>your.private.registry.example.com/janedoe/jdoe-private:v1</code></pre>
+<p>To pull the image from the private registry, Kubernetes needs
+credentials. The <code>imagePullSecrets</code> field in the
+configuration file specifies that Kubernetes should get the credentials
+from a Secret named <code>regcred</code>.</p>
+<p>Create a Pod that uses your Secret, and verify that the Pod is
+running:</p>
+<pre class="shell"><code>kubectl apply -f my-private-reg-pod.yaml
+kubectl get pod private-reg</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>To use image pull secrets for a Pod (or a Deployment, or other object
+that has a pod template that you are using), you need to make sure that
+the appropriate Secret does exist in the right namespace. The namespace
+to use is the same namespace where you defined the Pod.</p>
+</div>
+<p>Also, in case the Pod fails to start with the status
+<code>ImagePullBackOff</code>, view the Pod events:</p>
+<pre class="shell"><code>kubectl describe pod private-reg</code></pre>
+<p>If you then see an event with the reason set to
+<code>FailedToRetrieveImagePullSecret</code>, Kubernetes can't find a
+Secret with name (<code>regcred</code>, in this example).</p>
+<p>Make sure that the Secret you have specified exists, and that its
+name is spelled properly.</p>
+<pre class="shell"><code>Events:
+  ...  Reason                           ...  Message
+       ------                                -------
+  ...  FailedToRetrieveImagePullSecret  ...  Unable to retrieve some image pull secrets (&lt;regcred&gt;); attempting to pull the image may not succeed.</code></pre>
+<h2 id="using-images-from-multiple-registries">Using images from
+multiple registries</h2>
+<p>A pod can have multiple containers, each container image can be from
+a different registry. You can use multiple <code>imagePullSecrets</code>
+with one pod, and each can contain multiple credentials.</p>
+<p>The image pull will be attempted using each credential that matches
+the registry. If no credentials match the registry, the image pull will
+be attempted without authorization or using custom runtime specific
+configuration.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn more about <a
+href="../../concepts/configuration/secret.html">Secrets</a>
+<ul>
+<li>or read the API reference for <a
+href="../../reference/kubernetes-api/core/secret-v1.html">secret-v1</a></li>
+</ul></li>
+<li>Learn more about <a
+href="../../concepts/containers/images.html#using-a-private-registry">using
+a private registry</a>.</li>
+<li>Learn more about <a
+href="configure-service-account.html#add-imagepullsecrets-to-a-service-account">adding
+image pull secrets to a service account</a>.</li>
+<li>See <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#-em-secret-docker-registry-em-">kubectl
+create secret docker-registry</a>.</li>
+<li>See the <code>imagePullSecrets</code> field within the <a
+href="https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#containers">container
+definitions</a> of a Pod</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="configure-service-account.html"><span>Previous</span>Configure Service Accounts for Pods</a><a class="page-nav-link next" href="configure-liveness-readiness-startup-probes.html"><span>Next</span>Configure Liveness, Readiness and Startup Probes</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#log-in-to-docker-hub">Log in to Docker Hub</a></li><li class="toc-l2"><a href="#registry-secret-existing-credentials">Create a Secret based on existing credentials</a></li><li class="toc-l2"><a href="#create-a-secret-by-providing-credentials-on-the-command-line">Create a Secret by providing credentials on the command line</a></li><li class="toc-l2"><a href="#inspecting-the-secret-regcred">Inspecting the Secret regcred</a></li><li class="toc-l2"><a href="#create-a-pod-that-uses-your-secret">Create a Pod that uses your Secret</a></li><li class="toc-l2"><a href="#using-images-from-multiple-registries">Using images from multiple registries</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

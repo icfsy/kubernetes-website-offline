@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Running Kubelet in Standalone Mode · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/cluster-management/kubelet-standalone" data-title="Running Kubelet in Standalone Mode" data-canonical="https://kubernetes.io/docs/tutorials/cluster-management/kubelet-standalone/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../cluster-management.html">Cluster Management</a></nav></nav>
+        <header class="page-head">
+          <h1>Running Kubelet in Standalone Mode</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/cluster-management/kubelet-standalone/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This tutorial shows you how to run a standalone kubelet instance.</p>
+<p>You may have different motivations for running a standalone kubelet.
+This tutorial is aimed at introducing you to Kubernetes, even if you
+don't have much experience with it. You can follow this tutorial and
+learn about node setup, basic (static) Pods, and how Kubernetes manages
+containers.</p>
+<p>Once you have followed this tutorial, you could try using a cluster
+that has a <a class="glossary-term" href="../../reference/glossary.html#term-control-plane" title="Glossary: control-plane">control
+plane</a> to manage pods and nodes, and other types of objects. For
+example, <a href="../hello-minikube.html">Hello,
+minikube</a>.</p>
+<p>You can also run the kubelet in standalone mode to suit production
+use cases, such as to run the control plane for a highly available,
+resiliently deployed cluster. This tutorial does not cover the details
+you need for running a resilient control plane.</p>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>Install <code>cri-o</code>, and <code>kubelet</code> on a Linux
+system and run them as <code>systemd</code> services.</li>
+<li>Launch a Pod running <code>nginx</code> that listens to requests on
+TCP port 80 on the Pod's IP address.</li>
+<li>Learn how the different components of the solution interact among
+themselves.</li>
+</ul>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution</p>
+</div>
+<p>The kubelet configuration used for this tutorial is insecure by
+design and should <em>not</em> be used in a production environment.</p>
+</div>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li>Admin (<code>root</code>) access to a Linux system that uses
+<code>systemd</code> and <code>iptables</code> (or nftables with
+<code>iptables</code> emulation).</li>
+<li>Access to the Internet to download the components needed for the
+tutorial, such as:
+<ul>
+<li>A <a class="glossary-term" href="../../reference/glossary.html#term-container-runtime" title="Glossary: container-runtime">container runtime</a> that implements
+the Kubernetes <a class="glossary-term" href="../../reference/glossary.html#term-cri" title="Glossary: cri">(CRI)</a>.</li>
+<li>Network plugins (these are often known as <span
+class="glossary-term" data-term="cni">Container Networking Interface
+(CNI)</span>)</li>
+<li>Required CLI tools: <code>curl</code>, <code>tar</code>,
+<code>jq</code>.</li>
+</ul></li>
+</ul>
+<h2 id="prepare-the-system">Prepare the system</h2>
+<h3 id="swap-configuration">Swap configuration</h3>
+<p>By default, kubelet fails to start if swap memory is detected on a
+node. This means that swap should either be disabled or tolerated by
+kubelet.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>If you configure the kubelet to tolerate swap, the kubelet still
+configures Pods (and the containers in those Pods) not to use swap
+space. To find out how Pods can actually use the available swap, you can
+read more about <a
+href="../../concepts/architecture/nodes.html">swap memory
+management</a> on Linux nodes.</p>
+</div>
+<p>If you have swap memory enabled, either disable it or add
+<code>failSwapOn: false</code> to the kubelet configuration file.</p>
+<p>To check if swap is enabled:</p>
+<pre class="shell"><code>sudo swapon --show</code></pre>
+<p>If there is no output from the command, then swap memory is already
+disabled.</p>
+<p>To disable swap temporarily:</p>
+<pre class="shell"><code>sudo swapoff -a</code></pre>
+<p>To make this change persistent across reboots:</p>
+<p>Make sure swap is disabled in either <code>/etc/fstab</code> or
+<code>systemd.swap</code>, depending on how it was configured on your
+system.</p>
+<h3 id="enable-ipv4-packet-forwarding">Enable IPv4 packet
+forwarding</h3>
+<p>To check if IPv4 packet forwarding is enabled:</p>
+<pre class="shell"><code>cat /proc/sys/net/ipv4/ip_forward</code></pre>
+<p>If the output is <code>1</code>, it is already enabled. If the output
+is <code>0</code>, then follow next steps.</p>
+<p>To enable IPv4 packet forwarding, create a configuration file that
+sets the <code>net.ipv4.ip_forward</code> parameter to
+<code>1</code>:</p>
+<pre class="shell"><code>sudo tee /etc/sysctl.d/k8s.conf &lt;&lt;EOF
+net.ipv4.ip_forward = 1
+EOF</code></pre>
+<p>Apply the changes to the system:</p>
+<pre class="shell"><code>sudo sysctl --system</code></pre>
+<p>The output is similar to:</p>
+<pre><code>...
+* Applying /etc/sysctl.d/k8s.conf ...
+net.ipv4.ip_forward = 1
+* Applying /etc/sysctl.conf ...</code></pre>
+<h2 id="download-install-and-configure-the-components">Download,
+install, and configure the components</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This section links to third party projects that provide functionality
+required by Kubernetes. The Kubernetes project authors aren't
+responsible for these projects, which are listed alphabetically. To add
+a project to this list, read the
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content">content
+guide</a> before submitting a change.
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content-disclaimer">More
+information.</a></p>
+</div>
+<h3 id="container-runtime">Install a container runtime</h3>
+<p>Download the latest available versions of the required packages
+(recommended).</p>
+<p>This tutorial suggests installing the <a
+href="https://github.com/cri-o/cri-o">CRI-O container runtime</a>
+(external link).</p>
+<p>There are several <a
+href="https://github.com/cri-o/cri-o/blob/main/install.md">ways to
+install</a> the CRI-O container runtime, depending on your particular
+Linux distribution. Although CRI-O recommends using either
+<code>deb</code> or <code>rpm</code> packages, this tutorial uses the
+<em>static binary bundle</em> script of the <a
+href="https://github.com/cri-o/packaging/blob/main/README.md">CRI-O
+Packaging project</a>, both to streamline the overall process, and to
+remain distribution agnostic.</p>
+<p>The script installs and configures additional required software, such
+as <a
+href="https://github.com/containernetworking/cni"><code>cni-plugins</code></a>,
+for container networking, and <a
+href="https://github.com/containers/crun"><code>crun</code></a> and <a
+href="https://github.com/opencontainers/runc"><code>runc</code></a>, for
+running containers.</p>
+<p>The script will automatically detect your system's processor
+architecture (<code>amd64</code> or <code>arm64</code>) and select and
+install the latest versions of the software packages.</p>
+<h3 id="cri-o-setup">Set up CRI-O</h3>
+<p>Visit the <a
+href="https://github.com/cri-o/cri-o/releases">releases</a> page
+(external link).</p>
+<p>Download the static binary bundle script:</p>
+<pre class="shell"><code>curl https://raw.githubusercontent.com/cri-o/packaging/main/get &gt; crio-install</code></pre>
+<p>Run the installer script:</p>
+<pre class="shell"><code>sudo bash crio-install</code></pre>
+<p>Enable and start the <code>crio</code> service:</p>
+<pre class="shell"><code>sudo systemctl daemon-reload
+sudo systemctl enable --now crio.service</code></pre>
+<p>Quick test:</p>
+<pre class="shell"><code>sudo systemctl is-active crio.service</code></pre>
+<p>The output is similar to:</p>
+<pre><code>active</code></pre>
+<p>Detailed service check:</p>
+<pre class="shell"><code>sudo journalctl -f -u crio.service</code></pre>
+<h3 id="install-network-plugins">Install network plugins</h3>
+<p>The <code>cri-o</code> installer installs and configures the
+<code>cni-plugins</code> package. You can verify the installation
+running the following command:</p>
+<pre class="shell"><code>/opt/cni/bin/bridge --version</code></pre>
+<p>The output is similar to:</p>
+<pre><code>CNI bridge plugin v1.5.1
+CNI protocol versions supported: 0.1.0, 0.2.0, 0.3.0, 0.3.1, 0.4.0, 1.0.0</code></pre>
+<p>To check the default configuration:</p>
+<pre class="shell"><code>cat /etc/cni/net.d/11-crio-ipv4-bridge.conflist</code></pre>
+<p>The output is similar to:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;cniVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;1.0.0&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;crio&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;plugins&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="fu">{</span></span>
+      <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;bridge&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;bridge&quot;</span><span class="fu">:</span> <span class="st">&quot;cni0&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;isGateway&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+      <span class="dt">&quot;ipMasq&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+      <span class="dt">&quot;hairpinMode&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+      <span class="dt">&quot;ipam&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;host-local&quot;</span><span class="fu">,</span></span>
+        <span class="dt">&quot;routes&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+            <span class="fu">{</span> <span class="dt">&quot;dst&quot;</span><span class="fu">:</span> <span class="st">&quot;0.0.0.0/0&quot;</span> <span class="fu">}</span></span>
+        <span class="ot">]</span><span class="fu">,</span></span>
+        <span class="dt">&quot;ranges&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+            <span class="ot">[</span><span class="fu">{</span> <span class="dt">&quot;subnet&quot;</span><span class="fu">:</span> <span class="st">&quot;10.85.0.0/16&quot;</span> <span class="fu">}</span><span class="ot">]</span></span>
+        <span class="ot">]</span></span>
+      <span class="fu">}</span></span>
+    <span class="fu">}</span></span>
+  <span class="ot">]</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Make sure that the default <code>subnet</code> range
+(<code>10.85.0.0/16</code>) does not overlap with any of your active
+networks. If there is an overlap, you can edit the file and change it
+accordingly. Restart the service after the change.</p>
+</div>
+<h3 id="download-and-set-up-the-kubelet">Download and set up the
+kubelet</h3>
+<p>Download the <a
+href="https://kubernetes.io/releases/download/">latest stable
+release</a> of the kubelet.</p>
+<div class="tabset">
+<div class="tab-label">
+<p>x86-64</p>
+</div>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> <span class="at">-LO</span> <span class="st">&quot;https://dl.k8s.io/release/</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-L</span> <span class="at">-s</span> https://dl.k8s.io/release/stable.txt<span class="va">)</span><span class="st">/bin/linux/amd64/kubelet&quot;</span></span></code></pre></div>
+<div class="tab-label">
+<p>ARM64</p>
+</div>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> <span class="at">-LO</span> <span class="st">&quot;https://dl.k8s.io/release/</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-L</span> <span class="at">-s</span> https://dl.k8s.io/release/stable.txt<span class="va">)</span><span class="st">/bin/linux/arm64/kubelet&quot;</span></span></code></pre></div>
+</div>
+<p>Configure:</p>
+<pre class="shell"><code>sudo mkdir -p /etc/kubernetes/manifests</code></pre>
+<pre class="shell"><code>sudo tee /etc/kubernetes/kubelet.yaml &lt;&lt;EOF
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+authentication:
+  webhook:
+    enabled: false # Do NOT use in production clusters!
+authorization:
+  mode: AlwaysAllow # Do NOT use in production clusters!
+enableServer: false
+logging:
+  format: text
+address: 127.0.0.1 # Restrict access to localhost
+readOnlyPort: 10255 # Do NOT use in production clusters!
+staticPodPath: /etc/kubernetes/manifests
+containerRuntimeEndpoint: unix:///var/run/crio/crio.sock
+EOF</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Because you are not setting up a production cluster, you are using
+plain HTTP (<code>readOnlyPort: 10255</code>) for unauthenticated
+queries to the kubelet's API.</p>
+<p>The <em>authentication webhook</em> is disabled and <em>authorization
+mode</em> is set to <code>AlwaysAllow</code> for the purpose of this
+tutorial. You can learn more about <a
+href="../../reference/access-authn-authz/authorization.html#authorization-modules">authorization
+modes</a> and <a
+href="../../reference/access-authn-authz/webhook.html">webhook
+authentication</a> to properly configure kubelet in standalone mode in
+your environment.</p>
+<p>See <a href="../../reference/networking/ports-and-protocols.html">Ports
+and Protocols</a> to understand which ports Kubernetes components
+use.</p>
+</div>
+<p>Install:</p>
+<pre class="shell"><code>chmod +x kubelet
+sudo cp kubelet /usr/bin/</code></pre>
+<p>Create a <code>systemd</code> service unit file:</p>
+<pre class="shell"><code>sudo tee /etc/systemd/system/kubelet.service &lt;&lt;EOF
+[Unit]
+Description=Kubelet
+
+[Service]
+ExecStart=/usr/bin/kubelet \
+ --config=/etc/kubernetes/kubelet.yaml
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+EOF</code></pre>
+<p>The command line argument <code>--kubeconfig</code> has been
+intentionally omitted in the service configuration file. This argument
+sets the path to a <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig</a>
+file that specifies how to connect to the API server, enabling API
+server mode. Omitting it, enables standalone mode.</p>
+<p>Enable and start the <code>kubelet</code> service:</p>
+<pre class="shell"><code>sudo systemctl daemon-reload
+sudo systemctl enable --now kubelet.service</code></pre>
+<p>Quick test:</p>
+<pre class="shell"><code>sudo systemctl is-active kubelet.service</code></pre>
+<p>The output is similar to:</p>
+<pre><code>active</code></pre>
+<p>Detailed service check:</p>
+<pre class="shell"><code>sudo journalctl -u kubelet.service</code></pre>
+<p>Check the kubelet's API <code>/healthz</code> endpoint:</p>
+<pre class="shell"><code>curl http://localhost:10255/healthz?verbose</code></pre>
+<p>The output is similar to:</p>
+<pre><code>[+]ping ok
+[+]log ok
+[+]syncloop ok
+healthz check passed</code></pre>
+<p>Query the kubelet's API <code>/pods</code> endpoint:</p>
+<pre class="shell"><code>curl http://localhost:10255/pods | jq &#39;.&#39;</code></pre>
+<p>The output is similar to:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;PodList&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;v1&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{},</span></span>
+  <span class="dt">&quot;items&quot;</span><span class="fu">:</span> <span class="kw">null</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<h2 id="run-a-pod-in-the-kubelet">Run a Pod in the kubelet</h2>
+<p>In standalone mode, you can run Pods using Pod manifests. The
+manifests can either be on the local filesystem, or fetched via HTTP
+from a configuration source.</p>
+<p>Create a manifest for a Pod:</p>
+<pre class="shell"><code>cat &lt;&lt;EOF &gt; static-web.yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: static-web
+spec:
+  containers:
+    - name: web
+      image: nginx
+      ports:
+        - name: web
+          containerPort: 80
+          protocol: TCP
+EOF</code></pre>
+<p>Copy the <code>static-web.yaml</code> manifest file to the
+<code>/etc/kubernetes/manifests</code> directory.</p>
+<pre class="shell"><code>sudo cp static-web.yaml /etc/kubernetes/manifests/</code></pre>
+<h3 id="find-out-information">Find out information about the kubelet and
+the Pod</h3>
+<p>The Pod networking plugin creates a network bridge
+(<code>cni0</code>) and a pair of <code>veth</code> interfaces for each
+Pod (one of the pair is inside the newly made Pod, and the other is at
+the host level).</p>
+<p>Query the kubelet's API endpoint at
+<code>http://localhost:10255/pods</code>:</p>
+<pre class="shell"><code>curl http://localhost:10255/pods | jq &#39;.&#39;</code></pre>
+<p>To obtain the IP address of the <code>static-web</code> Pod:</p>
+<pre class="shell"><code>curl http://localhost:10255/pods | jq &#39;.items[].status.podIP&#39;</code></pre>
+<p>The output is similar to:</p>
+<pre><code>&quot;10.85.0.4&quot;</code></pre>
+<p>Connect to the <code>nginx</code> server Pod on
+<code>http://&lt;IP&gt;:&lt;Port&gt;</code> (port 80 is
+the default), in this case:</p>
+<pre class="shell"><code>curl http://10.85.0.4</code></pre>
+<p>The output is similar to:</p>
+<div class="sourceCode" id="cb37"><pre
+class="sourceCode html"><code class="sourceCode html"><span class="dt">&lt;!DOCTYPE</span> html<span class="dt">&gt;</span></span>
+<span class="dt">&lt;</span><span class="kw">html</span><span class="dt">&gt;</span></span>
+<span class="dt">&lt;</span><span class="kw">head</span><span class="dt">&gt;</span></span>
+<span class="dt">&lt;</span><span class="kw">title</span><span class="dt">&gt;</span>Welcome to nginx!<span class="dt">&lt;/</span><span class="kw">title</span><span class="dt">&gt;</span></span>
+...</span></code></pre></div>
+<h2 id="where-to-look-for-more-details">Where to look for more
+details</h2>
+<p>If you need to diagnose a problem getting this tutorial to work, you
+can look within the following directories for monitoring and
+troubleshooting:</p>
+<pre><code>/var/lib/cni
+/var/lib/containers
+/var/lib/kubelet
+
+/var/log/containers
+/var/log/pods</code></pre>
+<h2 id="clean-up">Clean up</h2>
+<h3 id="kubelet">kubelet</h3>
+<pre class="shell"><code>sudo systemctl disable --now kubelet.service
+sudo systemctl daemon-reload
+sudo rm /etc/systemd/system/kubelet.service
+sudo rm /usr/bin/kubelet
+sudo rm -rf /etc/kubernetes
+sudo rm -rf /var/lib/kubelet
+sudo rm -rf /var/log/containers
+sudo rm -rf /var/log/pods</code></pre>
+<h3 id="container-runtime-1">Container Runtime</h3>
+<pre class="shell"><code>sudo systemctl disable --now crio.service
+sudo systemctl daemon-reload
+sudo rm -rf /usr/local/bin
+sudo rm -rf /usr/local/lib
+sudo rm -rf /usr/local/share
+sudo rm -rf /usr/libexec/crio
+sudo rm -rf /etc/crio
+sudo rm -rf /etc/containers</code></pre>
+<h3 id="network-plugins">Network Plugins</h3>
+<pre class="shell"><code>sudo rm -rf /opt/cni
+sudo rm -rf /etc/cni
+sudo rm -rf /var/lib/cni</code></pre>
+<h2 id="conclusion">Conclusion</h2>
+<p>This page covered the basic aspects of deploying a kubelet in
+standalone mode. You are now ready to deploy Pods and test additional
+functionality.</p>
+<p>Notice that in standalone mode the kubelet does <em>not</em> support
+fetching Pod configurations from the control plane (because there is no
+control plane connection).</p>
+<p>You also cannot use a <a class="glossary-term" href="../../reference/glossary.html#term-configmap" title="Glossary: configmap">ConfigMap</a> or a <a class="glossary-term" href="../../reference/glossary.html#term-secret" title="Glossary: secret">Secret</a> to configure the containers in a static
+Pod.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Follow <a href="../hello-minikube.html">Hello,
+minikube</a> to learn about running Kubernetes <em>with</em> a control
+plane. The minikube tool helps you set up a practice cluster on your own
+computer.</li>
+<li>Learn more about <a
+href="../../concepts/extend-kubernetes/compute-storage-net/network-plugins.html">Network
+Plugins</a></li>
+<li>Learn more about <a
+href="../../setup/production-environment/container-runtimes.html">Container
+Runtimes</a></li>
+<li>Learn more about <a
+href="../../reference/command-line-tools-reference/kubelet.html">kubelet</a></li>
+<li>Learn more about <a
+href="../../tasks/configure-pod-container/static-pod.html">static Pods</a>
+</head>
+</html></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../cluster-management.html"><span>Previous</span>Cluster Management</a><a class="page-nav-link next" href="provision-swap-memory.html"><span>Next</span>Configuring swap memory on Kubernetes nodes</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#prepare-the-system">Prepare the system</a></li><li class="toc-l3"><a href="#swap-configuration">Swap configuration</a></li><li class="toc-l3"><a href="#enable-ipv4-packet-forwarding">Enable IPv4 packet forwarding</a></li><li class="toc-l2"><a href="#download-install-and-configure-the-components">Download, install, and configure the components</a></li><li class="toc-l3"><a href="#container-runtime">Install a container runtime</a></li><li class="toc-l3"><a href="#cri-o-setup">Set up CRI-O</a></li><li class="toc-l3"><a href="#install-network-plugins">Install network plugins</a></li><li class="toc-l3"><a href="#download-and-set-up-the-kubelet">Download and set up the kubelet</a></li><li class="toc-l2"><a href="#run-a-pod-in-the-kubelet">Run a Pod in the kubelet</a></li><li class="toc-l3"><a href="#find-out-information">Find out information about the kubelet and the Pod</a></li><li class="toc-l2"><a href="#where-to-look-for-more-details">Where to look for more details</a></li><li class="toc-l2"><a href="#clean-up">Clean up</a></li><li class="toc-l3"><a href="#kubelet">kubelet</a></li><li class="toc-l3"><a href="#container-runtime-1">Container Runtime</a></li><li class="toc-l3"><a href="#network-plugins">Network Plugins</a></li><li class="toc-l2"><a href="#conclusion">Conclusion</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

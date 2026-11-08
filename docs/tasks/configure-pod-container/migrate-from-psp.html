@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Migrate from PodSecurityPolicy to the Built-In PodSecurity Admission Controller · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/configure-pod-container/migrate-from-psp" data-title="Migrate from PodSecurityPolicy to the Built-In PodSecurity Admission Controller" data-canonical="https://kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../configure-pod-container.html">Configure Pods and Containers</a></nav></nav>
+        <header class="page-head">
+          <h1>Migrate from PodSecurityPolicy to the Built-In PodSecurity Admission Controller</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/configure-pod-container/migrate-from-psp/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page describes the process of migrating from PodSecurityPolicies
+to the built-in PodSecurity admission controller. This can be done
+effectively using a combination of dry-run and <code>audit</code> and
+<code>warn</code> modes, although this becomes harder if mutating PSPs
+are used.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>Your Kubernetes server must be at or later than version v1.22. To
+check the version, enter <code>kubectl version</code>.</p>
+<p>If you are currently running a version of Kubernetes other than 1.37,
+you may want to switch to viewing this page in the documentation for the
+version of Kubernetes that you are actually running.</p>
+<p>This page assumes you are already familiar with the basic <a
+href="../../concepts/security/pod-security-admission.html">Pod Security
+Admission</a> concepts.</p>
+<h2 id="overall-approach">Overall approach</h2>
+<p>There are multiple strategies you can take for migrating from
+PodSecurityPolicy to Pod Security Admission. The following steps are one
+possible migration path, with a goal of minimizing both the risks of a
+production outage and of a security gap.</p>
+<ol start="0" type="1">
+<li>Decide whether Pod Security Admission is the right fit for your use
+case.</li>
+<li>Review namespace permissions</li>
+<li>Simplify &amp; standardize PodSecurityPolicies</li>
+<li>Update namespaces
+<ol type="1">
+<li>Identify an appropriate Pod Security level</li>
+<li>Verify the Pod Security level</li>
+<li>Enforce the Pod Security level</li>
+<li>Bypass PodSecurityPolicy</li>
+</ol></li>
+<li>Review namespace creation processes</li>
+<li>Disable PodSecurityPolicy</li>
+</ol>
+<h2 id="is-psa-right-for-you">0. Decide whether Pod Security Admission
+is right for you</h2>
+<p>Pod Security Admission was designed to meet the most common security
+needs out of the box, and to provide a standard set of security levels
+across clusters. However, it is less flexible than PodSecurityPolicy.
+Notably, the following features are supported by PodSecurityPolicy but
+not Pod Security Admission:</p>
+<ul>
+<li><strong>Setting default security constraints</strong> - Pod Security
+Admission is a non-mutating admission controller, meaning it won't
+modify pods before validating them. If you were relying on this aspect
+of PSP, you will need to either modify your workloads to meet the Pod
+Security constraints, or use a <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html">Mutating
+Admission Webhook</a> to make those changes. See <a
+href="#simplify-psps">Simplify &amp; Standardize PodSecurityPolicies</a>
+below for more detail.</li>
+<li><strong>Fine-grained control over policy definition</strong> - Pod
+Security Admission only supports <a
+href="../../concepts/security/pod-security-standards.html">3 standard
+levels</a>. If you require more control over specific constraints, then
+you will need to use a <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html">Validating
+Admission Webhook</a> to enforce those policies.</li>
+<li><strong>Sub-namespace policy granularity</strong> -
+PodSecurityPolicy lets you bind different policies to different Service
+Accounts or users, even within a single namespace. This approach has
+many pitfalls and is not recommended, but if you require this feature
+anyway you will need to use a 3rd party webhook instead. The exception
+to this is if you only need to completely exempt specific users or <a
+href="../../concepts/containers/runtime-class.html">RuntimeClasses</a>, in
+which case Pod Security Admission does expose some <a
+href="../../concepts/security/pod-security-admission.html#exemptions">static
+configuration for exemptions</a>.</li>
+</ul>
+<p>Even if Pod Security Admission does not meet all of your needs it was
+designed to be <em>complementary</em> to other policy enforcement
+mechanisms, and can provide a useful fallback running alongside other
+admission webhooks.</p>
+<h2 id="review-namespace-permissions">1. Review namespace
+permissions</h2>
+<p>Pod Security Admission is controlled by <a
+href="../../concepts/security/pod-security-admission.html#pod-security-admission-labels-for-namespaces">labels
+on namespaces</a>. This means that anyone who can update (or patch or
+create) a namespace can also modify the Pod Security level for that
+namespace, which could be used to bypass a more restrictive policy.
+Before proceeding, ensure that only trusted, privileged users have these
+namespace permissions. It is not recommended to grant these powerful
+permissions to users that shouldn't have elevated permissions, but if
+you must you will need to use an <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html">admission
+webhook</a> to place additional restrictions on setting Pod Security
+labels on Namespace objects.</p>
+<h2 id="simplify-psps">2. Simplify &amp; standardize
+PodSecurityPolicies</h2>
+<p>In this section, you will reduce mutating PodSecurityPolicies and
+remove options that are outside the scope of the Pod Security Standards.
+You should make the changes recommended here to an offline copy of the
+original PodSecurityPolicy being modified. The cloned PSP should have a
+different name that is alphabetically before the original (for example,
+prepend a <code>0</code> to it). Do not create the new policies in
+Kubernetes yet - that will be covered in the <a
+href="#psp-update-rollout">Rollout the updated policies</a> section
+below.</p>
+<h3 id="eliminate-mutating-fields">2.a. Eliminate purely mutating
+fields</h3>
+<p>If a PodSecurityPolicy is mutating pods, then you could end up with
+pods that don't meet the Pod Security level requirements when you
+finally turn PodSecurityPolicy off. In order to avoid this, you should
+eliminate all PSP mutation prior to switching over. Unfortunately PSP
+does not cleanly separate mutating &amp; validating fields, so this is
+not a straightforward migration.</p>
+<p>You can start by eliminating the fields that are purely mutating, and
+don't have any bearing on the validating policy. These fields (also
+listed in the <a
+href="../../reference/access-authn-authz/psp-to-pod-security-standards.html">Mapping
+PodSecurityPolicies to Pod Security Standards</a> reference) are:</p>
+<ul>
+<li><code>.spec.defaultAllowPrivilegeEscalation</code></li>
+<li><code>.spec.runtimeClass.defaultRuntimeClassName</code></li>
+<li><code>.metadata.annotations['seccomp.security.alpha.kubernetes.io/defaultProfileName']</code></li>
+<li><code>.metadata.annotations['apparmor.security.beta.kubernetes.io/defaultProfileName']</code></li>
+<li><code>.spec.defaultAddCapabilities</code> - Although technically a
+mutating &amp; validating field, these should be merged into
+<code>.spec.allowedCapabilities</code> which performs the same
+validation without mutation.</li>
+</ul>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Removing these could result in workloads missing required
+configuration, and cause problems. See <a
+href="#psp-update-rollout">Rollout the updated policies</a> below for
+advice on how to roll these changes out safely.</p>
+</div>
+<h3 id="eliminate-non-standard-options">2.b. Eliminate options not
+covered by the Pod Security Standards</h3>
+<p>There are several fields in PodSecurityPolicy that are not covered by
+the Pod Security Standards. If you must enforce these options, you will
+need to supplement Pod Security Admission with an <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html">admission
+webhook</a>, which is outside the scope of this guide.</p>
+<p>First, you can remove the purely validating fields that the Pod
+Security Standards do not cover. These fields (also listed in the <a
+href="../../reference/access-authn-authz/psp-to-pod-security-standards.html">Mapping
+PodSecurityPolicies to Pod Security Standards</a> reference with "no
+opinion") are:</p>
+<ul>
+<li><code>.spec.allowedHostPaths</code></li>
+<li><code>.spec.allowedFlexVolumes</code></li>
+<li><code>.spec.allowedCSIDrivers</code></li>
+<li><code>.spec.forbiddenSysctls</code></li>
+<li><code>.spec.runtimeClass</code></li>
+</ul>
+<p>You can also remove the following fields, that are related to POSIX /
+UNIX group controls.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>If any of these use the <code>MustRunAs</code> strategy they may be
+mutating! Removing these could result in workloads not setting the
+required groups, and cause problems. See <a
+href="#psp-update-rollout">Rollout the updated policies</a> below for
+advice on how to roll these changes out safely.</p>
+</div>
+<ul>
+<li><code>.spec.runAsGroup</code></li>
+<li><code>.spec.supplementalGroups</code></li>
+<li><code>.spec.fsGroup</code></li>
+</ul>
+<p>The remaining mutating fields are required to properly support the
+Pod Security Standards, and will need to be handled on a case-by-case
+basis later:</p>
+<ul>
+<li><code>.spec.requiredDropCapabilities</code> - Required to drop
+<code>ALL</code> for the Restricted profile.</li>
+<li><code>.spec.seLinux</code> - (Only mutating with the
+<code>MustRunAs</code> rule) required to enforce the SELinux
+requirements of the Baseline &amp; Restricted profiles.</li>
+<li><code>.spec.runAsUser</code> - (Non-mutating with the
+<code>RunAsAny</code> rule) required to enforce
+<code>RunAsNonRoot</code> for the Restricted profile.</li>
+<li><code>.spec.allowPrivilegeEscalation</code> - (Only mutating if set
+to <code>false</code>) required for the Restricted profile.</li>
+</ul>
+<h3 id="psp-update-rollout">2.c. Rollout the updated PSPs</h3>
+<p>Next, you can rollout the updated policies to your cluster. You
+should proceed with caution, as removing the mutating options may result
+in workloads missing required configuration.</p>
+<p>For each updated PodSecurityPolicy:</p>
+<ol type="1">
+<li><p>Identify pods running under the original PSP. This can be done
+using the <code>kubernetes.io/psp</code> annotation. For example, using
+kubectl:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="va">PSP_NAME</span><span class="op">=</span><span class="st">&quot;original&quot;</span> <span class="co"># Set the name of the PSP you&#39;re checking for</span></span>
+<span class="ex">kubectl</span> get pods <span class="at">--all-namespaces</span> <span class="at">-o</span> jsonpath=<span class="st">&quot;{range .items[?(@.metadata.annotations.kubernetes\.io\/psp==&#39;</span><span class="va">$PSP_NAME</span><span class="st">&#39;)]}{.metadata.namespace} {.metadata.name}{&#39;\n&#39;}{end}&quot;</span></span></code></pre></div></li>
+<li><p>Compare these running pods against the original pod spec to
+determine whether PodSecurityPolicy has modified the pod. For pods
+created by a <a href="../../concepts/workloads/controllers.html">workload
+resource</a> you can compare the pod with the PodTemplate in the
+controller resource. If any changes are identified, the original Pod or
+PodTemplate should be updated with the desired configuration. The fields
+to review are:</p>
+<ul>
+<li><code>.metadata.annotations['container.apparmor.security.beta.kubernetes.io/*']</code>
+(replace * with each container name)</li>
+<li><code>.spec.runtimeClassName</code></li>
+<li><code>.spec.securityContext.fsGroup</code></li>
+<li><code>.spec.securityContext.seccompProfile</code></li>
+<li><code>.spec.securityContext.seLinuxOptions</code></li>
+<li><code>.spec.securityContext.supplementalGroups</code></li>
+<li>On containers, under <code>.spec.containers[*]</code> and
+<code>.spec.initContainers[*]</code>:
+<ul>
+<li><code>.securityContext.allowPrivilegeEscalation</code></li>
+<li><code>.securityContext.capabilities.add</code></li>
+<li><code>.securityContext.capabilities.drop</code></li>
+<li><code>.securityContext.readOnlyRootFilesystem</code></li>
+<li><code>.securityContext.runAsGroup</code></li>
+<li><code>.securityContext.runAsNonRoot</code></li>
+<li><code>.securityContext.runAsUser</code></li>
+<li><code>.securityContext.seccompProfile</code></li>
+<li><code>.securityContext.seLinuxOptions</code></li>
+</ul></li>
+</ul></li>
+<li><p>Create the new PodSecurityPolicies. If any Roles or ClusterRoles
+are granting <code>use</code> on all PSPs this could cause the new PSPs
+to be used instead of their mutating counter-parts.</p></li>
+<li><p>Update your authorization to grant access to the new PSPs. In
+RBAC this means updating any Roles or ClusterRoles that grant the
+<code>use</code> permission on the original PSP to also grant it to the
+updated PSP.</p></li>
+<li><p>Verify: after some soak time, rerun the command from step 1 to
+see if any pods are still using the original PSPs. Note that pods need
+to be recreated after the new policies have been rolled out before they
+can be fully verified.</p></li>
+<li><p>(optional) Once you have verified that the original PSPs are no
+longer in use, you can delete them.</p></li>
+</ol>
+<h2 id="update-namespaces">3. Update Namespaces</h2>
+<p>The following steps will need to be performed on every namespace in
+the cluster. Commands referenced in these steps use the
+<code>$NAMESPACE</code> variable to refer to the namespace being
+updated.</p>
+<h3 id="identify-appropriate-level">3.a. Identify an appropriate Pod
+Security level</h3>
+<p>Start reviewing the <a
+href="../../concepts/security/pod-security-standards.html">Pod Security
+Standards</a> and familiarizing yourself with the 3 different
+levels.</p>
+<p>There are several ways to choose a Pod Security level for your
+namespace:</p>
+<ol type="1">
+<li><p><strong>By security requirements for the namespace</strong> - If
+you are familiar with the expected access level for the namespace, you
+can choose an appropriate level based on those requirements, similar to
+how one might approach this on a new cluster.</p></li>
+<li><p><strong>By existing PodSecurityPolicies</strong> - Using the <a
+href="../../reference/access-authn-authz/psp-to-pod-security-standards.html">Mapping
+PodSecurityPolicies to Pod Security Standards</a> reference you can map
+each PSP to a Pod Security Standard level. If your PSPs aren't based on
+the Pod Security Standards, you may need to decide between choosing a
+level that is at least as permissive as the PSP, and a level that is at
+least as restrictive. You can see which PSPs are in use for pods in a
+given namespace with this command:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get pods <span class="at">-n</span> <span class="va">$NAMESPACE</span> <span class="at">-o</span> jsonpath=<span class="st">&quot;{.items[*].metadata.annotations.kubernetes\.io\/psp}&quot;</span> <span class="kw">|</span> <span class="fu">tr</span> <span class="st">&quot; &quot;</span> <span class="st">&quot;\n&quot;</span> <span class="kw">|</span> <span class="fu">sort</span> <span class="at">-u</span></span></code></pre></div></li>
+<li><p><strong>By existing pods</strong> - Using the strategies under <a
+href="#verify-pss-level">Verify the Pod Security level</a>, you can test
+out both the Baseline and Restricted levels to see whether they are
+sufficiently permissive for existing workloads, and chose the
+least-privileged valid level.</p></li>
+</ol>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Options 2 &amp; 3 above are based on <em>existing</em> pods, and may
+miss workloads that aren't currently running, such as CronJobs,
+scale-to-zero workloads, or other workloads that haven't rolled out.</p>
+</div>
+<h3 id="verify-pss-level">3.b. Verify the Pod Security level</h3>
+<p>Once you have selected a Pod Security level for the namespace (or if
+you're trying several), it's a good idea to test it out first (you can
+skip this step if using the Privileged level). Pod Security includes
+several tools to help test and safely roll out profiles.</p>
+<p>First, you can dry-run the policy, which will evaluate pods currently
+running in the namespace against the applied policy, without making the
+new policy take effect:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># $LEVEL is the level to dry-run, either &quot;baseline&quot; or &quot;restricted&quot;.</span></span>
+<span class="ex">kubectl</span> label <span class="at">--dry-run</span><span class="op">=</span>server <span class="at">--overwrite</span> ns <span class="va">$NAMESPACE</span> pod-security.kubernetes.io/enforce=<span class="va">$LEVEL</span></span></code></pre></div>
+<p>This command will return a warning for any <em>existing</em> pods
+that are not valid under the proposed level.</p>
+<p>The second option is better for catching workloads that are not
+currently running: audit mode. When running under audit-mode (as opposed
+to enforcing), pods that violate the policy level are recorded in the
+audit logs, which can be reviewed later after some soak time, but are
+not forbidden. Warning mode works similarly, but returns the warning to
+the user immediately. You can set the audit level on a namespace with
+this command:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> label <span class="at">--overwrite</span> ns <span class="va">$NAMESPACE</span> pod-security.kubernetes.io/audit=<span class="va">$LEVEL</span></span></code></pre></div>
+<p>If either of these approaches yield unexpected violations, you will
+need to either update the violating workloads to meet the policy
+requirements, or relax the namespace Pod Security level.</p>
+<h3 id="enforce-pod-security-level">3.c. Enforce the Pod Security
+level</h3>
+<p>When you are satisfied that the chosen level can safely be enforced
+on the namespace, you can update the namespace to enforce the desired
+level:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> label <span class="at">--overwrite</span> ns <span class="va">$NAMESPACE</span> pod-security.kubernetes.io/enforce=<span class="va">$LEVEL</span></span></code></pre></div>
+<h3 id="bypass-psp">3.d. Bypass PodSecurityPolicy</h3>
+<p>Finally, you can effectively bypass PodSecurityPolicy at the
+namespace level by binding the fully <a
+href="https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/policy/privileged-psp.yaml">policy/privileged-psp.yaml</a>privileged
+PSP to all service accounts in the namespace.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># The following cluster-scoped commands are only needed once.</span></span>
+<span class="ex">kubectl</span> apply <span class="at">-f</span> privileged-psp.yaml</span>
+<span class="ex">kubectl</span> create clusterrole privileged-psp <span class="at">--verb</span> use <span class="at">--resource</span> podsecuritypolicies.policy <span class="at">--resource-name</span> privileged</span>
+</span>
+<span class="co"># Per-namespace disable</span></span>
+<span class="ex">kubectl</span> create <span class="at">-n</span> <span class="va">$NAMESPACE</span> rolebinding disable-psp <span class="at">--clusterrole</span> privileged-psp <span class="at">--group</span> system:serviceaccounts:<span class="va">$NAMESPACE</span></span></code></pre></div>
+<p>Since the privileged PSP is non-mutating, and the PSP admission
+controller always prefers non-mutating PSPs, this will ensure that pods
+in this namespace are no longer being modified or restricted by
+PodSecurityPolicy.</p>
+<p>The advantage to disabling PodSecurityPolicy on a per-namespace basis
+like this is if a problem arises you can easily roll the change back by
+deleting the RoleBinding. Just make sure the pre-existing
+PodSecurityPolicies are still in place!</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="co"># Undo PodSecurityPolicy disablement.</span></span>
+<span class="ex">kubectl</span> delete <span class="at">-n</span> <span class="va">$NAMESPACE</span> rolebinding disable-psp</span></code></pre></div>
+<h2 id="review-namespace-creation-process">4. Review namespace creation
+processes</h2>
+<p>Now that existing namespaces have been updated to enforce Pod
+Security Admission, you should ensure that your processes and/or
+policies for creating new namespaces are updated to ensure that an
+appropriate Pod Security profile is applied to new namespaces.</p>
+<p>You can also statically configure the Pod Security admission
+controller to set a default enforce, audit, and/or warn level for
+unlabeled namespaces. See <a
+href="enforce-standards-admission-controller.html#configure-the-admission-controller">Configure
+the Admission Controller</a> for more information.</p>
+<h2 id="disable-psp">5. Disable PodSecurityPolicy</h2>
+<p>Finally, you're ready to disable PodSecurityPolicy. To do so, you
+will need to modify the admission configuration of the API server: <a
+href="../../reference/access-authn-authz/admission-controllers.html#how-do-i-turn-off-an-admission-controller">How
+do I turn off an admission controller?</a>.</p>
+<p>To verify that the PodSecurityPolicy admission controller is no
+longer enabled, you can manually run a test by impersonating a user
+without access to any PodSecurityPolicies (see the <a
+href="../../concepts/security/pod-security-policy.html">PodSecurityPolicy
+example</a>), or by verifying in the API server logs. At startup, the
+API server outputs log lines listing the loaded admission controller
+plugins:</p>
+<pre><code>I0218 00:59:44.903329      13 plugins.go:158] Loaded 16 mutating admission controller(s) successfully in the following order: NamespaceLifecycle,LimitRanger,ServiceAccount,NodeRestriction,TaintNodesByCondition,Priority,DefaultTolerationSeconds,ExtendedResourceToleration,PersistentVolumeLabel,DefaultStorageClass,StorageObjectInUseProtection,RuntimeClass,DefaultIngressClass,MutatingAdmissionWebhook.
+I0218 00:59:44.903350      13 plugins.go:161] Loaded 14 validating admission controller(s) successfully in the following order: LimitRanger,ServiceAccount,PodSecurity,Priority,PersistentVolumeClaimResize,RuntimeClass,CertificateApproval,CertificateSigning,CertificateSubjectRestriction,DenyServiceExternalIPs,ValidatingAdmissionWebhook,ResourceQuota.</code></pre>
+<p>You should see <code>PodSecurity</code> (in the validating admission
+controllers), and neither list should contain
+<code>PodSecurityPolicy</code>.</p>
+<p>Once you are certain the PSP admission controller is disabled (and
+after sufficient soak time to be confident you won't need to roll back),
+you are free to delete your PodSecurityPolicies and any associated
+Roles, ClusterRoles, RoleBindings and ClusterRoleBindings (just make
+sure they don't grant any other unrelated permissions).</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="enforce-standards-namespace-labels.html"><span>Previous</span>Enforce Pod Security Standards with Namespace Labels</a><a class="page-nav-link next" href="../debug.html"><span>Next</span>Monitoring, Logging, and Debugging</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#overall-approach">Overall approach</a></li><li class="toc-l2"><a href="#is-psa-right-for-you">0. Decide whether Pod Security Admission is right for you</a></li><li class="toc-l2"><a href="#review-namespace-permissions">1. Review namespace permissions</a></li><li class="toc-l2"><a href="#simplify-psps">2. Simplify &amp; standardize PodSecurityPolicies</a></li><li class="toc-l3"><a href="#eliminate-mutating-fields">2.a. Eliminate purely mutating fields</a></li><li class="toc-l3"><a href="#eliminate-non-standard-options">2.b. Eliminate options not covered by the Pod Security Standards</a></li><li class="toc-l3"><a href="#psp-update-rollout">2.c. Rollout the updated PSPs</a></li><li class="toc-l2"><a href="#update-namespaces">3. Update Namespaces</a></li><li class="toc-l3"><a href="#identify-appropriate-level">3.a. Identify an appropriate Pod Security level</a></li><li class="toc-l3"><a href="#verify-pss-level">3.b. Verify the Pod Security level</a></li><li class="toc-l3"><a href="#enforce-pod-security-level">3.c. Enforce the Pod Security level</a></li><li class="toc-l3"><a href="#bypass-psp">3.d. Bypass PodSecurityPolicy</a></li><li class="toc-l2"><a href="#review-namespace-creation-process">4. Review namespace creation processes</a></li><li class="toc-l2"><a href="#disable-psp">5. Disable PodSecurityPolicy</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

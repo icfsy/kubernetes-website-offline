@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Using a KMS provider for data encryption · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/administer-cluster/kms-provider" data-title="Using a KMS provider for data encryption" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../administer-cluster.html">Administer a Cluster</a></nav></nav>
+        <header class="page-head">
+          <h1>Using a KMS provider for data encryption</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/kms-provider/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page shows how to configure a Key Management Service (KMS)
+provider and plugin to enable secret data encryption. In Kubernetes 1.37
+there are two versions of KMS at-rest encryption. You should use KMS v2
+if feasible because KMS v1 is deprecated (since Kubernetes v1.28) and
+disabled by default (since Kubernetes v1.29). KMS v2 offers
+significantly better performance characteristics than KMS v1.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>This documentation is for the generally available implementation of
+KMS v2 (and for the deprecated version 1 implementation). If you are
+using any control plane components older than Kubernetes v1.29, please
+check the equivalent page in the documentation for the version of
+Kubernetes that your cluster is running. Earlier releases of Kubernetes
+had different behavior that may be relevant for information
+security.</p>
+</div>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
+</ul>
+<p>The version of Kubernetes that you need depends on which KMS API
+version you have selected. Kubernetes recommends using KMS v2.</p>
+<ul>
+<li>If you selected KMS API v1 to support clusters prior to version
+v1.27 or if you have a legacy KMS plugin that only supports KMS v1, any
+supported Kubernetes version will work. This API is deprecated as of
+Kubernetes v1.28. Kubernetes does not recommend the use of this
+API.</li>
+</ul>
+<p>To check the version, enter <code>kubectl version</code>.</p>
+<h3 id="kms-v1">KMS v1</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Deprecated since Kubernetes v1.28</p>
+</div>
+<ul>
+<li><p>Kubernetes version 1.10.0 or later is required</p></li>
+<li><p>For version 1.29 and later, the v1 implementation of KMS is
+disabled by default. To enable the feature, set
+<code>--feature-gates=KMSv1=true</code> to configure a KMS v1
+provider.</p></li>
+<li><p>Your cluster must use etcd v3 or later</p></li>
+</ul>
+<h3 id="kms-v2">KMS v2</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.29</p>
+</div>
+<ul>
+<li>Your cluster must use etcd v3 or later</li>
+</ul>
+<h2 id="kms-encryption-and-per-object-encryption-keys">KMS encryption
+and per-object encryption keys</h2>
+<p>The KMS encryption provider uses an envelope encryption scheme to
+encrypt data in etcd. The data is encrypted using a data encryption key
+(DEK). The DEKs are encrypted with a key encryption key (KEK) that is
+stored and managed in a remote KMS.</p>
+<p>If you use the (deprecated) v1 implementation of KMS, a new DEK is
+generated for each encryption.</p>
+<p>With KMS v2, a new DEK is generated <strong>per encryption</strong>:
+the API server uses a <em>key derivation function</em> to generate
+single use data encryption keys from a secret seed combined with some
+random data. The seed is rotated whenever the KEK is rotated (see the
+<em>Understanding key_id and Key Rotation</em> section below for more
+details).</p>
+<p>The KMS provider uses gRPC to communicate with a specific KMS plugin
+over a UNIX domain socket. The KMS plugin, which is implemented as a
+gRPC server and deployed on the same host(s) as the Kubernetes control
+plane, is responsible for all communication with the remote KMS.</p>
+<h2 id="configuring-the-kms-provider">Configuring the KMS provider</h2>
+<p>To configure a KMS provider on the API server, include a provider of
+type <code>kms</code> in the <code>providers</code> array in the
+encryption configuration file and set the following properties:</p>
+<h3 id="configuring-the-kms-provider-kms-v1">KMS v1</h3>
+<ul>
+<li><code>apiVersion</code>: API Version for KMS provider. Leave this
+value empty or set it to <code>v1</code>.</li>
+<li><code>name</code>: Display name of the KMS plugin. Cannot be changed
+once set.</li>
+<li><code>endpoint</code>: Listen address of the gRPC server (KMS
+plugin). The endpoint is a UNIX domain socket.</li>
+<li><code>cachesize</code>: Number of data encryption keys (DEKs) to be
+cached in the clear. When cached, DEKs can be used without another call
+to the KMS; whereas DEKs that are not cached require a call to the KMS
+to unwrap.</li>
+<li><code>timeout</code>: How long should <code>kube-apiserver</code>
+wait for kms-plugin to respond before returning an error (default is 3
+seconds).</li>
+</ul>
+<h3 id="configuring-the-kms-provider-kms-v2">KMS v2</h3>
+<ul>
+<li><code>apiVersion</code>: API Version for KMS provider. Set this to
+<code>v2</code>.</li>
+<li><code>name</code>: Display name of the KMS plugin. Cannot be changed
+once set.</li>
+<li><code>endpoint</code>: Listen address of the gRPC server (KMS
+plugin). The endpoint is a UNIX domain socket.</li>
+<li><code>timeout</code>: How long should <code>kube-apiserver</code>
+wait for kms-plugin to respond before returning an error (default is 3
+seconds).</li>
+</ul>
+<p>KMS v2 does not support the <code>cachesize</code> property. All data
+encryption keys (DEKs) will be cached in the clear once the server has
+unwrapped them via a call to the KMS. Once cached, DEKs can be used to
+perform decryption indefinitely without making a call to the KMS.</p>
+<p>See <a
+href="encrypt-data.html">Understanding the
+encryption at rest configuration</a>.</p>
+<h2 id="implementing-a-kms-plugin">Implementing a KMS plugin</h2>
+<p>To implement a KMS plugin, you can develop a new plugin gRPC server
+or enable a KMS plugin already provided by your cloud provider. You then
+integrate the plugin with the remote KMS and deploy it on the Kubernetes
+control plane.</p>
+<h3 id="enabling-the-kms-supported-by-your-cloud-provider">Enabling the
+KMS supported by your cloud provider</h3>
+<p>Refer to your cloud provider for instructions on enabling the cloud
+provider-specific KMS plugin.</p>
+<h3 id="developing-a-kms-plugin-grpc-server">Developing a KMS plugin
+gRPC server</h3>
+<p>You can develop a KMS plugin gRPC server using a stub file available
+for Go. For other languages, you use a proto file to create a stub file
+that you can use to develop the gRPC server code.</p>
+<h4 id="developing-a-kms-plugin-gRPC-server-kms-v1">KMS v1</h4>
+<ul>
+<li><p>Using Go: Use the functions and data structures in the stub file:
+<a
+href="https://github.com/kubernetes/kms/blob/release-1.37/apis/v1beta1/api.pb.go">api.pb.go</a>
+to develop the gRPC server code</p></li>
+<li><p>Using languages other than Go: Use the protoc compiler with the
+proto file: <a
+href="https://github.com/kubernetes/kms/blob/release-1.37/apis/v1beta1/api.proto">api.proto</a>
+to generate a stub file for the specific language</p></li>
+</ul>
+<h4 id="developing-a-kms-plugin-gRPC-server-kms-v2">KMS v2</h4>
+<ul>
+<li><p>Using Go: A high level <a
+href="https://github.com/kubernetes/kms/blob/release-1.37/pkg/service/interface.go">library</a>
+is provided to make the process easier. Low level implementations can
+use the functions and data structures in the stub file: <a
+href="https://github.com/kubernetes/kms/blob/release-1.37/apis/v2/api.pb.go">api.pb.go</a>
+to develop the gRPC server code</p></li>
+<li><p>Using languages other than Go: Use the protoc compiler with the
+proto file: <a
+href="https://github.com/kubernetes/kms/blob/release-1.37/apis/v2/api.proto">api.proto</a>
+to generate a stub file for the specific language</p></li>
+</ul>
+<p>Then use the functions and data structures in the stub file to
+develop the server code.</p>
+<h4 id="notes">Notes</h4>
+<h5 id="developing-a-kms-plugin-gRPC-server-notes-kms-v1">KMS v1</h5>
+<ul>
+<li><p>kms plugin version: <code>v1beta1</code></p>
+<p>In response to procedure call Version, a compatible KMS plugin should
+return <code>v1beta1</code> as
+<code>VersionResponse.version</code>.</p></li>
+<li><p>message version: <code>v1beta1</code></p>
+<p>All messages from KMS provider have the version field set to
+<code>v1beta1</code>.</p></li>
+<li><p>protocol: UNIX domain socket (<code>unix</code>)</p>
+<p>The plugin is implemented as a gRPC server that listens at UNIX
+domain socket. The plugin deployment should create a file on the file
+system to run the gRPC unix domain socket connection. The API server
+(gRPC client) is configured with the KMS provider (gRPC server) unix
+domain socket endpoint in order to communicate with it. An abstract
+Linux socket may be used by starting the endpoint with <code>/@</code>,
+i.e. <code>unix:///@foo</code>. Care must be taken when using this type
+of socket as they do not have concept of ACL (unlike traditional file
+based sockets). However, they are subject to Linux networking namespace,
+so will only be accessible to containers within the same pod unless host
+networking is used.</p></li>
+</ul>
+<h5 id="developing-a-kms-plugin-gRPC-server-notes-kms-v2">KMS v2</h5>
+<ul>
+<li><p>KMS plugin version: <code>v2</code></p>
+<p>In response to the <code>Status</code> remote procedure call, a
+compatible KMS plugin should return its KMS compatibility version as
+<code>StatusResponse.version</code>. That status response should also
+include "ok" as <code>StatusResponse.healthz</code> and a
+<code>key_id</code> (remote KMS KEK ID) as
+<code>StatusResponse.key_id</code>. The Kubernetes project recommends
+you make your plugin compatible with the stable <code>v2</code> KMS API.
+Kubernetes 1.37 also supports the <code>v2beta1</code> API for KMS;
+future Kubernetes releases are likely to continue supporting that beta
+version.</p>
+<p>The API server polls the <code>Status</code> procedure call
+approximately every minute when everything is healthy, and every 10
+seconds when the plugin is not healthy. Plugins must take care to
+optimize this call as it will be under constant load.</p></li>
+<li><p>Encryption</p>
+<p>The <code>EncryptRequest</code> procedure call provides the plaintext
+and a UID for logging purposes. The response must include the
+ciphertext, the <code>key_id</code> for the KEK used, and, optionally,
+any metadata that the KMS plugin needs to aid in future
+<code>DecryptRequest</code> calls (via the <code>annotations</code>
+field). The plugin must guarantee that any distinct plaintext results in
+a distinct response <code>(ciphertext, key_id, annotations)</code>.</p>
+<p>If the plugin returns a non-empty <code>annotations</code> map, all
+map keys must be fully qualified domain names such as
+<code>example.com</code>. An example use case of <code>annotation</code>
+is
+<code>{"kms.example.io/remote-kms-auditid":"&lt;audit ID used by the remote KMS&gt;"}</code></p>
+<p>The API server does not perform the <code>EncryptRequest</code>
+procedure call at a high rate. Plugin implementations should still aim
+to keep each request's latency at under 100 milliseconds.</p></li>
+<li><p>Decryption</p>
+<p>The <code>DecryptRequest</code> procedure call provides the
+<code>(ciphertext, key_id, annotations)</code> from
+<code>EncryptRequest</code> and a UID for logging purposes. As expected,
+it is the inverse of the <code>EncryptRequest</code> call. Plugins must
+verify that the <code>key_id</code> is one that they understand - they
+must not attempt to decrypt data unless they are sure that it was
+encrypted by them at an earlier time.</p>
+<p>The API server may perform thousands of <code>DecryptRequest</code>
+procedure calls on startup to fill its watch cache. Thus plugin
+implementations must perform these calls as quickly as possible, and
+should aim to keep each request's latency at under 10
+milliseconds.</p></li>
+<li><p>Understanding <code>key_id</code> and Key Rotation</p>
+<p>The <code>key_id</code> is the public, non-secret name of the remote
+KMS KEK that is currently in use. It may be logged during regular
+operation of the API server, and thus must not contain any private data.
+Plugin implementations are encouraged to use a hash to avoid leaking any
+data. The KMS v2 metrics take care to hash this value before exposing it
+via the <code>/metrics</code> endpoint.</p>
+<p>The API server considers the <code>key_id</code> returned from the
+<code>Status</code> procedure call to be authoritative. Thus, a change
+to this value signals to the API server that the remote KEK has changed,
+and data encrypted with the old KEK should be marked stale when a no-op
+write is performed (as described below). If an
+<code>EncryptRequest</code> procedure call returns a <code>key_id</code>
+that is different from <code>Status</code>, the response is thrown away
+and the plugin is considered unhealthy. Thus implementations must
+guarantee that the <code>key_id</code> returned from <code>Status</code>
+will be the same as the one returned by <code>EncryptRequest</code>.
+Furthermore, plugins must ensure that the <code>key_id</code> is stable
+and does not flip-flop between values (i.e. during a remote KEK
+rotation).</p>
+<p>Plugins must not re-use <code>key_id</code>s, even in situations
+where a previously used remote KEK has been reinstated. For example, if
+a plugin was using <code>key_id=A</code>, switched to
+<code>key_id=B</code>, and then went back to <code>key_id=A</code> -
+instead of reporting <code>key_id=A</code> the plugin should report some
+derivative value such as <code>key_id=A_001</code> or use a new value
+such as <code>key_id=C</code>.</p>
+<p>Since the API server polls <code>Status</code> about every minute,
+<code>key_id</code> rotation is not immediate. Furthermore, the API
+server will coast on the last valid state for about three minutes. Thus
+if a user wants to take a passive approach to storage migration (i.e. by
+waiting), they must schedule a migration to occur at
+<code>3 + N + M</code> minutes after the remote KEK has been rotated
+(<code>N</code> is how long it takes the plugin to observe the
+<code>key_id</code> change and <code>M</code> is the desired buffer to
+allow config changes to be processed - a minimum <code>M</code> of five
+minutes is recommend). Note that no API server restart is required to
+perform KEK rotation.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Because you don't control the number of writes performed with the
+DEK, the Kubernetes project recommends rotating the KEK at least every
+90 days.</p>
+</div></li>
+<li><p>protocol: UNIX domain socket (<code>unix</code>)</p>
+<p>The plugin is implemented as a gRPC server that listens at UNIX
+domain socket. The plugin deployment should create a file on the file
+system to run the gRPC unix domain socket connection. The API server
+(gRPC client) is configured with the KMS provider (gRPC server) unix
+domain socket endpoint in order to communicate with it. An abstract
+Linux socket may be used by starting the endpoint with <code>/@</code>,
+i.e. <code>unix:///@foo</code>. Care must be taken when using this type
+of socket as they do not have concept of ACL (unlike traditional file
+based sockets). However, they are subject to Linux networking namespace,
+so will only be accessible to containers within the same pod unless host
+networking is used.</p></li>
+</ul>
+<h3 id="integrating-a-kms-plugin-with-the-remote-kms">Integrating a KMS
+plugin with the remote KMS</h3>
+<p>The KMS plugin can communicate with the remote KMS using any protocol
+supported by the KMS. All configuration data, including authentication
+credentials the KMS plugin uses to communicate with the remote KMS, are
+stored and managed by the KMS plugin independently. The KMS plugin can
+encode the ciphertext with additional metadata that may be required
+before sending it to the KMS for decryption (KMS v2 makes this process
+easier by providing a dedicated <code>annotations</code> field).</p>
+<h3 id="deploying-the-kms-plugin">Deploying the KMS plugin</h3>
+<p>Ensure that the KMS plugin runs on the same host(s) as the Kubernetes
+API server(s).</p>
+<h2 id="encrypting-your-data-with-the-kms-provider">Encrypting your data
+with the KMS provider</h2>
+<p>To encrypt the data:</p>
+<ol type="1">
+<li><p>Create a new <code>EncryptionConfiguration</code> file using the
+appropriate properties for the <code>kms</code> provider to encrypt
+resources like Secrets and ConfigMaps. If you want to encrypt an
+extension API that is defined in a CustomResourceDefinition, your
+cluster must be running Kubernetes v1.26 or newer.</p></li>
+<li><p>Set the <code>--encryption-provider-config</code> flag on the
+kube-apiserver to point to the location of the configuration
+file.</p></li>
+<li><p><code>--encryption-provider-config-automatic-reload</code>
+boolean argument determines if the file set by
+<code>--encryption-provider-config</code> should be <a
+href="encrypt-data.html#configure-automatic-reloading">automatically
+reloaded</a> if the disk contents change.</p></li>
+<li><p>Restart your API server.</p></li>
+</ol>
+<h3 id="encrypting-your-data-with-the-kms-provider-kms-v1">KMS v1</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">configmaps</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">pandas.awesome.bears.example</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">kms</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myKmsPluginFoo</span></span>
+<span class="at">          </span><span class="fu">endpoint</span><span class="kw">:</span><span class="at"> unix:///tmp/socketfile-foo.sock</span></span>
+<span class="at">          </span><span class="fu">cachesize</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span class="at">          </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">kms</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myKmsPluginBar</span></span>
+<span class="at">          </span><span class="fu">endpoint</span><span class="kw">:</span><span class="at"> unix:///tmp/socketfile-bar.sock</span></span>
+<span class="at">          </span><span class="fu">cachesize</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span class="at">          </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span></code></pre></div>
+<h3 id="encrypting-your-data-with-the-kms-provider-kms-v2">KMS v2</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">configmaps</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">pandas.awesome.bears.example</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">kms</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v2</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myKmsPluginFoo</span></span>
+<span class="at">          </span><span class="fu">endpoint</span><span class="kw">:</span><span class="at"> unix:///tmp/socketfile-foo.sock</span></span>
+<span class="at">          </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">kms</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v2</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> myKmsPluginBar</span></span>
+<span class="at">          </span><span class="fu">endpoint</span><span class="kw">:</span><span class="at"> unix:///tmp/socketfile-bar.sock</span></span>
+<span class="at">          </span><span class="fu">timeout</span><span class="kw">:</span><span class="at"> 3s</span></span></code></pre></div>
+<p>Setting <code>--encryption-provider-config-automatic-reload</code> to
+<code>true</code> collapses all health checks to a single health check
+endpoint. Individual health checks are only available when KMS v1
+providers are in use and the encryption config is not auto-reloaded.</p>
+<p>The following table summarizes the health check endpoints for each
+KMS version:</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 38%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>KMS configurations</th>
+<th>Without Automatic Reload</th>
+<th>With Automatic Reload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KMS v1 only</td>
+<td>Individual Healthchecks</td>
+<td>Single Healthcheck</td>
+</tr>
+<tr>
+<td>KMS v2 only</td>
+<td>Single Healthcheck</td>
+<td>Single Healthcheck</td>
+</tr>
+<tr>
+<td>Both KMS v1 and v2</td>
+<td>Individual Healthchecks</td>
+<td>Single Healthcheck</td>
+</tr>
+<tr>
+<td>No KMS</td>
+<td>None</td>
+<td>Single Healthcheck</td>
+</tr>
+</tbody>
+</table>
+<p><code>Single Healthcheck</code> means that the only health check
+endpoint is <code>/healthz/kms-providers</code>.</p>
+<p><code>Individual Healthchecks</code> means that each KMS plugin has
+an associated health check endpoint based on its location in the
+encryption config: <code>/healthz/kms-provider-0</code>,
+<code>/healthz/kms-provider-1</code> etc.</p>
+<p>These healthcheck endpoint paths are hard coded and
+generated/controlled by the server. The indices for individual
+healthchecks corresponds to the order in which the KMS encryption config
+is processed.</p>
+<p>Until the steps defined in <a
+href="#ensuring-all-secrets-are-encrypted">Ensuring all secrets are
+encrypted</a> are performed, the <code>providers</code> list should end
+with the <code>identity: {}</code> provider to allow unencrypted data to
+be read. Once all resources are encrypted, the <code>identity</code>
+provider should be removed to prevent the API server from honoring
+unencrypted data.</p>
+<p>For details about the <code>EncryptionConfiguration</code> format,
+please check the <a
+href="../../reference/config-api/apiserver-config.v1.html">API server
+encryption API reference</a>.</p>
+<h2 id="verifying-that-the-data-is-encrypted">Verifying that the data is
+encrypted</h2>
+<p>When encryption at rest is correctly configured, resources are
+encrypted on write. After restarting your <code>kube-apiserver</code>,
+any newly created or updated Secret or other resource types configured
+in <code>EncryptionConfiguration</code> should be encrypted when stored.
+To verify, you can use the <code>etcdctl</code> command line program to
+retrieve the contents of your secret data.</p>
+<ol type="1">
+<li><p>Create a new secret called <code>secret1</code> in the
+<code>default</code> namespace:</p>
+<pre class="shell"><code>kubectl create secret generic secret1 -n default --from-literal=mykey=mydata</code></pre></li>
+<li><p>Using the <code>etcdctl</code> command line, read that secret out
+of etcd:</p>
+<pre class="shell"><code>ETCDCTL_API=3 etcdctl get /kubernetes.io/secrets/default/secret1 [...] | hexdump -C</code></pre>
+<p>where <code>[...]</code> contains the additional arguments for
+connecting to the etcd server.</p></li>
+<li><p>Verify the stored secret is prefixed with
+<code>k8s:enc:kms:v1:</code> for KMS v1 or prefixed with
+<code>k8s:enc:kms:v2:</code> for KMS v2, which indicates that the
+<code>kms</code> provider has encrypted the resulting data.</p></li>
+<li><p>Verify that the secret is correctly decrypted when retrieved via
+the API:</p>
+<pre class="shell"><code>kubectl describe secret secret1 -n default</code></pre>
+<p>The Secret should contain <code>mykey: mydata</code></p></li>
+</ol>
+<h2 id="ensuring-all-secrets-are-encrypted">Ensuring all secrets are
+encrypted</h2>
+<p>When encryption at rest is correctly configured, resources are
+encrypted on write. Thus we can perform an in-place no-op update to
+ensure that data is encrypted.</p>
+<p>The following command reads all secrets and then updates them to
+apply server side encryption. If an error occurs due to a conflicting
+write, retry the command. For larger clusters, you may wish to subdivide
+the secrets by namespace or script an update.</p>
+<pre class="shell"><code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
+<h2
+id="switching-from-a-local-encryption-provider-to-the-kms-provider">Switching
+from a local encryption provider to the KMS provider</h2>
+<p>To switch from a local encryption provider to the <code>kms</code>
+provider and re-encrypt all of the secrets:</p>
+<ol type="1">
+<li><p>Add the <code>kms</code> provider as the first entry in the
+configuration file as shown in the following example.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">kms</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v2</span></span>
+<span class="at">          </span><span class="fu">name </span><span class="kw">:</span><span class="at"> myKmsPlugin</span></span>
+<span class="at">          </span><span class="fu">endpoint</span><span class="kw">:</span><span class="at"> unix:///tmp/socketfile.sock</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span></span></code></pre></div></li>
+<li><p>Restart all <code>kube-apiserver</code> processes.</p></li>
+<li><p>Run the following command to force all secrets to be re-encrypted
+using the <code>kms</code> provider.</p>
+<pre class="shell"><code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre></li>
+</ol>
+<h2 id="what-s-next">What's next</h2>
+<p><a id="disabling-encryption-at-rest" /></p>
+<p>If you no longer want to use encryption for data persisted in the
+Kubernetes API, read <a
+href="decrypt-data.html">decrypt data that
+are already stored at rest</a>.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="use-cascading-deletion.html"><span>Previous</span>Use Cascading Deletion in a Cluster</a><a class="page-nav-link next" href="coredns.html"><span>Next</span>Using CoreDNS for Service Discovery</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l3"><a href="#kms-v1">KMS v1</a></li><li class="toc-l3"><a href="#kms-v2">KMS v2</a></li><li class="toc-l2"><a href="#kms-encryption-and-per-object-encryption-keys">KMS encryption and per-object encryption keys</a></li><li class="toc-l2"><a href="#configuring-the-kms-provider">Configuring the KMS provider</a></li><li class="toc-l3"><a href="#configuring-the-kms-provider-kms-v1">KMS v1</a></li><li class="toc-l3"><a href="#configuring-the-kms-provider-kms-v2">KMS v2</a></li><li class="toc-l2"><a href="#implementing-a-kms-plugin">Implementing a KMS plugin</a></li><li class="toc-l3"><a href="#enabling-the-kms-supported-by-your-cloud-provider">Enabling the KMS supported by your cloud provider</a></li><li class="toc-l3"><a href="#developing-a-kms-plugin-grpc-server">Developing a KMS plugin gRPC server</a></li><li class="toc-l3"><a href="#integrating-a-kms-plugin-with-the-remote-kms">Integrating a KMS plugin with the remote KMS</a></li><li class="toc-l3"><a href="#deploying-the-kms-plugin">Deploying the KMS plugin</a></li><li class="toc-l2"><a href="#encrypting-your-data-with-the-kms-provider">Encrypting your data with the KMS provider</a></li><li class="toc-l3"><a href="#encrypting-your-data-with-the-kms-provider-kms-v1">KMS v1</a></li><li class="toc-l3"><a href="#encrypting-your-data-with-the-kms-provider-kms-v2">KMS v2</a></li><li class="toc-l2"><a href="#verifying-that-the-data-is-encrypted">Verifying that the data is encrypted</a></li><li class="toc-l2"><a href="#ensuring-all-secrets-are-encrypted">Ensuring all secrets are encrypted</a></li><li class="toc-l2"><a href="#switching-from-a-local-encryption-provider-to-the-kms-provider">Switching from a local encryption provider to the KMS provider</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

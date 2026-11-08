@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operating etcd clusters for Kubernetes · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/administer-cluster/configure-upgrade-etcd" data-title="Operating etcd clusters for Kubernetes" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../administer-cluster.html">Administer a Cluster</a></nav></nav>
+        <header class="page-head">
+          <h1>Operating etcd clusters for Kubernetes</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/configure-upgrade-etcd/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>etcd is a consistent and highly-available key value store used as
+Kubernetes' backing store for all cluster data.</p>
+<!--more-->
+<p>If your Kubernetes cluster uses etcd as its backing store, make sure
+you have a <a
+href="configure-upgrade-etcd.html#backing-up-an-etcd-cluster">back
+up</a> plan for the data.</p>
+<p>You can find in-depth information about etcd in the official <a
+href="https://etcd.io/docs/">documentation</a>.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>Before you follow steps in this page to deploy, manage, back up or
+restore etcd, you need to understand the typical expectations for
+operating an etcd cluster. Refer to the <a
+href="https://etcd.io/docs/">etcd documentation</a> for more
+context.</p>
+<p>Key details include:</p>
+<ul>
+<li><p>The minimum recommended etcd versions to run in production are
+<code>3.4.29+</code> and <code>3.5.11+</code>.</p></li>
+<li><p>etcd is a leader-based distributed system. Ensure that the leader
+periodically send heartbeats on time to all followers to keep the
+cluster stable.</p></li>
+<li><p>You should run etcd as a cluster with an odd number of
+members.</p></li>
+<li><p>Aim to ensure that no resource starvation occurs.</p>
+<p>Performance and stability of the cluster is sensitive to network and
+disk I/O. Any resource starvation can lead to heartbeat timeout, causing
+instability of the cluster. An unstable etcd indicates that no leader is
+elected. Under such circumstances, a cluster cannot make any changes to
+its current state, which implies no new pods can be scheduled.</p></li>
+</ul>
+<h3 id="resource-requirements-for-etcd">Resource requirements for
+etcd</h3>
+<p>Operating etcd with limited resources is suitable only for testing
+purposes. For deploying in production, advanced hardware configuration
+is required. Before deploying etcd in production, see <a
+href="https://etcd.io/docs/current/op-guide/hardware/#example-hardware-configurations">resource
+requirement reference</a>.</p>
+<p>Keeping etcd clusters stable is critical to the stability of
+Kubernetes clusters. Therefore, run etcd clusters on dedicated machines
+or isolated environments for <a
+href="https://etcd.io/docs/current/op-guide/hardware/">guaranteed
+resource requirements</a>.</p>
+<h3 id="tools">Tools</h3>
+<p>Depending on which specific outcome you're working on, you will need
+the <code>etcdctl</code> tool or the <code>etcdutl</code> tool (you may
+need both).</p>
+<h2 id="understanding-etcdctl-and-etcdutl">Understanding etcdctl and
+etcdutl</h2>
+<p><code>etcdctl</code> and <code>etcdutl</code> are command-line tools
+used to interact with etcd clusters, but they serve different
+purposes:</p>
+<ul>
+<li><p><code>etcdctl</code>: This is the primary command-line client for
+interacting with etcd over a network. It is used for day-to-day
+operations such as managing keys and values, administering the cluster,
+checking health, and more.</p></li>
+<li><p><code>etcdutl</code>: This is an administration utility designed
+to operate directly on etcd data files, including migrating data between
+etcd versions, defragmenting the database, restoring snapshots, and
+validating data consistency. For network operations,
+<code>etcdctl</code> should be used.</p></li>
+</ul>
+<p>For more information on <code>etcdutl</code>, you can refer to the <a
+href="https://etcd.io/docs/v3.5/op-guide/recovery/">etcd recovery
+documentation</a>.</p>
+<h2 id="starting-etcd-clusters">Starting etcd clusters</h2>
+<p>This section covers starting a single-node and multi-node etcd
+cluster.</p>
+<p>This guide assumes that <code>etcd</code> is already installed.</p>
+<h3 id="single-node-etcd-cluster">Single-node etcd cluster</h3>
+<p>Use a single-node etcd cluster only for testing purposes.</p>
+<ol type="1">
+<li><p>Run the following:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">etcd</span> <span class="at">--listen-client-urls</span><span class="op">=</span>http://<span class="va">$PRIVATE_IP</span>:2379 <span class="dt">\</span></span>
+   <span class="at">--advertise-client-urls</span><span class="op">=</span>http://<span class="va">$PRIVATE_IP</span>:2379</span></code></pre></div></li>
+<li><p>Start the Kubernetes API server with the flag
+<code>--etcd-servers=$PRIVATE_IP:2379</code>.</p>
+<p>Make sure <code>PRIVATE_IP</code> is set to your etcd client
+IP.</p></li>
+</ol>
+<h3 id="multi-node-etcd-cluster">Multi-node etcd cluster</h3>
+<p>For durability and high availability, run etcd as a multi-node
+cluster in production and back it up periodically. A five-member cluster
+is recommended in production. For more information, see <a
+href="https://etcd.io/docs/current/faq/#what-is-failure-tolerance">FAQ
+documentation</a>.</p>
+<p>As you're using Kubernetes, you have the option to run etcd as a
+container inside one or more Pods. The <code>kubeadm</code> tool sets up
+etcd <a class="glossary-term" href="../../reference/glossary.html#term-static-pod" title="Glossary: static-pod">static
+pods</a> by default, or you can deploy a <a
+href="../../setup/production-environment/tools/kubeadm/setup-ha-etcd-with-kubeadm.html">separate
+cluster</a> and instruct kubeadm to use that etcd cluster as the control
+plane's backing store.</p>
+<p>You configure an etcd cluster either by static member information or
+by dynamic discovery. For more information on clustering, see <a
+href="https://etcd.io/docs/current/op-guide/clustering/">etcd clustering
+documentation</a>.</p>
+<p>For an example, consider a five-member etcd cluster running with the
+following client URLs: <code>http://$IP1:2379</code>,
+<code>http://$IP2:2379</code>, <code>http://$IP3:2379</code>,
+<code>http://$IP4:2379</code>, and <code>http://$IP5:2379</code>. To
+start a Kubernetes API server:</p>
+<ol type="1">
+<li><p>Run the following:</p>
+<pre class="shell"><code>etcd --listen-client-urls=http://$IP1:2379,http://$IP2:2379,http://$IP3:2379,http://$IP4:2379,http://$IP5:2379 --advertise-client-urls=http://$IP1:2379,http://$IP2:2379,http://$IP3:2379,http://$IP4:2379,http://$IP5:2379</code></pre></li>
+<li><p>Start the Kubernetes API servers with the flag
+<code>--etcd-servers=$IP1:2379,$IP2:2379,$IP3:2379,$IP4:2379,$IP5:2379</code>.</p>
+<p>Make sure the <code>IP&lt;n&gt;</code> variables are set to
+your client IP addresses.</p></li>
+</ol>
+<h3 id="multi-node-etcd-cluster-with-load-balancer">Multi-node etcd
+cluster with load balancer</h3>
+<p>To run a load balancing etcd cluster:</p>
+<ol type="1">
+<li>Set up an etcd cluster.</li>
+<li>Configure a load balancer in front of the etcd cluster. For example,
+let the address of the load balancer be <code>$LB</code>.</li>
+<li>Start Kubernetes API Servers with the flag
+<code>--etcd-servers=$LB:2379</code>.</li>
+</ol>
+<h2 id="securing-etcd-clusters">Securing etcd clusters</h2>
+<p>Access to etcd is equivalent to root permission in the cluster so
+ideally only the API server should have access to it. Considering the
+sensitivity of the data, it is recommended to grant permission to only
+those nodes that require access to etcd clusters.</p>
+<p>To secure etcd, either set up firewall rules or use the security
+features provided by etcd. etcd security features depend on x509 Public
+Key Infrastructure (PKI). To begin, establish secure communication
+channels by generating a key and certificate pair. For example, use key
+pairs <code>peer.key</code> and <code>peer.cert</code> for securing
+communication between etcd members, and <code>client.key</code> and
+<code>client.cert</code> for securing communication between etcd and its
+clients. See the <a
+href="https://github.com/coreos/etcd/tree/master/hack/tls-setup">example
+scripts</a> provided by the etcd project to generate key pairs and CA
+files for client authentication.</p>
+<h3 id="securing-communication">Securing communication</h3>
+<p>To configure etcd with secure peer communication, specify flags
+<code>--peer-key-file=peer.key</code> and
+<code>--peer-cert-file=peer.cert</code>, and use HTTPS as the URL
+schema.</p>
+<p>Similarly, to configure etcd with secure client communication,
+specify flags <code>--key=k8sclient.key</code> and
+<code>--cert=k8sclient.cert</code>, and use HTTPS as the URL schema.
+Here is an example on a client command that uses secure
+communication:</p>
+<pre><code>ETCDCTL_API=3 etcdctl --endpoints 10.2.0.9:2379 \
+  --cert=/etc/kubernetes/pki/etcd/server.crt \
+  --key=/etc/kubernetes/pki/etcd/server.key \
+  --cacert=/etc/kubernetes/pki/etcd/ca.crt \
+  member list</code></pre>
+<h3 id="limiting-access-of-etcd-clusters">Limiting access of etcd
+clusters</h3>
+<p>After configuring secure communication, restrict the access of the
+etcd cluster to only the Kubernetes API servers using TLS
+authentication.</p>
+<p>For example, consider key pairs <code>k8sclient.key</code> and
+<code>k8sclient.cert</code> that are trusted by the CA
+<code>etcd.ca</code>. When etcd is configured with
+<code>--client-cert-auth</code> along with TLS, it verifies the
+certificates from clients by using system CAs or the CA passed in by
+<code>--trusted-ca-file</code> flag. Specifying flags
+<code>--client-cert-auth=true</code> and
+<code>--trusted-ca-file=etcd.ca</code> will restrict the access to
+clients with the certificate <code>k8sclient.cert</code>.</p>
+<p>Once etcd is configured correctly, only clients with valid
+certificates can access it. To give Kubernetes API servers the access,
+configure them with the flags
+<code>--etcd-certfile=k8sclient.cert</code>,
+<code>--etcd-keyfile=k8sclient.key</code> and
+<code>--etcd-cafile=ca.cert</code>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>etcd authentication is not planned for Kubernetes.</p>
+</div>
+<h2 id="replacing-a-failed-etcd-member">Replacing a failed etcd
+member</h2>
+<p>etcd cluster achieves high availability by tolerating minor member
+failures. However, to improve the overall health of the cluster, replace
+failed members immediately. When multiple members fail, replace them one
+by one. Replacing a failed member involves two steps: removing the
+failed member and adding a new member.</p>
+<p>Though etcd keeps unique member IDs internally, it is recommended to
+use a unique name for each member to avoid human errors. For example,
+consider a three-member etcd cluster. Let the URLs be,
+<code>member1=http://10.0.0.1</code>,
+<code>member2=http://10.0.0.2</code>, and
+<code>member3=http://10.0.0.3</code>. When <code>member1</code> fails,
+replace it with <code>member4=http://10.0.0.4</code>.</p>
+<ol type="1">
+<li><p>Get the member ID of the failed <code>member1</code>:</p>
+<pre class="shell"><code>etcdctl --endpoints=http://10.0.0.2,http://10.0.0.3 member list</code></pre>
+<p>The following message is displayed:</p>
+<pre class="console"><code>8211f1d0f64f3269, started, member1, http://10.0.0.1:2380, http://10.0.0.1:2379
+91bc3c398fb3c146, started, member2, http://10.0.0.2:2380, http://10.0.0.2:2379
+fd422379fda50e48, started, member3, http://10.0.0.3:2380, http://10.0.0.3:2379</code></pre></li>
+<li><p>Do either of the following:</p>
+<ol type="1">
+<li>If each Kubernetes API server is configured to communicate with all
+etcd members, remove the failed member from the
+<code>--etcd-servers</code> flag, then restart each Kubernetes API
+server.</li>
+<li>If each Kubernetes API server communicates with a single etcd
+member, then stop the Kubernetes API server that communicates with the
+failed etcd.</li>
+</ol></li>
+<li><p>Stop the etcd server on the broken node. It is possible that
+other clients besides the Kubernetes API server are causing traffic to
+etcd and it is desirable to stop all traffic to prevent writes to the
+data directory.</p></li>
+<li><p>Remove the failed member:</p>
+<pre class="shell"><code>etcdctl member remove 8211f1d0f64f3269</code></pre>
+<p>The following message is displayed:</p>
+<pre class="console"><code>Removed member 8211f1d0f64f3269 from cluster</code></pre></li>
+<li><p>Add the new member:</p>
+<pre class="shell"><code>etcdctl member add member4 --peer-urls=http://10.0.0.4:2380</code></pre>
+<p>The following message is displayed:</p>
+<pre class="console"><code>Member 2be1eb8f84b7f63e added to cluster ef37ad9dc622a7c4</code></pre></li>
+<li><p>Start the newly added member on a machine with the IP
+<code>10.0.0.4</code>:</p>
+<pre class="shell"><code>export ETCD_NAME=&quot;member4&quot;
+export ETCD_INITIAL_CLUSTER=&quot;member2=http://10.0.0.2:2380,member3=http://10.0.0.3:2380,member4=http://10.0.0.4:2380&quot;
+export ETCD_INITIAL_CLUSTER_STATE=existing
+etcd [flags]</code></pre></li>
+<li><p>Do either of the following:</p>
+<ol type="1">
+<li>If each Kubernetes API server is configured to communicate with all
+etcd members, add the newly added member to the
+<code>--etcd-servers</code> flag, then restart each Kubernetes API
+server.</li>
+<li>If each Kubernetes API server communicates with a single etcd
+member, start the Kubernetes API server that was stopped in step 2. Then
+configure Kubernetes API server clients to again route requests to the
+Kubernetes API server that was stopped. This can often be done by
+configuring a load balancer.</li>
+</ol></li>
+</ol>
+<p>For more information on cluster reconfiguration, see <a
+href="https://etcd.io/docs/current/op-guide/runtime-configuration/#remove-a-member">etcd
+reconfiguration documentation</a>.</p>
+<h2 id="backing-up-an-etcd-cluster">Backing up an etcd cluster</h2>
+<p>All Kubernetes objects are stored in etcd. Periodically backing up
+the etcd cluster data is important to recover Kubernetes clusters under
+disaster scenarios, such as losing all control plane nodes. The snapshot
+file contains all the Kubernetes state and critical information. In
+order to keep the sensitive Kubernetes data safe, encrypt the snapshot
+files.</p>
+<p>Backing up an etcd cluster can be accomplished in two ways: etcd
+built-in snapshot and volume snapshot.</p>
+<h3 id="built-in-snapshot">Built-in snapshot</h3>
+<p>etcd supports built-in snapshot. A snapshot may either be created
+from a live member with the <code>etcdctl snapshot save</code> command
+or by copying the <code>member/snap/db</code> file from an etcd <a
+href="https://etcd.io/docs/current/op-guide/configuration/#--data-dir">data
+directory</a> that is not currently used by an etcd process. Creating
+the snapshot will not affect the performance of the member.</p>
+<p>Below is an example for creating a snapshot of the keyspace served by
+<code>$ENDPOINT</code> to the file <code>snapshot.db</code>:</p>
+<pre class="shell"><code>ETCDCTL_API=3 etcdctl --endpoints $ENDPOINT snapshot save snapshot.db</code></pre>
+<p>Verify the snapshot:</p>
+<div class="tabset">
+<div class="tab-label">
+<p>Use etcdutl</p>
+</div>
+<p>The below example depicts the usage of the <code>etcdutl</code> tool
+for verifying a snapshot:</p>
+<pre class="shell"><code>etcdutl --write-out=table snapshot status snapshot.db </code></pre>
+<p>This should generate an output resembling the example provided
+below:</p>
+<pre class="console"><code>+----------+----------+------------+------------+
+|   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
++----------+----------+------------+------------+
+| fe01cf57 |       10 |          7 | 2.1 MB     |
++----------+----------+------------+------------+</code></pre>
+<div class="tab-label">
+<p>Use etcdctl (Deprecated)</p>
+</div>
+<p>::: {.admonition .note} ::: {.admonition-title} Note: :::</p>
+<pre><code>  The usage of `etcdctl snapshot status` has been **deprecated** since etcd v3.5.x and is slated for removal from etcd v3.6.
+  It is recommended to utilize [`etcdutl`](https://github.com/etcd-io/etcd/blob/main/etcdutl/README.md) instead.</code></pre>
+<p>:::</p>
+<p>The below example depicts the usage of the <code>etcdctl</code> tool
+for verifying a snapshot:</p>
+<pre class="shell"><code>export ETCDCTL_API=3
+etcdctl --write-out=table snapshot status snapshot.db</code></pre>
+<p>This should generate an output resembling the example provided
+below:</p>
+<pre class="console"><code>Deprecated: Use `etcdutl snapshot status` instead.
+
++----------+----------+------------+------------+
+|   HASH   | REVISION | TOTAL KEYS | TOTAL SIZE |
++----------+----------+------------+------------+
+| fe01cf57 |       10 |          7 | 2.1 MB     |
++----------+----------+------------+------------+</code></pre>
+</div>
+<h3 id="volume-snapshot">Volume snapshot</h3>
+<p>If etcd is running on a storage volume that supports backup, such as
+Amazon Elastic Block Store, back up etcd data by creating a snapshot of
+the storage volume.</p>
+<h3 id="snapshot-using-etcdctl-options">Snapshot using etcdctl
+options</h3>
+<p>We can also create the snapshot using various options given by
+etcdctl. For example:</p>
+<pre class="shell"><code>ETCDCTL_API=3 etcdctl -h </code></pre>
+<p>will list various options available from etcdctl. For example, you
+can create a snapshot by specifying the endpoint, certificates and key
+as shown below:</p>
+<pre class="shell"><code>ETCDCTL_API=3 etcdctl --endpoints=https://127.0.0.1:2379 \
+  --cacert=&lt;trusted-ca-file&gt; --cert=&lt;cert-file&gt; --key=&lt;key-file&gt; \
+  snapshot save &lt;backup-file-location&gt;</code></pre>
+<p>where <code>trusted-ca-file</code>, <code>cert-file</code> and
+<code>key-file</code> can be obtained from the description of the etcd
+Pod.</p>
+<h2 id="scaling-out-etcd-clusters">Scaling out etcd clusters</h2>
+<p>Scaling out etcd clusters increases availability by trading off
+performance. Scaling does not increase cluster performance nor
+capability. A general rule is not to scale out or in etcd clusters. Do
+not configure any auto scaling groups for etcd clusters. It is strongly
+recommended to always run a static five-member etcd cluster for
+production Kubernetes clusters at any officially supported scale.</p>
+<p>A reasonable scaling is to upgrade a three-member cluster to a
+five-member one, when more reliability is desired. See <a
+href="https://etcd.io/docs/current/op-guide/runtime-configuration/#remove-a-member">etcd
+reconfiguration documentation</a> for information on how to add members
+into an existing cluster.</p>
+<h2 id="restoring-an-etcd-cluster">Restoring an etcd cluster</h2>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>If any API servers are running in your cluster, you should not
+attempt to restore instances of etcd. Instead, follow these steps to
+restore etcd:</p>
+<ul>
+<li>stop <em>all</em> API server instances</li>
+<li>restore state in all etcd instances</li>
+<li>restart all API server instances</li>
+</ul>
+<p>The Kubernetes project also recommends restarting Kubernetes
+components (<code>kube-scheduler</code>,
+<code>kube-controller-manager</code>, <code>kubelet</code>) to ensure
+that they don't rely on some stale data. In practice the restore takes a
+bit of time. During the restoration, critical components will lose
+leader lock and restart themselves.</p>
+</div>
+<p>etcd supports restoring from snapshots that are taken from an etcd
+process of the <a target="_blank" rel="noopener" href="https://semver.org/">major.minor</a> version.
+Restoring a version from a different patch version of etcd is also
+supported. A restore operation is employed to recover the data of a
+failed cluster.</p>
+<p>Before starting the restore operation, a snapshot file must be
+present. It can either be a snapshot file from a previous backup
+operation, or from a remaining <a
+href="https://etcd.io/docs/current/op-guide/configuration/#--data-dir">data
+directory</a>.</p>
+<div class="tabset">
+<div class="tab-label">
+<p>Use etcdutl</p>
+</div>
+<p>When restoring the cluster using <a
+href="https://github.com/etcd-io/etcd/blob/main/etcdutl/README.md"><code>etcdutl</code></a>,
+use the <code>--data-dir</code> option to specify to which folder the
+cluster should be restored:</p>
+<pre class="shell"><code>etcdutl --data-dir &lt;data-dir-location&gt; snapshot restore snapshot.db</code></pre>
+<p>where <code>&lt;data-dir-location&gt;</code> is a directory
+that will be created during the restore process.</p>
+<div class="tab-label">
+<p>Use etcdctl (Deprecated)</p>
+</div>
+<p>::: {.admonition .note} ::: {.admonition-title} Note: :::</p>
+<pre><code>  The usage of `etcdctl` for restoring has been **deprecated** since etcd v3.5.x and is slated for removal from etcd v3.6.
+  It is recommended to utilize [`etcdutl`](https://github.com/etcd-io/etcd/blob/main/etcdutl/README.md) instead.</code></pre>
+<p>:::</p>
+<p>The below example depicts the usage of the <code>etcdctl</code> tool
+for the restore operation:</p>
+<pre class="shell"><code>export ETCDCTL_API=3
+etcdctl --data-dir &lt;data-dir-location&gt; snapshot restore snapshot.db</code></pre>
+<p>If <code>&lt;data-dir-location&gt;</code> is the same folder
+as before, delete it and stop the etcd process before restoring the
+cluster. Otherwise, change etcd configuration and restart the etcd
+process after restoration to have it use the new data directory: first
+change <code>/etc/kubernetes/manifests/etcd.yaml</code>'s
+<code>volumes.hostPath.path</code> for <code>name: etcd-data</code> to
+<code>&lt;data-dir-location&gt;</code>, then execute
+<code>kubectl -n kube-system delete pod &lt;name-of-etcd-pod&gt;</code>
+or <code>systemctl restart kubelet.service</code> (or both).</p>
+</div>
+<p>For more information and examples on restoring a cluster from a
+snapshot file, see <a
+href="https://etcd.io/docs/current/op-guide/recovery/#restoring-a-cluster">etcd
+disaster recovery documentation</a>.</p>
+<p>If the access URLs of the restored cluster are changed from the
+previous cluster, the Kubernetes API server must be reconfigured
+accordingly. In this case, restart Kubernetes API servers with the flag
+<code>--etcd-servers=$NEW_ETCD_CLUSTER</code> instead of the flag
+<code>--etcd-servers=$OLD_ETCD_CLUSTER</code>. Replace
+<code>$NEW_ETCD_CLUSTER</code> and <code>$OLD_ETCD_CLUSTER</code> with
+the respective IP addresses. If a load balancer is used in front of an
+etcd cluster, you might need to update the load balancer instead.</p>
+<p>If the majority of etcd members have permanently failed, the etcd
+cluster is considered failed. In this scenario, Kubernetes cannot make
+any changes to its current state. Although the scheduled pods might
+continue to run, no new pods can be scheduled. In such cases, recover
+the etcd cluster and potentially reconfigure Kubernetes API servers to
+fix the issue.</p>
+<h2 id="upgrading-etcd-clusters">Upgrading etcd clusters</h2>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Before you start an upgrade, back up your etcd cluster first.</p>
+</div>
+<p>For details on etcd upgrade, refer to the <a
+href="https://etcd.io/docs/latest/upgrades/">etcd upgrades</a>
+documentation.</p>
+<h2 id="streaming-reads-from-etcd">Streaming reads from etcd</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.37; enabled by default
+(<code>EtcdRangeStream</code>)</p>
+</div>
+<p>With the <code>EtcdRangeStream</code> feature gate enabled and etcd
+v3.7 or later, the API server reads large collections from etcd as a
+stream instead of in pages, which lowers peak memory use on both sides.
+If the backend does not implement the <code>RangeStream</code> RPC, the
+API server detects the gRPC <code>Unimplemented</code> response and
+falls back to paginated reads. If your etcd-compatible backend or proxy
+does not fall back cleanly, disable the gate with
+<code>--feature-gates=EtcdRangeStream=false</code>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Streamed reads are recorded as <code>operation="listStream"</code> in
+the <code>etcd_request_duration_seconds</code> metric. Update any
+dashboard or alert that matches <code>operation="list"</code>.</p>
+</div>
+<h2 id="maintaining-etcd-clusters">Maintaining etcd clusters</h2>
+<p>For more details on etcd maintenance, please refer to the <a
+href="https://etcd.io/docs/latest/op-guide/maintenance/">etcd
+maintenance</a> documentation.</p>
+<h3 id="cluster-defragmentation">Cluster defragmentation</h3>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>🛇 This item links to a third party project or product that is not
+part of Kubernetes itself.
+<a target="_blank" rel="noopener" class="alert-more-info" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content-disclaimer">More
+information</a></p>
+</div>
+<p>Defragmentation is an expensive operation, so it should be executed
+as infrequently as possible. On the other hand, it's also necessary to
+make sure any etcd member will not exceed the storage quota. The
+Kubernetes project recommends that when you perform defragmentation, you
+use a tool such as <a
+href="https://github.com/ahrtr/etcd-defrag">etcd-defrag</a>.</p>
+<p>You can also run the defragmentation tool as a Kubernetes CronJob, to
+make sure that defragmentation happens regularly. See <a
+href="https://github.com/ahrtr/etcd-defrag/blob/main/doc/etcd-defrag-cronjob.yaml"><code>etcd-defrag-cronjob.yaml</code></a>
+for details.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="controller-manager-leader-migration.html"><span>Previous</span>Migrate Replicated Control Plane To Use Cloud Controller Manager</a><a class="page-nav-link next" href="reserve-compute-resources.html"><span>Next</span>Reserve Compute Resources for System Daemons</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l3"><a href="#resource-requirements-for-etcd">Resource requirements for etcd</a></li><li class="toc-l3"><a href="#tools">Tools</a></li><li class="toc-l2"><a href="#understanding-etcdctl-and-etcdutl">Understanding etcdctl and etcdutl</a></li><li class="toc-l2"><a href="#starting-etcd-clusters">Starting etcd clusters</a></li><li class="toc-l3"><a href="#single-node-etcd-cluster">Single-node etcd cluster</a></li><li class="toc-l3"><a href="#multi-node-etcd-cluster">Multi-node etcd cluster</a></li><li class="toc-l3"><a href="#multi-node-etcd-cluster-with-load-balancer">Multi-node etcd cluster with load balancer</a></li><li class="toc-l2"><a href="#securing-etcd-clusters">Securing etcd clusters</a></li><li class="toc-l3"><a href="#securing-communication">Securing communication</a></li><li class="toc-l3"><a href="#limiting-access-of-etcd-clusters">Limiting access of etcd clusters</a></li><li class="toc-l2"><a href="#replacing-a-failed-etcd-member">Replacing a failed etcd member</a></li><li class="toc-l2"><a href="#backing-up-an-etcd-cluster">Backing up an etcd cluster</a></li><li class="toc-l3"><a href="#built-in-snapshot">Built-in snapshot</a></li><li class="toc-l3"><a href="#volume-snapshot">Volume snapshot</a></li><li class="toc-l3"><a href="#snapshot-using-etcdctl-options">Snapshot using etcdctl options</a></li><li class="toc-l2"><a href="#scaling-out-etcd-clusters">Scaling out etcd clusters</a></li><li class="toc-l2"><a href="#restoring-an-etcd-cluster">Restoring an etcd cluster</a></li><li class="toc-l2"><a href="#upgrading-etcd-clusters">Upgrading etcd clusters</a></li><li class="toc-l2"><a href="#streaming-reads-from-etcd">Streaming reads from etcd</a></li><li class="toc-l2"><a href="#maintaining-etcd-clusters">Maintaining etcd clusters</a></li><li class="toc-l3"><a href="#cluster-defragmentation">Cluster defragmentation</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

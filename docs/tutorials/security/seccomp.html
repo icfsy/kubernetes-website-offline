@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restrict a Container&#x27;s Syscalls with seccomp · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/security/seccomp" data-title="Restrict a Container&#x27;s Syscalls with seccomp" data-canonical="https://kubernetes.io/docs/tutorials/security/seccomp/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../security.html">Security</a></nav></nav>
+        <header class="page-head">
+          <h1>Restrict a Container&#x27;s Syscalls with seccomp</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/security/seccomp/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.19</p>
+</div>
+<p>Seccomp stands for secure computing mode and has been a feature of
+the Linux kernel since version 2.6.12. It can be used to sandbox the
+privileges of a process, restricting the calls it is able to make from
+userspace into the kernel. Kubernetes lets you automatically apply
+seccomp profiles loaded onto a <a class="glossary-term" href="../../reference/glossary.html#term-node" title="Glossary: node">node</a> to your Pods and containers.</p>
+<p>Identifying the privileges required for your workloads can be
+difficult. In this tutorial, you will go through how to load seccomp
+profiles into a local Kubernetes cluster, how to apply them to a Pod,
+and how you can begin to craft profiles that give only the necessary
+privileges to your container processes.</p>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>Learn how to load seccomp profiles on a node</li>
+<li>Learn how to apply a seccomp profile to a container</li>
+<li>Observe auditing of syscalls made by a container process</li>
+<li>Observe behavior when a missing profile is specified</li>
+<li>Observe a violation of a seccomp profile</li>
+<li>Learn how to create fine-grained seccomp profiles</li>
+<li>Learn how to apply a container runtime default seccomp profile</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>In order to complete all steps in this tutorial, you must install <a
+href="../../tasks/tools.html#kind">kind</a> and <a
+href="../../tasks/tools.html#kubectl">kubectl</a>.</p>
+<p>The commands used in the tutorial assume that you are using <a
+href="https://www.docker.com/">Docker</a> as your container runtime.
+(The cluster that <code>kind</code> creates may use a different
+container runtime internally). You could also use <a
+href="https://podman.io/">Podman</a> but in that case, you would have to
+follow specific <a
+href="https://kind.sigs.k8s.io/docs/user/rootless/">instructions</a> in
+order to complete the tasks successfully.</p>
+<p>This tutorial shows some examples that are still beta (since v1.25)
+and others that use only generally available seccomp functionality. You
+should make sure that your cluster is <a
+href="https://kind.sigs.k8s.io/docs/user/quick-start/#setting-kubernetes-version">configured
+correctly</a> for the version you are using.</p>
+<p>The tutorial also uses the <code>curl</code> tool for downloading
+examples to your computer. You can adapt the steps to use a different
+tool if you prefer.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>It is not possible to apply a seccomp profile to a container running
+with <code>privileged: true</code> set in the container's
+<code>securityContext</code>. Privileged containers always run as
+<code>Unconfined</code>.</p>
+</div>
+<h2 id="download-profiles">Download example seccomp profiles</h2>
+<p>The contents of these profiles will be explored later on, but for now
+go ahead and download them into a directory named <code>profiles/</code>
+so that they can be loaded into the cluster.</p>
+<div class="tabset">
+<div class="tab-label">
+<p>audit.json</p>
+</div>
+<div class="code-sample">
+<p><code>pods/security/seccomp/profiles/audit.json</code></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+    <span class="dt">&quot;defaultAction&quot;</span><span class="fu">:</span> <span class="st">&quot;SCMP_ACT_LOG&quot;</span></span>
+<span class="fu">}</span></span></code></pre></div>
+</div>
+<div class="tab-label">
+<p>violation.json</p>
+</div>
+<div class="code-sample">
+<p><code>pods/security/seccomp/profiles/violation.json</code></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+    <span class="dt">&quot;defaultAction&quot;</span><span class="fu">:</span> <span class="st">&quot;SCMP_ACT_ERRNO&quot;</span></span>
+<span class="fu">}</span></span></code></pre></div>
+</div>
+<div class="tab-label">
+<p>fine-grained.json</p>
+</div>
+<div class="code-sample">
+<p><code>pods/security/seccomp/profiles/fine-grained.json</code></p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+    <span class="dt">&quot;defaultAction&quot;</span><span class="fu">:</span> <span class="st">&quot;SCMP_ACT_ERRNO&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;architectures&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+        <span class="st">&quot;SCMP_ARCH_X86_64&quot;</span><span class="ot">,</span></span>
+        <span class="st">&quot;SCMP_ARCH_X86&quot;</span><span class="ot">,</span></span>
+        <span class="st">&quot;SCMP_ARCH_X32&quot;</span></span>
+    <span class="ot">]</span><span class="fu">,</span></span>
+    <span class="dt">&quot;syscalls&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+        <span class="fu">{</span></span>
+            <span class="dt">&quot;names&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+                <span class="st">&quot;accept4&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;epoll_wait&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;pselect6&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;futex&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;madvise&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;epoll_ctl&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;getsockname&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;setsockopt&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;vfork&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;mmap&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;read&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;write&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;close&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;arch_prctl&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;sched_getaffinity&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;munmap&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;brk&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;rt_sigaction&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;rt_sigprocmask&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;sigaltstack&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;gettid&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;clone&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;bind&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;socket&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;openat&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;readlinkat&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;exit_group&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;epoll_create1&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;listen&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;rt_sigreturn&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;sched_yield&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;clock_gettime&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;connect&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;dup2&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;epoll_pwait&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;execve&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;exit&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;fcntl&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;getpid&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;getuid&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;ioctl&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;mprotect&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;nanosleep&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;open&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;poll&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;recvfrom&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;sendto&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;set_tid_address&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;setitimer&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;writev&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;fstatfs&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;getdents64&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;pipe2&quot;</span><span class="ot">,</span></span>
+                <span class="st">&quot;getrlimit&quot;</span></span>
+            <span class="ot">]</span><span class="fu">,</span></span>
+            <span class="dt">&quot;action&quot;</span><span class="fu">:</span> <span class="st">&quot;SCMP_ACT_ALLOW&quot;</span></span>
+        <span class="fu">}</span></span>
+    <span class="ot">]</span></span>
+<span class="fu">}</span></span></code></pre></div>
+</div>
+</div>
+<p>Run these commands:</p>
+<pre class="shell"><code>mkdir ./profiles
+curl -L -o profiles/audit.json https://k8s.io/examples/pods/security/seccomp/profiles/audit.json
+curl -L -o profiles/violation.json https://k8s.io/examples/pods/security/seccomp/profiles/violation.json
+curl -L -o profiles/fine-grained.json https://k8s.io/examples/pods/security/seccomp/profiles/fine-grained.json
+ls profiles</code></pre>
+<p>You should see three profiles listed at the end of the final
+step:</p>
+<pre><code>audit.json  fine-grained.json  violation.json</code></pre>
+<h2 id="create-a-local-kubernetes-cluster-with-kind">Create a local
+Kubernetes cluster with kind</h2>
+<p>For simplicity, <a target="_blank" rel="noopener" href="https://kind.sigs.k8s.io/">kind</a> can be
+used to create a single node cluster with the seccomp profiles loaded.
+Kind runs Kubernetes in Docker, so each node of the cluster is a
+container. This allows for files to be mounted in the filesystem of each
+container similar to loading files onto a node.</p>
+<div class="code-sample">
+<p><code>pods/security/seccomp/kind.yaml</code></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kind.x-k8s.io/v1alpha4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Cluster</span></span>
+<span class="fu">nodes</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">role</span><span class="kw">:</span><span class="at"> control-plane</span></span>
+<span class="at">  </span><span class="fu">extraMounts</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">hostPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;./profiles&quot;</span></span>
+<span class="at">    </span><span class="fu">containerPath</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/var/lib/kubelet/seccomp/profiles&quot;</span></span></code></pre></div>
+</div>
+<p>Download that example kind configuration, and save it to a file named
+<code>kind.yaml</code>:</p>
+<pre class="shell"><code>curl -L -O https://k8s.io/examples/pods/security/seccomp/kind.yaml</code></pre>
+<p>You can set a specific Kubernetes version by setting the node's
+container image. See <a
+href="https://kind.sigs.k8s.io/docs/user/configuration/#nodes">Nodes</a>
+within the kind documentation about configuration for more details on
+this. This tutorial assumes you are using Kubernetes v1.37.</p>
+<p>As a beta feature, you can configure Kubernetes to use the profile
+that the <a class="glossary-term" href="../../reference/glossary.html#term-container-runtime" title="Glossary: container-runtime">container runtime</a> prefers by
+default, rather than falling back to <code>Unconfined</code>. If you
+want to try that, see <a
+href="#enable-the-use-of-runtimedefault-as-the-default-seccomp-profile-for-all-workloads">enable
+the use of <code>RuntimeDefault</code> as the default seccomp profile
+for all workloads</a> before you continue.</p>
+<p>Once you have a kind configuration in place, create the kind cluster
+with that configuration:</p>
+<pre class="shell"><code>kind create cluster --config=kind.yaml</code></pre>
+<p>After the new Kubernetes cluster is ready, identify the Docker
+container running as the single node cluster:</p>
+<pre class="shell"><code>docker ps</code></pre>
+<p>You should see output indicating that a container is running with
+name <code>kind-control-plane</code>. The output is similar to:</p>
+<pre><code>CONTAINER ID        IMAGE                  COMMAND                  CREATED             STATUS              PORTS                       NAMES
+6a96207fed4b        kindest/node:v1.18.2   &quot;/usr/local/bin/entr…&quot;   27 seconds ago      Up 24 seconds       127.0.0.1:42223-&gt;6443/tcp   kind-control-plane</code></pre>
+<p>If observing the filesystem of that container, you should see that
+the <code>profiles/</code> directory has been successfully loaded into
+the default seccomp path of the kubelet. Use <code>docker exec</code> to
+run a command in the Pod:</p>
+<pre class="shell"><code>docker exec -it kind-control-plane ls /var/lib/kubelet/seccomp/profiles</code></pre>
+<pre><code>audit.json  fine-grained.json  violation.json</code></pre>
+<p>You have verified that these seccomp profiles are available to the
+kubelet running within kind.</p>
+<h2
+id="create-a-pod-that-uses-the-container-runtime-default-seccomp-profile">Create
+a Pod that uses the container runtime default seccomp profile</h2>
+<p>Most container runtimes provide a sane set of default syscalls that
+are allowed or not. You can adopt these defaults for your workload by
+setting the seccomp type in the security context of a pod or container
+to <code>RuntimeDefault</code>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>If you have the <code>seccompDefault</code> <a
+href="../../reference/config-api/kubelet-config.v1beta1.html">configuration</a>
+enabled, then Pods use the <code>RuntimeDefault</code> seccomp profile
+whenever no other seccomp profile is specified. Otherwise, the default
+is <code>Unconfined</code>.</p>
+</div>
+<p>Here's a manifest for a Pod that requests the
+<code>RuntimeDefault</code> seccomp profile for all its containers:</p>
+<div class="code-sample">
+<p><code>pods/security/seccomp/ga/default-pod.yaml</code></p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> default-pod</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> default-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RuntimeDefault</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> hashicorp/http-echo:1.0</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;-text=just made some more syscalls!&quot;</span></span>
+<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+</div>
+<p>Create that Pod:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/seccomp/ga/default-pod.yaml</code></pre>
+<pre class="shell"><code>kubectl get pod default-pod</code></pre>
+<p>The Pod should be showing as having started successfully:</p>
+<pre><code>NAME        READY   STATUS    RESTARTS   AGE
+default-pod 1/1     Running   0          20s</code></pre>
+<p>Delete the Pod before moving to the next section:</p>
+<pre class="shell"><code>kubectl delete pod default-pod --wait --now</code></pre>
+<h2 id="create-a-pod-with-a-seccomp-profile-for-syscall-auditing">Create
+a Pod with a seccomp profile for syscall auditing</h2>
+<p>To start off, apply the <code>audit.json</code> profile, which will
+log all syscalls of the process, to a new Pod.</p>
+<p>Here's a manifest for that Pod:</p>
+<div class="code-sample">
+<p><code>pods/security/seccomp/ga/audit-pod.yaml</code></p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> audit-pod</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> audit-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Localhost</span></span>
+<span class="at">      </span><span class="fu">localhostProfile</span><span class="kw">:</span><span class="at"> profiles/audit.json</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> hashicorp/http-echo:1.0</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;-text=just made some syscalls!&quot;</span></span>
+<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Older versions of Kubernetes allowed you to configure seccomp
+behavior using <a class="glossary-term" href="../../reference/glossary.html#term-annotation" title="Glossary: annotation">annotations</a>. Kubernetes 1.37 only supports
+using fields within <code>.spec.securityContext</code> to configure
+seccomp, and this tutorial explains that approach.</p>
+</div>
+<p>Create the Pod in the cluster:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/seccomp/ga/audit-pod.yaml</code></pre>
+<p>This profile does not restrict any syscalls, so the Pod should start
+successfully.</p>
+<pre class="shell"><code>kubectl get pod audit-pod</code></pre>
+<pre><code>NAME        READY   STATUS    RESTARTS   AGE
+audit-pod   1/1     Running   0          30s</code></pre>
+<p>In order to be able to interact with this endpoint exposed by this
+container, create a NodePort <a class="glossary-term" href="../../reference/glossary.html#term-service" title="Glossary: service">Service</a> that allows access to the endpoint
+from inside the kind control plane container.</p>
+<pre class="shell"><code>kubectl expose pod audit-pod --type NodePort --port 5678</code></pre>
+<p>Check what port the Service has been assigned on the node.</p>
+<pre class="shell"><code>kubectl get service audit-pod</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME        TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+audit-pod   NodePort   10.111.36.142   &lt;none&gt;        5678:32373/TCP   72s</code></pre>
+<p>Now you can use <code>curl</code> to access that endpoint from inside
+the kind control plane container, at the port exposed by this Service.
+Use <code>docker exec</code> to run the <code>curl</code> command within
+the container belonging to that control plane container:</p>
+<pre class="shell"><code># Change 32373 to the port number you saw from &quot;kubectl get service audit-pod&quot;
+docker exec -it kind-control-plane curl localhost:32373</code></pre>
+<pre><code>just made some syscalls!</code></pre>
+<p>You can see that the process is running, but what syscalls did it
+actually make? Because this Pod is running in a local cluster, you
+should be able to see those in <code>/var/log/syslog</code> on your
+local system. Open up a new terminal window and <code>tail</code> the
+output for calls from <code>http-echo</code>:</p>
+<pre class="shell"><code># The log path on your computer might be different from &quot;/var/log/syslog&quot;
+tail -f /var/log/syslog | grep &#39;http-echo&#39;</code></pre>
+<p>You should already see some logs of syscalls made by
+<code>http-echo</code>, and if you run <code>curl</code> again inside
+the control plane container you will see more output written to the
+log.</p>
+<p>For example:</p>
+<pre><code>Jul  6 15:37:40 my-machine kernel: [369128.669452] audit: type=1326 audit(1594067860.484:14536): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=51 compat=0 ip=0x46fe1f code=0x7ffc0000
+Jul  6 15:37:40 my-machine kernel: [369128.669453] audit: type=1326 audit(1594067860.484:14537): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=54 compat=0 ip=0x46fdba code=0x7ffc0000
+Jul  6 15:37:40 my-machine kernel: [369128.669455] audit: type=1326 audit(1594067860.484:14538): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=202 compat=0 ip=0x455e53 code=0x7ffc0000
+Jul  6 15:37:40 my-machine kernel: [369128.669456] audit: type=1326 audit(1594067860.484:14539): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=288 compat=0 ip=0x46fdba code=0x7ffc0000
+Jul  6 15:37:40 my-machine kernel: [369128.669517] audit: type=1326 audit(1594067860.484:14540): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=0 compat=0 ip=0x46fd44 code=0x7ffc0000
+Jul  6 15:37:40 my-machine kernel: [369128.669519] audit: type=1326 audit(1594067860.484:14541): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=270 compat=0 ip=0x4559b1 code=0x7ffc0000
+Jul  6 15:38:40 my-machine kernel: [369188.671648] audit: type=1326 audit(1594067920.488:14559): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=270 compat=0 ip=0x4559b1 code=0x7ffc0000
+Jul  6 15:38:40 my-machine kernel: [369188.671726] audit: type=1326 audit(1594067920.488:14560): auid=4294967295 uid=0 gid=0 ses=4294967295 pid=29064 comm=&quot;http-echo&quot; exe=&quot;/http-echo&quot; sig=0 arch=c000003e syscall=202 compat=0 ip=0x455e53 code=0x7ffc0000</code></pre>
+<p>You can begin to understand the syscalls required by the
+<code>http-echo</code> process by looking at the <code>syscall=</code>
+entry on each line. While these are unlikely to encompass all syscalls
+it uses, it can serve as a basis for a seccomp profile for this
+container.</p>
+<p>Delete the Service and the Pod before moving to the next section:</p>
+<pre class="shell"><code>kubectl delete service audit-pod --wait
+kubectl delete pod audit-pod --wait --now</code></pre>
+<h2
+id="create-a-pod-with-a-seccomp-profile-that-causes-violation">Create a
+Pod with a seccomp profile that causes violation</h2>
+<p>For demonstration, apply a profile to the Pod that does not allow for
+any syscalls.</p>
+<p>The manifest for this demonstration is:</p>
+<div class="code-sample">
+<p><code>pods/security/seccomp/ga/violation-pod.yaml</code></p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> violation-pod</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> violation-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Localhost</span></span>
+<span class="at">      </span><span class="fu">localhostProfile</span><span class="kw">:</span><span class="at"> profiles/violation.json</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> hashicorp/http-echo:1.0</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;-text=just made some syscalls!&quot;</span></span>
+<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+</div>
+<p>Attempt to create the Pod in the cluster:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/seccomp/ga/violation-pod.yaml</code></pre>
+<p>The Pod creates, but there is an issue. If you check the status of
+the Pod, you should see that it failed to start.</p>
+<pre class="shell"><code>kubectl get pod violation-pod</code></pre>
+<pre><code>NAME            READY   STATUS             RESTARTS   AGE
+violation-pod   0/1     CrashLoopBackOff   1          6s</code></pre>
+<p>As seen in the previous example, the <code>http-echo</code> process
+requires quite a few syscalls. Here seccomp has been instructed to error
+on any syscall by setting
+<code>"defaultAction": "SCMP_ACT_ERRNO"</code>. This is extremely
+secure, but removes the ability to do anything meaningful. What you
+really want is to give workloads only the privileges they need.</p>
+<p>Delete the Pod before moving to the next section:</p>
+<pre class="shell"><code>kubectl delete pod violation-pod --wait --now</code></pre>
+<h2
+id="create-a-pod-with-a-seccomp-profile-that-only-allows-necessary-syscalls">Create
+a Pod with a seccomp profile that only allows necessary syscalls</h2>
+<p>If you take a look at the <code>fine-grained.json</code> profile, you
+will notice some of the syscalls seen in syslog of the first example
+where the profile set <code>"defaultAction": "SCMP_ACT_LOG"</code>. Now
+the profile is setting <code>"defaultAction": "SCMP_ACT_ERRNO"</code>,
+but explicitly allowing a set of syscalls in the
+<code>"action": "SCMP_ACT_ALLOW"</code> block. Ideally, the container
+will run successfully and you will see no messages sent to
+<code>syslog</code>.</p>
+<p>The manifest for this example is:</p>
+<div class="code-sample">
+<p><code>pods/security/seccomp/ga/fine-pod.yaml</code></p>
+<div class="sourceCode" id="cb35"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fine-pod</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> fine-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Localhost</span></span>
+<span class="at">      </span><span class="fu">localhostProfile</span><span class="kw">:</span><span class="at"> profiles/fine-grained.json</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> test-container</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> hashicorp/http-echo:1.0</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;-text=just made some syscalls!&quot;</span></span>
+<span class="at">    </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">allowPrivilegeEscalation</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span></code></pre></div>
+</div>
+<p>Create the Pod in your cluster:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/security/seccomp/ga/fine-pod.yaml</code></pre>
+<pre class="shell"><code>kubectl get pod fine-pod</code></pre>
+<p>The Pod should be showing as having started successfully:</p>
+<pre><code>NAME        READY   STATUS    RESTARTS   AGE
+fine-pod   1/1     Running   0          30s</code></pre>
+<p>Open up a new terminal window and use <code>tail</code> to monitor
+for log entries that mention calls from <code>http-echo</code>:</p>
+<pre class="shell"><code># The log path on your computer might be different from &quot;/var/log/syslog&quot;
+tail -f /var/log/syslog | grep &#39;http-echo&#39;</code></pre>
+<p>Next, expose the Pod with a NodePort Service:</p>
+<pre class="shell"><code>kubectl expose pod fine-pod --type NodePort --port 5678</code></pre>
+<p>Check what port the Service has been assigned on the node:</p>
+<pre class="shell"><code>kubectl get service fine-pod</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME        TYPE       CLUSTER-IP      EXTERNAL-IP   PORT(S)          AGE
+fine-pod    NodePort   10.111.36.142   &lt;none&gt;        5678:32373/TCP   72s</code></pre>
+<p>Use <code>curl</code> to access that endpoint from inside the kind
+control plane container:</p>
+<pre class="shell"><code># Change 32373 to the port number you saw from &quot;kubectl get service fine-pod&quot;
+docker exec -it kind-control-plane curl localhost:32373</code></pre>
+<pre><code>just made some syscalls!</code></pre>
+<p>You should see no output in the <code>syslog</code>. This is because
+the profile allowed all necessary syscalls and specified that an error
+should occur if one outside of the list is invoked. This is an ideal
+situation from a security perspective, but required some effort in
+analyzing the program. It would be nice if there was a simple way to get
+closer to this security without requiring as much effort.</p>
+<p>Delete the Service and the Pod before moving to the next section:</p>
+<pre class="shell"><code>kubectl delete service fine-pod --wait
+kubectl delete pod fine-pod --wait --now</code></pre>
+<h2
+id="enable-the-use-of-runtimedefault-as-the-default-seccomp-profile-for-all-workloads">Enable
+the use of <code>RuntimeDefault</code> as the default seccomp profile
+for all workloads</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.27</p>
+</div>
+<p>To use seccomp profile defaulting, you must run the kubelet with the
+<code>--seccomp-default</code> <a
+href="../../reference/command-line-tools-reference/kubelet.html">command
+line flag</a> enabled for each node where you want to use it.</p>
+<p>If enabled, the kubelet will use the <code>RuntimeDefault</code>
+seccomp profile by default, which is defined by the container runtime,
+instead of using the <code>Unconfined</code> (seccomp disabled) mode.
+The default profiles aim to provide a strong set of security defaults
+while preserving the functionality of the workload. It is possible that
+the default profiles differ between container runtimes and their release
+versions, for example when comparing those from CRI-O and
+containerd.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Enabling the feature will neither change the Kubernetes
+<code>securityContext.seccompProfile</code> API field nor add the
+deprecated annotations of the workload. This provides users the
+possibility to rollback anytime without actually changing the workload
+configuration. Tools like <a
+href="https://github.com/kubernetes-sigs/cri-tools"><code>crictl inspect</code></a>
+can be used to verify which seccomp profile is being used by a
+container.</p>
+</div>
+<p>Some workloads may require a lower amount of syscall restrictions
+than others. This means that they can fail during runtime even with the
+<code>RuntimeDefault</code> profile. To mitigate such a failure, you
+can:</p>
+<ul>
+<li>Run the workload explicitly as <code>Unconfined</code>.</li>
+<li>Disable the <code>SeccompDefault</code> feature for the nodes. Also
+making sure that workloads get scheduled on nodes where the feature is
+disabled.</li>
+<li>Create a custom seccomp profile for the workload.</li>
+</ul>
+<p>If you were introducing this feature into production-like cluster,
+the Kubernetes project recommends that you enable this feature gate on a
+subset of your nodes and then test workload execution before rolling the
+change out cluster-wide.</p>
+<p>You can find more detailed information about a possible upgrade and
+downgrade strategy in the related Kubernetes Enhancement Proposal (KEP):
+<a
+href="https://github.com/kubernetes/enhancements/tree/9a124fd29d1f9ddf2ff455c49a630e3181992c25/keps/sig-node/2413-seccomp-by-default#upgrade--downgrade-strategy">Enable
+seccomp by default</a>.</p>
+<p>Kubernetes 1.37 lets you configure the seccomp profile that applies
+when the spec for a Pod doesn't define a specific seccomp profile.
+However, you still need to enable this defaulting for each node where
+you would like to use it.</p>
+<p>If you are running a Kubernetes 1.37 cluster and want to enable the
+feature, either run the kubelet with the <code>--seccomp-default</code>
+command line flag, or enable it through the <a
+href="../../tasks/administer-cluster/kubelet-config-file.html">kubelet
+configuration file</a>. To enable the feature gate in <a
+href="https://kind.sigs.k8s.io">kind</a>, ensure that <code>kind</code>
+provides the minimum required Kubernetes version and enables the
+<code>SeccompDefault</code> feature <a
+href="https://kind.sigs.k8s.io/docs/user/quick-start/#enable-feature-gates-in-your-cluster">in
+the kind configuration</a>:</p>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> Cluster</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kind.x-k8s.io/v1alpha4</span></span>
+<span class="fu">nodes</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">role</span><span class="kw">:</span><span class="at"> control-plane</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> kindest/node:v1.28.0@sha256:9f3ff58f19dcf1a0611d11e8ac989fdb30a28f40f236f59f0bea31fb956ccf5c</span></span>
+<span class="at">    </span><span class="fu">kubeadmConfigPatches</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="ch">|</span></span>
+<span class="at">        </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> JoinConfiguration</span></span>
+<span class="at">        </span><span class="fu">nodeRegistration</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">seccomp-default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">role</span><span class="kw">:</span><span class="at"> worker</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> kindest/node:v1.28.0@sha256:9f3ff58f19dcf1a0611d11e8ac989fdb30a28f40f236f59f0bea31fb956ccf5c</span></span>
+<span class="at">    </span><span class="fu">kubeadmConfigPatches</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="ch">|</span></span>
+<span class="at">        </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> JoinConfiguration</span></span>
+<span class="at">        </span><span class="fu">nodeRegistration</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">kubeletExtraArgs</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">seccomp-default</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span></code></pre></div>
+<p>If the cluster is ready, then running a pod:</p>
+<pre class="shell"><code>kubectl run --rm -it --restart=Never --image=alpine alpine -- sh</code></pre>
+<p>Should now have the default seccomp profile attached. This can be
+verified by using <code>docker exec</code> to run
+<code>crictl inspect</code> for the container on the kind worker:</p>
+<pre class="shell"><code>docker exec -it kind-worker bash -c \
+    &#39;crictl inspect $(crictl ps --name=alpine -q) | jq .info.runtimeSpec.linux.seccomp&#39;</code></pre>
+<div class="sourceCode" id="cb49"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;defaultAction&quot;</span><span class="fu">:</span> <span class="st">&quot;SCMP_ACT_ERRNO&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;architectures&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;SCMP_ARCH_X86_64&quot;</span><span class="ot">,</span> <span class="st">&quot;SCMP_ARCH_X86&quot;</span><span class="ot">,</span> <span class="st">&quot;SCMP_ARCH_X32&quot;</span><span class="ot">]</span><span class="fu">,</span></span>
+  <span class="dt">&quot;syscalls&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="fu">{</span></span>
+      <span class="dt">&quot;names&quot;</span><span class="fu">:</span> <span class="ot">[</span><span class="st">&quot;...&quot;</span><span class="ot">]</span></span>
+    <span class="fu">}</span></span>
+  <span class="ot">]</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<h2 id="what-s-next">What's next</h2>
+<p>You can learn more about Linux seccomp:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://lwn.net/Articles/656307/">A seccomp
+Overview</a></li>
+<li><a target="_blank" rel="noopener" href="https://docs.docker.com/engine/security/seccomp/">Seccomp
+Security Profiles for Docker</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="apparmor.html"><span>Previous</span>Restrict a Container&#x27;s Access to Resources with AppArmor</a><a class="page-nav-link next" href="../stateless-application.html"><span>Next</span>Stateless Applications</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#download-profiles">Download example seccomp profiles</a></li><li class="toc-l2"><a href="#create-a-local-kubernetes-cluster-with-kind">Create a local Kubernetes cluster with kind</a></li><li class="toc-l2"><a href="#create-a-pod-that-uses-the-container-runtime-default-seccomp-profile">Create a Pod that uses the container runtime default seccomp profile</a></li><li class="toc-l2"><a href="#create-a-pod-with-a-seccomp-profile-for-syscall-auditing">Create a Pod with a seccomp profile for syscall auditing</a></li><li class="toc-l2"><a href="#create-a-pod-with-a-seccomp-profile-that-causes-violation">Create a Pod with a seccomp profile that causes violation</a></li><li class="toc-l2"><a href="#create-a-pod-with-a-seccomp-profile-that-only-allows-necessary-syscalls">Create a Pod with a seccomp profile that only allows necessary syscalls</a></li><li class="toc-l2"><a href="#enable-the-use-of-runtimedefault-as-the-default-seccomp-profile-for-all-workloads">Enable the use of RuntimeDefault as the default seccomp profile for all workloads</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

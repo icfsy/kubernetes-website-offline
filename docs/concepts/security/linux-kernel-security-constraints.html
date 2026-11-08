@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linux kernel security constraints for Pods and containers · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/security/linux-kernel-security-constraints" data-title="Linux kernel security constraints for Pods and containers" data-canonical="https://kubernetes.io/docs/concepts/security/linux-kernel-security-constraints/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../security.html">Security</a></nav></nav>
+        <header class="page-head">
+          <h1>Linux kernel security constraints for Pods and containers</h1>
+          <p class="lead">Overview of Linux kernel security modules and constraints that you can use to harden your Pods and containers.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/security/linux-kernel-security-constraints/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page describes some of the security features that are built into
+the Linux kernel that you can use in your Kubernetes workloads. To learn
+how to apply these features to your Pods and containers, refer to <a
+href="../../tasks/configure-pod-container/security-context.html">Configure
+a SecurityContext for a Pod or Container</a>. You should already be
+familiar with Linux and with the basics of Kubernetes workloads.</p>
+<h2 id="run-without-root">Run workloads without root privileges</h2>
+<p>When you deploy a workload in Kubernetes, use the Pod specification
+to restrict that workload from running as the root user on the node. You
+can use the Pod <code>securityContext</code> to define the specific
+Linux user and group for the processes in the Pod, and explicitly
+restrict containers from running as root users. Setting these values in
+the Pod manifest takes precedence over similar values in the container
+image, which is especially useful if you're running images that you
+don't own.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Ensure that the user or group that you assign to the workload has the
+permissions required for the application to function correctly. Changing
+the user or group to one that doesn't have the correct permissions could
+lead to file access issues or failed operations.</p>
+</div>
+<p>Configuring the kernel security features on this page provides
+fine-grained control over the actions that processes in your cluster can
+take, but managing these configurations can be challenging at scale.
+Running containers as non-root, or in user namespaces if you need root
+privileges, helps to reduce the chance that you'll need to enforce your
+configured kernel security capabilities.</p>
+<h2 id="linux-security-features">Security features in the Linux
+kernel</h2>
+<p>Kubernetes lets you configure and use Linux kernel features to
+improve isolation and harden your containerized workloads. Common
+features include the following:</p>
+<ul>
+<li><strong>Secure computing mode (seccomp)</strong>: Filter which
+system calls a process can make</li>
+<li><strong>AppArmor</strong>: Restrict the access privileges of
+individual programs</li>
+<li><strong>Security Enhanced Linux (SELinux)</strong>: Assign security
+labels to objects for more manageable security policy enforcement</li>
+</ul>
+<p>To configure settings for one of these features, the operating system
+that you choose for your nodes must enable the feature in the kernel.
+For example, Ubuntu 7.10 and later enable AppArmor by default. To learn
+whether your OS enables a specific feature, consult the OS
+documentation.</p>
+<p>You use the <code>securityContext</code> field in your Pod
+specification to define the constraints that apply to those processes.
+The <code>securityContext</code> field also supports other security
+settings, such as specific Linux capabilities or file access permissions
+using UIDs and GIDs. To learn more, refer to <a
+href="../../tasks/configure-pod-container/security-context.html">Configure
+a SecurityContext for a Pod or Container</a>.</p>
+<h3 id="seccomp">seccomp</h3>
+<p>Some of your workloads might need privileges to perform specific
+actions as the root user on your node's host machine. Linux uses
+<em>capabilities</em> to divide the available privileges into
+categories, so that processes can get the privileges required to perform
+specific actions without being granted all privileges. Each capability
+has a set of system calls (syscalls) that a process can make. seccomp
+lets you restrict these individual syscalls. It can be used to sandbox
+the privileges of a process, restricting the calls it is able to make
+from userspace into the kernel.</p>
+<p>In Kubernetes, you use a <em>container runtime</em> on each node to
+run your containers. Example runtimes include CRI-O, Docker, or
+containerd. Each runtime allows only a subset of Linux capabilities by
+default. You can further limit the allowed syscalls individually by
+using a seccomp profile. Container runtimes usually include a default
+seccomp profile. Kubernetes lets you automatically apply seccomp
+profiles loaded onto a node to your Pods and containers.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Kubernetes also has the <code>allowPrivilegeEscalation</code> setting
+for Pods and containers. When set to <code>false</code>, this prevents
+processes from gaining new capabilities and restricts unprivileged users
+from changing the applied seccomp profile to a more permissive
+profile.</p>
+</div>
+<p>To learn how to implement seccomp in Kubernetes, refer to <a
+href="../../tutorials/security/seccomp.html">Restrict a Container's
+Syscalls with seccomp</a> or the <a
+href="../../reference/node/seccomp.html">Seccomp node reference</a></p>
+<p>To learn more about seccomp, see <a
+href="https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html">Seccomp
+BPF</a> in the Linux kernel documentation.</p>
+<h4 id="seccomp-considerations">Considerations for seccomp</h4>
+<p>seccomp is a low-level security configuration that you should only
+configure yourself if you require fine-grained control over Linux
+syscalls. Using seccomp, especially at scale, has the following
+risks:</p>
+<ul>
+<li>Configurations might break during application updates</li>
+<li>Attackers can still use allowed syscalls to exploit
+vulnerabilities</li>
+<li>Profile management for individual applications becomes challenging
+at scale</li>
+</ul>
+<p><strong>Recommendation</strong>: Use the default seccomp profile
+that's bundled with your container runtime. If you need a more isolated
+environment, consider using a sandbox, such as gVisor. Sandboxes solve
+the preceding risks with custom seccomp profiles, but require more
+compute resources on your nodes and might have compatibility issues with
+GPUs and other specialized hardware.</p>
+<h3 id="policy-based-mac">AppArmor and SELinux: policy-based mandatory
+access control</h3>
+<p>You can use Linux policy-based mandatory access control (MAC)
+mechanisms, such as AppArmor and SELinux, to harden your Kubernetes
+workloads.</p>
+<h4 id="apparmor">AppArmor</h4>
+<p><a target="_blank" rel="noopener" href="https://apparmor.net/">AppArmor</a> is a Linux kernel
+security module that supplements the standard Linux user and group based
+permissions to confine programs to a limited set of resources. AppArmor
+can be configured for any application to reduce its potential attack
+surface and provide greater in-depth defense. It is configured through
+profiles tuned to allow the access needed by a specific program or
+container, such as Linux capabilities, network access, and file
+permissions. Each profile can be run in either enforcing mode, which
+blocks access to disallowed resources, or complain mode, which only
+reports violations.</p>
+<p>AppArmor can help you to run a more secure deployment by restricting
+what containers are allowed to do, and/or provide better auditing
+through system logs. The container runtime that you use might ship with
+a default AppArmor profile, or you can use a custom profile.</p>
+<p>To learn how to use AppArmor in Kubernetes, refer to <a
+href="../../tutorials/security/apparmor.html">Restrict a Container's Access
+to Resources with AppArmor</a>.</p>
+<h4 id="selinux">SELinux</h4>
+<p>SELinux is a Linux kernel security module that lets you restrict the
+access that a specific <em>subject</em>, such as a process, has to the
+files on your system. You define security policies that apply to
+subjects that have specific SELinux labels. When a process that has an
+SELinux label attempts to access a file, the SELinux server checks
+whether that process' security policy allows the access and makes an
+authorization decision.</p>
+<p>In Kubernetes, you can set an SELinux label in the
+<code>securityContext</code> field of your manifest. The specified
+labels are assigned to those processes. If you have configured security
+policies that affect those labels, the host OS kernel enforces these
+policies.</p>
+<p>To learn how to use SELinux in Kubernetes, refer to <a
+href="../../tasks/configure-pod-container/security-context.html#assign-selinux-labels-to-a-container">Assign
+SELinux labels to a container</a>.</p>
+<h4 id="apparmor-selinux-diff">Differences between AppArmor and
+SELinux</h4>
+<p>The operating system on your Linux nodes usually includes one of
+either AppArmor or SELinux. Both mechanisms provide similar types of
+protection, but have differences such as the following:</p>
+<ul>
+<li><strong>Configuration</strong>: AppArmor uses profiles to define
+access to resources. SELinux uses policies that apply to specific
+labels.</li>
+<li><strong>Policy application</strong>: In AppArmor, you define
+resources using file paths. SELinux uses the index node (inode) of a
+resource to identify the resource.</li>
+</ul>
+<h3 id="summary">Summary of features</h3>
+<p>The following table describes the use cases and scope of each
+security control. You can use all of these controls together to build a
+more hardened system.</p>
+<table>
+<caption>
+Summary of Linux kernel security features
+</caption>
+<thead>
+<tr>
+<th>
+Security feature
+</th>
+<th>
+Description
+</th>
+<th>
+How to use
+</th>
+<th>
+Example
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+seccomp
+</td>
+<td>
+Restrict individual kernel calls in the userspace. Reduces the
+likelihood that a vulnerability that uses a restricted syscall would
+compromise the system.
+</td>
+<td>
+Specify a loaded seccomp profile in the Pod or container specification
+to apply its constraints to the processes in the Pod.
+</td>
+<td>
+Reject the <code>unshare</code> syscall, which was used in
+<a target="_blank" rel="noopener" href="https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2022-0185">CVE-2022-0185</a>.
+</td>
+</tr>
+<tr>
+<td>
+AppArmor
+</td>
+<td>
+Restrict program access to specific resources. Reduces the attack
+surface of the program. Improves audit logging.
+</td>
+<td>
+Specify a loaded AppArmor profile in the container specification.
+</td>
+<td>
+Restrict a read-only program from writing to any file path in the
+system.
+</td>
+</tr>
+<tr>
+<td>
+SELinux
+</td>
+<td>
+Restrict access to resources such as files, applications, ports, and
+processes using labels and security policies.
+</td>
+<td>
+Specify access restrictions for specific labels. Tag processes with
+those labels to enforce the access restrictions related to the label.
+</td>
+<td>
+Restrict a container from accessing files outside its own filesystem.
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Mechanisms like AppArmor and SELinux can provide protection that
+extends beyond the container. For example, you can use SELinux to help
+mitigate <a
+href="https://access.redhat.com/security/cve/cve-2019-5736">CVE-2019-5736</a>.</p>
+</div>
+<h3 id="considerations-custom-configurations">Considerations for
+managing custom configurations</h3>
+<p>seccomp, AppArmor, and SELinux usually have a default configuration
+that offers basic protections. You can also create custom profiles and
+policies that meet the requirements of your workloads. Managing and
+distributing these custom configurations at scale might be challenging,
+especially if you use all three features together. To help you to manage
+these configurations at scale, use a tool like the <a
+href="https://github.com/kubernetes-sigs/security-profiles-operator">Kubernetes
+Security Profiles Operator</a>.</p>
+<h2 id="kernel-security-features-privileged-containers">Kernel-level
+security features and privileged containers</h2>
+<p>Kubernetes lets you specify that some trusted containers can run in
+<em>privileged</em> mode. Any container in a Pod can run in privileged
+mode to use operating system administrative capabilities that would
+otherwise be inaccessible. This is available for both Windows and
+Linux.</p>
+<p>Privileged containers explicitly override some of the Linux kernel
+constraints that you might use in your workloads, as follows:</p>
+<ul>
+<li><strong>seccomp</strong>: Privileged containers run as the
+<code>Unconfined</code> seccomp profile, overriding any seccomp profile
+that you specified in your manifest.</li>
+<li><strong>AppArmor</strong>: Privileged containers ignore any applied
+AppArmor profiles.</li>
+<li><strong>SELinux</strong>: Privileged containers run as the
+<code>unconfined_t</code> domain.</li>
+</ul>
+<h3 id="privileged-containers">Privileged containers</h3>
+<p>Any container in a Pod can enable <em>Privileged mode</em> if you set
+the <code>privileged: true</code> field in the <a
+href="../../tasks/configure-pod-container/security-context.html"><code>securityContext</code></a>
+field for the container. Privileged containers override or undo many
+other hardening settings such as the applied seccomp profile, AppArmor
+profile, or SELinux constraints. Privileged containers are given all
+Linux capabilities, including capabilities that they don't require. For
+example, a root user in a privileged container might be able to use the
+<code>CAP_SYS_ADMIN</code> and <code>CAP_NET_ADMIN</code> capabilities
+on the node, bypassing the runtime seccomp configuration and other
+restrictions.</p>
+<p>In most cases, you should avoid using privileged containers, and
+instead grant the specific capabilities required by your container using
+the <code>capabilities</code> field in the <code>securityContext</code>
+field. Only use privileged mode if you have a capability that you can't
+grant with the securityContext. This is useful for containers that want
+to use operating system administrative capabilities such as manipulating
+the network stack or accessing hardware devices.</p>
+<p>In Kubernetes version 1.26 and later, you can also run Windows
+containers in a similarly privileged mode by setting the
+<code>windowsOptions.hostProcess</code> flag on the security context of
+the Pod spec. For details and instructions, see <a
+href="../../tasks/configure-pod-container/create-hostprocess-pod.html">Create
+a Windows HostProcess Pod</a>.</p>
+<h2 id="recommendations-best-practices">Recommendations and best
+practices</h2>
+<ul>
+<li>Before configuring kernel-level security capabilities, you should
+consider implementing network-level isolation. For more information,
+read the <a
+href="security-checklist.html#network-security">Security
+Checklist</a>.</li>
+<li>Unless necessary, run Linux workloads as non-root by setting
+specific user and group IDs in your Pod manifest and by specifying
+<code>runAsNonRoot: true</code>.</li>
+</ul>
+<p>Additionally, you can run workloads in user namespaces by setting
+<code>hostUsers: false</code> in your Pod manifest. This lets you run
+containers as root users in the user namespace, but as non-root users in
+the host namespace on the node. This is still in early stages of
+development and might not have the level of support that you need. For
+instructions, refer to <a
+href="../../tasks/configure-pod-container/user-namespaces.html">Use a User
+Namespace With a Pod</a>.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li><a href="../../tutorials/security/apparmor.html">Learn how to use
+AppArmor</a></li>
+<li><a href="../../tutorials/security/seccomp.html">Learn how to use
+seccomp</a></li>
+<li><a
+href="../../tasks/configure-pod-container/security-context.html#assign-selinux-labels-to-a-container">Learn
+how to use SELinux</a></li>
+<li><a href="../../reference/node/seccomp.html">Seccomp Node
+Reference</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="api-server-bypass-risks.html"><span>Previous</span>Kubernetes API Server Bypass Risks</a><a class="page-nav-link next" href="security-checklist.html"><span>Next</span>Security Checklist</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#run-without-root">Run workloads without root privileges</a></li><li class="toc-l2"><a href="#linux-security-features">Security features in the Linux kernel</a></li><li class="toc-l3"><a href="#seccomp">seccomp</a></li><li class="toc-l3"><a href="#policy-based-mac">AppArmor and SELinux: policy-based mandatory access control</a></li><li class="toc-l3"><a href="#summary">Summary of features</a></li><li class="toc-l3"><a href="#considerations-custom-configurations">Considerations for managing custom configurations</a></li><li class="toc-l2"><a href="#kernel-security-features-privileged-containers">Kernel-level security features and privileged containers</a></li><li class="toc-l3"><a href="#privileged-containers">Privileged containers</a></li><li class="toc-l2"><a href="#recommendations-best-practices">Recommendations and best practices</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

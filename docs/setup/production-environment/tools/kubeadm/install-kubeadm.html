@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Installing kubeadm · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../../" data-key="setup/production-environment/tools/kubeadm/install-kubeadm" data-title="Installing kubeadm" data-canonical="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../../setup.html">Getting started</a><span>/</span><a href="../../../production-environment.html">Production environment</a><span>/</span><a href="../../tools.html">Installing Kubernetes with deployment tools</a><span>/</span><a href="../kubeadm.html">Bootstrapping clusters with kubeadm</a></nav></nav>
+        <header class="page-head">
+          <h1>Installing kubeadm</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p><img src="../../../../../assets/static/images/kubeadm-stacked-color-da274d94.png" width="150" />
+This page shows how to install the <code>kubeadm</code> toolbox. For
+information on how to create a cluster with kubeadm once you have
+performed this installation process, see the <a
+href="create-cluster-kubeadm.html">Creating
+a cluster with kubeadm</a> page.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li>A compatible Linux host. The Kubernetes project provides generic
+instructions for Linux distributions based on Debian and Red Hat, and
+those distributions without a package manager.</li>
+<li>2 GB or more of RAM per machine (any less will leave little room for
+your apps).</li>
+<li>2 CPUs or more for control plane machines.</li>
+<li>Full network connectivity between all machines in the cluster
+(public or private network is fine).</li>
+<li>Unique hostname, MAC address, and product_uuid for every node. See
+<a href="#verify-mac-address">here</a> for more details.</li>
+<li>Certain ports are open on your machines. See <a
+href="#check-required-ports">here</a> for more details.</li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>kubeadm</code> installation is done via binaries that use
+dynamic linking and assumes that your target system provides
+<code>glibc</code>. This is a reasonable assumption on many Linux
+distributions (including Debian, Ubuntu, Fedora, CentOS, etc.) but it is
+not always the case with custom and lightweight distributions which
+don't include <code>glibc</code> by default, such as Alpine Linux. The
+expectation is that the distribution either includes <code>glibc</code>
+or a <a
+href="https://wiki.alpinelinux.org/wiki/Running_glibc_programs">compatibility
+layer</a> that provides the expected symbols.</p>
+</div>
+<h2 id="check-your-os-version">Check your OS version</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This section links to third party projects that provide functionality
+required by Kubernetes. The Kubernetes project authors aren't
+responsible for these projects, which are listed alphabetically. To add
+a project to this list, read the
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content">content
+guide</a> before submitting a change.
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content-disclaimer">More
+information.</a></p>
+</div>
+<div class="tabset">
+<div class="tab-label">
+<p>Linux</p>
+</div>
+<ul>
+<li>The kubeadm project supports LTS kernels. See <a
+href="https://www.kernel.org/category/releases.html">List of LTS
+kernels</a>.</li>
+<li>You can get the kernel version using the command
+<code>uname -r</code></li>
+</ul>
+<p>For more information, see <a
+href="../../../../reference/node/kernel-version-requirements.html">Linux Kernel
+Requirements</a>.</p>
+<div class="tab-label">
+<p>Windows</p>
+</div>
+<ul>
+<li>The kubeadm project supports recent kernel versions. For a list of
+recent kernels, see <a
+href="https://learn.microsoft.com/en-us/windows/release-health/windows-server-release-info">Windows
+Server Release Information</a>.</li>
+<li>You can get the kernel version (also called the OS version) using
+the command <code>systeminfo</code></li>
+</ul>
+<p>For more information, see <a
+href="../../../../concepts/windows/intro.html#windows-os-version-support">Windows
+OS version compatibility</a>.</p>
+</div>
+<p>A Kubernetes cluster created by kubeadm depends on software that use
+kernel features. This software includes, but is not limited to the <span
+class="glossary-term" data-term="container-runtime">container
+runtime</span>, the <a class="glossary-term" href="../../../../reference/glossary.html#term-kubelet" title="Glossary: kubelet">kubelet</a>, and a <a class="glossary-term" href="../../../../reference/glossary.html#term-cni" title="Glossary: cni">Container Network Interface</a> plugin.</p>
+<p>To help you avoid unexpected errors as a result of an unsupported
+kernel version, kubeadm runs the <code>SystemVerification</code>
+pre-flight check. This check fails if the kernel version is not
+supported.</p>
+<p>You may choose to skip the check, if you know that your kernel
+provides the required features, even though kubeadm does not support its
+version.</p>
+<h2 id="verify-mac-address">Verify the MAC address and product_uuid are
+unique for every node</h2>
+<ul>
+<li>You can get the MAC address of the network interfaces using the
+command <code>ip link</code> or <code>ifconfig -a</code></li>
+<li>The product_uuid can be checked by using the command
+<code>sudo cat /sys/class/dmi/id/product_uuid</code></li>
+</ul>
+<p>It is very likely that hardware devices will have unique addresses,
+although some virtual machines may have identical values. Kubernetes
+uses these values to uniquely identify the nodes in the cluster. If
+these values are not unique to each node, the installation process may
+<a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubeadm/issues/31">fail</a>.</p>
+<h2 id="check-network-adapters">Check network adapters</h2>
+<p>If you have more than one network adapter, and your Kubernetes
+components are not reachable on the default route, we recommend you add
+IP route(s) so Kubernetes cluster addresses go via the appropriate
+adapter.</p>
+<h2 id="check-required-ports">Check required ports</h2>
+<p>These <a
+href="../../../../reference/networking/ports-and-protocols.html">required
+ports</a> need to be open in order for Kubernetes components to
+communicate with each other. You can use tools like <a
+href="https://netcat.sourceforge.net">netcat</a> to check if a port is
+open. For example:</p>
+<pre class="shell"><code>nc 127.0.0.1 6443 -zv -w 2</code></pre>
+<p>The pod network plugin you use may also require certain ports to be
+open. Since this differs with each pod network plugin, please see the
+documentation for the plugins about what port(s) those need.</p>
+<h2 id="swap-configuration">Swap configuration</h2>
+<p>The default behavior of a kubelet is to fail to start if swap memory
+is detected on a node. This means that swap should either be disabled or
+tolerated by kubelet.</p>
+<ul>
+<li>To tolerate swap, add <code>failSwapOn: false</code> to kubelet
+configuration or as a command line argument. Note: even if
+<code>failSwapOn: false</code> is provided, workloads wouldn't have swap
+access by default. This can be changed by setting a
+<code>swapBehavior</code>, again in the kubelet configuration file. To
+use swap, set a <code>swapBehavior</code> other than the default
+<code>NoSwap</code> setting. See <a
+href="../../../../concepts/cluster-administration/swap-memory-management.html">Swap
+memory management</a> for more details.</li>
+<li>To disable swap, <code>sudo swapoff -a</code> can be used to disable
+swapping temporarily. To make this change persistent across reboots,
+make sure swap is disabled in config files like <code>/etc/fstab</code>,
+<code>systemd.swap</code>, depending how it was configured on your
+system.</li>
+</ul>
+<h2 id="installing-runtime">Installing a container runtime</h2>
+<p>To run containers in Pods, Kubernetes uses a <span
+class="glossary-term" data-term="container-runtime">container
+runtime</span>.</p>
+<p>By default, Kubernetes uses the <a class="glossary-term" href="../../../../reference/glossary.html#term-cri" title="Glossary: cri">Container Runtime Interface</a> (CRI) to interface
+with your chosen container runtime.</p>
+<p>If you don't specify a runtime, kubeadm automatically tries to detect
+an installed container runtime by scanning through a list of known
+endpoints.</p>
+<p>If multiple or no container runtimes are detected kubeadm will throw
+an error and will request that you specify which one you want to
+use.</p>
+<p>See <a
+href="../../container-runtimes.html">container
+runtimes</a> for more information.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Docker Engine does not implement the <a
+href="https://kubernetes.io/docs/concepts/architecture/cri/">CRI</a>
+which is a requirement for a container runtime to work with Kubernetes.
+For that reason, an additional service <a
+href="https://mirantis.github.io/cri-dockerd/">cri-dockerd</a> has to be
+installed. cri-dockerd is a project based on the legacy built-in Docker
+Engine support that was <a
+href="https://kubernetes.io/dockershim">removed</a> from the kubelet in
+version 1.24.</p>
+</div>
+<p>The tables below include the known endpoints for supported operating
+systems:</p>
+<div class="tabset">
+<div class="tab-label">
+<p>Linux</p>
+</div>
+<table>
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr>
+<th>Runtime</th>
+<th>Path to Unix domain socket</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>containerd</td>
+<td><code>unix:///var/run/containerd/containerd.sock</code></td>
+</tr>
+<tr>
+<td>CRI-O</td>
+<td><code>unix:///var/run/crio/crio.sock</code></td>
+</tr>
+<tr>
+<td>Docker Engine (using cri-dockerd)</td>
+<td><code>unix:///var/run/cri-dockerd.sock</code></td>
+</tr>
+</tbody>
+</table>
+<div class="tab-label">
+<p>Windows</p>
+</div>
+<table>
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr>
+<th>Runtime</th>
+<th>Path to Windows named pipe</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>containerd</td>
+<td><code>npipe:////./pipe/containerd-containerd</code></td>
+</tr>
+<tr>
+<td>Docker Engine (using cri-dockerd)</td>
+<td><code>npipe:////./pipe/cri-dockerd</code></td>
+</tr>
+</tbody>
+</table>
+</div>
+<h2 id="installing-kubeadm-kubelet-and-kubectl">Installing kubeadm,
+kubelet and kubectl</h2>
+<p>You will install these packages on all of your machines:</p>
+<ul>
+<li><p><code>kubeadm</code>: the command to bootstrap the
+cluster.</p></li>
+<li><p><code>kubelet</code>: the component that runs on all of the
+machines in your cluster and does things like starting pods and
+containers.</p></li>
+<li><p><code>kubectl</code>: the command line util to talk to your
+cluster.</p></li>
+</ul>
+<p>kubeadm <strong>will not</strong> install or manage
+<code>kubelet</code> or <code>kubectl</code> for you, so you will need
+to ensure they match the version of the Kubernetes control plane you
+want kubeadm to install for you. If you do not, there is a risk of a
+version skew occurring that can lead to unexpected, buggy behaviour.
+However, <em>one</em> minor version skew between the kubelet and the
+control plane is supported, but the kubelet version may never exceed the
+API server version. For example, the kubelet running 1.7.0 should be
+fully compatible with a 1.8.0 API server, but not vice versa.</p>
+<p>For information about installing <code>kubectl</code>, see <a
+href="../../../../tasks/tools.html">Install and set up kubectl</a>.</p>
+<div class="admonition warning">
+<div class="admonition-title">
+<p>Warning:</p>
+</div>
+<p>These instructions exclude all Kubernetes packages from any system
+upgrades. This is because kubeadm and Kubernetes require <a
+href="../../../../tasks/administer-cluster/kubeadm/kubeadm-upgrade.html">special
+attention to upgrade</a>.</p>
+</div>
+<p>For more information on version skews, see:</p>
+<ul>
+<li>Kubernetes <a
+href="https://kubernetes.io/docs/setup/release/version-skew-policy/">version
+and version-skew policy</a></li>
+<li>Kubeadm-specific <a
+href="create-cluster-kubeadm.html#version-skew-policy">version
+skew policy</a></li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The legacy package repositories (<code>apt.kubernetes.io</code> and
+<code>yum.kubernetes.io</code>) have been <a
+href="https://kubernetes.io/blog/2023/08/31/legacy-package-repository-deprecation/">deprecated
+and frozen starting from September 13, 2023</a>. <strong>Using the <a
+href="https://kubernetes.io/blog/2023/08/15/pkgs-k8s-io-introduction/">new
+package repositories hosted at <code>pkgs.k8s.io</code></a> is strongly
+recommended and required in order to install Kubernetes versions
+released after September 13, 2023.</strong> The deprecated legacy
+repositories, and their contents, might be removed at any time in the
+future and without a further notice period. The new package repositories
+provide downloads for Kubernetes versions starting with v1.24.0.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>There's a dedicated package repository for each Kubernetes minor
+version. If you want to install a minor version other than v1.37, please
+see the installation guide for your desired minor version.</p>
+</div>
+<div class="tabset">
+<div class="tab-label">
+<p>Debian-based distributions</p>
+</div>
+<p>These instructions are for Kubernetes v1.37.</p>
+<ol type="1">
+<li><p>Update the <code>apt</code> package index and install packages
+needed to use the Kubernetes <code>apt</code> repository:</p>
+<pre class="shell"><code>sudo apt-get update
+# apt-transport-https may be a dummy package; if so, you can skip that package
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg</code></pre></li>
+<li><p>Download the public signing key for the Kubernetes package
+repositories. The same signing key is used for all repositories so you
+can disregard the version in the URL:</p>
+<pre class="shell"><code># If the directory `/etc/apt/keyrings` does not exist, it should be created before the curl command, read the note below.
+# sudo mkdir -p -m 755 /etc/apt/keyrings
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.37/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg</code></pre></li>
+</ol>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>In releases older than Debian 12 and Ubuntu 22.04, directory
+<code>/etc/apt/keyrings</code> does not exist by default, and it should
+be created before the curl command.</p>
+</div>
+<ol start="3" type="1">
+<li><p>Add the appropriate Kubernetes <code>apt</code> repository.
+Please note that this repository have packages only for Kubernetes 1.37;
+for other Kubernetes minor versions, you need to change the Kubernetes
+minor version in the URL to match your desired minor version (you should
+also check that you are reading the documentation for the version of
+Kubernetes that you plan to install).</p>
+<pre class="shell"><code># This overwrites any existing configuration in /etc/apt/sources.list.d/kubernetes.list
+echo &#39;deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.37/deb/ /&#39; | sudo tee /etc/apt/sources.list.d/kubernetes.list</code></pre></li>
+<li><p>Update the <code>apt</code> package index, install kubelet,
+kubeadm and kubectl, and pin their version:</p>
+<pre class="shell"><code>sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl
+sudo apt-mark hold kubelet kubeadm kubectl</code></pre></li>
+<li><p>(Optional) Enable the kubelet service before running kubeadm:</p>
+<pre class="shell"><code>sudo systemctl enable --now kubelet</code></pre></li>
+</ol>
+<div class="tab-label">
+<p>Red Hat-based distributions</p>
+</div>
+<ol type="1">
+<li><p>Set SELinux to <code>permissive</code> mode:</p>
+<p>These instructions are for Kubernetes 1.37.</p>
+<pre class="shell"><code># Set SELinux in permissive mode (effectively disabling it)
+sudo setenforce 0
+sudo sed -i &#39;s/^SELINUX=enforcing$/SELINUX=permissive/&#39; /etc/selinux/config</code></pre></li>
+</ol>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<ul>
+<li>Setting SELinux in permissive mode by running
+<code>setenforce 0</code> and <code>sed ...</code> effectively disables
+it. This is required to allow containers to access the host filesystem;
+for example, some cluster network plugins require that. You have to do
+this until SELinux support is improved in the kubelet.</li>
+<li>You can leave SELinux enabled if you know how to configure it but it
+may require settings that are not supported by kubeadm.</li>
+</ul>
+</div>
+<ol start="2" type="1">
+<li><p>Add the Kubernetes <code>yum</code> repository. The
+<code>exclude</code> parameter in the repository definition ensures that
+the packages related to Kubernetes are not upgraded upon running a
+normal <code>dnf update</code> as there's a special procedure that must
+be followed for upgrading Kubernetes. Please note that this repository
+has packages only for Kubernetes 1.37; for other Kubernetes minor
+versions, you need to change the Kubernetes minor version in the URL to
+match your desired minor version (you should also check that you are
+reading the documentation for the version of Kubernetes that you plan to
+install).</p>
+<pre class="shell"><code># This overwrites any existing configuration in /etc/yum.repos.d/kubernetes.repo
+cat &lt;&lt;EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+[kubernetes]
+name=Kubernetes
+baseurl=https://pkgs.k8s.io/core:/stable:/v1.37/rpm/
+enabled=1
+gpgcheck=1
+gpgkey=https://pkgs.k8s.io/core:/stable:/v1.37/rpm/repodata/repomd.xml.key
+exclude=kubelet kubeadm kubectl cri-tools kubernetes-cni
+EOF</code></pre></li>
+<li><p>Install kubelet, kubeadm and kubectl:</p>
+<p>For systems with DNF4 (Fedora &lt; 41, RHEL/CentOS &lt; 10)</p>
+<pre class="shell"><code>sudo dnf install -y kubelet kubeadm kubectl --disableexcludes=kubernetes</code></pre>
+<p>For Fedora systems with DNF5:</p>
+<pre class="shell"><code>sudo dnf install -y kubelet kubeadm kubectl --setopt=disable_excludes=kubernetes</code></pre>
+<p>For RHEL/CentOS 10 and later, to avoid pulling in
+<code>iptables</code> as a dependency:</p>
+<pre class="shell"><code>sudo dnf install -y kubelet kubeadm kubectl --setopt=disable_excludes=kubernetes --setopt=install_weak_deps=False</code></pre></li>
+<li><p>(Optional) Enable the kubelet service before running kubeadm:</p>
+<pre class="shell"><code>sudo systemctl enable --now kubelet</code></pre></li>
+</ol>
+<div class="tab-label">
+<p>Without a package manager</p>
+</div>
+<p>Install CNI plugins (required for most pod network):</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="va">CNI_PLUGINS_VERSION</span><span class="op">=</span><span class="st">&quot;v1.3.0&quot;</span></span>
+<span class="va">ARCH</span><span class="op">=</span><span class="st">&quot;amd64&quot;</span></span>
+<span class="va">DEST</span><span class="op">=</span><span class="st">&quot;/opt/cni/bin&quot;</span></span>
+<span class="fu">sudo</span> mkdir <span class="at">-p</span> <span class="st">&quot;</span><span class="va">$DEST</span><span class="st">&quot;</span></span>
+<span class="ex">curl</span> <span class="at">-L</span> <span class="st">&quot;https://github.com/containernetworking/plugins/releases/download/</span><span class="va">${CNI_PLUGINS_VERSION}</span><span class="st">/cni-plugins-linux-</span><span class="va">${ARCH}</span><span class="st">-</span><span class="va">${CNI_PLUGINS_VERSION}</span><span class="st">.tgz&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tar <span class="at">-C</span> <span class="st">&quot;</span><span class="va">$DEST</span><span class="st">&quot;</span> <span class="at">-xz</span></span></code></pre></div>
+<p>Define the directory to download command files:</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>DOWNLOAD_DIR</code> variable must be set to a writable
+directory. If you are running Flatcar Container Linux, set
+<code>DOWNLOAD_DIR="/opt/bin"</code>.</p>
+</div>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="va">DOWNLOAD_DIR</span><span class="op">=</span><span class="st">&quot;/usr/local/bin&quot;</span></span>
+<span class="fu">sudo</span> mkdir <span class="at">-p</span> <span class="st">&quot;</span><span class="va">$DOWNLOAD_DIR</span><span class="st">&quot;</span></span></code></pre></div>
+<p>Optionally install crictl (required for interaction with the
+Container Runtime Interface (CRI), optional for kubeadm):</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="va">CRICTL_VERSION</span><span class="op">=</span><span class="st">&quot;v1.31.0&quot;</span></span>
+<span class="va">ARCH</span><span class="op">=</span><span class="st">&quot;amd64&quot;</span></span>
+<span class="ex">curl</span> <span class="at">-L</span> <span class="st">&quot;https://github.com/kubernetes-sigs/cri-tools/releases/download/</span><span class="va">${CRICTL_VERSION}</span><span class="st">/crictl-</span><span class="va">${CRICTL_VERSION}</span><span class="st">-linux-</span><span class="va">${ARCH}</span><span class="st">.tar.gz&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tar <span class="at">-C</span> <span class="va">$DOWNLOAD_DIR</span> <span class="at">-xz</span></span></code></pre></div>
+<p>Install <code>kubeadm</code>, <code>kubelet</code> and add a
+<code>kubelet</code> systemd service:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="va">RELEASE</span><span class="op">=</span><span class="st">&quot;</span><span class="va">$(</span><span class="ex">curl</span> <span class="at">-sSL</span> https://dl.k8s.io/release/stable.txt<span class="va">)</span><span class="st">&quot;</span></span>
+<span class="va">ARCH</span><span class="op">=</span><span class="st">&quot;amd64&quot;</span></span>
+<span class="bu">cd</span> <span class="va">$DOWNLOAD_DIR</span></span>
+<span class="fu">sudo</span> curl <span class="at">-L</span> <span class="at">--remote-name-all</span> https://dl.k8s.io/release/<span class="va">${RELEASE}</span>/bin/linux/<span class="va">${ARCH}</span>/<span class="dt">{kubeadm</span><span class="op">,</span><span class="dt">kubelet}</span></span>
+<span class="fu">sudo</span> chmod +x <span class="dt">{kubeadm</span><span class="op">,</span><span class="dt">kubelet}</span></span>
+</span>
+<span class="va">RELEASE_VERSION</span><span class="op">=</span><span class="st">&quot;v0.16.2&quot;</span></span>
+<span class="ex">curl</span> <span class="at">-sSL</span> <span class="st">&quot;https://raw.githubusercontent.com/kubernetes/release/</span><span class="va">${RELEASE_VERSION}</span><span class="st">/cmd/krel/templates/latest/kubelet/kubelet.service&quot;</span> <span class="kw">|</span> <span class="fu">sed</span> <span class="st">&quot;s:/usr/bin:</span><span class="va">${DOWNLOAD_DIR}</span><span class="st">:g&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /usr/lib/systemd/system/kubelet.service</span>
+<span class="fu">sudo</span> mkdir <span class="at">-p</span> /usr/lib/systemd/system/kubelet.service.d</span>
+<span class="ex">curl</span> <span class="at">-sSL</span> <span class="st">&quot;https://raw.githubusercontent.com/kubernetes/release/</span><span class="va">${RELEASE_VERSION}</span><span class="st">/cmd/krel/templates/latest/kubeadm/10-kubeadm.conf&quot;</span> <span class="kw">|</span> <span class="fu">sed</span> <span class="st">&quot;s:/usr/bin:</span><span class="va">${DOWNLOAD_DIR}</span><span class="st">:g&quot;</span> <span class="kw">|</span> <span class="fu">sudo</span> tee /usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf</span></code></pre></div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Please refer to the note in the <a href="#before-you-begin">Before
+you begin</a> section for Linux distributions that do not include
+<code>glibc</code> by default.</p>
+</div>
+<p>Install <code>kubectl</code> by following the instructions on <a
+href="../../../../tasks/tools.html#kubectl">Install Tools page</a>.</p>
+<p>Optionally, enable the kubelet service before running kubeadm:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="fu">sudo</span> systemctl enable <span class="at">--now</span> kubelet</span></code></pre></div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The Flatcar Container Linux distribution mounts the <code>/usr</code>
+directory as a read-only filesystem. Before bootstrapping your cluster,
+you need to take additional steps to configure a writable directory. See
+the <a
+href="troubleshooting-kubeadm.html#usr-mounted-read-only">Kubeadm
+Troubleshooting guide</a> to learn how to set up a writable
+directory.</p>
+</div>
+</div>
+<p>The kubelet is now restarting every few seconds, as it waits in a
+crashloop for kubeadm to tell it what to do.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>If you are running into difficulties with kubeadm, please consult our
+<a
+href="troubleshooting-kubeadm.html">troubleshooting
+docs</a>.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li><a
+href="create-cluster-kubeadm.html">Using
+kubeadm to Create a Cluster</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../kubeadm.html"><span>Previous</span>Bootstrapping clusters with kubeadm</a><a class="page-nav-link next" href="troubleshooting-kubeadm.html"><span>Next</span>Troubleshooting kubeadm</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#check-your-os-version">Check your OS version</a></li><li class="toc-l2"><a href="#verify-mac-address">Verify the MAC address and product_uuid are unique for every node</a></li><li class="toc-l2"><a href="#check-network-adapters">Check network adapters</a></li><li class="toc-l2"><a href="#check-required-ports">Check required ports</a></li><li class="toc-l2"><a href="#swap-configuration">Swap configuration</a></li><li class="toc-l2"><a href="#installing-runtime">Installing a container runtime</a></li><li class="toc-l2"><a href="#installing-kubeadm-kubelet-and-kubectl">Installing kubeadm, kubelet and kubectl</a></li><li class="toc-l2"><a href="#troubleshooting">Troubleshooting</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../../assets/nav.js"></script>
+<script src="../../../../../assets/site.js"></script>
+</body>
+</html>

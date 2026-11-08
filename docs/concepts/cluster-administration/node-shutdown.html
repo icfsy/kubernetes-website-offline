@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Node Shutdowns · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/cluster-administration/node-shutdown" data-title="Node Shutdowns" data-canonical="https://kubernetes.io/docs/concepts/cluster-administration/node-shutdown/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../cluster-administration.html">Cluster Administration</a></nav></nav>
+        <header class="page-head">
+          <h1>Node Shutdowns</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/cluster-administration/node-shutdown/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>In a Kubernetes cluster, a <a class="glossary-term" href="../../reference/glossary.html#term-node" title="Glossary: node">node</a> can be shut down in a planned graceful way
+or unexpectedly because of reasons such as a power outage or something
+else external. A node shutdown could lead to workload failure if the
+node is not drained before the shutdown. A node shutdown can be either
+<strong>graceful</strong> or <strong>non-graceful</strong>.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>The <code>unattended-upgrades</code> package from Debian conflicts
+with node graceful shutdown in its normal configuration. If you use the
+default configuration of <code>unattended-upgrades</code>, which
+customizes the server shutdown grace period, then the kubelet fails to
+obtain the necessary lock to handle shutdown events properly.</p>
+<p>This happens if the <code>shutdownGracePeriod</code> value is greater
+than 30 seconds. To avoid this, you can suppress part of the
+<code>unattended-upgrades</code> configuration, by making
+<code>/etc/systemd/logind.conf.d/unattended-upgrades-logind-maxdelay.conf</code>
+be a symbolic link to <code>/dev/null</code>.</p>
+<p>For more details, refer to the <a
+href="https://www.freedesktop.org/software/systemd/man/latest/logind.conf.html"><code>logind.conf</code>
+documentation</a>.</p>
+</div>
+<h2 id="graceful-node-shutdown">Graceful node shutdown</h2>
+<p>The kubelet attempts to detect node system shutdown and terminates
+pods running on the node.</p>
+<p>Kubelet ensures that pods follow the normal <a
+href="../workloads/pods/pod-lifecycle.html#pod-termination">pod
+termination process</a> during the node shutdown. During node shutdown,
+the kubelet does not accept new Pods (even if those Pods are already
+bound to the node).</p>
+<h3 id="enabling-graceful-node-shutdown">Enabling graceful node
+shutdown</h3>
+<div class="tabset">
+<div class="tab-label">
+<p>Linux</p>
+</div>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.21; enabled by default
+(<code>GracefulNodeShutdown</code>)</p>
+</div>
+<p>On Linux, the graceful node shutdown feature is controlled with the
+<code>GracefulNodeShutdown</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a> which is enabled by default in 1.21.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The graceful node shutdown feature depends on systemd since it takes
+advantage of <a
+href="https://www.freedesktop.org/wiki/Software/systemd/inhibit/">systemd
+inhibitor locks</a> to delay the node shutdown with a given
+duration.</p>
+</div>
+<div class="tab-label">
+<p>Windows</p>
+</div>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.34; enabled by default
+(<code>WindowsGracefulNodeShutdown</code>)</p>
+</div>
+<p>On Windows, the graceful node shutdown feature is controlled with the
+<code>WindowsGracefulNodeShutdown</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a> which is introduced in 1.32 as an alpha feature. In Kubernetes
+1.34 the feature is Beta and is enabled by default.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The Windows graceful node shutdown feature depends on kubelet running
+as a Windows service, it will then have a registered <a
+href="https://learn.microsoft.com/en-us/windows/win32/services/service-control-handler-function">service
+control handler</a> to delay the preshutdown event with a given
+duration.</p>
+</div>
+<p>Windows graceful node shutdown can not be cancelled.</p>
+<p>If kubelet is not running as a Windows service, it will not be able
+to set and monitor the <a
+href="https://learn.microsoft.com/en-us/windows/win32/api/winsvc/ns-winsvc-service_preshutdown_info">Preshutdown</a>
+event, the node will have to go through the <a
+href="#non-graceful-node-shutdown">Non-Graceful Node Shutdown</a>
+procedure mentioned above.</p>
+<p>In the case where the Windows graceful node shutdown feature is
+enabled, but the kubelet is not running as a Windows service, the
+kubelet will continue running instead of failing. However, it will log
+an error indicating that it needs to be run as a Windows service.</p>
+</div>
+<h3 id="configuring-graceful-node-shutdown">Configuring graceful node
+shutdown</h3>
+<p>Note that by default, both configuration options described below,
+<code>shutdownGracePeriod</code> and
+<code>shutdownGracePeriodCriticalPods</code>, are set to zero, thus not
+activating the graceful node shutdown functionality. To activate the
+feature, both options should be configured appropriately and set to
+non-zero values.</p>
+<p>Once the kubelet is notified of a node shutdown, it sets a
+<code>NotReady</code> condition on the Node, with the
+<code>reason</code> set to <code>"node is shutting down"</code>. The
+kube-scheduler honors this condition and does not schedule any Pods onto
+the affected node; other third-party schedulers are expected to follow
+the same logic. This means that new Pods won't be scheduled onto that
+node and therefore none will start.</p>
+<p>The kubelet <strong>also</strong> rejects Pods during the
+<code>PodAdmission</code> phase if an ongoing node shutdown has been
+detected, so that even Pods with a <a class="glossary-term" href="../../reference/glossary.html#term-toleration" title="Glossary: toleration">toleration</a> for
+<code>node.kubernetes.io/not-ready:NoSchedule</code> do not start
+there.</p>
+<p>When kubelet is setting that condition on its Node via the API, the
+kubelet also begins terminating any Pods that are running locally.</p>
+<p>During a graceful shutdown, kubelet terminates pods in two
+phases:</p>
+<ol type="1">
+<li>Terminate regular pods running on the node.</li>
+<li>Terminate <a
+href="../../tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods.html#marking-pod-as-critical">critical
+pods</a> running on the node.</li>
+</ol>
+<p>The graceful node shutdown feature is configured with two <a
+href="../../tasks/administer-cluster/kubelet-config-file.html"><code>KubeletConfiguration</code></a>
+options:</p>
+<ul>
+<li><p><code>shutdownGracePeriod</code>:</p>
+<p>Specifies the total duration that the node should delay the shutdown
+by. This is the total grace period for pod termination for both regular
+and <a
+href="../../tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods.html#marking-pod-as-critical">critical
+pods</a>.</p></li>
+<li><p><code>shutdownGracePeriodCriticalPods</code>:</p>
+<p>Specifies the duration used to terminate <a
+href="../../tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods.html#marking-pod-as-critical">critical
+pods</a> during a node shutdown. This value should be less than
+<code>shutdownGracePeriod</code>.</p></li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>There are cases when Node termination was cancelled by the system (or
+perhaps manually by an administrator). In either of those situations the
+Node will return to the <code>Ready</code> state. However, Pods which
+already started the process of termination will not be restored by
+kubelet and will need to be re-scheduled.</p>
+</div>
+<p>For example, if <code>shutdownGracePeriod=30s</code>, and
+<code>shutdownGracePeriodCriticalPods=10s</code>, kubelet will delay the
+node shutdown by 30 seconds. During the shutdown, the first 20 (30-10)
+seconds would be reserved for gracefully terminating normal pods, and
+the last 10 seconds would be reserved for terminating <a
+href="../../tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods.html#marking-pod-as-critical">critical
+pods</a>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>When pods were evicted during the graceful node shutdown, they are
+marked as shutdown. Running <code>kubectl get pods</code> shows the
+status of the evicted pods as <code>Terminated</code>. And
+<code>kubectl describe pod</code> indicates that the pod was evicted
+because of node shutdown:</p>
+<pre><code>Reason:         Terminated
+Message:        Pod was terminated in response to imminent node shutdown.</code></pre>
+</div>
+<h3 id="pod-priority-graceful-node-shutdown">Pod Priority based graceful
+node shutdown</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.24; enabled by default
+(<code>GracefulNodeShutdownBasedOnPodPriority</code>)</p>
+</div>
+<p>To provide more flexibility during graceful node shutdown around the
+ordering of pods during shutdown, graceful node shutdown honors the
+PriorityClass for Pods, provided that you enabled this feature in your
+cluster. The feature allows cluster administrators to explicitly define
+the ordering of pods during graceful node shutdown based on <a
+href="../scheduling-eviction/pod-priority-preemption.html#priorityclass">priority
+classes</a>.</p>
+<p>The <a href="#graceful-node-shutdown">Graceful Node Shutdown</a>
+feature, as described above, shuts down pods in two phases, non-critical
+pods, followed by critical pods. If additional flexibility is needed to
+explicitly define the ordering of pods during shutdown in a more
+granular way, pod priority based graceful shutdown can be used.</p>
+<p>When graceful node shutdown honors pod priorities, this makes it
+possible to do graceful node shutdown in multiple phases, each phase
+shutting down a particular priority class of pods. The kubelet can be
+configured with the exact phases and shutdown time per phase.</p>
+<p>Assuming the following custom pod <a
+href="../scheduling-eviction/pod-priority-preemption.html#priorityclass">priority
+classes</a> in a cluster,</p>
+<table>
+<thead>
+<tr>
+<th>Pod priority class name</th>
+<th>Pod priority class value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>custom-class-a</code></td>
+<td>100000</td>
+</tr>
+<tr>
+<td><code>custom-class-b</code></td>
+<td>10000</td>
+</tr>
+<tr>
+<td><code>custom-class-c</code></td>
+<td>1000</td>
+</tr>
+<tr>
+<td><code>regular/unset</code></td>
+<td>0</td>
+</tr>
+</tbody>
+</table>
+<p>Within the <a
+href="../../reference/config-api/kubelet-config.v1beta1.html">kubelet
+configuration</a> the settings for
+<code>shutdownGracePeriodByPodPriority</code> could look like:</p>
+<table>
+<thead>
+<tr>
+<th>Pod priority class value</th>
+<th>Shutdown period</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100000</td>
+<td>10 seconds</td>
+</tr>
+<tr>
+<td>10000</td>
+<td>180 seconds</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>120 seconds</td>
+</tr>
+<tr>
+<td>0</td>
+<td>60 seconds</td>
+</tr>
+</tbody>
+</table>
+<p>The corresponding kubelet config YAML configuration would be:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">shutdownGracePeriodByPodPriority</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">priority</span><span class="kw">:</span><span class="at"> </span><span class="dv">100000</span></span>
+<span class="at">    </span><span class="fu">shutdownGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">priority</span><span class="kw">:</span><span class="at"> </span><span class="dv">10000</span></span>
+<span class="at">    </span><span class="fu">shutdownGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">180</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">priority</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000</span></span>
+<span class="at">    </span><span class="fu">shutdownGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">120</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">priority</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span class="at">    </span><span class="fu">shutdownGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">60</span></span></code></pre></div>
+<p>The above table implies that any pod with <code>priority</code> value
+&gt;= 100000 will get just 10 seconds to shut down, any pod with value
+&gt;= 10000 and &lt; 100000 will get 180 seconds to shut down, any pod
+with value &gt;= 1000 and &lt; 10000 will get 120 seconds to shut down.
+Finally, all other pods will get 60 seconds to shut down.</p>
+<p>One doesn't have to specify values corresponding to all of the
+classes. For example, you could instead use these settings:</p>
+<table>
+<thead>
+<tr>
+<th>Pod priority class value</th>
+<th>Shutdown period</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>100000</td>
+<td>300 seconds</td>
+</tr>
+<tr>
+<td>1000</td>
+<td>120 seconds</td>
+</tr>
+<tr>
+<td>0</td>
+<td>60 seconds</td>
+</tr>
+</tbody>
+</table>
+<p>In the above case, the pods with <code>custom-class-b</code> will go
+into the same bucket as <code>custom-class-c</code> for shutdown.</p>
+<p>If there are no pods in a particular range, then the kubelet does not
+wait for pods in that priority range. Instead, the kubelet immediately
+skips to the next priority class value range.</p>
+<p>If this feature is enabled and no configuration is provided, then no
+ordering action will be taken.</p>
+<p>Using this feature requires enabling the
+<code>GracefulNodeShutdownBasedOnPodPriority</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a>, and setting <code>ShutdownGracePeriodByPodPriority</code> in
+the <a
+href="../../reference/config-api/kubelet-config.v1beta1.html">kubelet
+config</a> to the desired configuration containing the pod priority
+class values and their respective shutdown periods.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The ability to take Pod priority into account during graceful node
+shutdown was introduced as an Alpha feature in Kubernetes v1.23. In
+Kubernetes 1.37 the feature is Beta and is enabled by default.</p>
+</div>
+<p>Metrics <code>graceful_shutdown_start_time_seconds</code> and
+<code>graceful_shutdown_end_time_seconds</code> are emitted under the
+kubelet subsystem to monitor node shutdowns.</p>
+<h2 id="non-graceful-node-shutdown">Non-graceful node shutdown
+handling</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Removed; last recognized in Kubernetes v1.28
+(<code>NodeOutOfServiceVolumeDetach</code>)</p>
+</div>
+<p>A node shutdown action may not be detected by kubelet's Node Shutdown
+Manager, either because the command does not trigger the inhibitor locks
+mechanism used by kubelet or because of a user error, i.e., the
+ShutdownGracePeriod and ShutdownGracePeriodCriticalPods are not
+configured properly. Please refer to above section <a
+href="#graceful-node-shutdown">Graceful Node Shutdown</a> for more
+details.</p>
+<p>When a node is shutdown but not detected by kubelet's Node Shutdown
+Manager, the pods that are part of a <a class="glossary-term" href="../../reference/glossary.html#term-statefulset" title="Glossary: statefulset">StatefulSet</a> will be stuck in terminating
+status on the shutdown node and cannot move to a new running node. This
+is because kubelet on the shutdown node is not available to delete the
+pods so the StatefulSet cannot create a new pod with the same name. If
+there are volumes used by the pods, the VolumeAttachments will not be
+deleted from the original shutdown node so the volumes used by these
+pods cannot be attached to a new running node. As a result, the
+application running on the StatefulSet cannot function properly. If the
+original shutdown node comes up, the pods will be deleted by kubelet and
+new pods will be created on a different running node. If the original
+shutdown node does not come up, these pods will be stuck in terminating
+status on the shutdown node forever.</p>
+<p>To mitigate the above situation, a user can manually add the taint
+<code>node.kubernetes.io/out-of-service</code> with either
+<code>NoExecute</code> or <code>NoSchedule</code> effect to a Node
+marking it out-of-service. If a Node is marked out-of-service with this
+taint, the pods on the node will be forcefully deleted if there are no
+matching tolerations on it and volume detach operations for the pods
+terminating on the node will happen immediately. This allows the Pods on
+the out-of-service node to recover quickly on a different node.</p>
+<p>During a non-graceful shutdown, Pods are terminated in the two
+phases:</p>
+<ol type="1">
+<li>Force delete the Pods that do not have matching
+<code>out-of-service</code> tolerations.</li>
+<li>Immediately perform detach volume operation for such pods.</li>
+</ol>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<ul>
+<li>Before adding the taint
+<code>node.kubernetes.io/out-of-service</code>, it should be verified
+that the node is already in shutdown or power off state (not in the
+middle of restarting).</li>
+<li>The user is required to manually remove the out-of-service taint
+after the pods are moved to a new node and the user has checked that the
+shutdown node has been recovered since the user was the one who
+originally added the taint.</li>
+</ul>
+</div>
+<h3 id="storage-force-detach-on-timeout">Forced storage detach on
+timeout</h3>
+<p>In any situation where a pod deletion has not succeeded for 6
+minutes, kubernetes will force detach volumes being unmounted if the
+node is unhealthy at that instant. Any workload still running on the
+node that uses a force-detached volume will cause a violation of the <a
+href="https://github.com/container-storage-interface/spec/blob/master/spec.md#controllerunpublishvolume">CSI
+specification</a>, which states that
+<code>ControllerUnpublishVolume</code> "<strong>must</strong> be called
+after all <code>NodeUnstageVolume</code> and
+<code>NodeUnpublishVolume</code> on the volume are called and succeed".
+In such circumstances, volumes on the node in question might encounter
+data corruption.</p>
+<p>The forced storage detach behaviour is optional; users might opt to
+use the "Non-graceful node shutdown" feature instead.</p>
+<p>Force storage detach on timeout can be disabled by setting the
+<code>disable-force-detach-on-timeout</code> config field in
+<code>kube-controller-manager</code>. Disabling the force detach on
+timeout feature means that a volume that is hosted on a node that is
+unhealthy for more than 6 minutes will not have its associated <a
+href="https://kubernetes.io/docs/reference/kubernetes-api/config-and-storage-resources/volume-attachment-v1/">VolumeAttachment</a>
+deleted.</p>
+<p>After this setting has been applied, unhealthy pods still attached to
+volumes must be recovered via the <a
+href="#non-graceful-node-shutdown">Non-Graceful Node Shutdown</a>
+procedure mentioned above.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<ul>
+<li>Caution must be taken while using the <a
+href="#non-graceful-node-shutdown">Non-Graceful Node Shutdown</a>
+procedure.</li>
+<li>Deviation from the steps documented above can result in data
+corruption.</li>
+</ul>
+</div>
+<h2 id="what-s-next">What's next</h2>
+<p>Learn more about the following:</p>
+<ul>
+<li>Blog: <a
+href="https://kubernetes.io/blog/2023/08/16/kubernetes-1-28-non-graceful-node-shutdown-ga/">Non-Graceful
+Node Shutdown</a>.</li>
+<li>Cluster Architecture: <a
+href="../architecture/nodes.html">Nodes</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../cluster-administration.html"><span>Previous</span>Cluster Administration</a><a class="page-nav-link next" href="swap-memory-management.html"><span>Next</span>Swap memory management</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#graceful-node-shutdown">Graceful node shutdown</a></li><li class="toc-l3"><a href="#enabling-graceful-node-shutdown">Enabling graceful node shutdown</a></li><li class="toc-l3"><a href="#configuring-graceful-node-shutdown">Configuring graceful node shutdown</a></li><li class="toc-l3"><a href="#pod-priority-graceful-node-shutdown">Pod Priority based graceful node shutdown</a></li><li class="toc-l2"><a href="#non-graceful-node-shutdown">Non-graceful node shutdown handling</a></li><li class="toc-l3"><a href="#storage-force-detach-on-timeout">Forced storage detach on timeout</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

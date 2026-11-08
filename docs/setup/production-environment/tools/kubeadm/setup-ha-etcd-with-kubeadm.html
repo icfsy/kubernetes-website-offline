@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set up a High Availability etcd Cluster with kubeadm · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../../" data-key="setup/production-environment/tools/kubeadm/setup-ha-etcd-with-kubeadm" data-title="Set up a High Availability etcd Cluster with kubeadm" data-canonical="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/setup-ha-etcd-with-kubeadm/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../../setup.html">Getting started</a><span>/</span><a href="../../../production-environment.html">Production environment</a><span>/</span><a href="../../tools.html">Installing Kubernetes with deployment tools</a><span>/</span><a href="../kubeadm.html">Bootstrapping clusters with kubeadm</a></nav></nav>
+        <header class="page-head">
+          <h1>Set up a High Availability etcd Cluster with kubeadm</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/setup-ha-etcd-with-kubeadm/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>By default, kubeadm runs a local etcd instance on each control plane
+node. It is also possible to treat the etcd cluster as external and
+provision etcd instances on separate hosts. The differences between the
+two approaches are covered in the <a
+href="ha-topology.html">Options
+for Highly Available topology</a> page.</p>
+<p>This task walks through the process of creating a high availability
+external etcd cluster of three members that can be used by kubeadm
+during cluster creation.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li>Three hosts that can talk to each other over TCP ports 2379 and
+2380. This document assumes these default ports. However, they are
+configurable through the kubeadm config file.</li>
+<li>Each host must have systemd and a bash compatible shell
+installed.</li>
+<li>Each host must <a
+href="install-kubeadm.html">have
+a container runtime, kubelet, and kubeadm installed</a>.</li>
+<li>Each host should have access to the Kubernetes container image
+registry (<code>registry.k8s.io</code>) or list/pull the required etcd
+image using <code>kubeadm config images list/pull</code>. This guide
+will set up etcd instances as <a
+href="../../../../tasks/configure-pod-container/static-pod.html">static pods</a>
+managed by a kubelet.</li>
+<li>Some infrastructure to copy files between hosts. For example
+<code>ssh</code> and <code>scp</code> can satisfy this requirement.</li>
+</ul>
+<h2 id="setting-up-the-cluster">Setting up the cluster</h2>
+<p>The general approach is to generate all certs on one node and only
+distribute the <em>necessary</em> files to the other nodes.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>kubeadm contains all the necessary cryptographic machinery to
+generate the certificates described below; no other cryptographic
+tooling is required for this example.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The examples below use IPv4 addresses but you can also configure
+kubeadm, the kubelet and etcd to use IPv6 addresses. Dual-stack is
+supported by some Kubernetes options, but not by etcd. For more details
+on Kubernetes dual-stack support see <a
+href="dual-stack-support.html">Dual-stack
+support with kubeadm</a>.</p>
+</div>
+<ol type="1">
+<li><p>Configure the kubelet to be a service manager for etcd.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>You must do this on every host where etcd should be running.</p>
+</div>
+<p>Since etcd was created first, you must override the service priority
+by creating a new unit file that has higher precedence than the
+kubeadm-provided kubelet unit file.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">cat</span> <span class="op">&lt;&lt; EOF</span> <span class="op">&gt;</span> /etc/systemd/system/kubelet.service.d/kubelet.conf</span>
+<span class="st"># Replace &quot;systemd&quot; with the cgroup driver of your container runtime. The default value in the kubelet is &quot;cgroupfs&quot;.</span></span>
+<span class="st"># Replace the value of &quot;containerRuntimeEndpoint&quot; for a different container runtime if needed.</span></span>
+<span class="st">#</span></span>
+<span class="st">apiVersion: kubelet.config.k8s.io/v1beta1</span></span>
+<span class="st">kind: KubeletConfiguration</span></span>
+<span class="st">authentication:</span></span>
+<span class="st">  anonymous:</span></span>
+<span class="st">    enabled: false</span></span>
+<span class="st">  webhook:</span></span>
+<span class="st">    enabled: false</span></span>
+<span class="st">authorization:</span></span>
+<span class="st">  mode: AlwaysAllow</span></span>
+<span class="st">cgroupDriver: systemd</span></span>
+<span class="st">address: 127.0.0.1</span></span>
+<span class="st">containerRuntimeEndpoint: unix:///var/run/containerd/containerd.sock</span></span>
+<span class="st">staticPodPath: /etc/kubernetes/manifests</span></span>
+<span class="op">EOF</span></span>
+</span>
+<span class="fu">cat</span> <span class="op">&lt;&lt; EOF</span> <span class="op">&gt;</span> /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf</span>
+<span class="st">[Service]</span></span>
+<span class="st">ExecStart=</span></span>
+<span class="st">ExecStart=/usr/bin/kubelet --config=/etc/systemd/system/kubelet.service.d/kubelet.conf</span></span>
+<span class="st">Restart=always</span></span>
+<span class="op">EOF</span></span>
+</span>
+<span class="ex">systemctl</span> daemon-reload</span>
+<span class="ex">systemctl</span> restart kubelet</span></code></pre></div>
+<p>Check the kubelet status to ensure it is running.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">systemctl</span> status kubelet</span></code></pre></div></li>
+<li><p>Create configuration files for kubeadm.</p>
+<p>Generate one kubeadm configuration file for each host that will have
+an etcd member running on it using the following script.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="co"># Update HOST0, HOST1 and HOST2 with the IPs of your hosts</span></span>
+<span class="bu">export</span> <span class="va">HOST0</span><span class="op">=</span>10.0.0.6</span>
+<span class="bu">export</span> <span class="va">HOST1</span><span class="op">=</span>10.0.0.7</span>
+<span class="bu">export</span> <span class="va">HOST2</span><span class="op">=</span>10.0.0.8</span>
+</span>
+<span class="co"># Update NAME0, NAME1 and NAME2 with the hostnames of your hosts</span></span>
+<span class="bu">export</span> <span class="va">NAME0</span><span class="op">=</span><span class="st">&quot;infra0&quot;</span></span>
+<span class="bu">export</span> <span class="va">NAME1</span><span class="op">=</span><span class="st">&quot;infra1&quot;</span></span>
+<span class="bu">export</span> <span class="va">NAME2</span><span class="op">=</span><span class="st">&quot;infra2&quot;</span></span>
+</span>
+<span class="co"># Create temp directories to store files that will end up on other hosts</span></span>
+<span class="fu">mkdir</span> <span class="at">-p</span> /tmp/<span class="va">${HOST0}</span>/ /tmp/<span class="va">${HOST1}</span>/ /tmp/<span class="va">${HOST2}</span>/</span>
+</span>
+<span class="va">HOSTS</span><span class="op">=</span><span class="va">(${HOST0}</span> <span class="va">${HOST1}</span> <span class="va">${HOST2})</span></span>
+<span class="va">NAMES</span><span class="op">=</span><span class="va">(${NAME0}</span> <span class="va">${NAME1}</span> <span class="va">${NAME2})</span></span>
+</span>
+<span class="cf">for</span> i <span class="kw">in</span> <span class="st">&quot;</span><span class="va">${</span><span class="op">!</span><span class="va">HOSTS</span><span class="op">[@]</span><span class="va">}</span><span class="st">&quot;</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span class="va">HOST</span><span class="op">=</span><span class="va">${HOSTS</span><span class="op">[</span><span class="va">$i</span><span class="op">]</span><span class="va">}</span></span>
+<span class="va">NAME</span><span class="op">=</span><span class="va">${NAMES</span><span class="op">[</span><span class="va">$i</span><span class="op">]</span><span class="va">}</span></span>
+<span class="fu">cat</span> <span class="op">&lt;&lt; EOF</span> <span class="op">&gt;</span> /tmp/<span class="va">${HOST}</span>/kubeadmcfg.yaml</span>
+<span class="st">---</span></span>
+<span class="st">apiVersion: &quot;kubeadm.k8s.io/v1beta4&quot;</span></span>
+<span class="st">kind: InitConfiguration</span></span>
+<span class="st">nodeRegistration:</span></span>
+<span class="st">    name: </span><span class="va">${NAME}</span></span>
+<span class="st">localAPIEndpoint:</span></span>
+<span class="st">    advertiseAddress: </span><span class="va">${HOST}</span></span>
+<span class="st">---</span></span>
+<span class="st">apiVersion: &quot;kubeadm.k8s.io/v1beta4&quot;</span></span>
+<span class="st">kind: ClusterConfiguration</span></span>
+<span class="st">etcd:</span></span>
+<span class="st">    local:</span></span>
+<span class="st">        serverCertSANs:</span></span>
+<span class="st">        - &quot;</span><span class="va">${HOST}</span><span class="st">&quot;</span></span>
+<span class="st">        peerCertSANs:</span></span>
+<span class="st">        - &quot;</span><span class="va">${HOST}</span><span class="st">&quot;</span></span>
+<span class="st">        extraArgs:</span></span>
+<span class="st">        - name: initial-cluster</span></span>
+<span class="st">          value: </span><span class="va">${NAMES</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">=https://</span><span class="va">${HOSTS</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">:2380,</span><span class="va">${NAMES</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span><span class="va">}</span><span class="st">=https://</span><span class="va">${HOSTS</span><span class="op">[</span><span class="dv">1</span><span class="op">]</span><span class="va">}</span><span class="st">:2380,</span><span class="va">${NAMES</span><span class="op">[</span><span class="dv">2</span><span class="op">]</span><span class="va">}</span><span class="st">=https://</span><span class="va">${HOSTS</span><span class="op">[</span><span class="dv">2</span><span class="op">]</span><span class="va">}</span><span class="st">:2380</span></span>
+<span class="st">        - name: initial-cluster-state</span></span>
+<span class="st">          value: new</span></span>
+<span class="st">        - name: name</span></span>
+<span class="st">          value: </span><span class="va">${NAME}</span></span>
+<span class="st">        - name: listen-peer-urls</span></span>
+<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2380</span></span>
+<span class="st">        - name: listen-client-urls</span></span>
+<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2379</span></span>
+<span class="st">        - name: advertise-client-urls</span></span>
+<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2379</span></span>
+<span class="st">        - name: initial-advertise-peer-urls</span></span>
+<span class="st">          value: https://</span><span class="va">${HOST}</span><span class="st">:2380</span></span>
+<span class="op">EOF</span></span>
+<span class="cf">done</span></span></code></pre></div></li>
+<li><p>Generate the certificate authority.</p>
+<p>If you already have a CA then the only action that is copying the
+CA's <code>crt</code> and <code>key</code> file to
+<code>/etc/kubernetes/pki/etcd/ca.crt</code> and
+<code>/etc/kubernetes/pki/etcd/ca.key</code>. After those files have
+been copied, proceed to the next step, "Create certificates for each
+member".</p>
+<p>If you do not already have a CA then run this command on
+<code>$HOST0</code> (where you generated the configuration files for
+kubeadm).</p>
+<pre><code>kubeadm init phase certs etcd-ca</code></pre>
+<p>This creates two files:</p>
+<ul>
+<li><code>/etc/kubernetes/pki/etcd/ca.crt</code></li>
+<li><code>/etc/kubernetes/pki/etcd/ca.key</code></li>
+</ul></li>
+<li><p>Create certificates for each member.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubeadm</span> init phase certs etcd-server <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs etcd-peer <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs etcd-healthcheck-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs apiserver-etcd-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST2}</span>/kubeadmcfg.yaml</span>
+<span class="fu">cp</span> <span class="at">-R</span> /etc/kubernetes/pki /tmp/<span class="va">${HOST2}</span>/</span>
+<span class="co"># cleanup non-reusable certificates</span></span>
+<span class="fu">find</span> /etc/kubernetes/pki <span class="at">-not</span> <span class="at">-name</span> ca.crt <span class="at">-not</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span>
+</span>
+<span class="ex">kubeadm</span> init phase certs etcd-server <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs etcd-peer <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs etcd-healthcheck-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs apiserver-etcd-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST1}</span>/kubeadmcfg.yaml</span>
+<span class="fu">cp</span> <span class="at">-R</span> /etc/kubernetes/pki /tmp/<span class="va">${HOST1}</span>/</span>
+<span class="fu">find</span> /etc/kubernetes/pki <span class="at">-not</span> <span class="at">-name</span> ca.crt <span class="at">-not</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span>
+</span>
+<span class="ex">kubeadm</span> init phase certs etcd-server <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs etcd-peer <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs etcd-healthcheck-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
+<span class="ex">kubeadm</span> init phase certs apiserver-etcd-client <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
+<span class="co"># No need to move the certs because they are for HOST0</span></span>
+</span>
+<span class="co"># clean up certs that should not be copied off this host</span></span>
+<span class="fu">find</span> /tmp/<span class="va">${HOST2}</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span>
+<span class="fu">find</span> /tmp/<span class="va">${HOST1}</span> <span class="at">-name</span> ca.key <span class="at">-type</span> f <span class="at">-delete</span></span></code></pre></div></li>
+<li><p>Copy certificates and kubeadm configs.</p>
+<p>The certificates have been generated and now they must be moved to
+their respective hosts.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span><span class="op">=</span>ubuntu</span>
+<span class="va">HOST</span><span class="op">=</span><span class="va">${HOST1}</span></span>
+<span class="fu">scp</span> <span class="at">-r</span> /tmp/<span class="va">${HOST}</span>/<span class="pp">*</span> <span class="va">${USER}</span>@<span class="va">${HOST}</span>:</span>
+<span class="fu">ssh</span> <span class="va">${USER}</span>@<span class="va">${HOST}</span></span>
+<span class="ex">USER@HOST</span> $ sudo <span class="at">-Es</span></span>
+<span class="ex">root@HOST</span> $ chown <span class="at">-R</span> root:root pki</span>
+<span class="ex">root@HOST</span> $ mv pki /etc/kubernetes/</span></code></pre></div></li>
+<li><p>Ensure all expected files exist.</p>
+<p>The complete list of required files on <code>$HOST0</code> is:</p>
+<pre><code>/tmp/${HOST0}
+└── kubeadmcfg.yaml
+---
+/etc/kubernetes/pki
+├── apiserver-etcd-client.crt
+├── apiserver-etcd-client.key
+└── etcd
+    ├── ca.crt
+    ├── ca.key
+    ├── healthcheck-client.crt
+    ├── healthcheck-client.key
+    ├── peer.crt
+    ├── peer.key
+    ├── server.crt
+    └── server.key</code></pre>
+<p>On <code>$HOST1</code>:</p>
+<pre><code>$HOME
+└── kubeadmcfg.yaml
+---
+/etc/kubernetes/pki
+├── apiserver-etcd-client.crt
+├── apiserver-etcd-client.key
+└── etcd
+    ├── ca.crt
+    ├── healthcheck-client.crt
+    ├── healthcheck-client.key
+    ├── peer.crt
+    ├── peer.key
+    ├── server.crt
+    └── server.key</code></pre>
+<p>On <code>$HOST2</code>:</p>
+<pre><code>$HOME
+└── kubeadmcfg.yaml
+---
+/etc/kubernetes/pki
+├── apiserver-etcd-client.crt
+├── apiserver-etcd-client.key
+└── etcd
+    ├── ca.crt
+    ├── healthcheck-client.crt
+    ├── healthcheck-client.key
+    ├── peer.crt
+    ├── peer.key
+    ├── server.crt
+    └── server.key</code></pre></li>
+<li><p>Create the static pod manifests.</p>
+<p>Now that the certificates and configs are in place it's time to
+create the manifests. On each host run the <code>kubeadm</code> command
+to generate a static manifest for etcd.</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">root@HOST0</span> $ kubeadm init phase etcd local <span class="at">--config</span><span class="op">=</span>/tmp/<span class="va">${HOST0}</span>/kubeadmcfg.yaml</span>
+<span class="ex">root@HOST1</span> $ kubeadm init phase etcd local <span class="at">--config</span><span class="op">=</span><span class="va">$HOME</span>/kubeadmcfg.yaml</span>
+<span class="ex">root@HOST2</span> $ kubeadm init phase etcd local <span class="at">--config</span><span class="op">=</span><span class="va">$HOME</span>/kubeadmcfg.yaml</span></code></pre></div></li>
+<li><p>Optional: Check the cluster health.</p>
+<p>If <code>etcdctl</code> isn't available, you can run this tool inside
+a container image. You would do that directly with your container
+runtime using a tool such as <code>crictl run</code> and not through
+Kubernetes</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="va">ETCDCTL_API</span><span class="op">=</span>3 <span class="ex">etcdctl</span> <span class="dt">\</span></span>
+--cert /etc/kubernetes/pki/etcd/peer.crt <span class="dt">\</span></span>
+--key /etc/kubernetes/pki/etcd/peer.key <span class="dt">\</span></span>
+--cacert /etc/kubernetes/pki/etcd/ca.crt <span class="dt">\</span></span>
+--endpoints https://<span class="va">${HOST0}</span>:2379 endpoint health</span>
+<span class="ex">...</span></span>
+<span class="ex">https://[HOST0</span> IP]:2379 is healthy: successfully committed proposal: took = 16.283339ms</span>
+<span class="ex">https://[HOST1</span> IP]:2379 is healthy: successfully committed proposal: took = 19.44402ms</span>
+<span class="ex">https://[HOST2</span> IP]:2379 is healthy: successfully committed proposal: took = 35.926451ms</span></code></pre></div>
+<ul>
+<li>Set <code>${HOST0}</code>to the IP address of the host you are
+testing.</li>
+</ul></li>
+</ol>
+<h2 id="what-s-next">What's next</h2>
+<p>Once you have an etcd cluster with 3 working members, you can
+continue setting up a highly available control plane using the <a
+href="high-availability.html">external
+etcd method with kubeadm</a>.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="high-availability.html"><span>Previous</span>Creating Highly Available Clusters with kubeadm</a><a class="page-nav-link next" href="kubelet-integration.html"><span>Next</span>Configuring each kubelet in your cluster using kubeadm</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#setting-up-the-cluster">Setting up the cluster</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../../assets/nav.js"></script>
+<script src="../../../../../assets/site.js"></script>
+</body>
+</html>

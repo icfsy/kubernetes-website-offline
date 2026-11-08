@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Observability of Dynamic Resources · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="concepts/resource-management/dynamic-resource-allocation/dra-observability" data-title="Observability of Dynamic Resources" data-canonical="https://kubernetes.io/docs/concepts/resource-management/dynamic-resource-allocation/dra-observability/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../concepts.html">Concepts</a><span>/</span><a href="../../resource-management.html">Resource Management</a><span>/</span><a href="../dynamic-resource-allocation.html">Dynamic Resource Allocation</a></nav></nav>
+        <header class="page-head">
+          <h1>Observability of Dynamic Resources</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/resource-management/dynamic-resource-allocation/dra-observability/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page describes how to observe the status and health of resources
+that are dynamically allocated with DRA.</p>
+<h2 id="observability-dynamic-resources">Observability of dynamic
+resources</h2>
+<p>You can check the status of dynamically allocated resources by using
+any of the following methods:</p>
+<ul>
+<li><a href="#monitoring-resources">kubelet device metrics</a></li>
+<li><a href="#resourceclaim-device-status">ResourceClaim status</a></li>
+<li><a href="#device-health-monitoring">Device health
+monitoring</a></li>
+</ul>
+<h3 id="monitoring-resources">kubelet device metrics</h3>
+<p>The <code>PodResourcesLister</code> kubelet gRPC service lets you
+monitor in-use devices. The <code>DynamicResource</code> message
+provides information that's specific to dynamic resource allocation,
+such as the device name and the claim name. For details, see <a
+href="../../extend-kubernetes/compute-storage-net/device-plugins.html#monitoring-device-plugin-resources">Monitoring
+device plugin resources</a>.</p>
+<h3 id="resourceclaim-device-status">ResourceClaim device status</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.37; enabled by default
+(<code>DRAResourceClaimDeviceStatus</code>)</p>
+</div>
+<p>DRA drivers can report driver-specific <a
+href="../../overview/working-with-objects.html#object-spec-and-status">device
+status</a> data for each allocated device in the
+<code>status.devices</code> field of a ResourceClaim. For example, the
+driver might list the IP addresses that are assigned to a network
+interface device. Updating this field requires specific synthetic RBAC
+permissions, see <a
+href="../../security/hardening-guide/dynamic-resource-allocation.html">Hardening
+Guide - Dynamic Resource Allocation</a> and <a
+href="../../../tasks/administer-cluster/hardening-dra.html">Harden Dynamic
+Resource Allocation in Your Cluster</a>.</p>
+<p>The accuracy of the information that a driver adds to a ResourceClaim
+<code>status.devices</code> field depends on the driver. Evaluate
+drivers to decide whether you can rely on this field as the only source
+of device information.</p>
+<p>If you disable the <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAResourceClaimDeviceStatus"><code>DRAResourceClaimDeviceStatus</code>
+feature gate</a>, the <code>status.devices</code> field automatically
+gets cleared when storing the ResourceClaim. A ResourceClaim device
+status is supported when it is possible, from a DRA driver, to update an
+existing ResourceClaim where the <code>status.devices</code> field is
+set.</p>
+<p>In the following example, the <code>status.devices</code> field of a
+ResourceClaim has been populated by the driver
+(<code>resource-driver.example.com</code>) responsible for managing the
+allocated device:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceClaim</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> macvlan-eth0</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="co">...</span></span>
+<span class="er">status:</span></span>
+<span class="er">  allocation:</span></span>
+<span class="er">    devices:</span></span>
+<span class="er">      results:</span></span>
+<span class="er">      - device: eth0</span></span>
+<span class="er">        driver: resource-driver.example.com</span></span>
+<span class="er">        pool: nic-worker-a</span></span>
+<span class="er">        request: macvlan-eth0</span></span>
+<span class="er">        shareID: 8e7acdf9-0290-4ecd-a801-a654b021d2b7</span></span>
+<span class="er">        consumedCapacity:</span></span>
+<span class="er">          resource-driver.example.com/bandwidth: 1G</span></span>
+<span class="er">  devices:</span></span>
+<span class="er">  - conditions:</span></span>
+<span class="er">    - lastTransitionTime: &quot;</span><span class="st">2025-10-21T08:38:17Z&quot;</span></span>
+<span class="at">      </span><span class="fu">message</span><span class="kw">:</span><span class="at"> Device successfully allocated and assigned to the pod</span></span>
+<span class="at">      </span><span class="fu">reason</span><span class="kw">:</span><span class="at"> NetworkReady</span></span>
+<span class="at">      </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> NetworkReady</span></span>
+<span class="at">    </span><span class="fu">device</span><span class="kw">:</span><span class="at"> eth0</span></span>
+<span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> resource-driver.example.com</span></span>
+<span class="at">    </span><span class="fu">networkData</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">hardwareAddress</span><span class="kw">:</span><span class="at"> 00:01:ec:84:fb:51</span></span>
+<span class="at">      </span><span class="fu">interfaceName</span><span class="kw">:</span><span class="at"> net1</span></span>
+<span class="at">      </span><span class="fu">ips</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">10.10.1.2/24</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">2001:db8::1/64</span></span>
+<span class="at">    </span><span class="fu">pool</span><span class="kw">:</span><span class="at"> nic-worker-a</span></span>
+<span class="at">    </span><span class="fu">shareID</span><span class="kw">:</span><span class="at"> 8e7acdf9-0290-4ecd-a801-a654b021d2b7</span></span></code></pre></div>
+<p>If a device has not been allocated, a driver's request to update the
+<code>status.devices</code> field of the ResourceClaim with that device
+is rejected. When a device is deallocated (removed from
+<code>status.allocation.devices</code>), the corresponding entry in
+<code>status.devices</code> is automatically removed.</p>
+<p>For details about the <code>status.devices</code> field, see the <a
+href="../../../reference/kubernetes-api/resource/resource-claim-v1.html#ResourceClaimStatus">ResourceClaim</a>
+API reference.</p>
+<h3 id="device-health-monitoring">Device Health Monitoring</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.36; enabled by default
+(<code>ResourceHealthStatus</code>)</p>
+</div>
+<p>Kubernetes provides a mechanism for monitoring and reporting the
+health of dynamically allocated infrastructure resources. For stateful
+applications running on specialized hardware, it is critical to know
+when a device has failed or become unhealthy. It is also helpful to find
+out if the device recovers.</p>
+<p>To use this functionality, the <code>ResourceHealthStatus</code> <a
+href="https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/resource-health-status/">feature
+gate</a> must be enabled (beta and enabled by default since v1.36), and
+the DRA driver must implement the <code>DRAResourceHealth</code> gRPC
+service.</p>
+<p>When a DRA driver detects that an allocated device has become
+unhealthy, it reports this status back to the kubelet. This health
+information is then exposed directly in the Pod's status. The kubelet
+populates the <code>allocatedResourcesStatus</code> field in the status
+of each container, detailing the health of each device assigned to that
+container. Each resource health entry can include an optional
+<code>message</code> field with additional human-readable context about
+the health status, such as error details or failure reasons.</p>
+<p>If the kubelet does not receive a health update from a DRA driver
+within a timeout period, the device's health status is marked as
+"Unknown". DRA drivers can configure this timeout on a per-device basis
+by setting the <code>health_check_timeout_seconds</code> field in the
+<code>DeviceHealth</code> gRPC message. If not specified, the kubelet
+uses a default timeout of 30 seconds. This allows different hardware
+types (for example, GPUs, FPGAs, or storage devices) to use appropriate
+timeout values based on their health-reporting characteristics.</p>
+<p>This provides crucial visibility for users and controllers to react
+to hardware failures. For a Pod that is failing, you can inspect this
+status to determine if the failure was related to an unhealthy
+device.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Device health status is not updated in the Pod status after a Pod has
+terminated (for example, in Failed state).</p>
+</div>
+<h2 id="resource-pool-status">Resource pool status</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.36; disabled by default
+(<code>DRAResourcePoolStatus</code>)</p>
+</div>
+<p>You can query the availability of devices in resource pools using the
+ResourcePoolStatusRequest API. This provides visibility into how many
+devices are available, allocated, or unavailable across your cluster's
+DRA resource pools.</p>
+<p>To check resource pool status:</p>
+<ol type="1">
+<li><p>Create a ResourcePoolStatusRequest specifying the driver name
+(required) and optionally a limit on the number of pools returned. You
+can also limit it to a single pool by specifying a pool name:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1alpha3</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourcePoolStatusRequest</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> check-gpus</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> example.com/gpu</span></span>
+<span class="at">  </span><span class="co"># Optional: filter to a specific pool</span></span>
+<span class="at">  </span><span class="co"># poolName: my-pool</span></span>
+<span class="at">  </span><span class="co"># Optional: limit number of pools returned (default: 100, max: 1000)</span></span>
+<span class="at">  </span><span class="co"># limit: 10</span></span></code></pre></div></li>
+<li><p>Wait for the controller to process the request:</p>
+<pre class="shell"><code>kubectl wait --for=condition=Complete resourcepoolstatusrequest/check-gpus --timeout=30s</code></pre></li>
+<li><p>Read the status to see pool availability:</p>
+<pre class="shell"><code>kubectl get resourcepoolstatusrequest/check-gpus -o yaml</code></pre>
+<p>The status includes:</p>
+<ul>
+<li><code>poolCount</code>: total number of pools matching the filter
+(may exceed the number of pools listed if truncated by the limit).</li>
+<li><code>pools</code>: a list of pool details, each containing:
+<ul>
+<li><code>driver</code> and <code>poolName</code>: identify the
+pool.</li>
+<li><code>generation</code>: the latest pool generation observed across
+ResourceSlices.</li>
+<li><code>resourceSliceCount</code>: the number of ResourceSlices making
+up the pool.</li>
+<li><code>totalDevices</code>: total devices in the pool.</li>
+<li><code>allocatedDevices</code>: devices currently allocated to
+claims.</li>
+<li><code>availableDevices</code>: devices available for allocation
+(totalDevices - allocatedDevices - unavailableDevices).</li>
+<li><code>unavailableDevices</code>: devices not available due to taints
+or other conditions.</li>
+<li><code>nodeName</code>: the node associated with the pool, if
+any.</li>
+<li><code>validationError</code>: set when the pool's data could not be
+fully validated (for example, during a generation rollout). When set,
+device count fields may be unset.</li>
+<li><code>partitionSummary</code>: for <a
+href="dra-features.html#partitionable-devices">partitionable</a>
+pools, per-partition-type allocatability (see <a
+href="#resource-pool-partition-summary">Partition summary</a>).</li>
+<li><code>shareableSummary</code>: for pools with <a
+href="dra-features.html#consumable-capacity">shareable
+devices</a>, aggregate capacity usage (see <a
+href="#resource-pool-shareable-summary">Shareable summary</a>).</li>
+</ul></li>
+<li><code>conditions</code>: includes <code>Complete</code> (success) or
+<code>Failed</code> (error) condition types.</li>
+</ul></li>
+<li><p>Delete the request when done:</p>
+<pre class="shell"><code>kubectl delete resourcepoolstatusrequest/check-gpus</code></pre></li>
+</ol>
+<p>ResourcePoolStatusRequest objects are processed once by a controller
+in kube-controller-manager. The spec is immutable once created, and the
+entire object becomes immutable once the status is populated. To get
+updated availability data, delete and recreate the request. Completed
+requests are automatically cleaned up after 1 hour.</p>
+<p>This feature requires explicit RBAC permissions on the
+ResourcePoolStatusRequest resource. No default ClusterRoles include this
+permission.</p>
+<p>Resource pool status is controlled by the <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAResourcePoolStatus"><code>DRAResourcePoolStatus</code>
+feature gate</a> in the <code>kube-apiserver</code> and
+<code>kube-controller-manager</code>.</p>
+<h3 id="resource-pool-partition-summary">Partition summary</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.37; disabled by default
+(<code>DRAPartitionableDevicesType</code>)</p>
+</div>
+<p>A single physical device such as a GPU may be advertised as several
+partition types (for example, a full GPU versus a half-sized MIG slice)
+that draw from the same shared counters. Because these partitions
+compete for the same underlying capacity, a plain device count does not
+tell you how many of each type can still be allocated. For <a
+href="dra-features.html#partitionable-devices">partitionable</a>
+pools, the <code>partitionSummary</code> view answers that question. For
+each partition type it reports:</p>
+<ul>
+<li><code>attribute</code>: the fully qualified name of the device
+attribute whose value groups this entry. It is the ResourceSlice's
+<code>spec.partitionTypeAttribute</code>, or the request's
+<code>spec.defaultPartitionTypeAttribute</code> when the slice declares
+none.</li>
+<li><code>type</code>: the value of that attribute on the device (for
+example, <code>Full</code> or <code>Half</code>).</li>
+<li><code>total</code>: the number of devices of this partition type in
+the pool.</li>
+<li><code>allocatable</code>: how many <em>additional</em> devices of
+this partition type could still be allocated given current
+shared-counter consumption.</li>
+</ul>
+<p>The named attribute must be a string attribute. If a partitionable
+device's partition-type attribute is missing or is not a string (for
+example, an integer, boolean, or version value), the pool reports a
+validation error instead of a partition summary. There is no special
+handling for <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAListTypeAttributes">list-type
+attributes</a>; a non-string attribute is simply not a valid
+partition-type attribute.</p>
+<p>To produce this view, the driver labels each partitionable device
+with a string attribute whose value names the partition type, and names
+that attribute in the ResourceSlice's
+<code>partitionTypeAttribute</code> field:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourceSlice</span></span>
+<span class="co"># ...</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="co"># Every partitionable device in this slice carries this attribute; devices</span></span>
+<span class="at">  </span><span class="co"># that share a value share the same shared-counter cost.</span></span>
+<span class="at">  </span><span class="fu">partitionTypeAttribute</span><span class="kw">:</span><span class="at"> gpu.example.com/profile</span></span></code></pre></div>
+<p>If a driver has not yet been updated to declare
+<code>partitionTypeAttribute</code>, a request can still obtain a
+partition summary by naming a fallback attribute in its spec. A slice's
+own <code>partitionTypeAttribute</code> always takes precedence; the
+request-level default applies only to devices whose slice does not
+declare one:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1alpha3</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ResourcePoolStatusRequest</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> check-gpu-partitions</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> gpu.example.com</span></span>
+<span class="at">  </span><span class="co"># Fallback grouping attribute for slices that don&#39;t declare one themselves.</span></span>
+<span class="at">  </span><span class="fu">defaultPartitionTypeAttribute</span><span class="kw">:</span><span class="at"> gpu.example.com/profile</span></span></code></pre></div>
+<p>When neither the slice nor the request names an attribute, a
+partitionable pool reports no <code>partitionSummary</code>.</p>
+<p>The <code>partitionSummary</code> view is controlled by the <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAPartitionableDevicesType"><code>DRAPartitionableDevicesType</code>
+feature gate</a> in the <code>kube-apiserver</code> and
+<code>kube-controller-manager</code>, which in turn requires the <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAResourcePoolStatus"><code>DRAResourcePoolStatus</code></a>
+and <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAPartitionableDevices"><code>DRAPartitionableDevices</code></a>
+feature gates to be enabled.</p>
+<h3 id="resource-pool-shareable-summary">Shareable summary</h3>
+<p>For pools that contain <a
+href="dra-features.html#consumable-capacity">shareable
+devices</a> (devices that set <code>allowMultipleAllocations</code> and
+can be consumed by multiple claims), <code>shareableSummary</code>
+reports aggregate capacity usage across the pool:</p>
+<ul>
+<li><code>fullyAvailableDevices</code>: shareable devices with no
+capacity consumed.</li>
+<li><code>partiallyAvailableDevices</code>: shareable devices with some,
+but not all, capacity consumed.</li>
+<li><code>capacity</code>: per capacity name, the aggregate
+<code>total</code>, <code>consumed</code>, and <code>available</code>
+(<code>total</code> minus <code>consumed</code>, never negative) amounts
+across the pool.</li>
+</ul>
+<p>The <code>shareableSummary</code> is populated only when at least one
+device in the pool is shareable. It is part of the <a
+href="#resource-pool-status">resource pool status</a> feature (the <a
+href="../../../reference/command-line-tools-reference/feature-gates.html#DRAResourcePoolStatus"><code>DRAResourcePoolStatus</code></a>
+feature gate) and does not require
+<code>DRAPartitionableDevicesType</code>; the shareable devices it
+summarizes come from the <a
+href="dra-features.html#consumable-capacity">consumable
+capacity</a> feature.</p>
+<h2 id="device-metadata">DRA device metadata in containers</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.37</p>
+</div>
+<p>DRA drivers can expose device metadata such as device attributes (PCI
+bus addresses or mediated device UUIDs) and network configuration
+directly to containers as JSON files. This lets applications discover
+information about allocated devices without querying the Kubernetes API
+or using custom controllers.</p>
+<p>KEP-5304 defines a <a href="#device-metadata-protocol">device
+metadata protocol</a> that drivers must follow so that applications see
+a consistent layout across drivers and clusters. The <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/kubeletplugin">DRA
+kubelet plugin library</a> implements this protocol.</p>
+<p>Device metadata follows the same rules as device access: it is
+available inside a container only when that container requests the
+device. For details, see <a
+href="../../../tasks/configure-pod-container/assign-resources/allocate-devices-dra.html#request-devices-workloads">Request
+devices in workloads using DRA</a>.</p>
+<h3 id="device-metadata-protocol">Device metadata protocol</h3>
+<p>The protocol consists of four rules:</p>
+<ol type="1">
+<li><p><strong>File paths.</strong> Metadata files live inside
+containers under
+<code>/var/run/kubernetes.io/dra-device-attributes</code>. For a
+directly referenced ResourceClaim, the path is
+<code>resourceclaims/&lt;claimName&gt;/&lt;requestName&gt;/&lt;driverName&gt;-metadata.json</code>.
+For a claim created from a ResourceClaimTemplate, the path is
+<code>resourceclaimtemplates/&lt;podClaimName&gt;/&lt;requestName&gt;/&lt;driverName&gt;-metadata.json</code>,
+where <code>podClaimName</code> is
+<code>pod.spec.resourceClaims[].name</code>.</p>
+<p>When a request uses a <a
+href="dra-api.html#prioritized-list">prioritized
+list</a>, only the top-level request name is used for the
+<code>&lt;requestName&gt;</code> path segment. The
+<code>requests[].name</code> field in the file contains the full
+<code>&lt;request&gt;/&lt;subrequest&gt;</code>
+reference, such as <code>gpu/high-memory</code>.</p>
+<p>The path constants are defined in <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/api/metadata"><code>k8s.io/dynamic-resource-allocation/api/metadata</code></a>.</p></li>
+<li><p><strong>JSON API.</strong> Each file is a stream of one or more
+<a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/api/metadata/v1beta1#DeviceMetadata"><code>DeviceMetadata</code></a>
+objects. Each object has <code>apiVersion</code> and <code>kind</code>,
+following Kubernetes API conventions. The same metadata is encoded once
+per configured API version in the order selected by the driver.
+Consumers use the first version that they can decode and skip unknown
+versions. A malformed object in a known version is an error.</p></li>
+<li><p><strong>Generation.</strong> The initial file has
+<code>metadata.generation</code> set to <code>1</code>. Each update
+increments the generation so that consumers can detect changes.</p></li>
+<li><p><strong>Container exposure.</strong> The DRA kubelet plugin
+library uses <a class="glossary-term" href="../../../reference/glossary.html#term-cdi" title="Glossary: cdi">CDI</a> to
+bind-mount each file read-only. Other implementations can use a
+different mechanism as long as the file appears at the required path and
+is read-only.</p></li>
+</ol>
+<h3 id="device-metadata-enable">Enable device metadata in a driver</h3>
+<p>Device metadata is a driver-side feature. It has no Kubernetes
+feature gate and is disabled by default in the DRA kubelet plugin
+library. A driver must enable the feature and explicitly select the
+versions that it writes:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode go"><code class="sourceCode go">kubeletplugin<span class="op">.</span>EnableDeviceMetadata<span class="op">(</span><span class="ot">true</span><span class="op">,</span> <span class="op">[]</span>schema<span class="op">.</span>GroupVersion<span class="op">{</span></span>
+    metadatav1beta1<span class="op">.</span>SchemeGroupVersion<span class="op">,</span></span>
+    metadatav1alpha1<span class="op">.</span>SchemeGroupVersion<span class="op">,</span></span>
+<span class="op">})</span></span></code></pre></div>
+<p>The <code>v1beta1</code> version is required. A driver can also write
+<code>v1alpha1</code> for compatibility with older consumers. The order
+in the slice is the order in the metadata stream; the framework does not
+sort the versions. Drivers should put the newest version first. Enabling
+device metadata with no versions, without <code>v1beta1</code>, or with
+an unknown version causes the plugin to fail during startup.</p>
+<p>For each prepared device, the driver can populate <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/kubeletplugin#Device"><code>Device.Metadata</code></a>
+with <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/kubeletplugin#DeviceMetadata"><code>kubeletplugin.DeviceMetadata</code></a>.
+Drivers should include the attributes that they publish for that device
+in its ResourceSlice, so workloads see the same information at runtime.
+Drivers can also include attributes that are only relevant at runtime.
+For network devices, drivers can add interface names, IP addresses, and
+hardware addresses after CNI configuration by calling <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/kubeletplugin#Helper.UpdateRequestMetadata"><code>UpdateRequestMetadata</code></a>.</p>
+<p>The kubelet plugin API links above describe integration for driver
+authors. The DRA framework does not define a universal command-line
+flag, so cluster operators enable the feature through the deployment
+configuration provided by their driver.</p>
+<p>When enabled, the DRA kubelet plugin library writes metadata files
+while preparing allocated devices. It also writes CDI specifications to
+<code>/var/run/cdi</code> by default. The container runtime must be
+configured to discover CDI specifications from that directory. The
+library determines the minimum CDI specification version required for
+each generated specification.</p>
+<p>When one request allocates devices from multiple DRA drivers, each
+driver writes its own metadata file. Consumers that know the driver name
+should construct the exact path from the claim, request, and driver
+names. Go consumers can use <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/devicemetadata#ReadResourceClaimMetadata"><code>ReadResourceClaimMetadata</code></a>
+or <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/devicemetadata#ReadResourceClaimTemplateMetadata"><code>ReadResourceClaimTemplateMetadata</code></a>
+to read and merge all per-driver files for a request.</p>
+<h3 id="device-metadata-schema">Metadata schema</h3>
+<p>Each object in a metadata file conforms to the <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/api/metadata/v1beta1#DeviceMetadata"><code>DeviceMetadata</code></a>
+API (<code>metadata.resource.k8s.io/v1beta1</code>).</p>
+<p>The schema contains:</p>
+<ul>
+<li>Standard object metadata for the ResourceClaim, including its name,
+namespace, UID, and metadata generation.</li>
+<li>The optional <code>podClaimName</code> for a claim generated from a
+ResourceClaimTemplate.</li>
+<li>A list of requests. Each request has a required name and a list of
+allocated devices.</li>
+<li>The driver, pool, and name for each device.</li>
+<li>Optional device attributes and network data.</li>
+</ul>
+<p>Attribute values use the same representation as ResourceSlice device
+attributes. Each attribute has exactly one scalar value
+(<code>int</code>, <code>bool</code>, <code>string</code>, or
+<code>version</code>) or list value (<code>ints</code>,
+<code>bools</code>, <code>strings</code>, or <code>versions</code>).
+Device capacity values are not included in device metadata.</p>
+<p>Network data can contain <code>interfaceName</code>,
+<code>ips</code>, and <code>hardwareAddress</code>. For field
+constraints, see the <a
+href="https://pkg.go.dev/k8s.io/dynamic-resource-allocation/api/metadata/v1beta1#DeviceMetadata"><code>DeviceMetadata</code>
+API documentation</a>.</p>
+<p>The following example shows one object in a metadata stream for a GPU
+device allocated through a ResourceClaimTemplate:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;DeviceMetadata&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;apiVersion&quot;</span><span class="fu">:</span> <span class="st">&quot;metadata.resource.k8s.io/v1beta1&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;metadata&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+    <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;pod0-gpu-2kqrd&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;namespace&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu-test1&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;uid&quot;</span><span class="fu">:</span> <span class="st">&quot;c7e7b22e-239b-4498-b27c-7f1344481e14&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;generation&quot;</span><span class="fu">:</span> <span class="dv">1</span></span>
+  <span class="fu">},</span></span>
+  <span class="dt">&quot;podClaimName&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;requests&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="fu">{</span></span>
+      <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;devices&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+        <span class="fu">{</span></span>
+          <span class="dt">&quot;driver&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu.example.com&quot;</span><span class="fu">,</span></span>
+          <span class="dt">&quot;pool&quot;</span><span class="fu">:</span> <span class="st">&quot;worker-0&quot;</span><span class="fu">,</span></span>
+          <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu-0&quot;</span><span class="fu">,</span></span>
+          <span class="dt">&quot;attributes&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+            <span class="dt">&quot;driverVersion&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+              <span class="dt">&quot;version&quot;</span><span class="fu">:</span> <span class="st">&quot;1.0.0&quot;</span></span>
+            <span class="fu">},</span></span>
+            <span class="dt">&quot;index&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+              <span class="dt">&quot;int&quot;</span><span class="fu">:</span> <span class="dv">0</span></span>
+            <span class="fu">},</span></span>
+            <span class="dt">&quot;model&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+              <span class="dt">&quot;string&quot;</span><span class="fu">:</span> <span class="st">&quot;LATEST-GPU-MODEL&quot;</span></span>
+            <span class="fu">},</span></span>
+            <span class="dt">&quot;uuid&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+              <span class="dt">&quot;string&quot;</span><span class="fu">:</span> <span class="st">&quot;gpu-18db0e85-99e9-c746-8531-ffeb86328b39&quot;</span></span>
+            <span class="fu">}</span></span>
+          <span class="fu">}</span></span>
+        <span class="fu">}</span></span>
+      <span class="ot">]</span></span>
+    <span class="fu">}</span></span>
+  <span class="ot">]</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<p>The DRA kubelet plugin does not validate metadata before writing it.
+Go consumers can opt in to generated validation when decoding a stream.
+Decoding and validation have separate results: a validation error does
+not prevent a successfully decoded object from being returned. For
+usage, see <a
+href="../../../tasks/configure-pod-container/assign-resources/access-dra-device-metadata.html#read-metadata-application">Access
+DRA device metadata</a>.</p>
+<h3 id="device-metadata-lifecycle">Immediate and deferred metadata</h3>
+<p>For immediate metadata, the driver supplies attributes or network
+data while it prepares the claim. The DRA kubelet plugin writes the file
+with generation <code>1</code> before the consuming container
+starts.</p>
+<p>For deferred metadata, the driver can prepare a device without
+attributes or network data. The initial generation <code>1</code> file
+contains the device identity. The driver later calls
+<code>UpdateRequestMetadata</code> to replace the complete stream
+atomically and increment the generation. An update requires the initial
+file to exist. If device preparation returns no devices for a request,
+the framework creates neither a metadata file nor a metadata CDI device
+for that request.</p>
+<p>Metadata remains available to each consuming container for the
+lifetime of that container. The framework removes the metadata files and
+CDI specifications after the claim is unprepared.</p>
+<p>To learn how to use device metadata in your workloads, see <a
+href="../../../tasks/configure-pod-container/assign-resources/access-dra-device-metadata.html">Access
+DRA device metadata</a>.</p>
+<h3 id="device-metadata-custom-drivers">Custom drivers</h3>
+<p>Custom drivers that do not use the DRA kubelet plugin library must
+implement the <a href="#device-metadata-protocol">device metadata
+protocol</a> themselves. This includes writing the versioned
+<code>DeviceMetadata</code> stream at the correct paths, incrementing
+<code>metadata.generation</code> on every update, and exposing files
+read-only through CDI or an equivalent mechanism.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="how-dra-works.html"><span>Previous</span>How DRA Works</a><a class="page-nav-link next" href="dra-features.html"><span>Next</span>DRA Features</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#observability-dynamic-resources">Observability of dynamic resources</a></li><li class="toc-l3"><a href="#monitoring-resources">kubelet device metrics</a></li><li class="toc-l3"><a href="#resourceclaim-device-status">ResourceClaim device status</a></li><li class="toc-l3"><a href="#device-health-monitoring">Device Health Monitoring</a></li><li class="toc-l2"><a href="#resource-pool-status">Resource pool status</a></li><li class="toc-l3"><a href="#resource-pool-partition-summary">Partition summary</a></li><li class="toc-l3"><a href="#resource-pool-shareable-summary">Shareable summary</a></li><li class="toc-l2"><a href="#device-metadata">DRA device metadata in containers</a></li><li class="toc-l3"><a href="#device-metadata-protocol">Device metadata protocol</a></li><li class="toc-l3"><a href="#device-metadata-enable">Enable device metadata in a driver</a></li><li class="toc-l3"><a href="#device-metadata-schema">Metadata schema</a></li><li class="toc-l3"><a href="#device-metadata-lifecycle">Immediate and deferred metadata</a></li><li class="toc-l3"><a href="#device-metadata-custom-drivers">Custom drivers</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

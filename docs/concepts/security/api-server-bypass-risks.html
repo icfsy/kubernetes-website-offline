@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kubernetes API Server Bypass Risks · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/security/api-server-bypass-risks" data-title="Kubernetes API Server Bypass Risks" data-canonical="https://kubernetes.io/docs/concepts/security/api-server-bypass-risks/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../security.html">Security</a></nav></nav>
+        <header class="page-head">
+          <h1>Kubernetes API Server Bypass Risks</h1>
+          <p class="lead">Security architecture information relating to the API server and other components</p>
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/security/api-server-bypass-risks/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>The Kubernetes API server is the main point of entry to a cluster for
+external parties (users and services) interacting with it.</p>
+<p>As part of this role, the API server has several key built-in
+security controls, such as audit logging and <a class="glossary-term" href="../../reference/glossary.html#term-admission-controller" title="Glossary: admission-controller">admission controllers</a>. However,
+there are ways to modify the configuration or content of the cluster
+that bypass these controls.</p>
+<p>This page describes the ways in which the security controls built
+into the Kubernetes API server can be bypassed, so that cluster
+operators and security architects can ensure that these bypasses are
+appropriately restricted.</p>
+<h2 id="static-pods">Static Pods</h2>
+<p>The <a class="glossary-term" href="../../reference/glossary.html#term-kubelet" title="Glossary: kubelet">kubelet</a> on
+each node loads and directly manages any manifests that are stored in a
+named directory or fetched from a specific URL as <a
+href="../../tasks/configure-pod-container/static-pod.html"><em>static
+Pods</em></a> in your cluster. The API server doesn't manage these
+static Pods. An attacker with write access to this location could modify
+the configuration of static pods loaded from that source, or could
+introduce new static Pods.</p>
+<p>Static Pods are restricted from accessing other objects in the
+Kubernetes API. For example, you can't configure a static Pod to mount a
+Secret from the cluster. However, these Pods can take other security
+sensitive actions, such as using <code>hostPath</code> mounts from the
+underlying node.</p>
+<p>By default, the kubelet creates a <a class="glossary-term" href="../../reference/glossary.html#term-mirror-pod" title="Glossary: mirror-pod">mirror pod</a> so that the static Pods are
+visible in the Kubernetes API. However, if the attacker uses an invalid
+namespace name when creating the Pod, it will not be visible in the
+Kubernetes API and can only be discovered by tooling that has access to
+the affected host(s).</p>
+<p>If a static Pod fails admission control, the kubelet won't register
+the Pod with the API server. However, the Pod still runs on the node.
+For more information, refer to <a
+href="https://github.com/kubernetes/kubeadm/issues/1541#issuecomment-487331701">kubeadm
+issue #1541</a>.</p>
+<h3 id="static-pods-mitigations">Mitigations</h3>
+<ul>
+<li>Only <a
+href="../../tasks/configure-pod-container/static-pod.html#static-pod-creation">enable
+the kubelet static Pod manifest functionality</a> if required by the
+node.</li>
+<li>If a node uses the static Pod functionality, restrict filesystem
+access to the static Pod manifest directory or URL to users who need the
+access.</li>
+<li>Restrict access to kubelet configuration parameters and files to
+prevent an attacker setting a static Pod path or URL.</li>
+<li>Regularly audit and centrally report all access to directories or
+web storage locations that host static Pod manifests and kubelet
+configuration files.</li>
+</ul>
+<h2 id="kubelet-api">The kubelet API</h2>
+<p>The kubelet provides an HTTP API that is typically exposed on TCP
+port 10250 on cluster worker nodes. The API might also be exposed on
+control plane nodes depending on the Kubernetes distribution in use.
+Direct access to the API allows for disclosure of information about the
+pods running on a node, the logs from those pods, and execution of
+commands in every container running on the node.</p>
+<p>Some of these endpoints support Websocket protocols via HTTP
+<code>GET</code> requests, which are authorized with the
+<strong>get</strong> verb. This means that <strong>get</strong>
+permission on <code>nodes/proxy</code> is not a read-only permission,
+and authorizes access to endpoints which can be used to execute commands
+in any container running on the node.</p>
+<p>When Kubernetes cluster users have RBAC access to <code>Node</code>
+object sub-resources, that access serves as authorization to interact
+with the kubelet API. The exact access depends on which sub-resource
+access has been granted, as detailed in <a
+href="../../reference/access-authn-authz/kubelet-authn-authz.html#kubelet-authorization">kubelet
+authorization</a>.</p>
+<p>Direct access to the kubelet API is not subject to admission control
+and is not logged by Kubernetes audit logging. An attacker with direct
+access to this API may be able to bypass controls that detect or prevent
+certain actions.</p>
+<p>The kubelet API can be configured to authenticate requests in a
+number of ways. By default, the kubelet configuration allows anonymous
+access. Most Kubernetes providers change the default to use webhook and
+certificate authentication. This lets the control plane ensure that the
+caller is authorized to access the <code>nodes</code> API resource or
+sub-resources. The default anonymous access doesn't make this assertion
+with the control plane.</p>
+<h3 id="mitigations">Mitigations</h3>
+<ul>
+<li>Restrict access to sub-resources of the <code>nodes</code> API
+object using mechanisms such as <a
+href="../../reference/access-authn-authz/rbac.html">RBAC</a>. Only grant
+this access when required, such as by monitoring services.</li>
+<li>Avoid granting the <code>nodes/proxy</code> catch-all permission,
+even with just the <strong>get</strong> verb. Instead, grant <a
+href="../../reference/access-authn-authz/kubelet-authn-authz.html#fine-grained-authorization">granular
+permissions</a>.</li>
+<li>Restrict access to the kubelet port. Only allow specified and
+trusted IP address ranges to access the port.</li>
+<li>Ensure that <a
+href="../../reference/access-authn-authz/kubelet-authn-authz.html#kubelet-authentication">kubelet
+authentication</a>. is set to webhook or certificate mode.</li>
+<li>Ensure that the unauthenticated "read-only" Kubelet port is not
+enabled on the cluster.</li>
+</ul>
+<h2 id="the-etcd-api">The etcd API</h2>
+<p>Kubernetes clusters use etcd as a datastore. The <code>etcd</code>
+service listens on TCP port 2379. The only clients that need access are
+the Kubernetes API server and any backup tooling that you use. Direct
+access to this API allows for disclosure or modification of any data
+held in the cluster.</p>
+<p>Access to the etcd API is typically managed by client certificate
+authentication. Any certificate issued by a certificate authority that
+etcd trusts allows full access to the data stored inside etcd.</p>
+<p>Direct access to etcd is not subject to Kubernetes admission control
+and is not logged by Kubernetes audit logging. An attacker who has read
+access to the API server's etcd client certificate private key (or can
+create a new trusted client certificate) can gain cluster admin rights
+by accessing cluster secrets or modifying access rules. Even without
+elevating their Kubernetes RBAC privileges, an attacker who can modify
+etcd can retrieve any API object or create new workloads inside the
+cluster.</p>
+<p>Many Kubernetes providers configure etcd to use mutual TLS (both
+client and server verify each other's certificate for authentication).
+There is no widely accepted implementation of authorization for the etcd
+API, although the feature exists. Since there is no authorization model,
+any certificate with client access to etcd can be used to gain full
+access to etcd. Typically, etcd client certificates that are only used
+for health checking can also grant full read and write access.</p>
+<h3 id="etcd-api-mitigations">Mitigations</h3>
+<ul>
+<li>Ensure that the certificate authority trusted by etcd is used only
+for the purposes of authentication to that service.</li>
+<li>Control access to the private key for the etcd server certificate,
+and to the API server's client certificate and key.</li>
+<li>Consider restricting access to the etcd port at a network level, to
+only allow access from specified and trusted IP address ranges.</li>
+</ul>
+<h2 id="runtime-socket">Container runtime socket</h2>
+<p>On each node in a Kubernetes cluster, access to interact with
+containers is controlled by the container runtime (or runtimes, if you
+have configured more than one). Typically, the container runtime exposes
+a Unix socket that the kubelet can access. An attacker with access to
+this socket can launch new containers or interact with running
+containers.</p>
+<p>At the cluster level, the impact of this access depends on whether
+the containers that run on the compromised node have access to Secrets
+or other confidential data that an attacker could use to escalate
+privileges to other worker nodes or to control plane components.</p>
+<h3 id="runtime-socket-mitigations">Mitigations</h3>
+<ul>
+<li>Ensure that you tightly control filesystem access to container
+runtime sockets. When possible, restrict this access to the
+<code>root</code> user.</li>
+<li>Isolate the kubelet from other components running on the node, using
+mechanisms such as Linux kernel namespaces.</li>
+<li>Ensure that you restrict or forbid the use of <a
+href="../storage/volumes.html#hostpath"><code>hostPath</code>
+mounts</a> that include the container runtime socket, either directly or
+by mounting a parent directory. Also <code>hostPath</code> mounts must
+be set as read-only to mitigate risks of attackers bypassing directory
+restrictions.</li>
+<li>Restrict user access to nodes, and especially restrict superuser
+access to nodes.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="hardening-guide/scheduler.html"><span>Previous</span>Hardening Guide - Scheduler Configuration</a><a class="page-nav-link next" href="linux-kernel-security-constraints.html"><span>Next</span>Linux kernel security constraints for Pods and containers</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#static-pods">Static Pods</a></li><li class="toc-l3"><a href="#static-pods-mitigations">Mitigations</a></li><li class="toc-l2"><a href="#kubelet-api">The kubelet API</a></li><li class="toc-l3"><a href="#mitigations">Mitigations</a></li><li class="toc-l2"><a href="#the-etcd-api">The etcd API</a></li><li class="toc-l3"><a href="#etcd-api-mitigations">Mitigations</a></li><li class="toc-l2"><a href="#runtime-socket">Container runtime socket</a></li><li class="toc-l3"><a href="#runtime-socket-mitigations">Mitigations</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

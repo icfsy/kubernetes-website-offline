@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pod Priority and Preemption · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/scheduling-eviction/pod-priority-preemption" data-title="Pod Priority and Preemption" data-canonical="https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../scheduling-eviction.html">Scheduling, Preemption and Eviction</a></nav></nav>
+        <header class="page-head">
+          <h1>Pod Priority and Preemption</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.14</p>
+</div>
+<p><a href="../workloads/pods.html">Pods</a> can have
+<em>priority</em>. Priority indicates the importance of a Pod relative
+to other Pods. If a Pod cannot be scheduled, the scheduler tries to
+preempt (evict) lower priority Pods to make scheduling of the pending
+Pod possible.</p>
+<div class="admonition warning">
+<div class="admonition-title">
+<p>Warning:</p>
+</div>
+<p>In a cluster where not all users are trusted, a malicious user could
+create Pods at the highest possible priorities, causing other Pods to be
+evicted/not get scheduled. An administrator can use ResourceQuota to
+prevent users from creating pods at high priorities.</p>
+<p>See <a
+href="../policy/resource-quotas.html">limit
+Priority Class consumption by default</a> for details.</p>
+</div>
+<h2 id="how-to-use-priority-and-preemption">How to use priority and
+preemption</h2>
+<p>To use priority and preemption:</p>
+<ol type="1">
+<li><p>Add one or more <a
+href="#priorityclass">PriorityClasses</a>.</p></li>
+<li><p>Create Pods with<a
+href="#pod-priority"><code>priorityClassName</code></a> set to one of
+the added PriorityClasses. Of course you do not need to create the Pods
+directly; normally you would add <code>priorityClassName</code> to the
+Pod template of a collection object like a Deployment.</p></li>
+</ol>
+<p>Keep reading for more information about these steps.</p>
+<h2 id="priorityclass">PriorityClass</h2>
+<p>A PriorityClass is a non-namespaced object that defines a mapping
+from a priority class name to the integer value of the priority. The
+name is specified in the <code>name</code> field of the PriorityClass
+object's metadata. The value is specified in the required
+<code>value</code> field. The higher the value, the higher the priority.
+The name of a PriorityClass object must be a valid <a
+href="../overview/working-with-objects/names.html#dns-subdomain-names">DNS
+subdomain name</a>, and it cannot be prefixed with
+<code>system-</code>.</p>
+<p>A PriorityClass object can have any 32-bit integer value smaller than
+or equal to 1 billion. This means that the range of values for a
+PriorityClass object is from -2147483648 to 1000000000 inclusive. Larger
+numbers are reserved for built-in PriorityClasses that represent
+critical system Pods. A cluster admin should create one PriorityClass
+object for each such mapping that they want.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Kubernetes already ships with two PriorityClasses:
+<code>system-cluster-critical</code> and
+<code>system-node-critical</code>. These are common classes and are used
+to <a
+href="../../tasks/administer-cluster/guaranteed-scheduling-critical-addon-pods.html">ensure
+that critical components are always scheduled first</a>. For Kubernetes
+v1.37 their priority values are 2000000000 for
+<code>system-cluster-critical</code> and 2000001000 for
+<code>system-node-critical</code>.</p>
+</div>
+<p>PriorityClass also has two optional fields:
+<code>globalDefault</code> and <code>description</code>. The
+<code>globalDefault</code> field indicates that the value of this
+PriorityClass should be used for Pods without a
+<code>priorityClassName</code>. Only one PriorityClass with
+<code>globalDefault</code> set to true can exist in the system. If there
+is no PriorityClass with <code>globalDefault</code> set, the priority of
+Pods with no <code>priorityClassName</code> is zero.</p>
+<p>The <code>description</code> field is an arbitrary string. It is
+meant to tell users of the cluster when they should use this
+PriorityClass.</p>
+<h3 id="notes-about-podpriority-and-existing-clusters">Notes about
+PodPriority and existing clusters</h3>
+<ul>
+<li><p>If you upgrade an existing cluster without this feature, the
+priority of your existing Pods is effectively zero.</p></li>
+<li><p>Addition of a PriorityClass with <code>globalDefault</code> set
+to <code>true</code> does not change the priorities of existing Pods.
+The value of such a PriorityClass is used only for Pods created after
+the PriorityClass is added.</p></li>
+<li><p>If you delete a PriorityClass, existing Pods that use the name of
+the deleted PriorityClass remain unchanged, but you cannot create more
+Pods that use the name of the deleted PriorityClass.</p></li>
+</ul>
+<h3 id="example-priorityclass">Example PriorityClass</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority</span></span>
+<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000000</span></span>
+<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class should be used for XYZ service pods only.&quot;</span></span></code></pre></div>
+<h2 id="non-preempting-priority-class">Non-preempting PriorityClass</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.24</p>
+</div>
+<p>Pods with <code>preemptionPolicy: Never</code> will be placed in the
+scheduling queue ahead of lower-priority pods, but they cannot preempt
+other pods. A non-preempting pod waiting to be scheduled will stay in
+the scheduling queue, until sufficient resources are free, and it can be
+scheduled. Non-preempting pods, like other pods, are subject to
+scheduler back-off. This means that if the scheduler tries these pods
+and they cannot be scheduled, they will be retried with lower frequency,
+allowing other pods with lower priority to be scheduled before them.</p>
+<p>Non-preempting pods may still be preempted by other, high-priority
+pods.</p>
+<p><code>preemptionPolicy</code> defaults to
+<code>PreemptLowerPriority</code>, which will allow pods of that
+PriorityClass to preempt lower-priority pods (as is existing default
+behavior). If <code>preemptionPolicy</code> is set to
+<code>Never</code>, pods in that PriorityClass will be
+non-preempting.</p>
+<p>An example use case is for data science workloads. A user may submit
+a job that they want to be prioritized above other workloads, but do not
+wish to discard existing work by preempting running pods. The high
+priority job with <code>preemptionPolicy: Never</code> will be scheduled
+ahead of other queued pods, as soon as sufficient cluster resources
+"naturally" become free.</p>
+<h3 id="example-non-preempting-priorityclass">Example Non-preempting
+PriorityClass</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> scheduling.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> PriorityClass</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> high-priority-nonpreempting</span></span>
+<span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1000000</span></span>
+<span class="fu">preemptionPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span class="fu">globalDefault</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span class="fu">description</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;This priority class will not cause other pods to be preempted.&quot;</span></span></code></pre></div>
+<h2 id="pod-priority">Pod priority</h2>
+<p>After you have one or more PriorityClasses, you can create Pods that
+specify one of those PriorityClass names in their specifications. The
+priority admission controller uses the <code>priorityClassName</code>
+field and populates the integer value of the priority. If the priority
+class is not found, the Pod is rejected.</p>
+<p>The following YAML is an example of a Pod configuration that uses the
+PriorityClass created in the preceding example. The priority admission
+controller checks the specification and resolves the priority of the Pod
+to</p>
+<ol start="1000000" type="1">
+<li></li>
+</ol>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">env</span><span class="kw">:</span><span class="at"> test</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> IfNotPresent</span></span>
+<span class="at">  </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> high-priority</span></span></code></pre></div>
+<h3 id="effect-of-pod-priority-on-scheduling-order">Effect of Pod
+priority on scheduling order</h3>
+<p>When Pod priority is enabled, the scheduler orders pending Pods by
+their priority and a pending Pod is placed ahead of other pending Pods
+with lower priority in the scheduling queue. As a result, the higher
+priority Pod may be scheduled sooner than Pods with lower priority if
+its scheduling requirements are met. If such Pod cannot be scheduled,
+the scheduler will continue and try to schedule other lower priority
+Pods.</p>
+<h4 id="podgroups-and-scheduling-order">PodGroups and scheduling
+order</h4>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.37; disabled by default
+(<code>GenericWorkload</code>)</p>
+</div>
+<p>When the <code>GenericWorkload</code> feature gate is enabled,
+PodGroups are interleaved with the standalone Pods in the scheduling
+queue. PodGroup object has its own <code>priority</code> field which is
+used for ordering with respect to other Pods and PodGroups. The details
+on how to set the priority of a PodGroup are available on the <a
+href="../workloads/workload-api/disruption-and-priority.html">Pod
+Group Disruption and Priority</a> page.</p>
+<h4 id="compositepodgroups-and-scheduling-order">CompositePodGroups and
+scheduling order</h4>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.37; disabled by default
+(<code>CompositePodGroup</code>)</p>
+</div>
+<p>When the <code>CompositePodGroup</code> feature gate is enabled, the
+scheduler treats the following objects as units of scheduling that can
+be enqueued:</p>
+<ul>
+<li>Standalone Pods - Pods that are not part of any PodGroup,</li>
+<li>Standalone PodGroups - PodGroups that do not specify
+<code>ParentCompositePodGroup</code>,</li>
+<li>Root CompositePodGroups - CompositePodGroups that do not specify
+<code>ParentCompositePodGroup</code>.</li>
+</ul>
+<p>These objects specify a <code>priority</code> field value of which is
+used to determine their position in the active scheduling queue.</p>
+<h2 id="preemption">Preemption</h2>
+<p>When Pods are created, they go to a queue and wait to be scheduled.
+The scheduler picks a Pod from the queue and tries to schedule it on a
+Node. If no Node is found that satisfies all the specified requirements
+of the Pod, preemption logic is triggered for the pending Pod. Let's
+call the pending Pod P. Preemption logic tries to find a Node where
+removal of one or more Pods with lower priority than P would enable P to
+be scheduled on that Node. If such a Node is found, one or more lower
+priority Pods get evicted from the Node. After the Pods are gone, P can
+be scheduled on the Node.</p>
+<h3 id="podgroup-preemption">PodGroup preemption</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.37; disabled by default
+(<code>GenericWorkload</code>)</p>
+</div>
+<p>When the <code>GenericWorkload</code> feature gate is enabled,
+PodGroups can participate in preemption as either the initiator or the
+victim. When a PodGroup triggers preemption, it follows the <a
+href="workload-aware-preemption.html">workload-aware
+preemption</a> logic to preempt other Pods and PodGroups to make room
+for itself. When a Pod triggers preemption, a PodGroup can become a
+victim. In that case the PodGroup <code>priority</code> field is used
+for ordering with respect to other potential victims and
+<code>disruptionMode</code> field is used to dictate the PodGroup
+disruption behavior. The detailed description of those fields is
+available on the <a
+href="../workloads/workload-api/disruption-and-priority.html">Pod
+Group Disruption and Priority</a> page.</p>
+<h3 id="user-exposed-information">User exposed information</h3>
+<p>When Pod P preempts one or more Pods on Node N,
+<code>nominatedNodeName</code> field of Pod P's status is set to the
+name of Node N. This field helps the scheduler track resources reserved
+for Pod P and also gives users information about preemptions in their
+clusters.</p>
+<p>Please note that Pod P is not necessarily scheduled to the "nominated
+Node". The scheduler always tries the "nominated Node" before iterating
+over any other nodes. After victim Pods are preempted, they get their
+graceful termination period. If another node becomes available while
+scheduler is waiting for the victim Pods to terminate, scheduler may use
+the other node to schedule Pod P. As a result
+<code>nominatedNodeName</code> and <code>nodeName</code> of Pod spec are
+not always the same. Also, if the scheduler preempts Pods on Node N, but
+then a higher priority Pod than Pod P arrives, the scheduler may give
+Node N to the new higher priority Pod. In such a case, scheduler clears
+<code>nominatedNodeName</code> of Pod P. By doing this, scheduler makes
+Pod P eligible to preempt Pods on another Node.</p>
+<h3 id="limitations-of-preemption">Limitations of preemption</h3>
+<h4 id="graceful-termination-of-preemption-victims">Graceful termination
+of preemption victims</h4>
+<p>When Pods are preempted, the victims get their <a
+href="../workloads/pods/pod-lifecycle.html#pod-termination">graceful
+termination period</a>. They have that much time to finish their work
+and exit. If they don't, they are killed. This graceful termination
+period creates a time gap between the point that the scheduler preempts
+Pods and the time when the pending Pod (P) can be scheduled on the Node
+(N). In the meantime, the scheduler keeps scheduling other pending Pods.
+As victims exit or get terminated, the scheduler tries to schedule Pods
+in the pending queue. Therefore, there is usually a time gap between the
+point that scheduler preempts victims and the time that Pod P is
+scheduled. In order to minimize this gap, one can set graceful
+termination period of lower priority Pods to zero or a small number.</p>
+<h4
+id="poddisruptionbudget-is-supported-but-not-guaranteed">PodDisruptionBudget
+is supported, but not guaranteed</h4>
+<p>A <a
+href="../workloads/pods/disruptions.html">PodDisruptionBudget</a>
+(PDB) allows application owners to limit the number of Pods of a
+replicated application that are down simultaneously from voluntary
+disruptions. Kubernetes supports PDB when preempting Pods, but
+respecting PDB is best effort. The scheduler tries to find victims whose
+PDB are not violated by preemption, but if no such victims are found,
+preemption will still happen, and lower priority Pods will be removed
+despite their PDBs being violated.</p>
+<h4 id="inter-pod-affinity-on-lower-priority-pods">Inter-Pod affinity on
+lower-priority Pods</h4>
+<p>A Node is considered for preemption only when the answer to this
+question is yes: "If all the Pods with lower priority than the pending
+Pod are removed from the Node, can the pending Pod be scheduled on the
+Node?"</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Preemption does not necessarily remove all lower-priority Pods. If
+the pending Pod can be scheduled by removing fewer than all
+lower-priority Pods, then only a portion of the lower-priority Pods are
+removed. Even so, the answer to the preceding question must be yes. If
+the answer is no, the Node is not considered for preemption.</p>
+</div>
+<p>If a pending Pod has inter-pod <a class="glossary-term" href="../../reference/glossary.html#term-affinity" title="Glossary: affinity">affinity</a> to one or more of the
+lower-priority Pods on the Node, the inter-Pod affinity rule cannot be
+satisfied in the absence of those lower-priority Pods. In this case, the
+scheduler does not preempt any Pods on the Node. Instead, it looks for
+another Node. The scheduler might find a suitable Node or it might not.
+There is no guarantee that the pending Pod can be scheduled.</p>
+<p>Our recommended solution for this problem is to create inter-Pod
+affinity only towards equal or higher priority Pods.</p>
+<h4 id="cross-node-preemption">Cross node preemption</h4>
+<p>Suppose a Node N is being considered for preemption so that a pending
+Pod P can be scheduled on N. P might become feasible on N only if a Pod
+on another Node is preempted. Here's an example:</p>
+<ul>
+<li>Pod P is being considered for Node N.</li>
+<li>Pod Q is running on another Node in the same Zone as Node N.</li>
+<li>Pod P has Zone-wide anti-affinity with Pod Q
+(<code>topologyKey: topology.kubernetes.io/zone</code>).</li>
+<li>There are no other cases of anti-affinity between Pod P and other
+Pods in the Zone.</li>
+<li>In order to schedule Pod P on Node N, Pod Q can be preempted, but
+scheduler does not perform cross-node preemption. So, Pod P will be
+deemed unschedulable on Node N.</li>
+</ul>
+<p>If Pod Q were removed from its Node, the Pod anti-affinity violation
+would be gone, and Pod P could possibly be scheduled on Node N.</p>
+<p>We may consider adding cross Node preemption in future versions if
+there is enough demand and if we find an algorithm with reasonable
+performance.</p>
+<h3 id="preemption-for-in-place-pod-resize">Preemption for in-place Pod
+resize</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.37; disabled by default
+(<code>InPlacePodVerticalScalingSchedulerPreemption</code>)</p>
+</div>
+<p>When the <code>InPlacePodVerticalScalingSchedulerPreemption</code>
+feature gate is enabled, preemption also applies when a running Pod's
+in-place resize request is <code>Deferred</code> (meaning the requested
+resize is temporarily not possible, but might become feasible later) due
+to insufficient node capacity. For details on resize states, see <a
+href="../../tasks/configure-pod-container/resize-container-resources.html#pod-resize-status">Pod
+resize status</a>.</p>
+<p>If a higher-priority Pod cannot be resized in-place because its node
+lacks available CPU or memory, <code>kube-scheduler</code> attempts to
+preempt lower-priority Pods on that node to free up the required
+capacity.</p>
+<p>Preemption for in-place Pod resize differs from standard Pod
+placement preemption in several key ways:</p>
+<ul>
+<li><strong>Node restriction</strong>: Preemption is strictly restricted
+to the Pod's currently assigned node. The scheduler does not evaluate
+other candidate nodes across the cluster.</li>
+<li><strong>Resource delta calculation</strong>: Required preemption
+capacity is calculated based on the resource delta (the difference
+between the desired resources and currently allocated resources), rather
+than the total Pod request.</li>
+<li><strong>Resource blocking</strong>: The requested resources of the
+resizing Pod are considered already consumed for scheduler resource
+accounting on that node, blocking other lower-priority Pods from using
+them until the resize is eventually performed or the deferred status is
+removed by the Kubelet.</li>
+<li><strong>Nominated node status</strong>: The
+<code>nominatedNodeName</code> field in the Pod's status is not set,
+because the Pod is already assigned to and running on its target
+node.</li>
+<li><strong>Kubelet actuation</strong>: The scheduler triggers
+preemption to free up node capacity, but does not re-bind the Pod. The
+Kubelet detects the newly freed capacity on the node and performs the
+actual in-place resize actuation.</li>
+<li><strong>Node-level preemption policy</strong>: Preemption can be
+disabled specifically for in-place resizes on specific nodes using the
+Node spec's
+<code>spec.podPreemptionPolicy.disableResizePreemption</code> field.
+Unlike standard preemption, which can only be disabled
+per-priority-class using <code>preemptionPolicy: Never</code>, this
+allows operators or autoscaling systems to disable preemption on
+individual nodes.</li>
+</ul>
+<p>For more details on in-place Pod resizing, see <a
+href="../../tasks/configure-pod-container/resize-container-resources.html">Resize
+CPU and Memory Resources assigned to Containers</a>.</p>
+<h4
+id="disabling-preemption-for-in-place-pod-resize-at-the-node-level">Disabling
+preemption for in-place Pod resize at the Node level</h4>
+<p>Cluster operators and controllers can disable scheduler-triggered
+preemption caused by in-place Pod resize requests on specific nodes.
+This is useful for resizable nodes or nodes with custom autoscaling
+solutions, protecting existing workloads from disruption and allowing
+node-upsizing to handle the resource deficit instead.</p>
+<p>This is configured using the <code>spec.podPreemptionPolicy</code>
+field on the <code>Node</code> spec. If the
+<code>disableResizePreemption</code> list is non-empty, resize-induced
+preemption is disabled on that node, and <code>kube-scheduler</code>
+will skip preemption attempts for any deferred resizes running on that
+node.</p>
+<p>Here is an example Node configuration:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Node</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> resizable-node</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">podPreemptionPolicy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">disableResizePreemption</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">autoscaling.k8s.io/cluster-autoscaler</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">autoscaling.k8s.io/vpa-updater</span></span></code></pre></div>
+<p>Constraints and validation rules:</p>
+<ul>
+<li><strong>Label format</strong>: Each entry in the
+<code>disableResizePreemption</code> list must follow the standard
+Kubernetes label key format (for example, a DNS subdomain prefix and a
+name separated by a <code>/</code>).</li>
+<li><strong>Max items</strong>: The list can contain a maximum of 20
+entries.</li>
+<li><strong>Non-empty list</strong>: The policy is honored (preemption
+is disabled) if the list contains at least one entry. If the list is
+empty or the <code>podPreemptionPolicy</code> field is omitted,
+preemption for in-place resize is enabled on the node.</li>
+</ul>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<p>Pod priority and preemption can have unwanted side effects. Here are
+some examples of potential problems and ways to deal with them.</p>
+<h3 id="pods-are-preempted-unnecessarily">Pods are preempted
+unnecessarily</h3>
+<p>Preemption removes existing Pods from a cluster under resource
+pressure to make room for higher priority pending Pods. If you give high
+priorities to certain Pods by mistake, these unintentionally high
+priority Pods may cause preemption in your cluster. Pod priority is
+specified by setting the <code>priorityClassName</code> field in the
+Pod's specification. The integer value for priority is then resolved and
+populated to the <code>priority</code> field of
+<code>podSpec</code>.</p>
+<p>To address the problem, you can change the
+<code>priorityClassName</code> for those Pods to use lower priority
+classes, or leave that field empty. An empty
+<code>priorityClassName</code> is resolved to zero by default.</p>
+<p>When a Pod is preempted, there will be events recorded for the
+preempted Pod. Preemption should happen only when a cluster does not
+have enough resources for a Pod. In such cases, preemption happens only
+when the priority of the pending Pod (preemptor) is higher than the
+victim Pods. Preemption must not happen when there is no pending Pod, or
+when the pending Pods have equal or lower priority than the victims. If
+preemption happens in such scenarios, please file an issue.</p>
+<h3 id="pods-are-preempted-but-the-preemptor-is-not-scheduled">Pods are
+preempted, but the preemptor is not scheduled</h3>
+<p>When pods are preempted, they receive their requested graceful
+termination period, which is by default 30 seconds. If the victim Pods
+do not terminate within this period, they are forcibly terminated. Once
+all the victims go away, the preemptor Pod can be scheduled.</p>
+<p>While the preemptor Pod is waiting for the victims to go away, a
+higher priority Pod may be created that fits on the same Node. In this
+case, the scheduler will schedule the higher priority Pod instead of the
+preemptor.</p>
+<p>This is expected behavior: the Pod with the higher priority should
+take the place of a Pod with a lower priority.</p>
+<h3
+id="higher-priority-pods-are-preempted-before-lower-priority-pods">Higher
+priority Pods are preempted before lower priority pods</h3>
+<p>The scheduler tries to find nodes that can run a pending Pod. If no
+node is found, the scheduler tries to remove Pods with lower priority
+from an arbitrary node in order to make room for the pending pod. If a
+node with low priority Pods is not feasible to run the pending Pod, the
+scheduler may choose another node with higher priority Pods (compared to
+the Pods on the other node) for preemption. The victims must still have
+lower priority than the preemptor Pod.</p>
+<p>When there are multiple nodes available for preemption, the scheduler
+tries to choose the node with a set of Pods with lowest priority.
+However, if such Pods have PodDisruptionBudget that would be violated if
+they are preempted then the scheduler may choose another node with
+higher priority Pods.</p>
+<p>When multiple nodes exist for preemption and none of the above
+scenarios apply, the scheduler chooses a node with the lowest
+priority.</p>
+<h2 id="interactions-of-pod-priority-and-qos">Interactions between Pod
+priority and quality of service</h2>
+<p>Pod priority and <a class="glossary-term" href="../../reference/glossary.html#term-qos-class" title="Glossary: qos-class">QoS class</a> are two orthogonal features with
+few interactions and no default restrictions on setting the priority of
+a Pod based on its QoS classes. The scheduler's preemption logic does
+not consider QoS when choosing preemption targets. Preemption considers
+Pod priority and attempts to choose a set of targets with the lowest
+priority. Higher-priority Pods are considered for preemption only if the
+removal of the lowest priority Pods is not sufficient to allow the
+scheduler to schedule the preemptor Pod, or if the lowest priority Pods
+are protected by <code>PodDisruptionBudget</code>.</p>
+<p>The kubelet uses Priority to determine pod order for <a
+href="node-pressure-eviction.html">node-pressure
+eviction</a>. You can use the QoS class to estimate the order in which
+pods are most likely to get evicted. The kubelet ranks pods for eviction
+based on the following factors:</p>
+<ol type="1">
+<li>Whether the starved resource usage exceeds requests</li>
+<li>Pod Priority</li>
+<li>Amount of resource usage relative to requests</li>
+</ol>
+<p>See <a
+href="node-pressure-eviction.html#pod-selection-for-kubelet-eviction">Pod
+selection for kubelet eviction</a> for more details.</p>
+<p>kubelet node-pressure eviction does not evict Pods when their usage
+does not exceed their requests. If a Pod with lower priority is not
+exceeding its requests, it won't be evicted. Another Pod with higher
+priority that exceeds its requests may be evicted.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read about using ResourceQuotas in connection with PriorityClasses:
+<a
+href="../policy/resource-quotas.html">limit
+Priority Class consumption by default</a></li>
+<li>Learn about <a
+href="../workloads/pods/disruptions.html">Pod
+Disruption</a></li>
+<li>Learn about <a
+href="api-eviction.html">API-initiated
+Eviction</a></li>
+<li>Learn about <a
+href="node-pressure-eviction.html">Node-pressure
+Eviction</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="topology-aware-scheduling.html"><span>Previous</span>Topology-Aware Workload Scheduling</a><a class="page-nav-link next" href="node-pressure-eviction.html"><span>Next</span>Node-pressure Eviction</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#how-to-use-priority-and-preemption">How to use priority and preemption</a></li><li class="toc-l2"><a href="#priorityclass">PriorityClass</a></li><li class="toc-l3"><a href="#notes-about-podpriority-and-existing-clusters">Notes about PodPriority and existing clusters</a></li><li class="toc-l3"><a href="#example-priorityclass">Example PriorityClass</a></li><li class="toc-l2"><a href="#non-preempting-priority-class">Non-preempting PriorityClass</a></li><li class="toc-l3"><a href="#example-non-preempting-priorityclass">Example Non-preempting PriorityClass</a></li><li class="toc-l2"><a href="#pod-priority">Pod priority</a></li><li class="toc-l3"><a href="#effect-of-pod-priority-on-scheduling-order">Effect of Pod priority on scheduling order</a></li><li class="toc-l2"><a href="#preemption">Preemption</a></li><li class="toc-l3"><a href="#podgroup-preemption">PodGroup preemption</a></li><li class="toc-l3"><a href="#user-exposed-information">User exposed information</a></li><li class="toc-l3"><a href="#limitations-of-preemption">Limitations of preemption</a></li><li class="toc-l3"><a href="#preemption-for-in-place-pod-resize">Preemption for in-place Pod resize</a></li><li class="toc-l2"><a href="#troubleshooting">Troubleshooting</a></li><li class="toc-l3"><a href="#pods-are-preempted-unnecessarily">Pods are preempted unnecessarily</a></li><li class="toc-l3"><a href="#pods-are-preempted-but-the-preemptor-is-not-scheduled">Pods are preempted, but the preemptor is not scheduled</a></li><li class="toc-l3"><a href="#higher-priority-pods-are-preempted-before-lower-priority-pods">Higher priority Pods are preempted before lower priority pods</a></li><li class="toc-l2"><a href="#interactions-of-pod-priority-and-qos">Interactions between Pod priority and quality of service</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

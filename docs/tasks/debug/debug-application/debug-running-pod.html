@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debug Running Pods · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="tasks/debug/debug-application/debug-running-pod" data-title="Debug Running Pods" data-canonical="https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../tasks.html">Tasks</a><span>/</span><a href="../../debug.html">Monitoring, Logging, and Debugging</a><span>/</span><a href="../debug-application.html">Troubleshooting Applications</a></nav></nav>
+        <header class="page-head">
+          <h1>Debug Running Pods</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/debug/debug-application/debug-running-pod/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page explains how to debug Pods running (or crashing) on a
+Node.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li>Your <a class="glossary-term" href="../../../reference/glossary.html#term-pod" title="Glossary: pod">Pod</a> should
+already be scheduled and running. If your Pod is not yet running, start
+with <a href="../debug-application.html">Debugging
+Pods</a>.</li>
+<li>For some of the advanced debugging steps you need to know on which
+Node the Pod is running and have shell access to run commands on that
+Node. You don't need that access to run the standard debug steps that
+use <code>kubectl</code>.</li>
+</ul>
+<h2 id="using-kubectl-describe-pod-to-fetch-details-about-pods">Using
+<code>kubectl describe pod</code> to fetch details about pods</h2>
+<p>For this example we'll use a Deployment to create two pods, similar
+to the earlier example.</p>
+<div class="code-sample">
+<p><code>application/nginx-with-request.yaml</code></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;128Mi&quot;</span></span>
+<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+</div>
+<p>Create deployment by running following command:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/nginx-with-request.yaml</code></pre>
+<pre class="none"><code>deployment.apps/nginx-deployment created</code></pre>
+<p>Check pod status by following command:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="none"><code>NAME                                READY   STATUS    RESTARTS   AGE
+nginx-deployment-67d4bdd6f5-cx2nz   1/1     Running   0          13s
+nginx-deployment-67d4bdd6f5-w6kd7   1/1     Running   0          13s</code></pre>
+<p>We can retrieve a lot more information about each of these pods using
+<code>kubectl describe pod</code>. For example:</p>
+<pre class="shell"><code>kubectl describe pod nginx-deployment-67d4bdd6f5-w6kd7</code></pre>
+<pre class="none"><code>Name:         nginx-deployment-67d4bdd6f5-w6kd7
+Namespace:    default
+Priority:     0
+Node:         kube-worker-1/192.168.0.113
+Start Time:   Thu, 17 Feb 2022 16:51:01 -0500
+Labels:       app=nginx
+              pod-template-hash=67d4bdd6f5
+Annotations:  &lt;none&gt;
+Status:       Running
+IP:           10.88.0.3
+IPs:
+  IP:           10.88.0.3
+  IP:           2001:db8::1
+Controlled By:  ReplicaSet/nginx-deployment-67d4bdd6f5
+Containers:
+  nginx:
+    Container ID:   containerd://5403af59a2b46ee5a23fb0ae4b1e077f7ca5c5fb7af16e1ab21c00e0e616462a
+    Image:          nginx
+    Image ID:       docker.io/library/nginx@sha256:2834dc507516af02784808c5f48b7cbe38b8ed5d0f4837f16e78d00deb7e7767
+    Port:           80/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Thu, 17 Feb 2022 16:51:05 -0500
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     500m
+      memory:  128Mi
+    Requests:
+      cpu:        500m
+      memory:     128Mi
+    Environment:  &lt;none&gt;
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-bgsgp (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  kube-api-access-bgsgp:
+    Type:                    Projected (a volume that contains injected data from multiple sources)
+    TokenExpirationSeconds:  3607
+    ConfigMapName:           kube-root-ca.crt
+    ConfigMapOptional:       &lt;nil&gt;
+    DownwardAPI:             true
+QoS Class:                   Guaranteed
+Node-Selectors:              &lt;none&gt;
+Tolerations:                 node.kubernetes.io/not-ready:NoExecute op=Exists for 300s
+                             node.kubernetes.io/unreachable:NoExecute op=Exists for 300s
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  34s   default-scheduler  Successfully assigned default/nginx-deployment-67d4bdd6f5-w6kd7 to kube-worker-1
+  Normal  Pulling    31s   kubelet            Pulling image &quot;nginx&quot;
+  Normal  Pulled     30s   kubelet            Successfully pulled image &quot;nginx&quot; in 1.146417389s
+  Normal  Created    30s   kubelet            Created container nginx
+  Normal  Started    30s   kubelet            Started container nginx</code></pre>
+<p>Here you can see configuration information about the container(s) and
+Pod (labels, resource requirements, etc.), as well as status information
+about the container(s) and Pod (state, readiness, restart count, events,
+etc.).</p>
+<p>The container state is one of Waiting, Running, or Terminated.
+Depending on the state, additional information will be provided - here
+you can see that for a container in Running state, the system tells you
+when the container started.</p>
+<p>Ready tells you whether the container passed its last readiness
+probe. (In this case, the container does not have a readiness probe
+configured; the container is assumed to be ready if no readiness probe
+is configured.)</p>
+<p>Restart Count tells you how many times the container has been
+restarted; this information can be useful for detecting crash loops in
+containers that are configured with a restart policy of
+<code>Always</code>.</p>
+<p>Currently the only Condition associated with a Pod is the binary
+Ready condition, which indicates that the pod is able to service
+requests and should be added to the load balancing pools of all matching
+services.</p>
+<p>Lastly, you see a log of recent events related to your Pod. "From"
+indicates the component that is logging the event. "Reason" and
+"Message" tell you what happened.</p>
+<h2 id="example-debugging-pending-pods">Example: debugging Pending
+Pods</h2>
+<p>A common scenario that you can detect using events is when you've
+created a Pod that won't fit on any node. For example, the Pod might
+request more resources than are free on any node, or it might specify a
+label selector that doesn't match any nodes. Let's say we created the
+previous Deployment with 5 replicas (instead of 2) and requesting 600
+millicores instead of 500, on a four-node cluster where each (virtual)
+machine has 1 CPU. In that case one of the Pods will not be able to
+schedule. (Note that because of the cluster addon pods such as fluentd,
+skydns, etc., that run on each node, if we requested 1000 millicores
+then none of the Pods would be able to schedule.)</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="none"><code>NAME                                READY     STATUS    RESTARTS   AGE
+nginx-deployment-1006230814-6winp   1/1       Running   0          7m
+nginx-deployment-1006230814-fmgu3   1/1       Running   0          7m
+nginx-deployment-1370807587-6ekbw   1/1       Running   0          1m
+nginx-deployment-1370807587-fg172   0/1       Pending   0          1m
+nginx-deployment-1370807587-fz9sd   0/1       Pending   0          1m</code></pre>
+<p>To find out why the nginx-deployment-1370807587-fz9sd pod is not
+running, we can use <code>kubectl describe pod</code> on the pending Pod
+and look at its events:</p>
+<pre class="shell"><code>kubectl describe pod nginx-deployment-1370807587-fz9sd</code></pre>
+<pre class="none"><code>  Name:     nginx-deployment-1370807587-fz9sd
+  Namespace:    default
+  Node:     /
+  Labels:       app=nginx,pod-template-hash=1370807587
+  Status:       Pending
+  IP:
+  Controllers:  ReplicaSet/nginx-deployment-1370807587
+  Containers:
+    nginx:
+      Image:    nginx
+      Port: 80/TCP
+      QoS Tier:
+        memory: Guaranteed
+        cpu:    Guaranteed
+      Limits:
+        cpu:    1
+        memory: 128Mi
+      Requests:
+        cpu:    1
+        memory: 128Mi
+      Environment Variables:
+  Volumes:
+    default-token-4bcbi:
+      Type: Secret (a volume populated by a Secret)
+      SecretName:   default-token-4bcbi
+  Events:
+    FirstSeen   LastSeen    Count   From                    SubobjectPath   Type        Reason              Message
+    ---------   --------    -----   ----                    -------------   --------    ------              -------
+    1m          48s         7       {default-scheduler }                    Warning     FailedScheduling    pod (nginx-deployment-1370807587-fz9sd) failed to fit in any node
+  fit failure on node (kubernetes-node-6ta5): Node didn&#39;t have enough resource: CPU, requested: 1000, used: 1420, capacity: 2000
+  fit failure on node (kubernetes-node-wul5): Node didn&#39;t have enough resource: CPU, requested: 1000, used: 1100, capacity: 2000</code></pre>
+<p>Here you can see the event generated by the scheduler saying that the
+Pod failed to schedule for reason <code>FailedScheduling</code> (and
+possibly others). The message tells us that there were not enough
+resources for the Pod on any of the nodes.</p>
+<p>To correct this situation, you can use <code>kubectl scale</code> to
+update your Deployment to specify four or fewer replicas. (Or you could
+leave the one Pod pending, which is harmless.)</p>
+<p>Events such as the ones you saw at the end of
+<code>kubectl describe pod</code> are persisted in etcd and provide
+high-level information on what is happening in the cluster. To list all
+events you can use</p>
+<pre class="shell"><code>kubectl get events</code></pre>
+<p>but you have to remember that events are namespaced. This means that
+if you're interested in events for some namespaced object (e.g. what
+happened with Pods in namespace <code>my-namespace</code>) you need to
+explicitly provide a namespace to the command:</p>
+<pre class="shell"><code>kubectl get events --namespace=my-namespace</code></pre>
+<p>To see events from all namespaces, you can use the
+<code>--all-namespaces</code> argument.</p>
+<p>In addition to <code>kubectl describe pod</code>, another way to get
+extra information about a pod (beyond what is provided by
+<code>kubectl get pod</code>) is to pass the <code>-o yaml</code> output
+format flag to <code>kubectl get pod</code>. This will give you, in YAML
+format, even more information than <code>kubectl describe pod</code> -
+essentially all of the information the system has about the Pod. Here
+you will see things like annotations (which are key-value metadata
+without the label restrictions, that is used internally by Kubernetes
+system components), restart policy, ports, and volumes.</p>
+<pre class="shell"><code>kubectl get pod nginx-deployment-1006230814-6winp -o yaml</code></pre>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:01Z&quot;</span></span>
+<span class="at">  </span><span class="fu">generateName</span><span class="kw">:</span><span class="at"> nginx-deployment-67d4bdd6f5-</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">pod-template-hash</span><span class="kw">:</span><span class="at"> 67d4bdd6f5</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment-67d4bdd6f5-w6kd7</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">ownerReferences</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="at">    </span><span class="fu">blockOwnerDeletion</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="at">    </span><span class="fu">controller</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="at">    </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ReplicaSet</span></span>
+<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx-deployment-67d4bdd6f5</span></span>
+<span class="at">    </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 7d41dfd4-84c0-4be4-88ab-cedbe626ad82</span></span>
+<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1364&quot;</span></span>
+<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> a6501da1-0447-4262-98eb-c03d4002222e</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">      </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 500m</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 128Mi</span></span>
+<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 500m</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 128Mi</span></span>
+<span class="at">    </span><span class="fu">terminationMessagePath</span><span class="kw">:</span><span class="at"> /dev/termination-log</span></span>
+<span class="at">    </span><span class="fu">terminationMessagePolicy</span><span class="kw">:</span><span class="at"> File</span></span>
+<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/run/secrets/kubernetes.io/serviceaccount</span></span>
+<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-api-access-bgsgp</span></span>
+<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="at">  </span><span class="fu">dnsPolicy</span><span class="kw">:</span><span class="at"> ClusterFirst</span></span>
+<span class="at">  </span><span class="fu">enableServiceLinks</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="at">  </span><span class="fu">nodeName</span><span class="kw">:</span><span class="at"> kube-worker-1</span></span>
+<span class="at">  </span><span class="fu">preemptionPolicy</span><span class="kw">:</span><span class="at"> PreemptLowerPriority</span></span>
+<span class="at">  </span><span class="fu">priority</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span class="at">  </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> default-scheduler</span></span>
+<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="at">  </span><span class="fu">serviceAccount</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">terminationGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">30</span></span>
+<span class="at">  </span><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoExecute</span></span>
+<span class="at">    </span><span class="fu">key</span><span class="kw">:</span><span class="at"> node.kubernetes.io/not-ready</span></span>
+<span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span>
+<span class="at">    </span><span class="fu">tolerationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoExecute</span></span>
+<span class="at">    </span><span class="fu">key</span><span class="kw">:</span><span class="at"> node.kubernetes.io/unreachable</span></span>
+<span class="at">    </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span>
+<span class="at">    </span><span class="fu">tolerationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">300</span></span>
+<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-api-access-bgsgp</span></span>
+<span class="at">    </span><span class="fu">projected</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">defaultMode</span><span class="kw">:</span><span class="at"> </span><span class="dv">420</span></span>
+<span class="at">      </span><span class="fu">sources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">serviceAccountToken</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">expirationSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">3607</span></span>
+<span class="at">          </span><span class="fu">path</span><span class="kw">:</span><span class="at"> token</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">items</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> ca.crt</span></span>
+<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ca.crt</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-root-ca.crt</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">downwardAPI</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">items</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.namespace</span></span>
+<span class="at">            </span><span class="fu">path</span><span class="kw">:</span><span class="at"> namespace</span></span>
+<span class="fu">status</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">conditions</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:01Z&quot;</span></span>
+<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Initialized</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:06Z&quot;</span></span>
+<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Ready</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:06Z&quot;</span></span>
+<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ContainersReady</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">lastProbeTime</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span class="at">    </span><span class="fu">lastTransitionTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:01Z&quot;</span></span>
+<span class="at">    </span><span class="fu">status</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;True&quot;</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> PodScheduled</span></span>
+<span class="at">  </span><span class="fu">containerStatuses</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">containerID</span><span class="kw">:</span><span class="at"> containerd://5403af59a2b46ee5a23fb0ae4b1e077f7ca5c5fb7af16e1ab21c00e0e616462a</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> docker.io/library/nginx:latest</span></span>
+<span class="at">    </span><span class="fu">imageID</span><span class="kw">:</span><span class="at"> docker.io/library/nginx@sha256:2834dc507516af02784808c5f48b7cbe38b8ed5d0f4837f16e78d00deb7e7767</span></span>
+<span class="at">    </span><span class="fu">lastState</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">ready</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="at">    </span><span class="fu">restartCount</span><span class="kw">:</span><span class="at"> </span><span class="dv">0</span></span>
+<span class="at">    </span><span class="fu">started</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="at">    </span><span class="fu">state</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">running</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">startedAt</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:05Z&quot;</span></span>
+<span class="at">  </span><span class="fu">hostIP</span><span class="kw">:</span><span class="at"> 192.168.0.113</span></span>
+<span class="at">  </span><span class="fu">phase</span><span class="kw">:</span><span class="at"> Running</span></span>
+<span class="at">  </span><span class="fu">podIP</span><span class="kw">:</span><span class="at"> 10.88.0.3</span></span>
+<span class="at">  </span><span class="fu">podIPs</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">ip</span><span class="kw">:</span><span class="at"> 10.88.0.3</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">ip</span><span class="kw">:</span><span class="at"> 2001:db8::1</span></span>
+<span class="at">  </span><span class="fu">qosClass</span><span class="kw">:</span><span class="at"> Guaranteed</span></span>
+<span class="at">  </span><span class="fu">startTime</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2022-02-17T21:51:01Z&quot;</span></span></code></pre></div>
+<h2 id="examine-pod-logs">Examining pod logs</h2>
+<p>First, look at the logs of the affected container:</p>
+<pre class="shell"><code>kubectl logs ${POD_NAME} -c ${CONTAINER_NAME}</code></pre>
+<p>If your container has previously crashed, you can access the previous
+container's crash log with:</p>
+<pre class="shell"><code>kubectl logs ${POD_NAME} -c ${CONTAINER_NAME} --previous</code></pre>
+<h2 id="container-exec">Debugging with container exec</h2>
+<p>If the <a class="glossary-term" href="../../../reference/glossary.html#term-image" title="Glossary: image">container
+image</a> includes debugging utilities, as is the case with images
+built from Linux and Windows OS base images, you can run commands inside
+a specific container with <code>kubectl exec</code>:</p>
+<pre class="shell"><code>kubectl exec ${POD_NAME} -c ${CONTAINER_NAME} -- ${CMD} ${ARG1} ${ARG2} ... ${ARGN}</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><code>-c ${CONTAINER_NAME}</code> is optional. You can omit it for
+Pods that only contain a single container.</p>
+</div>
+<p>As an example, to look at the logs from a running Cassandra pod, you
+might run</p>
+<pre class="shell"><code>kubectl exec cassandra -- cat /var/log/cassandra/system.log</code></pre>
+<p>You can run a shell that's connected to your terminal using the
+<code>-i</code> and <code>-t</code> arguments to
+<code>kubectl exec</code>, for example:</p>
+<pre class="shell"><code>kubectl exec -it cassandra -- sh</code></pre>
+<p>For more details, see <a
+href="get-shell-running-container.html">Get
+a Shell to a Running Container</a>.</p>
+<h2 id="ephemeral-container">Debugging with an ephemeral debug
+container</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.25</p>
+</div>
+<p><a class="glossary-term" href="../../../reference/glossary.html#term-ephemeral-container" title="Glossary: ephemeral-container">Ephemeral
+containers</a> are useful for interactive troubleshooting when
+<code>kubectl exec</code> is insufficient because a container has
+crashed or a container image doesn't include debugging utilities, such
+as with <a
+href="https://github.com/GoogleContainerTools/distroless">distroless
+images</a>.</p>
+<h3 id="ephemeral-container-example">Example debugging using ephemeral
+containers</h3>
+<p>You can use the <code>kubectl debug</code> command to add ephemeral
+containers to a running Pod. First, create a pod for the example:</p>
+<pre class="shell"><code>kubectl run ephemeral-demo --image=registry.k8s.io/pause:3.1 --restart=Never</code></pre>
+<p>The examples in this section use the <code>pause</code> container
+image because it does not contain debugging utilities, but this method
+works with all container images.</p>
+<p>If you attempt to use <code>kubectl exec</code> to create a shell you
+will see an error because there is no shell in this container image.</p>
+<pre class="shell"><code>kubectl exec -it ephemeral-demo -- sh</code></pre>
+<pre><code>OCI runtime exec failed: exec failed: container_linux.go:346: starting container process caused &quot;exec: \&quot;sh\&quot;: executable file not found in $PATH&quot;: unknown</code></pre>
+<p>You can instead add a debugging container using
+<code>kubectl debug</code>. If you specify the
+<code>-i</code>/<code>--interactive</code> argument,
+<code>kubectl</code> will automatically attach to the console of the
+Ephemeral Container.</p>
+<pre class="shell"><code>kubectl debug -it ephemeral-demo --image=busybox:1.28 --target=ephemeral-demo</code></pre>
+<pre><code>Defaulting debug container name to debugger-8xzrl.
+If you don&#39;t see a command prompt, try pressing enter.
+/ #</code></pre>
+<p>This command adds a new busybox container and attaches to it. The
+<code>--target</code> parameter targets the process namespace of another
+container. It's necessary here because <code>kubectl run</code> does not
+enable <a
+href="../../configure-pod-container/share-process-namespace.html">process
+namespace sharing</a> in the pod it creates.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>--target</code> parameter must be supported by the <span
+class="glossary-term" data-term="container-runtime">Container
+Runtime</span>. When not supported, the Ephemeral Container may not be
+started, or it may be started with an isolated process namespace so that
+<code>ps</code> does not reveal processes in other containers.</p>
+</div>
+<p>You can view the state of the newly created ephemeral container using
+<code>kubectl describe</code>:</p>
+<pre class="shell"><code>kubectl describe pod ephemeral-demo</code></pre>
+<pre><code>...
+Ephemeral Containers:
+  debugger-8xzrl:
+    Container ID:   docker://b888f9adfd15bd5739fefaa39e1df4dd3c617b9902082b1cfdc29c4028ffb2eb
+    Image:          busybox
+    Image ID:       docker-pullable://busybox@sha256:1828edd60c5efd34b2bf5dd3282ec0cc04d47b2ff9caa0b6d4f07a21d1c08084
+    Port:           &lt;none&gt;
+    Host Port:      &lt;none&gt;
+    State:          Running
+      Started:      Wed, 12 Feb 2020 14:25:42 +0100
+    Ready:          False
+    Restart Count:  0
+    Environment:    &lt;none&gt;
+    Mounts:         &lt;none&gt;
+...</code></pre>
+<p>Use <code>kubectl delete</code> to remove the Pod when you're
+finished:</p>
+<pre class="shell"><code>kubectl delete pod ephemeral-demo</code></pre>
+<h2 id="debugging-using-a-copy-of-the-pod">Debugging using a copy of the
+Pod</h2>
+<p>Sometimes Pod configuration options make it difficult to troubleshoot
+in certain situations. For example, you can't run
+<code>kubectl exec</code> to troubleshoot your container if your
+container image does not include a shell or if your application crashes
+on startup. In these situations you can use <code>kubectl debug</code>
+to create a copy of the Pod with configuration values changed to aid
+debugging.</p>
+<h3 id="copying-a-pod-while-adding-a-new-container">Copying a Pod while
+adding a new container</h3>
+<p>Adding a new container can be useful when your application is running
+but not behaving as you expect and you'd like to add additional
+troubleshooting utilities to the Pod.</p>
+<p>For example, maybe your application's container images are built on
+<code>busybox</code> but you need debugging utilities not included in
+<code>busybox</code>. You can simulate this scenario using
+<code>kubectl run</code>:</p>
+<pre class="shell"><code>kubectl run myapp --image=busybox:1.28 --restart=Never -- sleep 1d</code></pre>
+<p>Run this command to create a copy of <code>myapp</code> named
+<code>myapp-debug</code> that adds a new Ubuntu container for
+debugging:</p>
+<pre class="shell"><code>kubectl debug myapp -it --image=ubuntu --share-processes --copy-to=myapp-debug</code></pre>
+<pre><code>Defaulting debug container name to debugger-w7xmf.
+If you don&#39;t see a command prompt, try pressing enter.
+root@myapp-debug:/#</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<ul>
+<li><code>kubectl debug</code> automatically generates a container name
+if you don't choose one using the <code>--container</code> flag.</li>
+<li>The <code>-i</code> flag causes <code>kubectl debug</code> to attach
+to the new container by default. You can prevent this by specifying
+<code>--attach=false</code>. If your session becomes disconnected you
+can reattach using <code>kubectl attach</code>.</li>
+<li>The <code>--share-processes</code> allows the containers in this Pod
+to see processes from the other containers in the Pod. For more
+information about how this works, see <a
+href="../../configure-pod-container/share-process-namespace.html">Share
+Process Namespace between Containers in a Pod</a>.</li>
+</ul>
+</div>
+<p>Don't forget to clean up the debugging Pod when you're finished with
+it:</p>
+<pre class="shell"><code>kubectl delete pod myapp myapp-debug</code></pre>
+<h3 id="copying-a-pod-while-changing-its-command">Copying a Pod while
+changing its command</h3>
+<p>Sometimes it's useful to change the command for a container, for
+example to add a debugging flag or because the application is
+crashing.</p>
+<p>To simulate a crashing application, use <code>kubectl run</code> to
+create a container that immediately exits:</p>
+<pre><code>kubectl run --image=busybox:1.28 myapp -- false</code></pre>
+<p>You can see using <code>kubectl describe pod myapp</code> that this
+container is crashing:</p>
+<pre><code>Containers:
+  myapp:
+    Image:         busybox
+    ...
+    Args:
+      false
+    State:          Waiting
+      Reason:       CrashLoopBackOff
+    Last State:     Terminated
+      Reason:       Error
+      Exit Code:    1</code></pre>
+<p>You can use <code>kubectl debug</code> to create a copy of this Pod
+with the command changed to an interactive shell:</p>
+<pre><code>kubectl debug myapp -it --copy-to=myapp-debug --container=myapp -- sh</code></pre>
+<pre><code>If you don&#39;t see a command prompt, try pressing enter.
+/ #</code></pre>
+<p>Now you have an interactive shell that you can use to perform tasks
+like checking filesystem paths or running the container command
+manually.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<ul>
+<li>To change the command of a specific container you must specify its
+name using <code>--container</code> or <code>kubectl debug</code> will
+instead create a new container to run the command you specified.</li>
+<li>The <code>-i</code> flag causes <code>kubectl debug</code> to attach
+to the container by default. You can prevent this by specifying
+<code>--attach=false</code>. If your session becomes disconnected you
+can reattach using <code>kubectl attach</code>.</li>
+</ul>
+</div>
+<p>Don't forget to clean up the debugging Pod when you're finished with
+it:</p>
+<pre class="shell"><code>kubectl delete pod myapp myapp-debug</code></pre>
+<h3 id="copying-a-pod-while-changing-container-images">Copying a Pod
+while changing container images</h3>
+<p>In some situations you may want to change a misbehaving Pod from its
+normal production container images to an image containing a debugging
+build or additional utilities.</p>
+<p>As an example, create a Pod using <code>kubectl run</code>:</p>
+<pre><code>kubectl run myapp --image=busybox:1.28 --restart=Never -- sleep 1d</code></pre>
+<p>Now use <code>kubectl debug</code> to make a copy and change its
+container image to <code>ubuntu</code>:</p>
+<pre><code>kubectl debug myapp --copy-to=myapp-debug --set-image=*=ubuntu</code></pre>
+<p>The syntax of <code>--set-image</code> uses the same
+<code>container_name=image</code> syntax as
+<code>kubectl set image</code>. <code>*=ubuntu</code> means change the
+image of all containers to <code>ubuntu</code>.</p>
+<p>Don't forget to clean up the debugging Pod when you're finished with
+it:</p>
+<pre class="shell"><code>kubectl delete pod myapp myapp-debug</code></pre>
+<h2 id="node-shell-session">Debugging via a shell on the node</h2>
+<p>If none of these approaches work, you can find the Node on which the
+Pod is running and create a Pod running on the Node. To create an
+interactive shell on a Node using <code>kubectl debug</code>, run:</p>
+<pre class="shell"><code>kubectl debug node/mynode -it --image=ubuntu</code></pre>
+<pre><code>Creating debugging pod node-debugger-mynode-pdx84 with container debugger on node mynode.
+If you don&#39;t see a command prompt, try pressing enter.
+root@ek8s:/#</code></pre>
+<p>When creating a debugging session on a node, keep in mind that:</p>
+<ul>
+<li><code>kubectl debug</code> automatically generates the name of the
+new Pod based on the name of the Node.</li>
+<li>The root filesystem of the Node will be mounted at
+<code>/host</code>.</li>
+<li>The container runs in the host IPC, Network, and PID namespaces,
+although the pod isn't privileged, so reading some process information
+may fail, and <code>chroot /host</code> may fail.</li>
+<li>If you need a privileged pod, create it manually or use the
+<code>--profile=sysadmin</code> flag.</li>
+</ul>
+<p>Don't forget to clean up the debugging Pod when you're finished with
+it:</p>
+<pre class="shell"><code>kubectl delete pod node-debugger-mynode-pdx84</code></pre>
+<h3 id="capturing-and-analyzing-node-pod-traffic">Capturing and
+analyzing Node/Pod traffic</h3>
+<p>When debugging networking issues, capturing and analyzing network
+traffic from Nodes/Pods can provide valuable insights into connectivity
+problems, DNS resolution failures, or unexpected network behavior.</p>
+<p>You can use <code>kubectl debug</code> with the
+<code>--profile=sysadmin</code> flag to run network capture tools on a
+node. First, create a debugging session on the node where your Pod is
+running:</p>
+<pre class="shell"><code>kubectl debug --profile=sysadmin node/${NODE_NAME} -it --image=ubuntu:latest</code></pre>
+<p>Once inside the debug container, install tcpdump and capture traffic
+on the node's network interfaces:</p>
+<pre class="shell"><code>apt-get update &amp;&amp; apt-get install -y tcpdump
+tcpdump -i any -n</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Don't forget to clean up the debugging Pod when you're finished with
+it:</p>
+<pre class="shell"><code>kubectl delete pod node-debugger-mynode-pdx84</code></pre>
+</div>
+<p>You can also capture traffic from a specific Pod:</p>
+<pre class="shell"><code>kubectl debug --profile=sysadmin pod/${POD_NAME} -n ${NAMESPACE} -it --image=ubuntu:latest</code></pre>
+<p>And then perform the same <code>tcpdump</code> command inside the
+debug container to capture traffic from the Pod's network namespace.</p>
+<h2 id="debugging-profiles">Debugging a Pod or Node while applying a
+profile</h2>
+<p>When using <code>kubectl debug</code> to debug a node via a debugging
+Pod, a Pod via an ephemeral container, or a copied Pod, you can apply a
+profile to them. By applying a profile, specific properties such as <a
+href="../../configure-pod-container/security-context.html">securityContext</a>
+are set, allowing for adaptation to various scenarios. There are two
+types of profiles, static profile and custom profile.</p>
+<h3 id="static-profile">Applying a Static Profile</h3>
+<p>A static profile is a set of predefined properties, and you can apply
+them using the <code>--profile</code> flag. The available profiles are
+as follows:</p>
+<table>
+<colgroup>
+<col style="width: 16%" />
+<col style="width: 84%" />
+</colgroup>
+<thead>
+<tr>
+<th>Profile</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>legacy</td>
+<td>A set of properties backwards compatibility with 1.22 behavior</td>
+</tr>
+<tr>
+<td>general</td>
+<td>A reasonable set of generic properties for each debugging
+journey</td>
+</tr>
+<tr>
+<td>baseline</td>
+<td>A set of properties compatible with <a
+href="../../../concepts/security/pod-security-standards.html#baseline">PodSecurityStandard
+baseline policy</a></td>
+</tr>
+<tr>
+<td>restricted</td>
+<td>A set of properties compatible with <a
+href="../../../concepts/security/pod-security-standards.html#restricted">PodSecurityStandard
+restricted policy</a></td>
+</tr>
+<tr>
+<td>netadmin</td>
+<td>A set of properties including Network Administrator privileges</td>
+</tr>
+<tr>
+<td>sysadmin</td>
+<td>A set of properties including System Administrator (root)
+privileges</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you don't specify <code>--profile</code>, the <code>legacy</code>
+profile is used by default, but it is planned to be deprecated in the
+near future. So it is recommended to use other profiles such as
+<code>general</code>.</p>
+</div>
+<p>Assume that you create a Pod and debug it. First, create a Pod named
+<code>myapp</code> as an example:</p>
+<pre class="shell"><code>kubectl run myapp --image=busybox:1.28 --restart=Never -- sleep 1d</code></pre>
+<p>Then, debug the Pod using an ephemeral container. If the ephemeral
+container needs to have privilege, you can use the <code>sysadmin</code>
+profile:</p>
+<pre class="shell"><code>kubectl debug -it myapp --image=busybox:1.28 --target=myapp --profile=sysadmin</code></pre>
+<pre><code>Targeting container &quot;myapp&quot;. If you don&#39;t see processes from this container it may be because the container runtime doesn&#39;t support this feature.
+Defaulting debug container name to debugger-6kg4x.
+If you don&#39;t see a command prompt, try pressing enter.
+/ #</code></pre>
+<p>Check the capabilities of the ephemeral container process by running
+the following command inside the container:</p>
+<pre class="shell"><code>/ # grep Cap /proc/$$/status</code></pre>
+<pre><code>...
+CapPrm: 000001ffffffffff
+CapEff: 000001ffffffffff
+...</code></pre>
+<p>This means the container process is granted full capabilities as a
+privileged container by applying <code>sysadmin</code> profile. See more
+details about <a
+href="../../configure-pod-container/security-context.html#set-capabilities-for-a-container">capabilities</a>.</p>
+<p>You can also check that the ephemeral container was created as a
+privileged container:</p>
+<pre class="shell"><code>kubectl get pod myapp -o jsonpath=&#39;{.spec.ephemeralContainers[0].securityContext}&#39;</code></pre>
+<pre><code>{&quot;privileged&quot;:true}</code></pre>
+<p>Clean up the Pod when you're finished with it:</p>
+<pre class="shell"><code>kubectl delete pod myapp</code></pre>
+<h3 id="custom-profile">Applying Custom Profile</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.32</p>
+</div>
+<p>You can define a partial container spec for debugging as a custom
+profile in either YAML or JSON format, and apply it using the
+<code>--custom</code> flag.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Custom profile only supports the modification of the container spec,
+but modifications to <code>name</code>, <code>image</code>,
+<code>command</code>, <code>lifecycle</code> and
+<code>volumeDevices</code> fields of the container spec are not allowed.
+It does not support the modification of the Pod spec.</p>
+</div>
+<p>Create a Pod named myapp as an example:</p>
+<pre class="shell"><code>kubectl run myapp --image=busybox:1.28 --restart=Never -- sleep 1d</code></pre>
+<p>Create a custom profile in YAML or JSON format. Here, create a YAML
+format file named <code>custom-profile.yaml</code>:</p>
+<div class="sourceCode" id="cb57"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">env</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ENV_VAR_1</span></span>
+<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> value_1</span></span>
+<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ENV_VAR_2</span></span>
+<span class="at">  </span><span class="fu">value</span><span class="kw">:</span><span class="at"> value_2</span></span>
+<span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">capabilities</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">add</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">NET_ADMIN</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">SYS_TIME</span></span></code></pre></div>
+<p>Run this command to debug the Pod using an ephemeral container with
+the custom profile:</p>
+<pre class="shell"><code>kubectl debug -it myapp --image=busybox:1.28 --target=myapp --profile=general --custom=custom-profile.yaml</code></pre>
+<p>You can check that the ephemeral container has been added to the
+target Pod with the custom profile applied:</p>
+<pre class="shell"><code>kubectl get pod myapp -o jsonpath=&#39;{.spec.ephemeralContainers[0].env}&#39;</code></pre>
+<pre><code>[{&quot;name&quot;:&quot;ENV_VAR_1&quot;,&quot;value&quot;:&quot;value_1&quot;},{&quot;name&quot;:&quot;ENV_VAR_2&quot;,&quot;value&quot;:&quot;value_2&quot;}]</code></pre>
+<pre class="shell"><code>kubectl get pod myapp -o jsonpath=&#39;{.spec.ephemeralContainers[0].securityContext}&#39;</code></pre>
+<pre><code>{&quot;capabilities&quot;:{&quot;add&quot;:[&quot;NET_ADMIN&quot;,&quot;SYS_TIME&quot;]}}</code></pre>
+<p>Clean up the Pod when you're finished with it:</p>
+<pre class="shell"><code>kubectl delete pod myapp</code></pre>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="debug-init-containers.html"><span>Previous</span>Debug Init Containers</a><a class="page-nav-link next" href="get-shell-running-container.html"><span>Next</span>Get a Shell to a Running Container</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#using-kubectl-describe-pod-to-fetch-details-about-pods">Using kubectl describe pod to fetch details about pods</a></li><li class="toc-l2"><a href="#example-debugging-pending-pods">Example: debugging Pending Pods</a></li><li class="toc-l2"><a href="#examine-pod-logs">Examining pod logs</a></li><li class="toc-l2"><a href="#container-exec">Debugging with container exec</a></li><li class="toc-l2"><a href="#ephemeral-container">Debugging with an ephemeral debug container</a></li><li class="toc-l3"><a href="#ephemeral-container-example">Example debugging using ephemeral containers</a></li><li class="toc-l2"><a href="#debugging-using-a-copy-of-the-pod">Debugging using a copy of the Pod</a></li><li class="toc-l3"><a href="#copying-a-pod-while-adding-a-new-container">Copying a Pod while adding a new container</a></li><li class="toc-l3"><a href="#copying-a-pod-while-changing-its-command">Copying a Pod while changing its command</a></li><li class="toc-l3"><a href="#copying-a-pod-while-changing-container-images">Copying a Pod while changing container images</a></li><li class="toc-l2"><a href="#node-shell-session">Debugging via a shell on the node</a></li><li class="toc-l3"><a href="#capturing-and-analyzing-node-pod-traffic">Capturing and analyzing Node/Pod traffic</a></li><li class="toc-l2"><a href="#debugging-profiles">Debugging a Pod or Node while applying a profile</a></li><li class="toc-l3"><a href="#static-profile">Applying a Static Profile</a></li><li class="toc-l3"><a href="#custom-profile">Applying Custom Profile</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

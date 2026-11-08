@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Access Clusters Using the Kubernetes API · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/administer-cluster/access-cluster-api" data-title="Access Clusters Using the Kubernetes API" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../administer-cluster.html">Administer a Cluster</a></nav></nav>
+        <header class="page-head">
+          <h1>Access Clusters Using the Kubernetes API</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/access-cluster-api/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page shows how to access clusters using the Kubernetes API.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a target="_blank" rel="noopener" href="https://kodekloud.com/public-playgrounds">KodeKloud</a> To
+check the version, enter <code>kubectl version</code>.</li>
+</ul>
+<h2 id="accessing-the-kubernetes-api">Accessing the Kubernetes API</h2>
+<h3 id="accessing-for-the-first-time-with-kubectl">Accessing for the
+first time with kubectl</h3>
+<p>When accessing the Kubernetes API for the first time, use the
+Kubernetes command-line tool, <code>kubectl</code>.</p>
+<p>To access a cluster, you need to know the location of the cluster and
+have credentials to access it. Typically, this is automatically set-up
+when you work through a <a href="../../setup.html">Getting started
+guide</a>, or someone else set up the cluster and provided you with
+credentials and a location.</p>
+<p>Check the location and credentials that kubectl knows about with this
+command:</p>
+<pre class="shell"><code>kubectl config view</code></pre>
+<p>Many of the <a
+href="https://github.com/kubernetes/examples/tree/master/">examples</a>
+provide an introduction to using kubectl. Complete documentation is
+found in the <a href="../../reference/kubectl.html">kubectl manual</a>.</p>
+<h3 id="directly-accessing-the-rest-api">Directly accessing the REST
+API</h3>
+<p>kubectl handles locating and authenticating to the API server. If you
+want to directly access the REST API with an http client like
+<code>curl</code> or <code>wget</code>, or a browser, there are multiple
+ways you can locate and authenticate against the API server:</p>
+<ol type="1">
+<li>Run kubectl in proxy mode (recommended). This method is recommended,
+since it uses the stored API server location and verifies the identity
+of the API server using a self-signed certificate. No man-in-the-middle
+(MITM) attack is possible using this method.</li>
+<li>Alternatively, you can provide the location and credentials directly
+to the http client. This works with client code that is confused by
+proxies. To protect against man in the middle attacks, you'll need to
+import a root cert into your browser.</li>
+</ol>
+<p>Using the Go or Python client libraries provides accessing kubectl in
+proxy mode.</p>
+<h4 id="using-kubectl-proxy">Using kubectl proxy</h4>
+<p>The following command runs kubectl in a mode where it acts as a
+reverse proxy. It handles locating the API server and
+authenticating.</p>
+<p>Run it like this:</p>
+<pre class="shell"><code>kubectl proxy --port=8080 &amp;</code></pre>
+<p>See <a
+href="https://kubernetes.io/docs/reference/generated/kubectl/kubectl-commands/#proxy">kubectl
+proxy</a> for more details.</p>
+<p>Then you can explore the API with curl, wget, or a browser, like
+so:</p>
+<pre class="shell"><code>curl http://localhost:8080/api/</code></pre>
+<p>The output is similar to this:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;versions&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="st">&quot;v1&quot;</span></span>
+  <span class="ot">]</span><span class="fu">,</span></span>
+  <span class="dt">&quot;serverAddressByClientCIDRs&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="fu">{</span></span>
+      <span class="dt">&quot;clientCIDR&quot;</span><span class="fu">:</span> <span class="st">&quot;0.0.0.0/0&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;serverAddress&quot;</span><span class="fu">:</span> <span class="st">&quot;10.0.1.149:443&quot;</span></span>
+    <span class="fu">}</span></span>
+  <span class="ot">]</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<h4 id="without-kubectl-proxy">Without kubectl proxy</h4>
+<p>It is possible to avoid using kubectl proxy by passing an
+authentication token directly to the API server, like this:</p>
+<p>Using <code>grep/cut</code> approach:</p>
+<pre class="shell"><code># Check all possible clusters, as your .KUBECONFIG may have multiple contexts:
+kubectl config view -o jsonpath=&#39;{&quot;Cluster name\tServer\n&quot;}{range .clusters[*]}{.name}{&quot;\t&quot;}{.cluster.server}{&quot;\n&quot;}{end}&#39;
+
+# Select name of cluster you want to interact with from above output:
+export CLUSTER_NAME=&quot;some_server_name&quot;
+
+# Point to the API server referring the cluster name
+APISERVER=$(kubectl config view -o jsonpath=&quot;{.clusters[?(@.name==\&quot;$CLUSTER_NAME\&quot;)].cluster.server}&quot;)
+
+# Create a secret to hold a token for the default service account
+kubectl apply -f - &lt;&lt;EOF
+apiVersion: v1
+kind: Secret
+metadata:
+  name: default-token
+  annotations:
+    kubernetes.io/service-account.name: default
+type: kubernetes.io/service-account-token
+EOF
+
+# Wait for the token controller to populate the secret with a token:
+while ! kubectl describe secret default-token | grep -E &#39;^token&#39; &gt;/dev/null; do
+  echo &quot;waiting for token...&quot; &gt;&amp;2
+  sleep 1
+done
+
+# Get the token value
+TOKEN=$(kubectl get secret default-token -o jsonpath=&#39;{.data.token}&#39; | base64 --decode)
+
+# Explore the API with TOKEN
+curl -X GET $APISERVER/api --header &quot;Authorization: Bearer $TOKEN&quot; --insecure</code></pre>
+<p>The output is similar to this:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;kind&quot;</span><span class="fu">:</span> <span class="st">&quot;APIVersions&quot;</span><span class="fu">,</span></span>
+  <span class="dt">&quot;versions&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="st">&quot;v1&quot;</span></span>
+  <span class="ot">]</span><span class="fu">,</span></span>
+  <span class="dt">&quot;serverAddressByClientCIDRs&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+    <span class="fu">{</span></span>
+      <span class="dt">&quot;clientCIDR&quot;</span><span class="fu">:</span> <span class="st">&quot;0.0.0.0/0&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;serverAddress&quot;</span><span class="fu">:</span> <span class="st">&quot;10.0.1.149:443&quot;</span></span>
+    <span class="fu">}</span></span>
+  <span class="ot">]</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<p>The above example uses the <code>--insecure</code> flag. This leaves
+it subject to MITM attacks. When kubectl accesses the cluster it uses a
+stored root certificate and client certificates to access the server.
+(These are installed in the <code>~/.kube</code> directory). Since
+cluster certificates are typically self-signed, it may take special
+configuration to get your http client to use root certificate.</p>
+<p>On some clusters, the API server does not require authentication; it
+may serve on localhost, or be protected by a firewall. There is not a
+standard for this. <a
+href="../../concepts/security/controlling-access.html">Controlling Access
+to the Kubernetes API</a> describes how you can configure this as a
+cluster administrator.</p>
+<h3 id="programmatic-access-to-the-api">Programmatic access to the
+API</h3>
+<p>Kubernetes officially supports client libraries for <a
+href="#go-client">Go</a>, <a href="#python-client">Python</a>, <a
+href="#java-client">Java</a>, <a href="#dotnet-client">dotnet</a>, <a
+href="#javascript-client">JavaScript</a>, and <a
+href="#haskell-client">Haskell</a>. There are other client libraries
+that are provided and maintained by their authors, not the Kubernetes
+team. See <a href="../../reference/using-api/client-libraries.html">client
+libraries</a> for accessing the API from other languages and how they
+authenticate.</p>
+<h4 id="go-client">Go client</h4>
+<ul>
+<li>To get the library, run the following command:
+<code>go get k8s.io/client-go@kubernetes-&lt;kubernetes-version-number&gt;</code>
+See <a
+href="https://github.com/kubernetes/client-go/releases">https://github.com/kubernetes/client-go/releases</a>
+to see which versions are supported.</li>
+<li>Write an application atop of the client-go clients.</li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><code>client-go</code> defines its own API objects, so if needed,
+import API definitions from client-go rather than from the main
+repository. For example,
+<code>import "k8s.io/client-go/kubernetes"</code> is correct.</p>
+</div>
+<p>The Go client can use the same <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig
+file</a> as the kubectl CLI does to locate and authenticate to the API
+server. See this <a
+href="https://git.k8s.io/client-go/examples/out-of-cluster-client-configuration/main.go">example</a>:</p>
+<pre class="golang"><code>package main
+
+import (
+  &quot;context&quot;
+  &quot;fmt&quot;
+  &quot;k8s.io/apimachinery/pkg/apis/meta/v1&quot;
+  &quot;k8s.io/client-go/kubernetes&quot;
+  &quot;k8s.io/client-go/tools/clientcmd&quot;
+)
+
+func main() {
+  // uses the current context in kubeconfig
+  // path-to-kubeconfig -- for example, /root/.kube/config
+  config, _ := clientcmd.BuildConfigFromFlags(&quot;&quot;, &quot;&lt;path-to-kubeconfig&gt;&quot;)
+  // creates the clientset
+  clientset, _ := kubernetes.NewForConfig(config)
+  // access the API to list pods
+  pods, _ := clientset.CoreV1().Pods(&quot;&quot;).List(context.TODO(), v1.ListOptions{})
+  fmt.Printf(&quot;There are %d pods in the cluster\n&quot;, len(pods.Items))
+}</code></pre>
+<p>If the application is deployed as a Pod in the cluster, see <a
+href="../access-application-cluster/access-cluster.html#accessing-the-api-from-a-pod">Accessing
+the API from within a Pod</a>.</p>
+<h4 id="python-client">Python client</h4>
+<p>To use <a target="_blank" rel="noopener" href="https://github.com/kubernetes-client/python">Python
+client</a>, run the following command:
+<code>pip install kubernetes</code>. See <a
+href="https://github.com/kubernetes-client/python">Python Client Library
+page</a> for more installation options.</p>
+<p>The Python client can use the same <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig
+file</a> as the kubectl CLI does to locate and authenticate to the API
+server. See this <a
+href="https://github.com/kubernetes-client/python/blob/master/examples/out_of_cluster_config.py">example</a>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode python"><code class="sourceCode python"><span class="im">from</span> kubernetes <span class="im">import</span> client, config</span>
+</span>
+config.load_kube_config()</span>
+</span>
+v1<span class="op">=</span>client.CoreV1Api()</span>
+<span class="bu">print</span>(<span class="st">&quot;Listing pods with their IPs:&quot;</span>)</span>
+ret <span class="op">=</span> v1.list_pod_for_all_namespaces(watch<span class="op">=</span><span class="va">False</span>)</span>
+<span class="cf">for</span> i <span class="kw">in</span> ret.items:</span>
+    <span class="bu">print</span>(<span class="st">&quot;</span><span class="sc">%s</span><span class="ch">\t</span><span class="sc">%s</span><span class="ch">\t</span><span class="sc">%s</span><span class="st">&quot;</span> <span class="op">%</span> (i.status.pod_ip, i.metadata.namespace, i.metadata.name))</span></code></pre></div>
+<h4 id="java-client">Java client</h4>
+<p>To install the <a
+href="https://github.com/kubernetes-client/java">Java Client</a>,
+run:</p>
+<pre class="shell"><code># Clone java library
+git clone --recursive https://github.com/kubernetes-client/java
+
+# Installing project artifacts, POM etc:
+cd java
+mvn install</code></pre>
+<p>See <a
+href="https://github.com/kubernetes-client/java/releases">https://github.com/kubernetes-client/java/releases</a>
+to see which versions are supported.</p>
+<p>The Java client can use the same <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig
+file</a> as the kubectl CLI does to locate and authenticate to the API
+server. See this <a
+href="https://github.com/kubernetes-client/java/blob/master/examples/examples-release-latest/src/main/java/io/kubernetes/client/examples/KubeConfigFileClientExample.java">example</a>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode java"><code class="sourceCode java"><span class="kw">package</span><span class="im"> io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">examples</span><span class="op">;</span></span>
+</span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">ApiClient</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">ApiException</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">Configuration</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">apis</span><span class="op">.</span><span class="im">CoreV1Api</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">models</span><span class="op">.</span><span class="im">V1Pod</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">models</span><span class="op">.</span><span class="im">V1PodList</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">ClientBuilder</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">io</span><span class="op">.</span><span class="im">kubernetes</span><span class="op">.</span><span class="im">client</span><span class="op">.</span><span class="im">util</span><span class="op">.</span><span class="im">KubeConfig</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">io</span><span class="op">.</span><span class="im">FileReader</span><span class="op">;</span></span>
+<span class="kw">import</span> <span class="im">java</span><span class="op">.</span><span class="im">io</span><span class="op">.</span><span class="im">IOException</span><span class="op">;</span></span>
+</span>
+<span class="co">/**</span></span>
+ <span class="co">*</span> A simple example of how to use the Java API from an application outside a kubernetes cluster</span>
+ <span class="co">*</span></span>
+ <span class="co">*</span> <span class="dt">&lt;</span><span class="kw">p</span><span class="dt">&gt;</span>Easiest way to run this<span class="co">:</span> mvn exec<span class="co">:</span>java</span>
+ <span class="co">*</span> <span class="co">-</span>Dexec<span class="co">.</span>mainClass<span class="co">=&quot;</span>io<span class="co">.</span>kubernetes<span class="co">.</span>client<span class="co">.</span>examples<span class="co">.</span>KubeConfigFileClientExample<span class="co">&quot;</span></span>
+ <span class="co">*</span></span>
+ <span class="co">*/</span></span>
+<span class="kw">public</span> <span class="kw">class</span> KubeConfigFileClientExample <span class="op">{</span></span>
+  <span class="kw">public</span> <span class="dt">static</span> <span class="dt">void</span> <span class="fu">main</span><span class="op">(</span><span class="bu">String</span><span class="op">[]</span> args<span class="op">)</span> <span class="kw">throws</span> <span class="bu">IOException</span><span class="op">,</span> ApiException <span class="op">{</span></span>
+</span>
+    <span class="co">// file path to your KubeConfig</span></span>
+    <span class="bu">String</span> kubeConfigPath <span class="op">=</span> <span class="st">&quot;~/.kube/config&quot;</span><span class="op">;</span></span>
+</span>
+    <span class="co">// loading the out-of-cluster config, a kubeconfig from file-system</span></span>
+    ApiClient client <span class="op">=</span></span>
+        ClientBuilder<span class="op">.</span><span class="fu">kubeconfig</span><span class="op">(</span>KubeConfig<span class="op">.</span><span class="fu">loadKubeConfig</span><span class="op">(</span><span class="kw">new</span> <span class="bu">FileReader</span><span class="op">(</span>kubeConfigPath<span class="op">))).</span><span class="fu">build</span><span class="op">();</span></span>
+</span>
+    <span class="co">// set the global default api-client to the in-cluster one from above</span></span>
+    <span class="bu">Configuration</span><span class="op">.</span><span class="fu">setDefaultApiClient</span><span class="op">(</span>client<span class="op">);</span></span>
+</span>
+    <span class="co">// the CoreV1Api loads default api-client from global configuration.</span></span>
+    CoreV1Api api <span class="op">=</span> <span class="kw">new</span> <span class="fu">CoreV1Api</span><span class="op">();</span></span>
+</span>
+    <span class="co">// invokes the CoreV1Api client</span></span>
+    V1PodList list <span class="op">=</span> api<span class="op">.</span><span class="fu">listPodForAllNamespaces</span><span class="op">(</span><span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">,</span> <span class="kw">null</span><span class="op">);</span></span>
+    <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span><span class="st">&quot;Listing all pods: &quot;</span><span class="op">);</span></span>
+    <span class="cf">for</span> <span class="op">(</span>V1Pod item <span class="op">:</span> list<span class="op">.</span><span class="fu">getItems</span><span class="op">())</span> <span class="op">{</span></span>
+      <span class="bu">System</span><span class="op">.</span><span class="fu">out</span><span class="op">.</span><span class="fu">println</span><span class="op">(</span>item<span class="op">.</span><span class="fu">getMetadata</span><span class="op">().</span><span class="fu">getName</span><span class="op">());</span></span>
+    <span class="op">}</span></span>
+  <span class="op">}</span></span>
+<span class="op">}</span></span></code></pre></div>
+<h4 id="dotnet-client">dotnet client</h4>
+<p>To use <a target="_blank" rel="noopener" href="https://github.com/kubernetes-client/csharp">dotnet
+client</a>, run the following command:
+<code>dotnet add package KubernetesClient --version 1.6.1</code>. See <a
+href="https://github.com/kubernetes-client/csharp">dotnet Client Library
+page</a> for more installation options. See <a
+href="https://github.com/kubernetes-client/csharp/releases">https://github.com/kubernetes-client/csharp/releases</a>
+to see which versions are supported.</p>
+<p>The dotnet client can use the same <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig
+file</a> as the kubectl CLI does to locate and authenticate to the API
+server. See this <a
+href="https://github.com/kubernetes-client/csharp/blob/master/examples/simple/PodList.cs">example</a>:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode csharp"><code class="sourceCode cs"><span class="kw">using</span> System<span class="op">;</span></span>
+<span class="kw">using</span> k8s<span class="op">;</span></span>
+</span>
+<span class="kw">namespace</span> simple</span>
+<span class="op">{</span></span>
+    <span class="kw">internal</span> <span class="kw">class</span> PodList</span>
+    <span class="op">{</span></span>
+        <span class="kw">private</span> <span class="kw">static</span> <span class="dt">void</span> <span class="fu">Main</span><span class="op">(</span><span class="dt">string</span><span class="op">[]</span> args<span class="op">)</span></span>
+        <span class="op">{</span></span>
+            <span class="dt">var</span> config <span class="op">=</span> KubernetesClientConfiguration<span class="op">.</span><span class="fu">BuildDefaultConfig</span><span class="op">();</span></span>
+            IKubernetes client <span class="op">=</span> <span class="kw">new</span> <span class="fu">Kubernetes</span><span class="op">(</span>config<span class="op">);</span></span>
+            Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="st">&quot;Starting Request!&quot;</span><span class="op">);</span></span>
+</span>
+            <span class="dt">var</span> list <span class="op">=</span> client<span class="op">.</span><span class="fu">ListNamespacedPod</span><span class="op">(</span><span class="st">&quot;default&quot;</span><span class="op">);</span></span>
+            <span class="kw">foreach</span> <span class="op">(</span><span class="dt">var</span> item <span class="kw">in</span> list<span class="op">.</span><span class="fu">Items</span><span class="op">)</span></span>
+            <span class="op">{</span></span>
+                Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span>item<span class="op">.</span><span class="fu">Metadata</span><span class="op">.</span><span class="fu">Name</span><span class="op">);</span></span>
+            <span class="op">}</span></span>
+            <span class="kw">if</span> <span class="op">(</span>list<span class="op">.</span><span class="fu">Items</span><span class="op">.</span><span class="fu">Count</span> <span class="op">==</span> <span class="dv">0</span><span class="op">)</span></span>
+            <span class="op">{</span></span>
+                Console<span class="op">.</span><span class="fu">WriteLine</span><span class="op">(</span><span class="st">&quot;Empty!&quot;</span><span class="op">);</span></span>
+            <span class="op">}</span></span>
+        <span class="op">}</span></span>
+    <span class="op">}</span></span>
+<span class="op">}</span></span></code></pre></div>
+<h4 id="javascript-client">JavaScript client</h4>
+<p>To install <a
+href="https://github.com/kubernetes-client/javascript">JavaScript
+client</a>, run the following command:
+<code>npm install @kubernetes/client-node</code>. See <a
+href="https://github.com/kubernetes-client/javascript/releases">https://github.com/kubernetes-client/javascript/releases</a>
+to see which versions are supported.</p>
+<p>The JavaScript client can use the same <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig
+file</a> as the kubectl CLI does to locate and authenticate to the API
+server. See this <a
+href="https://github.com/kubernetes-client/javascript/blob/master/examples/example.js">example</a>:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode javascript"><code class="sourceCode javascript"><span class="kw">const</span> k8s <span class="op">=</span> <span class="pp">require</span>(<span class="st">&#39;@kubernetes/client-node&#39;</span>)<span class="op">;</span></span>
+</span>
+<span class="kw">const</span> kc <span class="op">=</span> <span class="kw">new</span> k8s<span class="op">.</span><span class="fu">KubeConfig</span>()<span class="op">;</span></span>
+kc<span class="op">.</span><span class="fu">loadFromDefault</span>()<span class="op">;</span></span>
+</span>
+<span class="kw">const</span> k8sApi <span class="op">=</span> kc<span class="op">.</span><span class="fu">makeApiClient</span>(k8s<span class="op">.</span><span class="at">CoreV1Api</span>)<span class="op">;</span></span>
+</span>
+k8sApi<span class="op">.</span><span class="fu">listNamespacedPod</span>({ <span class="dt">namespace</span><span class="op">:</span> <span class="st">&#39;default&#39;</span> })<span class="op">.</span><span class="fu">then</span>((res) <span class="kw">=&gt;</span> {</span>
+    <span class="bu">console</span><span class="op">.</span><span class="fu">log</span>(res)<span class="op">;</span></span>
+})<span class="op">;</span></span></code></pre></div>
+<h4 id="haskell-client">Haskell client</h4>
+<p>See <a
+href="https://github.com/kubernetes-client/haskell/releases">https://github.com/kubernetes-client/haskell/releases</a>
+to see which versions are supported.</p>
+<p>The <a target="_blank" rel="noopener" href="https://github.com/kubernetes-client/haskell">Haskell
+client</a> can use the same <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig
+file</a> as the kubectl CLI does to locate and authenticate to the API
+server. See this <a
+href="https://github.com/kubernetes-client/haskell/blob/master/kubernetes-client/example/App.hs">example</a>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode haskell"><code class="sourceCode haskell"><span class="ot">exampleWithKubeConfig ::</span> <span class="dt">IO</span> ()</span>
+exampleWithKubeConfig <span class="ot">=</span> <span class="kw">do</span></span>
+    oidcCache <span class="ot">&lt;-</span> atomically <span class="op">$</span> newTVar <span class="op">$</span> Map.fromList []</span>
+    (mgr, kcfg) <span class="ot">&lt;-</span> mkKubeClientConfig oidcCache <span class="op">$</span> <span class="dt">KubeConfigFile</span> <span class="st">&quot;/path/to/kubeconfig&quot;</span></span>
+    dispatchMime</span>
+            mgr</span>
+            kcfg</span>
+            (CoreV1.listPodForAllNamespaces (<span class="dt">Accept</span> <span class="dt">MimeJSON</span>))</span>
+        <span class="op">&gt;&gt;=</span> <span class="fu">print</span></span></code></pre></div>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li><a
+href="../run-application/access-api-from-pod.html">Accessing the
+Kubernetes API from a Pod</a>
+</p></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="network-policy-provider/kube-router-network-policy.html"><span>Previous</span>Use Kube-router for NetworkPolicy</a><a class="page-nav-link next" href="configure-feature-gates.html"><span>Next</span>Enable Or Disable Feature Gates</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#accessing-the-kubernetes-api">Accessing the Kubernetes API</a></li><li class="toc-l3"><a href="#accessing-for-the-first-time-with-kubectl">Accessing for the first time with kubectl</a></li><li class="toc-l3"><a href="#directly-accessing-the-rest-api">Directly accessing the REST API</a></li><li class="toc-l3"><a href="#programmatic-access-to-the-api">Programmatic access to the API</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

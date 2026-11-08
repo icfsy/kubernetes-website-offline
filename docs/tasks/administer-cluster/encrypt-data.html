@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encrypting Confidential Data at Rest · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/administer-cluster/encrypt-data" data-title="Encrypting Confidential Data at Rest" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../administer-cluster.html">Administer a Cluster</a></nav></nav>
+        <header class="page-head">
+          <h1>Encrypting Confidential Data at Rest</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>All of the APIs in Kubernetes that let you write persistent API
+resource data support at-rest encryption. For example, you can enable
+at-rest encryption for <a class="glossary-term" href="../../reference/glossary.html#term-secret" title="Glossary: secret">Secrets</a>. This at-rest encryption is additional
+to any system-level encryption for the etcd cluster or for the
+filesystem(s) on hosts where you are running the kube-apiserver.</p>
+<p>This page shows how to enable and configure encryption of API data at
+rest.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This task covers encryption for resource data stored using the <span
+class="glossary-term" data-term="kubernetes-api">Kubernetes API</span>.
+For example, you can encrypt Secret objects, including the key-value
+data they contain.</p>
+<p>If you want to encrypt data in filesystems that are mounted into
+containers, you instead need to either:</p>
+<ul>
+<li>use a storage integration that provides encrypted <span
+class="glossary-term" data-term="volume">volumes</span></li>
+<li>encrypt the data within your own application</li>
+</ul>
+</div>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li><p>You need to have a Kubernetes cluster, and the kubectl
+command-line tool must be configured to communicate with your cluster.
+It is recommended to run this tutorial on a cluster with at least two
+nodes that are not acting as control plane hosts. If you do not already
+have a cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p></li>
+<li><p><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></p></li>
+<li><p><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></p></li>
+<li><p><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></p></li>
+<li><p>This task assumes that you are running the Kubernetes API server
+as a <a class="glossary-term" href="../../reference/glossary.html#term-static-pod" title="Glossary: static-pod">static
+pod</a> on each control plane node.</p></li>
+<li><p>Your cluster's control plane <strong>must</strong> use etcd v3.x
+(major version 3, any minor version).</p></li>
+<li><p>To encrypt a custom resource, your cluster must be running
+Kubernetes v1.26 or newer.</p></li>
+<li><p>To use a wildcard to match resources, your cluster must be
+running Kubernetes v1.27 or newer.</p></li>
+</ul>
+<p>To check the version, enter <code>kubectl version</code>.</p>
+<h2
+id="determining-whether-encryption-at-rest-is-already-enabled">Determine
+whether encryption at rest is already enabled</h2>
+<p>By default, the API server stores plain-text representations of
+resources into etcd, with no at-rest encryption.</p>
+<p>The <code>kube-apiserver</code> process accepts an argument
+<code>--encryption-provider-config</code> that specifies a path to a
+configuration file. The contents of that file, if you specify one,
+control how Kubernetes API data is encrypted in etcd. If you are running
+the kube-apiserver without the <code>--encryption-provider-config</code>
+command line argument, you do not have encryption at rest enabled. If
+you are running the kube-apiserver with the
+<code>--encryption-provider-config</code> command line argument, and the
+file that it references specifies the <code>identity</code> provider as
+the first encryption provider in the list, then you do not have at-rest
+encryption enabled (<strong>the default <code>identity</code> provider
+does not provide any confidentiality protection.</strong>)</p>
+<p>If you are running the kube-apiserver with the
+<code>--encryption-provider-config</code> command line argument, and the
+file that it references specifies a provider other than
+<code>identity</code> as the first encryption provider in the list, then
+you already have at-rest encryption enabled. However, that check does
+not tell you whether a previous migration to encrypted storage has
+succeeded. If you are not sure, see <a
+href="#ensure-all-secrets-are-encrypted">ensure all relevant data are
+encrypted</a>.</p>
+<h2
+id="understanding-the-encryption-at-rest-configuration">Understanding
+the encryption at rest configuration</h2>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
+<span class="co">#</span></span>
+<span class="co"># </span><span class="al">CAUTION</span><span class="co">: this is an example configuration.</span></span>
+<span class="co">#          Do not use this for your own cluster!</span></span>
+<span class="co">#</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">configmaps</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">pandas.awesome.bears.example</span><span class="co"> # a custom resource API</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="co"># This configuration does not provide data confidentiality. The first</span></span>
+<span class="at">      </span><span class="co"># configured provider is specifying the &quot;identity&quot; mechanism, which</span></span>
+<span class="at">      </span><span class="co"># stores resources as plain text.</span></span>
+<span class="at">      </span><span class="co">#</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># plain text, in other words NO encryption</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aesgcm</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZQ==</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key2</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> dGhpcyBpcyBwYXNzd29yZA==</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZQ==</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key2</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> dGhpcyBpcyBwYXNzd29yZA==</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">secretbox</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> YWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXoxMjM0NTY=</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">events</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># do not encrypt Events even though *.* is specified below</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="st">&#39;*.apps&#39;</span><span class="at"> </span><span class="co"># wildcard match requires Kubernetes 1.27 or later</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key2</span></span>
+<span class="at">            </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZSwgb3IgaXMgaXQ/Cg==</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="st">&#39;*.*&#39;</span><span class="at"> </span><span class="co"># wildcard match requires Kubernetes 1.27 or later</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key3</span></span>
+<span class="at">            </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> c2VjcmV0IGlzIHNlY3VyZSwgSSB0aGluaw==</span></span></code></pre></div>
+<p>Each <code>resources</code> array item is a separate config and
+contains a complete configuration. The <code>resources.resources</code>
+field is an array of Kubernetes resource names (<code>resource</code> or
+<code>resource.group</code>) that should be encrypted like Secrets,
+ConfigMaps, or other resources.</p>
+<p>If custom resources are added to <code>EncryptionConfiguration</code>
+and the cluster version is 1.26 or newer, any newly created custom
+resources mentioned in the <code>EncryptionConfiguration</code> will be
+encrypted. Any custom resources that existed in etcd prior to that
+version and configuration will be unencrypted until they are next
+written to storage. This is the same behavior as built-in resources. See
+the <a href="#ensure-all-secrets-are-encrypted">Ensure all secrets are
+encrypted</a> section.</p>
+<p>The <code>providers</code> array is an ordered list of the possible
+encryption providers to use for the APIs that you listed. Each provider
+supports multiple keys - the keys are tried in order for decryption, and
+if the provider is the first provider, the first key is used for
+encryption.</p>
+<p>Only one provider type may be specified per entry
+(<code>identity</code> or <code>aescbc</code> may be provided, but not
+both in the same item). The first provider in the list is used to
+encrypt resources written into the storage. When reading resources from
+storage, each provider that matches the stored data attempts in order to
+decrypt the data. If no provider can read the stored data due to a
+mismatch in format or secret key, an error is returned which prevents
+clients from accessing that resource.</p>
+<p><code>EncryptionConfiguration</code> supports the use of wildcards to
+specify the resources that should be encrypted. Use
+'<code>*.&lt;group&gt;</code>' to encrypt all resources within a
+group (for eg '<code>*.apps</code>' in above example) or
+'<code>*.*</code>' to encrypt all resources. '<code>*.</code>' can be
+used to encrypt all resource in the core group. '<code>*.*</code>' will
+encrypt all resources, even custom resources that are added after API
+server start.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Use of wildcards that overlap within the same resource list or across
+multiple entries are not allowed since part of the configuration would
+be ineffective. The <code>resources</code> list's processing order and
+precedence are determined by the order it's listed in the
+configuration.</p>
+</div>
+<p>If you have a wildcard covering resources and want to opt out of
+at-rest encryption for a particular kind of resource, you achieve that
+by adding a separate <code>resources</code> array item with the name of
+the resource that you want to exempt, followed by a
+<code>providers</code> array item where you specify the
+<code>identity</code> provider. You add this item to the list so that it
+appears earlier than the configuration where you do specify encryption
+(a provider that is not <code>identity</code>).</p>
+<p>For example, if '<code>*.*</code>' is enabled and you want to opt out
+of encryption for Events and ConfigMaps, add a new
+<strong>earlier</strong> item to the <code>resources</code>, followed by
+the providers array item with <code>identity</code> as the provider. The
+more specific entry must come before the wildcard entry.</p>
+<p>The new item would look similar to:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="at">  ...</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">configmaps.</span><span class="co"> # specifically from the core API group,</span></span>
+<span class="at">                    </span><span class="co"># because of trailing &quot;.&quot;</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">events</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="at">  </span><span class="co"># and then other entries in resources</span></span></code></pre></div>
+<p>Ensure that the exemption is listed <em>before</em> the wildcard
+'<code>*.*</code>' item in the resources array to give it
+precedence.</p>
+<p>For more detailed information about the
+<code>EncryptionConfiguration</code> struct, please refer to the <a
+href="../../reference/config-api/apiserver-config.v1.html">encryption
+configuration API</a>.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>If any resource is not readable via the encryption configuration
+(because keys were changed), and you cannot restore a working
+configuration, your only recourse is to delete that entry from the
+underlying etcd directly.</p>
+<p>Any calls to the Kubernetes API that attempt to read that resource
+will fail until it is deleted or a valid decryption key is provided.</p>
+</div>
+<h3 id="providers">Available providers</h3>
+<p>Before you configure encryption-at-rest for data in your cluster's
+Kubernetes API, you need to select which provider(s) you will use.</p>
+<p>The following table describes each available provider.</p>
+<table class="complex-layout">
+<caption style="display: none;">
+Providers for Kubernetes encryption at rest
+</caption>
+<thead>
+<tr>
+<th>
+Name
+</th>
+<th>
+Encryption
+</th>
+<th>
+Strength
+</th>
+<th>
+Speed
+</th>
+<th>
+Key length
+</th>
+</tr>
+</thead>
+<tbody id="encryption-providers-identity">
+<tr>
+<th rowspan="2" scope="row">
+<code>identity</code>
+</th>
+<td>
+<strong>None</strong>
+</td>
+<td>
+N/A
+</td>
+<td>
+N/A
+</td>
+<td>
+N/A
+</td>
+</tr>
+<tr>
+<td colspan="4">
+Resources written as-is without encryption. When set as the first
+provider, the resource will be decrypted as new values are written.
+Existing encrypted resources are <strong>not</strong> automatically
+overwritten with the plaintext data. The <code>identity</code> provider
+is the default if you do not specify otherwise.
+</td>
+</tr>
+</tbody>
+<tbody id="encryption-providers-that-encrypt">
+<tr>
+<th rowspan="2" scope="row">
+<code>aescbc</code>
+</th>
+<td>
+AES-CBC with
+<a target="_blank" rel="noopener" href="https://datatracker.ietf.org/doc/html/rfc2315">PKCS#7</a>
+padding
+</td>
+<td>
+Weak
+</td>
+<td>
+Fast
+</td>
+<td>
+16, 24, or 32-byte
+</td>
+</tr>
+<tr>
+<td colspan="4">
+Not recommended due to CBC's vulnerability to padding oracle attacks.
+Key material accessible from control plane host.
+</td>
+</tr>
+<tr>
+<th rowspan="2" scope="row">
+<code>aesgcm</code>
+</th>
+<td>
+AES-GCM with random nonce
+</td>
+<td>
+Must be rotated every 200,000 writes
+</td>
+<td>
+Fastest
+</td>
+<td>
+16, 24, or 32-byte
+</td>
+</tr>
+<tr>
+<td colspan="4">
+Not recommended for use except when an automated key rotation scheme is
+implemented. Key material accessible from control plane host.
+</td>
+</tr>
+<tr>
+<th rowspan="2" scope="row">
+<code>kms</code> v1 <em>(deprecated since Kubernetes v1.28)</em>
+</th>
+<td>
+Uses envelope encryption scheme with DEK per resource.
+</td>
+<td>
+Strongest
+</td>
+<td>
+Slow (<em>compared to <code>kms</code> version 2</em>)
+</td>
+<td>
+32-bytes
+</td>
+</tr>
+<tr>
+<td colspan="4">
+<p>Data is encrypted by data encryption keys (DEKs) using AES-GCM; DEKs
+are encrypted by key encryption keys (KEKs) according to configuration
+in Key Management Service (KMS). Simple key rotation, with a new DEK
+generated for each encryption, and KEK rotation controlled by the user.
+<br  /> Read how to
+<a href="kms-provider.html#configuring-the-kms-provider-kms-v1">configure
+the KMS V1 provider</a>.</p>
+</td>
+</tr>
+<tr>
+<th rowspan="2" scope="row">
+<code>kms</code> v2
+</th>
+<td>
+Uses envelope encryption scheme with DEK per API server.
+</td>
+<td>
+Strongest
+</td>
+<td>
+Fast
+</td>
+<td>
+32-bytes
+</td>
+</tr>
+<tr>
+<td colspan="4">
+<p>Data is encrypted by data encryption keys (DEKs) using AES-GCM; DEKs
+are encrypted by key encryption keys (KEKs) according to configuration
+in Key Management Service (KMS). Kubernetes generates a new DEK per
+encryption from a secret seed. The seed is rotated whenever the KEK is
+rotated.<br /> A good choice if using a third party tool for key
+management. Available as stable from Kubernetes v1.29. <br  /> Read how
+to
+<a href="kms-provider.html#configuring-the-kms-provider-kms-v2">configure
+the KMS V2 provider</a>.</p>
+</td>
+</tr>
+<tr>
+<th rowspan="2" scope="row">
+<code>secretbox</code>
+</th>
+<td>
+XSalsa20 and Poly1305
+</td>
+<td>
+Strong
+</td>
+<td>
+Faster
+</td>
+<td>
+32-byte
+</td>
+</tr>
+<tr>
+<td colspan="4">
+Uses relatively new encryption technologies that may not be considered
+acceptable in environments that require high levels of review. Key
+material accessible from control plane host.
+</td>
+</tr>
+</tbody>
+</table>
+<p>The <code>identity</code> provider is the default if you do not
+specify otherwise. <strong>The <code>identity</code> provider does not
+encrypt stored data and provides <em>no</em> additional confidentiality
+protection.</strong></p>
+<h3 id="key-storage">Key storage</h3>
+<h4 id="local-key-storage">Local key storage</h4>
+<p>Encrypting secret data with a locally managed key protects against an
+etcd compromise, but it fails to protect against a host compromise.
+Since the encryption keys are stored on the host in the
+EncryptionConfiguration YAML file, a skilled attacker can access that
+file and extract the encryption keys.</p>
+<h4 id="kms-key-storage">Managed (KMS) key storage</h4>
+<p>The KMS provider uses <em>envelope encryption</em>: Kubernetes
+encrypts resources using a data key, and then encrypts that data key
+using the managed encryption service. Kubernetes generates a unique data
+key for each resource. The API server stores an encrypted version of the
+data key in etcd alongside the ciphertext; when reading the resource,
+the API server calls the managed encryption service and provides both
+the ciphertext and the (encrypted) data key. Within the managed
+encryption service, the provider use a <em>key encryption key</em> to
+decipher the data key, deciphers the data key, and finally recovers the
+plain text. Communication between the control plane and the KMS requires
+in-transit protection, such as TLS.</p>
+<p>Using envelope encryption creates dependence on the key encryption
+key, which is not stored in Kubernetes. In the KMS case, an attacker who
+intends to get unauthorised access to the plaintext values would need to
+compromise etcd <strong>and</strong> the third-party KMS provider.</p>
+<h3 id="protection-for-encryption-keys">Protection for encryption
+keys</h3>
+<p>You should take appropriate measures to protect the confidential
+information that allows decryption, whether that is a local encryption
+key, or an authentication token that allows the API server to call
+KMS.</p>
+<p>Even when you rely on a provider to manage the use and lifecycle of
+the main encryption key (or keys), you are still responsible for making
+sure that access controls and other security measures for the managed
+encryption service are appropriate for your security needs.</p>
+<h2 id="encrypting-your-data">Encrypt your data</h2>
+<h3 id="generate-key-no-kms">Generate the encryption key</h3>
+<p>The following steps assume that you are not using KMS, and therefore
+the steps also assume that you need to generate an encryption key. If
+you already have an encryption key, skip to <a
+href="#write-an-encryption-configuration-file">Write an encryption
+configuration file</a>.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Storing the raw encryption key in the EncryptionConfig only
+moderately improves your security posture, compared to no
+encryption.</p>
+<p>For additional secrecy, consider using the <code>kms</code> provider
+as this relies on keys held outside your Kubernetes cluster.
+Implementations of <code>kms</code> can work with hardware security
+modules or with encryption services managed by your cloud provider.</p>
+<p>To learn about setting up encryption at rest using KMS, see <a
+href="kms-provider.html">Using a KMS
+provider for data encryption</a>. The KMS provider plugin that you use
+may also come with additional specific documentation.</p>
+</div>
+<p>Start by generating a new encryption key, and then encode it using
+base64:</p>
+<div class="tabset">
+<div class="tab-label">
+<p>Linux</p>
+</div>
+<p>Generate a 32-byte random key and base64 encode it. You can use this
+command:</p>
+<pre class="shell"><code>head -c 32 /dev/urandom | base64</code></pre>
+<p>You can use <code>/dev/hwrng</code> instead of
+<code>/dev/urandom</code> if you want to use your PC's built-in hardware
+entropy source. Not all Linux devices provide a hardware random
+generator.</p>
+<div class="tab-label">
+<p>macOS</p>
+</div>
+<p>Generate a 32-byte random key and base64 encode it. You can use this
+command:</p>
+<pre class="shell"><code>head -c 32 /dev/urandom | base64</code></pre>
+<div class="tab-label">
+<p>Windows</p>
+</div>
+<p>Generate a 32-byte random key and base64 encode it. You can use this
+command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode powershell"><code class="sourceCode powershell"><span class="co"># Do not run this in a session where you have set a random number</span></span>
+<span class="co"># generator seed.</span></span>
+<span class="op">[</span>Convert<span class="op">]::</span>ToBase64String<span class="op">((</span><span class="dv">1</span><span class="op">..</span><span class="dv">32</span><span class="op">|%{[</span><span class="dt">byte</span><span class="op">](</span><span class="fu">Get-Random</span> <span class="op">-</span>Max <span class="dv">256</span><span class="op">)}))</span></span></code></pre></div>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Keep the encryption key confidential, including while you generate it
+and ideally even after you are no longer actively using it.</p>
+</div>
+<h3 id="replicate-the-encryption-key">Replicate the encryption key</h3>
+<p>Using a secure mechanism for file transfer, make a copy of that
+encryption key available to every other control plane host.</p>
+<p>At a minimum, use encryption in transit - for example, secure shell
+(SSH). For more security, use asymmetric encryption between hosts, or
+change the approach you are using so that you're relying on KMS
+encryption.</p>
+<h3 id="write-an-encryption-configuration-file">Write an encryption
+configuration file</h3>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>The encryption configuration file may contain keys that can decrypt
+content in etcd. If the configuration file contains any key material,
+you must properly restrict permissions on all your control plane hosts
+so only the user who runs the kube-apiserver can read this
+configuration.</p>
+</div>
+<p>Create a new encryption configuration file. The contents should be
+similar to:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">configmaps</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">pandas.awesome.bears.example</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="co"># See the following text for more details about the secret value</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># this fallback allows reading unencrypted secrets;</span></span>
+<span class="at">                     </span><span class="co"># for example, during initial migration</span></span></code></pre></div>
+<p>To create a new encryption key (that does not use KMS), see <a
+href="#generate-key-no-kms">Generate the encryption key</a>.</p>
+<h3 id="use-the-new-encryption-configuration-file">Use the new
+encryption configuration file</h3>
+<p>You will need to mount the new encryption config file to the
+<code>kube-apiserver</code> static pod. Here is an example on how to do
+that:</p>
+<ol type="1">
+<li><p>Save the new encryption config file to
+<code>/etc/kubernetes/enc/enc.yaml</code> on the control-plane
+node.</p></li>
+<li><p>Edit the manifest for the <code>kube-apiserver</code> static pod:
+<code>/etc/kubernetes/manifests/kube-apiserver.yaml</code> so that it is
+similar to:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
+<span class="co">#</span></span>
+<span class="co"># This is a fragment of a manifest for a static Pod.</span></span>
+<span class="co"># Check whether this is correct for your cluster and for your API server.</span></span>
+<span class="co">#</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">annotations</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">kubeadm.kubernetes.io/kube-apiserver.advertise-address.endpoint</span><span class="kw">:</span><span class="at"> 10.20.30.40:443</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="ch">null</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/component</span><span class="kw">:</span><span class="at"> kube-apiserver</span></span>
+<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> control-plane</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-apiserver</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">kube-apiserver</span></span>
+<span class="at">    ...</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">--encryption-provider-config=/etc/kubernetes/enc/enc.yaml  # add this line</span></span>
+<span class="at">    </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">    ...</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> enc                           # add this line</span></span>
+<span class="at">      </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/kubernetes/enc      # add this line</span></span>
+<span class="at">      </span><span class="fu">readOnly</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at">                      # add this line</span></span>
+<span class="at">    ...</span></span>
+<span class="at">  </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">  ...</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> enc                             # add this line</span></span>
+<span class="at">    </span><span class="fu">hostPath</span><span class="kw">:</span><span class="at">                             </span><span class="co"># add this line</span></span>
+<span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> /etc/kubernetes/enc           # add this line</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> DirectoryOrCreate             # add this line</span></span>
+<span class="at">  ...</span></span></code></pre></div></li>
+<li><p>Restart your API server.</p></li>
+</ol>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Your config file contains keys that can decrypt the contents in etcd,
+so you must properly restrict permissions on your control-plane nodes so
+only the user who runs the <code>kube-apiserver</code> can read it.</p>
+</div>
+<p>You now have encryption in place for <strong>one</strong> control
+plane host. A typical Kubernetes cluster has multiple control plane
+hosts, so there is more to do.</p>
+<h3 id="api-server-config-update-more">Reconfigure other control plane
+hosts</h3>
+<p>If you have multiple API servers in your cluster, you should deploy
+the changes in turn to each API server.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>For cluster configurations with two or more control plane nodes, the
+encryption configuration should be identical across each control plane
+node.</p>
+<p>If there is a difference in the encryption provider configuration
+between control plane nodes, this difference may mean that the
+kube-apiserver can't decrypt data.</p>
+</div>
+<p>When you are planning to update the encryption configuration of your
+cluster, plan this so that the API servers in your control plane can
+always decrypt the stored data (even part way through rolling out the
+change).</p>
+<p>Make sure that you use the <strong>same</strong> encryption
+configuration on each control plane host.</p>
+<h3 id="verifying-that-data-is-encrypted">Verify that newly written data
+is encrypted</h3>
+<p>Data is encrypted when written to etcd. After restarting your
+<code>kube-apiserver</code>, any newly created or updated Secret (or
+other resource kinds configured in <code>EncryptionConfiguration</code>)
+should be encrypted when stored.</p>
+<p>To check this, you can use the <code>etcdctl</code> command line
+program to retrieve the contents of your secret data.</p>
+<p>This example shows how to check this for encrypting the Secret
+API.</p>
+<ol type="1">
+<li><p>Create a new Secret called <code>secret1</code> in the
+<code>default</code> namespace:</p>
+<pre class="shell"><code>kubectl create secret generic secret1 -n default --from-literal=mykey=mydata</code></pre></li>
+<li><p>Using the <code>etcdctl</code> command line tool, read that
+Secret out of etcd:</p>
+<pre><code>ETCDCTL_API=3 etcdctl get /registry/secrets/default/secret1 [...] | hexdump -C</code></pre>
+<p>where <code>[...]</code> must be the additional arguments for
+connecting to the etcd server.</p>
+<p>For example:</p>
+<pre class="shell"><code>ETCDCTL_API=3 etcdctl \
+   --cacert=/etc/kubernetes/pki/etcd/ca.crt   \
+   --cert=/etc/kubernetes/pki/etcd/server.crt \
+   --key=/etc/kubernetes/pki/etcd/server.key  \
+   get /registry/secrets/default/secret1 | hexdump -C</code></pre>
+<p>The output is similar to this (abbreviated):</p>
+<pre class="hexdump"><code>00000000  2f 72 65 67 69 73 74 72  79 2f 73 65 63 72 65 74  |/registry/secret|
+00000010  73 2f 64 65 66 61 75 6c  74 2f 73 65 63 72 65 74  |s/default/secret|
+00000020  31 0a 6b 38 73 3a 65 6e  63 3a 61 65 73 63 62 63  |1.k8s:enc:aescbc|
+00000030  3a 76 31 3a 6b 65 79 31  3a c7 6c e7 d3 09 bc 06  |:v1:key1:.l.....|
+00000040  25 51 91 e4 e0 6c e5 b1  4d 7a 8b 3d b9 c2 7c 6e  |%Q...l..Mz.=..|n|
+00000050  b4 79 df 05 28 ae 0d 8e  5f 35 13 2c c0 18 99 3e  |.y..(..._5.,...&gt;|
+[...]
+00000110  23 3a 0d fc 28 ca 48 2d  6b 2d 46 cc 72 0b 70 4c  |#:..(.H-k-F.r.pL|
+00000120  a5 fc 35 43 12 4e 60 ef  bf 6f fe cf df 0b ad 1f  |..5C.N`..o......|
+00000130  82 c4 88 53 02 da 3e 66  ff 0a                    |...S..&gt;f..|
+0000013a</code></pre></li>
+<li><p>Verify the stored Secret is prefixed with
+<code>k8s:enc:aescbc:v1:</code> which indicates the <code>aescbc</code>
+provider has encrypted the resulting data. Confirm that the key name
+shown in <code>etcd</code> matches the key name specified in the
+<code>EncryptionConfiguration</code> mentioned above. In this example,
+you can see that the encryption key named <code>key1</code> is used in
+<code>etcd</code> and in <code>EncryptionConfiguration</code>.</p></li>
+<li><p>Verify the Secret is correctly decrypted when retrieved via the
+API:</p>
+<pre class="shell"><code>kubectl get secret secret1 -n default -o yaml</code></pre>
+<p>The output should contain <code>mykey: bXlkYXRh</code>, with contents
+of <code>mydata</code> encoded using base64; read <a
+href="../configmap-secret/managing-secret-using-kubectl.html#decoding-secret">decoding
+a Secret</a> to learn how to completely decode the Secret.</p></li>
+</ol>
+<h3 id="ensure-all-secrets-are-encrypted">Ensure all relevant data are
+encrypted</h3>
+<p>It's often not enough to make sure that new objects get encrypted:
+you also want that encryption to apply to the objects that are already
+stored.</p>
+<p>For this example, you have configured your cluster so that Secrets
+are encrypted on write. Performing a replace operation for each Secret
+will encrypt that content at rest, where the objects are unchanged.</p>
+<p>You can make this change across all Secrets in your cluster:</p>
+<pre class="shell"><code># Run this as an administrator that can read and write all Secrets
+kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
+<p>The command above reads all Secrets and then updates them with the
+same data, in order to apply server side encryption.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If an error occurs due to a conflicting write, retry the command. It
+is safe to run that command more than once.</p>
+<p>For larger clusters, you may wish to subdivide the Secrets by
+namespace, or script an update.</p>
+</div>
+<h2 id="cleanup-all-secrets-encrypted">Prevent plain text retrieval</h2>
+<p>If you want to make sure that the only access to a particular API
+kind is done using encryption, you can remove the API server's ability
+to read that API's backing data as plaintext.</p>
+<div class="admonition warning">
+<div class="admonition-title">
+<p>Warning:</p>
+</div>
+<p>Making this change prevents the API server from retrieving resources
+that are marked as encrypted at rest, but are actually stored in the
+clear.</p>
+<p>When you have configured encryption at rest for an API (for example:
+the API kind <code>Secret</code>, representing <code>secrets</code>
+resources in the core API group), you <strong>must</strong> ensure that
+all those resources in this cluster really are encrypted at rest. Check
+this before you carry on with the next steps.</p>
+</div>
+<p>Once all Secrets in your cluster are encrypted, you can remove the
+<code>identity</code> part of the encryption configuration. For
+example:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># REMOVE THIS LINE</span></span></code></pre></div>
+<p>…and then restart each API server in turn. This change prevents the
+API server from accessing a plain-text Secret, even by accident.</p>
+<h2 id="rotating-a-decryption-key">Rotate a decryption key</h2>
+<p>Changing an encryption key for Kubernetes without incurring downtime
+requires a multi-step operation, especially in the presence of a
+highly-available deployment where multiple <code>kube-apiserver</code>
+processes are running.</p>
+<ol type="1">
+<li>Generate a new key and add it as the second key entry for the
+current provider on all control plane nodes.</li>
+<li>Restart <strong>all</strong> <code>kube-apiserver</code> processes,
+to ensure each server can decrypt any data that are encrypted with the
+new key.</li>
+<li>Make a secure backup of the new encryption key. If you lose all
+copies of this key you would need to delete all the resources were
+encrypted under the lost key, and workloads may not operate as expected
+during the time that at-rest encryption is broken.</li>
+<li>Make the new key the first entry in the <code>keys</code> array so
+that it is used for encryption-at-rest for new writes</li>
+<li>Restart all <code>kube-apiserver</code> processes to ensure each
+control plane host now encrypts using the new key</li>
+<li>As a privileged user, run
+<code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code>
+to encrypt all existing Secrets with the new key</li>
+<li>After you have updated all existing Secrets to use the new key and
+have made a secure backup of the new key, remove the old decryption key
+from the configuration.</li>
+</ol>
+<h2 id="decrypting-all-data">Decrypt all data</h2>
+<p>This example shows how to stop encrypting the Secret API at rest. If
+you are encrypting other API kinds, adjust the steps to match.</p>
+<p>To disable encryption at rest, place the <code>identity</code>
+provider as the first entry in your encryption configuration file:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apiserver.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> EncryptionConfiguration</span></span>
+<span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">secrets</span></span>
+<span class="at">      </span><span class="co"># list any other resources here that you previously were</span></span>
+<span class="at">      </span><span class="co"># encrypting at rest</span></span>
+<span class="at">    </span><span class="fu">providers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">identity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span><span class="at"> </span><span class="co"># add this line</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">aescbc</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">keys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> key1</span></span>
+<span class="at">              </span><span class="fu">secret</span><span class="kw">:</span><span class="at"> &lt;BASE 64 ENCODED SECRET&gt;</span><span class="co"> # keep this in place</span></span>
+<span class="at">                                               </span><span class="co"># make sure it comes after &quot;identity&quot;</span></span></code></pre></div>
+<p>Then run the following command to force decryption of all
+Secrets:</p>
+<pre class="shell"><code>kubectl get secrets --all-namespaces -o json | kubectl replace -f -</code></pre>
+<p>Once you have replaced all existing encrypted resources with backing
+data that don't use encryption, you can remove the encryption settings
+from the <code>kube-apiserver</code>.</p>
+<h2 id="configure-automatic-reloading">Configure automatic
+reloading</h2>
+<p>You can configure automatic reloading of encryption provider
+configuration. That setting determines whether the <span
+class="glossary-term" data-term="kube-apiserver">API server</span>
+should load the file you specify for
+<code>--encryption-provider-config</code> only once at startup, or
+automatically whenever you change that file. Enabling this option allows
+you to change the keys for encryption at rest without restarting the API
+server.</p>
+<p>To allow automatic reloading, configure the API server to run with:
+<code>--encryption-provider-config-automatic-reload=true</code>. When
+enabled, file changes are polled every minute to observe the
+modifications. The
+<code>apiserver_encryption_config_controller_automatic_reload_last_timestamp_seconds</code>
+metric identifies when the new config becomes effective. This allows
+encryption keys to be rotated without restarting the API server.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read about <a
+href="decrypt-data.html">decrypting data
+that are already stored at rest</a></li>
+<li>Learn more about the <a
+href="../../reference/config-api/apiserver-config.v1.html">EncryptionConfiguration
+configuration API (v1)</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="enable-disable-api.html"><span>Previous</span>Enable Or Disable A Kubernetes API</a><a class="page-nav-link next" href="decrypt-data.html"><span>Next</span>Decrypt Confidential Data that is Already Encrypted at Rest</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#determining-whether-encryption-at-rest-is-already-enabled">Determine whether encryption at rest is already enabled</a></li><li class="toc-l2"><a href="#understanding-the-encryption-at-rest-configuration">Understanding the encryption at rest configuration</a></li><li class="toc-l3"><a href="#providers">Available providers</a></li><li class="toc-l3"><a href="#key-storage">Key storage</a></li><li class="toc-l3"><a href="#protection-for-encryption-keys">Protection for encryption keys</a></li><li class="toc-l2"><a href="#encrypting-your-data">Encrypt your data</a></li><li class="toc-l3"><a href="#generate-key-no-kms">Generate the encryption key</a></li><li class="toc-l3"><a href="#replicate-the-encryption-key">Replicate the encryption key</a></li><li class="toc-l3"><a href="#write-an-encryption-configuration-file">Write an encryption configuration file</a></li><li class="toc-l3"><a href="#use-the-new-encryption-configuration-file">Use the new encryption configuration file</a></li><li class="toc-l3"><a href="#api-server-config-update-more">Reconfigure other control plane hosts</a></li><li class="toc-l3"><a href="#verifying-that-data-is-encrypted">Verify that newly written data is encrypted</a></li><li class="toc-l3"><a href="#ensure-all-secrets-are-encrypted">Ensure all relevant data are encrypted</a></li><li class="toc-l2"><a href="#cleanup-all-secrets-encrypted">Prevent plain text retrieval</a></li><li class="toc-l2"><a href="#rotating-a-decryption-key">Rotate a decryption key</a></li><li class="toc-l2"><a href="#decrypting-all-data">Decrypt all data</a></li><li class="toc-l2"><a href="#configure-automatic-reloading">Configure automatic reloading</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

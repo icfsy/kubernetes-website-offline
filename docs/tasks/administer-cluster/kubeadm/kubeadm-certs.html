@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Certificate Management with kubeadm · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="tasks/administer-cluster/kubeadm/kubeadm-certs" data-title="Certificate Management with kubeadm" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../tasks.html">Tasks</a><span>/</span><a href="../../administer-cluster.html">Administer a Cluster</a><span>/</span><a href="../kubeadm.html">Administration with kubeadm</a></nav></nav>
+        <header class="page-head">
+          <h1>Certificate Management with kubeadm</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-certs/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.15</p>
+</div>
+<p>Client certificates generated by <a
+href="../../../reference/setup-tools/kubeadm.html">kubeadm</a> expire after 1
+year. This page explains how to manage certificate renewals with
+kubeadm. It also covers other tasks related to kubeadm certificate
+management.</p>
+<p>The Kubernetes project recommends upgrading to the latest patch
+releases promptly, and to ensure that you are running a supported minor
+release of Kubernetes. Following this recommendation helps you to stay
+secure.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You should be familiar with <a
+href="../../../setup/best-practices/certificates.html">PKI certificates and
+requirements in Kubernetes</a>.</p>
+<p>You should be familiar with how to pass a <a
+href="../../../reference/config-api/kubeadm-config.v1beta4.html">configuration</a>
+file to the kubeadm commands.</p>
+<p>This guide covers the usage of the <code>openssl</code> command (used
+for manual certificate signing, if you choose that approach), but you
+can use your preferred tools.</p>
+<p>Some of the steps here use <code>sudo</code> for administrator
+access. You can use any equivalent tool.</p>
+<h2 id="custom-certificates">Using custom certificates</h2>
+<p>By default, kubeadm generates all the certificates needed for a
+cluster to run. You can override this behavior by providing your own
+certificates.</p>
+<p>To do so, you must place them in whatever directory is specified by
+the <code>--cert-dir</code> flag or the <code>certificatesDir</code>
+field of kubeadm's <code>ClusterConfiguration</code>. By default this is
+<code>/etc/kubernetes/pki</code>.</p>
+<p>If a given certificate and private key pair exists before running
+<code>kubeadm init</code>, kubeadm does not overwrite them. This means
+you can, for example, copy an existing CA into
+<code>/etc/kubernetes/pki/ca.crt</code> and
+<code>/etc/kubernetes/pki/ca.key</code>, and kubeadm will use this CA
+for signing the rest of the certificates.</p>
+<h2 id="choosing-encryption-algorithm">Choosing an encryption
+algorithm</h2>
+<p>kubeadm allows you to choose an encryption algorithm that is used for
+creating public and private keys. That can be done by using the
+<code>encryptionAlgorithm</code> field of the kubeadm configuration:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
+<span class="fu">encryptionAlgorithm</span><span class="kw">:</span><span class="at"> </span><span class="ot">&lt;ALGORITHM&gt;</span></span></code></pre></div>
+<p><code>&lt;ALGORITHM&gt;</code> can be one of
+<code>RSA-2048</code> (default), <code>RSA-3072</code>,
+<code>RSA-4096</code> or <code>ECDSA-P256</code>.</p>
+<h2 id="choosing-cert-validity-period">Choosing certificate validity
+period</h2>
+<p>kubeadm allows you to choose the validity period of CA and leaf
+certificates. That can be done by using the
+<code>certificateValidityPeriod</code> and
+<code>caCertificateValidityPeriod</code> fields of the kubeadm
+configuration:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
+<span class="fu">certificateValidityPeriod</span><span class="kw">:</span><span class="at"> 8760h</span><span class="co"> # Default: 365 days × 24 hours = 1 year</span></span>
+<span class="fu">caCertificateValidityPeriod</span><span class="kw">:</span><span class="at"> 87600h</span><span class="co"> # Default: 365 days × 24 hours * 10 = 10 years</span></span></code></pre></div>
+<p>The values of the fields follow the accepted format for <a
+href="https://pkg.go.dev/time#ParseDuration">Go's
+<code>time.Duration</code> values</a>, with the longest supported unit
+being <code>h</code> (hours).</p>
+<h2 id="external-ca-mode">External CA mode</h2>
+<p>It is also possible to provide only the <code>ca.crt</code> file and
+not the <code>ca.key</code> file (this is only available for the root CA
+file, not other cert pairs). If all other certificates and kubeconfig
+files are in place, kubeadm recognizes this condition and activates the
+"External CA" mode. kubeadm will proceed without the CA key on disk.</p>
+<p>Instead, run the controller-manager standalone with
+<code>--controllers=csrsigner</code> and point to the CA certificate and
+key.</p>
+<p>There are various ways to prepare the component credentials when
+using external CA mode.</p>
+<h3 id="manual-preparation-of-component-credentials">Manual preparation
+of component credentials</h3>
+<p><a href="../../../setup/best-practices/certificates.html">PKI certificates
+and requirements</a> includes information on how to prepare all the
+required by kubeadm component credentials manually.</p>
+<p>This guide covers the usage of the <code>openssl</code> command (used
+for manual certificate signing, if you choose that approach), but you
+can use your preferred tools.</p>
+<h3
+id="preparation-of-credentials-by-signing-csrs-generated-by-kubeadm">Preparation
+of credentials by signing CSRs generated by kubeadm</h3>
+<p>kubeadm can <a href="#signing-csr">generate CSR files</a> that you
+can sign manually with tools like <code>openssl</code> and your external
+CA. These CSR files will include all the specification for credentials
+that components deployed by kubeadm require.</p>
+<h3
+id="automated-preparation-of-component-credentials-by-using-kubeadm-phases">Automated
+preparation of component credentials by using kubeadm phases</h3>
+<p>Alternatively, it is possible to use kubeadm phase commands to
+automate this process.</p>
+<ul>
+<li>Go to a host that you want to prepare as a kubeadm control plane
+node with external CA.</li>
+<li>Copy the external CA files <code>ca.crt</code> and
+<code>ca.key</code> that you have into <code>/etc/kubernetes/pki</code>
+on the node.</li>
+<li>Prepare a temporary <a
+href="../../../reference/setup-tools/kubeadm/kubeadm-init.html#config-file">kubeadm
+configuration file</a> called <code>config.yaml</code> that can be used
+with <code>kubeadm init</code>. Make sure that this file includes any
+relevant cluster wide or host-specific information that could be
+included in certificates, such as,
+<code>ClusterConfiguration.controlPlaneEndpoint</code>,
+<code>ClusterConfiguration.certSANs</code> and
+<code>InitConfiguration.APIEndpoint</code>.</li>
+<li>On the same host execute the commands
+<code>kubeadm init phase kubeconfig all --config config.yaml</code> and
+<code>kubeadm init phase certs all --config config.yaml</code>. This
+will generate all required kubeconfig files and certificates under
+<code>/etc/kubernetes/</code> and its <code>pki</code> sub
+directory.</li>
+<li>Inspect the generated files. Delete
+<code>/etc/kubernetes/pki/ca.key</code>, delete or move to a safe
+location the file <code>/etc/kubernetes/super-admin.conf</code>.</li>
+<li>On nodes where <code>kubeadm join</code> will be called also delete
+<code>/etc/kubernetes/kubelet.conf</code>. This file is only required on
+the first node where <code>kubeadm init</code> will be called.</li>
+<li>Note that some files such <code>pki/sa.*</code>,
+<code>pki/front-proxy-ca.*</code> and <code>pki/etc/ca.*</code> are
+shared between control plane nodes, You can generate them once and <a
+href="../../../setup/production-environment/tools/kubeadm/high-availability.html#manual-certs">distribute
+them manually</a> to nodes where <code>kubeadm join</code> will be
+called, or you can use the <a
+href="../../../setup/production-environment/tools/kubeadm/high-availability.html#stacked-control-plane-and-etcd-nodes"><code>--upload-certs</code></a>
+functionality of <code>kubeadm init</code> and
+<code>--certificate-key</code> of <code>kubeadm join</code> to automate
+this distribution.</li>
+</ul>
+<p>Once the credentials are prepared on all nodes, call
+<code>kubeadm init</code> and <code>kubeadm join</code> for these nodes
+to join the cluster. kubeadm will use the existing kubeconfig and
+certificate files under <code>/etc/kubernetes/</code> and its
+<code>pki</code> sub directory.</p>
+<h2 id="check-certificate-expiration">Certificate expiry and
+management</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><code>kubeadm</code> cannot manage certificates signed by an external
+CA.</p>
+</div>
+<p>You can use the <code>check-expiration</code> subcommand to check
+when certificates expire:</p>
+<pre class="shell"><code>kubeadm certs check-expiration</code></pre>
+<p>The output is similar to this:</p>
+<pre class="console"><code>CERTIFICATE                EXPIRES                  RESIDUAL TIME   CERTIFICATE AUTHORITY   EXTERNALLY MANAGED
+admin.conf                 Dec 30, 2020 23:36 UTC   364d                                    no
+apiserver                  Dec 30, 2020 23:36 UTC   364d            ca                      no
+apiserver-etcd-client      Dec 30, 2020 23:36 UTC   364d            etcd-ca                 no
+apiserver-kubelet-client   Dec 30, 2020 23:36 UTC   364d            ca                      no
+controller-manager.conf    Dec 30, 2020 23:36 UTC   364d                                    no
+etcd-healthcheck-client    Dec 30, 2020 23:36 UTC   364d            etcd-ca                 no
+etcd-peer                  Dec 30, 2020 23:36 UTC   364d            etcd-ca                 no
+etcd-server                Dec 30, 2020 23:36 UTC   364d            etcd-ca                 no
+front-proxy-client         Dec 30, 2020 23:36 UTC   364d            front-proxy-ca          no
+scheduler.conf             Dec 30, 2020 23:36 UTC   364d                                    no
+
+CERTIFICATE AUTHORITY   EXPIRES                  RESIDUAL TIME   EXTERNALLY MANAGED
+ca                      Dec 28, 2029 23:36 UTC   9y              no
+etcd-ca                 Dec 28, 2029 23:36 UTC   9y              no
+front-proxy-ca          Dec 28, 2029 23:36 UTC   9y              no</code></pre>
+<p>The command shows expiration/residual time for the client
+certificates in the <code>/etc/kubernetes/pki</code> folder and for the
+client certificate embedded in the kubeconfig files used by kubeadm
+(<code>admin.conf</code>, <code>controller-manager.conf</code> and
+<code>scheduler.conf</code>).</p>
+<p>Additionally, kubeadm informs the user if the certificate is
+externally managed; in this case, the user should take care of managing
+certificate renewal manually/using other tools.</p>
+<p>The <code>kubelet.conf</code> configuration file is not included in
+the list above because kubeadm configures kubelet for <a
+href="../../tls/certificate-rotation.html">automatic certificate
+renewal</a> with rotatable certificates under
+<code>/var/lib/kubelet/pki</code>. To repair an expired kubelet client
+certificate see <a
+href="../../../setup/production-environment/tools/kubeadm/troubleshooting-kubeadm.html#kubelet-client-cert">Kubelet
+client certificate rotation fails</a>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>On nodes created with <code>kubeadm init</code> from versions prior
+to kubeadm version 1.17, there is a <a
+href="https://github.com/kubernetes/kubeadm/issues/1753">bug</a> where
+you manually have to modify the contents of <code>kubelet.conf</code>.
+After <code>kubeadm init</code> finishes, you should update
+<code>kubelet.conf</code> to point to the rotated kubelet client
+certificates, by replacing <code>client-certificate-data</code> and
+<code>client-key-data</code> with:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">client-certificate</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/pki/kubelet-client-current.pem</span></span>
+<span class="fu">client-key</span><span class="kw">:</span><span class="at"> /var/lib/kubelet/pki/kubelet-client-current.pem</span></span></code></pre></div>
+</div>
+<h2 id="automatic-certificate-renewal">Automatic certificate
+renewal</h2>
+<p>kubeadm renews all the certificates during control plane <a
+href="kubeadm-upgrade.html">upgrade</a>.</p>
+<p>This feature is designed for addressing the simplest use cases; if
+you don't have specific requirements on certificate renewal and perform
+Kubernetes version upgrades regularly (less than 1 year in between each
+upgrade), kubeadm will take care of keeping your cluster up to date and
+reasonably secure.</p>
+<p>If you have more complex requirements for certificate renewal, you
+can opt out from the default behavior by passing
+<code>--certificate-renewal=false</code> to
+<code>kubeadm upgrade apply</code> or to
+<code>kubeadm upgrade node</code>.</p>
+<h2 id="manual-certificate-renewal">Manual certificate renewal</h2>
+<p>You can renew your certificates manually at any time with the
+<code>kubeadm certs renew</code> command, with the appropriate command
+line options. If you are running cluster with a replicated control
+plane, this command needs to be executed on all the control-plane
+nodes.</p>
+<p>This command performs the renewal using CA (or front-proxy-CA)
+certificate and key stored in <code>/etc/kubernetes/pki</code>.</p>
+<p><code>kubeadm certs renew</code> uses the existing certificates as
+the authoritative source for attributes (Common Name, Organization,
+subject alternative name) and does not rely on the
+<code>kubeadm-config</code> ConfigMap. Even so, the Kubernetes project
+recommends keeping the served certificate and the associated values in
+that ConfigMap synchronized, to avoid any risk of confusion.</p>
+<p>After running the command you should restart the control plane Pods.
+This is required since dynamic certificate reload is currently not
+supported for all components and certificates. <a
+href="../../configure-pod-container/static-pod.html">Static Pods</a>
+are managed by the local kubelet and not by the API Server, thus kubectl
+cannot be used to delete and restart them. To restart a static Pod you
+can temporarily remove its manifest file from
+<code>/etc/kubernetes/manifests/</code> and wait for 20 seconds (see the
+<code>fileCheckFrequency</code> value in <a
+href="../../../reference/config-api/kubelet-config.v1beta1.html">KubeletConfiguration
+struct</a>). The kubelet will terminate the Pod if it's no longer in the
+manifest directory. You can then move the file back and after another
+<code>fileCheckFrequency</code> period, the kubelet will recreate the
+Pod and the certificate renewal for the component can complete.</p>
+<p><code>kubeadm certs renew</code> can renew any specific certificate
+or, with the subcommand <code>all</code>, it can renew all of them:</p>
+<pre class="shell"><code># If you are running cluster with a replicated control plane, this command
+# needs to be executed on all the control-plane nodes.
+kubeadm certs renew all</code></pre>
+<h3 id="admin-certificate-copy">Copying the administrator certificate
+(optional)</h3>
+<p>Clusters built with kubeadm often copy the <code>admin.conf</code>
+certificate into <code>$HOME/.kube/config</code>, as instructed in <a
+href="../../../setup/production-environment/tools/kubeadm/create-cluster-kubeadm.html">Creating
+a cluster with kubeadm</a>. On such a system, to update the contents of
+<code>$HOME/.kube/config</code> after renewing the
+<code>admin.conf</code>, you could run the following commands:</p>
+<pre class="shell"><code>sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config</code></pre>
+<h2 id="renew-certificates-with-the-kubernetes-certificates-api">Renew
+certificates with the Kubernetes certificates API</h2>
+<p>This section provides more details about how to execute manual
+certificate renewal using the Kubernetes certificates API.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>These are advanced topics for users who need to integrate their
+organization's certificate infrastructure into a kubeadm-built cluster.
+If the default kubeadm configuration satisfies your needs, you should
+let kubeadm manage certificates instead.</p>
+</div>
+<h3 id="set-up-a-signer">Set up a signer</h3>
+<p>The Kubernetes Certificate Authority does not work out of the box.
+You can configure an external signer such as <a
+href="https://cert-manager.io/docs/configuration/ca/">cert-manager</a>,
+or you can use the built-in signer.</p>
+<p>The built-in signer is part of <a
+href="../../../reference/command-line-tools-reference/kube-controller-manager.html"><code>kube-controller-manager</code></a>.</p>
+<p>To activate the built-in signer, you must pass the
+<code>--cluster-signing-cert-file</code> and
+<code>--cluster-signing-key-file</code> flags.</p>
+<p>If you're creating a new cluster, you can use a kubeadm <a
+href="../../../reference/config-api/kubeadm-config.v1beta4.html">configuration
+file</a>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
+<span class="fu">controllerManager</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">extraArgs</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cluster-signing-cert-file&quot;</span></span>
+<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki/ca.crt&quot;</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cluster-signing-key-file&quot;</span></span>
+<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki/ca.key&quot;</span></span></code></pre></div>
+<h3 id="create-certificate-signing-requests-csr">Create certificate
+signing requests (CSR)</h3>
+<p>See <a
+href="../../../reference/access-authn-authz/certificate-signing-requests.html">Create
+CertificateSigningRequest</a> for creating CSRs with the Kubernetes
+API.</p>
+<h2 id="renew-certificates-with-external-ca">Renew certificates with
+external CA</h2>
+<p>This section provide more details about how to execute manual
+certificate renewal using an external CA.</p>
+<p>To better integrate with external CAs, kubeadm can also produce
+certificate signing requests (CSRs). A CSR represents a request to a CA
+for a signed certificate for a client. In kubeadm terms, any certificate
+that would normally be signed by an on-disk CA can be produced as a CSR
+instead. A CA, however, cannot be produced as a CSR.</p>
+<h3 id="renewal-by-using-certificate-signing-requests-csr">Renewal by
+using certificate signing requests (CSR)</h3>
+<p>Renewal of ceritficates is possible by generating new CSRs and
+signing them with the external CA. For more details about working with
+CSRs generated by kubeadm see the section <a href="#signing-csr">Signing
+certificate signing requests (CSR) generated by kubeadm</a>.</p>
+<h2 id="certificate-authority-rotation">Certificate authority (CA)
+rotation</h2>
+<p>Kubeadm does not support rotation or replacement of CA certificates
+out of the box.</p>
+<p>For more information about manual rotation or replacement of CA, see
+<a href="../../tls/manual-rotation-of-ca-certificates.html">manual
+rotation of CA certificates</a>.</p>
+<h2 id="kubelet-serving-certs">Enabling signed kubelet serving
+certificates</h2>
+<p>By default the kubelet serving certificate deployed by kubeadm is
+self-signed. This means a connection from external services like the <a
+href="https://github.com/kubernetes-sigs/metrics-server">metrics-server</a>
+to a kubelet cannot be secured with TLS.</p>
+<p>To configure the kubelets in a new kubeadm cluster to obtain properly
+signed serving certificates you must pass the following minimal
+configuration to <code>kubeadm init</code>:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
+<span class="fu">serverTLSBootstrap</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code></pre></div>
+<p>If you have already created the cluster you must adapt it by doing
+the following:</p>
+<ul>
+<li>Find and edit the <code>kubelet-config</code> ConfigMap in the
+<code>kube-system</code> namespace. In that ConfigMap, the
+<code>kubelet</code> key has a <a
+href="../../../reference/config-api/kubelet-config.v1beta1.html">KubeletConfiguration</a>
+document as its value. Edit the KubeletConfiguration document to set
+<code>serverTLSBootstrap: true</code>.</li>
+<li>On each node, add the <code>serverTLSBootstrap: true</code> field in
+<code>/var/lib/kubelet/config.yaml</code> and restart the kubelet with
+<code>systemctl restart kubelet</code></li>
+</ul>
+<p>The field <code>serverTLSBootstrap: true</code> will enable the
+bootstrap of kubelet serving certificates by requesting them from the
+<code>certificates.k8s.io</code> API. One known limitation is that the
+CSRs (Certificate Signing Requests) for these certificates cannot be
+automatically approved by the default signer in the
+kube-controller-manager - <a
+href="../../../reference/access-authn-authz/certificate-signing-requests.html#kubernetes-signers"><code>kubernetes.io/kubelet-serving</code></a>.
+This will require action from the user or a third party controller.</p>
+<p>These CSRs can be viewed using:</p>
+<pre class="shell"><code>kubectl get csr</code></pre>
+<pre class="console"><code>NAME        AGE     SIGNERNAME                        REQUESTOR                      CONDITION
+csr-9wvgt   112s    kubernetes.io/kubelet-serving     system:node:worker-1           Pending
+csr-lz97v   1m58s   kubernetes.io/kubelet-serving     system:node:control-plane-1    Pending</code></pre>
+<p>To approve them you can do the following:</p>
+<pre class="shell"><code>kubectl certificate approve &lt;CSR-name&gt;</code></pre>
+<p>By default, these serving certificate will expire after one year.
+Kubeadm sets the <code>KubeletConfiguration</code> field
+<code>rotateCertificates</code> to <code>true</code>, which means that
+close to expiration a new set of CSRs for the serving certificates will
+be created and must be approved to complete the rotation. To understand
+more see <a
+href="../../../reference/access-authn-authz/kubelet-tls-bootstrapping.html#certificate-rotation">Certificate
+Rotation</a>.</p>
+<p>If you are looking for a solution for automatic approval of these
+CSRs it is recommended that you contact your cloud provider and ask if
+they have a CSR signer that verifies the node identity with an out of
+band mechanism.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This section links to third party projects that provide functionality
+required by Kubernetes. The Kubernetes project authors aren't
+responsible for these projects, which are listed alphabetically. To add
+a project to this list, read the
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content">content
+guide</a> before submitting a change.
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content-disclaimer">More
+information.</a></p>
+</div>
+<p>Third party custom controllers can be used:</p>
+<ul>
+<li><a
+href="https://github.com/postfinance/kubelet-csr-approver">kubelet-csr-approver</a></li>
+</ul>
+<p>Such a controller is not a secure mechanism unless it not only
+verifies the CommonName in the CSR but also verifies the requested IPs
+and domain names. This would prevent a malicious actor that has access
+to a kubelet client certificate to create CSRs requesting serving
+certificates for any IP or domain name.</p>
+<h2 id="kubeconfig-additional-users">Generating kubeconfig files for
+additional users</h2>
+<p>During cluster creation, <code>kubeadm init</code> signs the
+certificate in the <code>super-admin.conf</code> to have
+<code>Subject: O = system:masters, CN = kubernetes-super-admin</code>.
+<a
+href="../../../reference/access-authn-authz/rbac.html#user-facing-roles"><code>system:masters</code></a>
+is a break-glass, super user group that bypasses the authorization layer
+(for example, <a
+href="../../../reference/access-authn-authz/rbac.html">RBAC</a>). The file
+<code>admin.conf</code> is also created by kubeadm on control plane
+nodes and it contains a certificate with
+<code>Subject: O = kubeadm:cluster-admins, CN = kubernetes-admin</code>.
+<code>kubeadm:cluster-admins</code> is a group logically belonging to
+kubeadm. If your cluster uses RBAC (the kubeadm default), the
+<code>kubeadm:cluster-admins</code> group is bound to the <a
+href="../../../reference/access-authn-authz/rbac.html#user-facing-roles"><code>cluster-admin</code></a>
+ClusterRole.</p>
+<div class="admonition warning">
+<div class="admonition-title">
+<p>Warning:</p>
+</div>
+<p>Avoid sharing the <code>super-admin.conf</code> or
+<code>admin.conf</code> files. Instead, create least privileged access
+even for people who work as administrators and use that least privilege
+alternative for anything other than break-glass (emergency) access.</p>
+</div>
+<p>You can use the <a
+href="../../../reference/setup-tools/kubeadm/kubeadm-kubeconfig.html"><code>kubeadm kubeconfig user</code></a>
+command to generate kubeconfig files for additional users. The command
+accepts a mixture of command line flags and <a
+href="../../../reference/config-api/kubeadm-config.v1beta4.html">kubeadm
+configuration</a> options. The generated kubeconfig will be written to
+stdout and can be piped to a file using
+<code>kubeadm kubeconfig user ... &gt; somefile.conf</code>.</p>
+<p>Example configuration file that can be used with
+<code>--config</code>:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># example.yaml</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
+<span class="co"># Will be used as the target &quot;cluster&quot; in the kubeconfig</span></span>
+<span class="fu">clusterName</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes&quot;</span></span>
+<span class="co"># Will be used as the &quot;server&quot; (IP or DNS name) of this cluster in the kubeconfig</span></span>
+<span class="fu">controlPlaneEndpoint</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;some-dns-address:6443&quot;</span></span>
+<span class="co"># The cluster CA key and certificate will be loaded from this local directory</span></span>
+<span class="fu">certificatesDir</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;/etc/kubernetes/pki&quot;</span></span></code></pre></div>
+<p>Make sure that these settings match the desired target cluster
+settings. To see the settings of an existing cluster use:</p>
+<pre class="shell"><code>kubectl get cm kubeadm-config -n kube-system -o=jsonpath=&quot;{.data.ClusterConfiguration}&quot;</code></pre>
+<p>The following example will generate a kubeconfig file with
+credentials valid for 24 hours for a new user <code>johndoe</code> that
+is part of the <code>appdevs</code> group:</p>
+<pre class="shell"><code>kubeadm kubeconfig user --config example.yaml --org appdevs --client-name johndoe --validity-period 24h</code></pre>
+<p>The following example will generate a kubeconfig file with
+administrator credentials valid for 1 week:</p>
+<pre class="shell"><code>kubeadm kubeconfig user --config example.yaml --client-name admin --validity-period 168h</code></pre>
+<h2 id="signing-csr">Signing certificate signing requests (CSR)
+generated by kubeadm</h2>
+<p>You can create certificate signing requests with
+<code>kubeadm certs generate-csr</code>. Calling this command will
+generate <code>.csr</code> / <code>.key</code> file pairs for regular
+certificates. For certificates embedded in kubeconfig files, the command
+will generate a <code>.csr</code> / <code>.conf</code> pair where the
+key is already embedded in the <code>.conf</code> file.</p>
+<p>A CSR file contains all relevant information for a CA to sign a
+certificate. kubeadm uses a <a
+href="../../../setup/best-practices/certificates.html#all-certificates">well
+defined specification</a> for all its certificates and CSRs.</p>
+<p>The default certificate directory is
+<code>/etc/kubernetes/pki</code>, while the default directory for
+kubeconfig files is <code>/etc/kubernetes</code>. These defaults can be
+overridden with the flags <code>--cert-dir</code> and
+<code>--kubeconfig-dir</code>, respectively.</p>
+<p>To pass custom options to <code>kubeadm certs generate-csr</code> use
+the <code>--config</code> flag, which accepts a <a
+href="../../../reference/config-api/kubeadm-config.v1beta4.html">kubeadm
+configuration</a> file, similarly to commands such as
+<code>kubeadm init</code>. Any specification such as extra SANs and
+custom IP addresses must be stored in the same configuration file and
+used for all relevant kubeadm commands by passing it as
+<code>--config</code>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This guide uses the default Kubernetes directory
+<code>/etc/kubernetes</code>, which requires a super user. If you are
+following this guide and are using directories that you can write to
+(typically, this means running <code>kubeadm</code> with
+<code>--cert-dir</code> and <code>--kubeconfig-dir</code>) then you can
+omit the <code>sudo</code> command.</p>
+<p>You must then copy the files that you produced over to within the
+<code>/etc/kubernetes</code> directory so that <code>kubeadm init</code>
+or <code>kubeadm join</code> will find them.</p>
+</div>
+<h3 id="preparing-ca-and-service-account-files">Preparing CA and service
+account files</h3>
+<p>On the primary control plane node, where <code>kubeadm init</code>
+will be executed, call the following commands:</p>
+<pre class="shell"><code>sudo kubeadm init phase certs ca
+sudo kubeadm init phase certs etcd-ca
+sudo kubeadm init phase certs front-proxy-ca
+sudo kubeadm init phase certs sa</code></pre>
+<p>This will populate the folders <code>/etc/kubernetes/pki</code> and
+<code>/etc/kubernetes/pki/etcd</code> with all self-signed CA files
+(certificates and keys) and service account (public and private keys)
+that kubeadm needs for a control plane node.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you are using an external CA, you must generate the same files out
+of band and manually copy them to the primary control plane node in
+<code>/etc/kubernetes</code>.</p>
+<p>Once all CSRs are signed, you can delete the root CA key
+(<code>ca.key</code>) as noted in the <a
+href="#external-ca-mode">External CA mode</a> section.</p>
+</div>
+<p>For secondary control plane nodes
+(<code>kubeadm join --control-plane</code>) there is no need to call the
+above commands. Depending on how you setup the <a
+href="../../../setup/production-environment/tools/kubeadm/high-availability.html">High
+Availability</a> cluster, you either have to manually copy the same
+files from the primary control plane node, or use the automated
+<code>--upload-certs</code> functionality of
+<code>kubeadm init</code>.</p>
+<h3 id="generate-csrs">Generate CSRs</h3>
+<p>The <code>kubeadm certs generate-csr</code> command generates CSRs
+for all known certificates managed by kubeadm. Once the command is done
+you must manually delete <code>.csr</code>, <code>.conf</code> or
+<code>.key</code> files that you don't need.</p>
+<h4 id="considerations-kubelet-conf">Considerations for
+kubelet.conf</h4>
+<p>This section applies to both control plane and worker nodes.</p>
+<p>If you have deleted the <code>ca.key</code> file from control plane
+nodes (<a href="#external-ca-mode">External CA mode</a>), the active
+kube-controller-manager in this cluster will not be able to sign kubelet
+client certificates. If no external method for signing these
+certificates exists in your setup (such as an <a
+href="#set-up-a-signer">external signer</a>), you could manually sign
+the <code>kubelet.conf.csr</code> as explained in this guide.</p>
+<p>Note that this also means that the automatic <a
+href="../../tls/certificate-rotation.html#enabling-client-certificate-rotation">kubelet
+client certificate rotation</a> will be disabled. If so, close to
+certificate expiration, you must generate a new
+<code>kubelet.conf.csr</code>, sign the certificate, embed it in
+<code>kubelet.conf</code> and restart the kubelet.</p>
+<p>If this does not apply to your setup, you can skip processing the
+<code>kubelet.conf.csr</code> on secondary control plane and on workers
+nodes (all nodes that call <code>kubeadm join ...</code>). That is
+because the active kube-controller-manager will be responsible for
+signing new kubelet client certificates.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>You must process the <code>kubelet.conf.csr</code> file on the
+primary control plane node (the host where you originally ran
+<code>kubeadm init</code>). This is because <code>kubeadm</code>
+considers that as the node that bootstraps the cluster, and a
+pre-populated <code>kubelet.conf</code> is needed.</p>
+</div>
+<h4 id="control-plane-nodes">Control plane nodes</h4>
+<p>Execute the following command on primary (<code>kubeadm init</code>)
+and secondary (<code>kubeadm join --control-plane</code>) control plane
+nodes to generate all CSR files:</p>
+<pre class="shell"><code>sudo kubeadm certs generate-csr</code></pre>
+<p>If external etcd is to be used, follow the <a
+href="../../../setup/production-environment/tools/kubeadm/high-availability.html#external-etcd-nodes">External
+etcd with kubeadm</a> guide to understand what CSR files are needed on
+the kubeadm and etcd nodes. Other <code>.csr</code> and
+<code>.key</code> files under <code>/etc/kubernetes/pki/etcd</code> can
+be removed.</p>
+<p>Based on the explanation in <a
+href="#considerations-kubelet-conf">Considerations for kubelet.conf</a>
+keep or delete the <code>kubelet.conf</code> and
+<code>kubelet.conf.csr</code> files.</p>
+<h4 id="worker-nodes">Worker nodes</h4>
+<p>Based on the explanation in <a
+href="#considerations-kubelet-conf">Considerations for kubelet.conf</a>,
+optionally call:</p>
+<pre class="shell"><code>sudo kubeadm certs generate-csr</code></pre>
+<p>and keep only the <code>kubelet.conf</code> and
+<code>kubelet.conf.csr</code> files. Alternatively skip the steps for
+worker nodes entirely.</p>
+<h3 id="signing-csrs-for-all-certificates">Signing CSRs for all
+certificates</h3>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you are using external CA and already have CA serial number files
+(<code>.srl</code>) for <code>openssl</code>, you can copy such files to
+a kubeadm node where CSRs will be processed. The <code>.srl</code> files
+to copy are <code>/etc/kubernetes/pki/ca.srl</code>,
+<code>/etc/kubernetes/pki/front-proxy-ca.srl</code> and
+<code>/etc/kubernetes/pki/etcd/ca.srl</code>. The files can be then
+moved to a new node where CSR files will be processed.</p>
+<p>If a <code>.srl</code> file is missing for a CA on a node, the script
+below will generate a new SRL file with a random starting serial
+number.</p>
+<p>To read more about <code>.srl</code> files see the <a
+href="https://www.openssl.org/docs/man3.0/man1/openssl-x509.html"><code>openssl</code></a>
+documentation for the <code>--CAserial</code> flag.</p>
+</div>
+<p>Repeat this step for all nodes that have CSR files.</p>
+<p>Write the following script in the <code>/etc/kubernetes</code>
+directory, navigate to the directory and execute the script. The script
+will generate certificates for all CSR files that are present in the
+<code>/etc/kubernetes</code> tree.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
+</span>
+<span class="co"># Set certificate expiration time in days</span></span>
+<span class="va">DAYS</span><span class="op">=</span>365</span>
+</span>
+<span class="co"># Process all CSR files except those for front-proxy and etcd</span></span>
+<span class="fu">find</span> ./ <span class="at">-name</span> <span class="st">&quot;*.csr&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-v</span> <span class="st">&quot;pki/etcd&quot;</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="at">-v</span> <span class="st">&quot;front-proxy&quot;</span> <span class="kw">|</span> <span class="cf">while</span> <span class="bu">read</span> <span class="at">-r</span> <span class="va">FILE</span><span class="kw">;</span></span>
+<span class="cf">do</span></span>
+    <span class="bu">echo</span> <span class="st">&quot;* Processing </span><span class="va">${FILE}</span><span class="st"> ...&quot;</span></span>
+    <span class="va">FILE</span><span class="op">=</span><span class="va">${FILE</span><span class="op">%</span>.<span class="pp">*</span><span class="va">}</span> <span class="co"># Trim the extension</span></span>
+    <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">&quot;./pki/ca.srl&quot;</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+        <span class="va">SERIAL_FLAG</span><span class="op">=</span><span class="st">&quot;-CAserial ./pki/ca.srl&quot;</span></span>
+    <span class="cf">else</span></span>
+        <span class="va">SERIAL_FLAG</span><span class="op">=</span><span class="st">&quot;-CAcreateserial&quot;</span></span>
+    <span class="cf">fi</span></span>
+    <span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-days</span> <span class="st">&quot;</span><span class="va">${DAYS}</span><span class="st">&quot;</span> <span class="at">-CA</span> ./pki/ca.crt <span class="at">-CAkey</span> ./pki/ca.key <span class="va">${SERIAL_FLAG}</span> <span class="dt">\</span></span>
+        <span class="at">-in</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.csr&quot;</span> <span class="at">-out</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.crt&quot;</span></span>
+    <span class="fu">sleep</span> 2</span>
+<span class="cf">done</span></span>
+</span>
+<span class="co"># Process all etcd CSRs</span></span>
+<span class="fu">find</span> ./pki/etcd <span class="at">-name</span> <span class="st">&quot;*.csr&quot;</span> <span class="kw">|</span> <span class="cf">while</span> <span class="bu">read</span> <span class="at">-r</span> <span class="va">FILE</span><span class="kw">;</span></span>
+<span class="cf">do</span></span>
+    <span class="bu">echo</span> <span class="st">&quot;* Processing </span><span class="va">${FILE}</span><span class="st"> ...&quot;</span></span>
+    <span class="va">FILE</span><span class="op">=</span><span class="va">${FILE</span><span class="op">%</span>.<span class="pp">*</span><span class="va">}</span> <span class="co"># Trim the extension</span></span>
+    <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-f</span> <span class="st">&quot;./pki/etcd/ca.srl&quot;</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+        <span class="va">SERIAL_FLAG</span><span class="op">=</span>-CAserial <span class="ex">./pki/etcd/ca.srl</span></span>
+    <span class="cf">else</span></span>
+        <span class="va">SERIAL_FLAG</span><span class="op">=</span>-CAcreateserial</span>
+    <span class="cf">fi</span></span>
+    <span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-days</span> <span class="st">&quot;</span><span class="va">${DAYS}</span><span class="st">&quot;</span> <span class="at">-CA</span> ./pki/etcd/ca.crt <span class="at">-CAkey</span> ./pki/etcd/ca.key <span class="va">${SERIAL_FLAG}</span> <span class="dt">\</span></span>
+        <span class="at">-in</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.csr&quot;</span> <span class="at">-out</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.crt&quot;</span></span>
+<span class="cf">done</span></span>
+</span>
+<span class="co"># Process front-proxy CSRs</span></span>
+<span class="bu">echo</span> <span class="st">&quot;* Processing ./pki/front-proxy-client.csr ...&quot;</span></span>
+<span class="ex">openssl</span> x509 <span class="at">-req</span> <span class="at">-days</span> <span class="st">&quot;</span><span class="va">${DAYS}</span><span class="st">&quot;</span> <span class="at">-CA</span> ./pki/front-proxy-ca.crt <span class="at">-CAkey</span> ./pki/front-proxy-ca.key <span class="at">-CAcreateserial</span> <span class="dt">\</span></span>
+    <span class="at">-in</span> ./pki/front-proxy-client.csr <span class="at">-out</span> ./pki/front-proxy-client.crt</span></code></pre></div>
+<h3 id="embedding-certificates-in-kubeconfig-files">Embedding
+certificates in kubeconfig files</h3>
+<p>Repeat this step for all nodes that have CSR files.</p>
+<p>Write the following script in the <code>/etc/kubernetes</code>
+directory, navigate to the directory and execute the script. The script
+will take the <code>.crt</code> files that were signed for kubeconfig
+files from CSRs in the previous step and will embed them in the
+kubeconfig files.</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
+</span>
+<span class="va">CLUSTER</span><span class="op">=</span>kubernetes</span>
+<span class="fu">find</span> ./ <span class="at">-name</span> <span class="st">&quot;*.conf&quot;</span> <span class="kw">|</span> <span class="cf">while</span> <span class="bu">read</span> <span class="at">-r</span> <span class="va">FILE</span><span class="kw">;</span></span>
+<span class="cf">do</span></span>
+    <span class="bu">echo</span> <span class="st">&quot;* Processing </span><span class="va">${FILE}</span><span class="st"> ...&quot;</span></span>
+    <span class="va">KUBECONFIG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">&quot;</span> <span class="ex">kubectl</span> config set-cluster <span class="st">&quot;</span><span class="va">${CLUSTER}</span><span class="st">&quot;</span> <span class="at">--certificate-authority</span> ./pki/ca.crt <span class="at">--embed-certs</span></span>
+    <span class="va">USER</span><span class="op">=</span><span class="va">$(KUBECONFIG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">&quot;</span> <span class="ex">kubectl</span> config view <span class="at">-o</span> jsonpath=<span class="st">&#39;{.users[0].name}&#39;</span><span class="va">)</span></span>
+    <span class="va">KUBECONFIG</span><span class="op">=</span><span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">&quot;</span> <span class="ex">kubectl</span> config set-credentials <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span> <span class="at">--client-certificate</span> <span class="st">&quot;</span><span class="va">${FILE}</span><span class="st">.crt&quot;</span> <span class="at">--embed-certs</span></span>
+<span class="cf">done</span></span></code></pre></div>
+<h3 id="post-csr-cleanup">Performing cleanup</h3>
+<p>Perform this step on all nodes that have CSR files.</p>
+<p>Write the following script in the <code>/etc/kubernetes</code>
+directory, navigate to the directory and execute the script.</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
+</span>
+<span class="co"># Cleanup CSR files</span></span>
+<span class="fu">rm</span> <span class="at">-f</span> ./<span class="pp">*</span>.csr ./pki/<span class="pp">*</span>.csr ./pki/etcd/<span class="pp">*</span>.csr <span class="co"># Clean all CSR files</span></span>
+</span>
+<span class="co"># Cleanup CRT files that were already embedded in kubeconfig files</span></span>
+<span class="fu">rm</span> <span class="at">-f</span> ./<span class="pp">*</span>.crt</span></code></pre></div>
+<p>Optionally, move <code>.srl</code> files to the next node to be
+processed.</p>
+<p>Optionally, if using external CA remove the
+<code>/etc/kubernetes/pki/ca.key</code> file, as explained in the <a
+href="#external-ca-mode">External CA node</a> section.</p>
+<h3 id="kubeadm-node-initialization">kubeadm node initialization</h3>
+<p>Once CSR files have been signed and required certificates are in
+place on the hosts you want to use as nodes, you can use the commands
+<code>kubeadm init</code> and <code>kubeadm join</code> to create a
+Kubernetes cluster from these nodes. During <code>init</code> and
+<code>join</code>, kubeadm uses existing certificates, encryption keys
+and kubeconfig files that it finds in the <code>/etc/kubernetes</code>
+tree on the host's local filesystem.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="upgrading-windows-nodes.html"><span>Previous</span>Upgrading Windows nodes</a><a class="page-nav-link next" href="kubeadm-reconfigure.html"><span>Next</span>Reconfiguring a kubeadm cluster</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#custom-certificates">Using custom certificates</a></li><li class="toc-l2"><a href="#choosing-encryption-algorithm">Choosing an encryption algorithm</a></li><li class="toc-l2"><a href="#choosing-cert-validity-period">Choosing certificate validity period</a></li><li class="toc-l2"><a href="#external-ca-mode">External CA mode</a></li><li class="toc-l3"><a href="#manual-preparation-of-component-credentials">Manual preparation of component credentials</a></li><li class="toc-l3"><a href="#preparation-of-credentials-by-signing-csrs-generated-by-kubeadm">Preparation of credentials by signing CSRs generated by kubeadm</a></li><li class="toc-l3"><a href="#automated-preparation-of-component-credentials-by-using-kubeadm-phases">Automated preparation of component credentials by using kubeadm phases</a></li><li class="toc-l2"><a href="#check-certificate-expiration">Certificate expiry and management</a></li><li class="toc-l2"><a href="#automatic-certificate-renewal">Automatic certificate renewal</a></li><li class="toc-l2"><a href="#manual-certificate-renewal">Manual certificate renewal</a></li><li class="toc-l3"><a href="#admin-certificate-copy">Copying the administrator certificate (optional)</a></li><li class="toc-l2"><a href="#renew-certificates-with-the-kubernetes-certificates-api">Renew certificates with the Kubernetes certificates API</a></li><li class="toc-l3"><a href="#set-up-a-signer">Set up a signer</a></li><li class="toc-l3"><a href="#create-certificate-signing-requests-csr">Create certificate signing requests (CSR)</a></li><li class="toc-l2"><a href="#renew-certificates-with-external-ca">Renew certificates with external CA</a></li><li class="toc-l3"><a href="#renewal-by-using-certificate-signing-requests-csr">Renewal by using certificate signing requests (CSR)</a></li><li class="toc-l2"><a href="#certificate-authority-rotation">Certificate authority (CA) rotation</a></li><li class="toc-l2"><a href="#kubelet-serving-certs">Enabling signed kubelet serving certificates</a></li><li class="toc-l2"><a href="#kubeconfig-additional-users">Generating kubeconfig files for additional users</a></li><li class="toc-l2"><a href="#signing-csr">Signing certificate signing requests (CSR) generated by kubeadm</a></li><li class="toc-l3"><a href="#preparing-ca-and-service-account-files">Preparing CA and service account files</a></li><li class="toc-l3"><a href="#generate-csrs">Generate CSRs</a></li><li class="toc-l3"><a href="#signing-csrs-for-all-certificates">Signing CSRs for all certificates</a></li><li class="toc-l3"><a href="#embedding-certificates-in-kubeconfig-files">Embedding certificates in kubeconfig files</a></li><li class="toc-l3"><a href="#post-csr-cleanup">Performing cleanup</a></li><li class="toc-l3"><a href="#kubeadm-node-initialization">kubeadm node initialization</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

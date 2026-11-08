@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fine Parallel Processing Using a Work Queue · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/job/fine-parallel-processing-work-queue" data-title="Fine Parallel Processing Using a Work Queue" data-canonical="https://kubernetes.io/docs/tasks/job/fine-parallel-processing-work-queue/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../job.html">Run Jobs</a></nav></nav>
+        <header class="page-head">
+          <h1>Fine Parallel Processing Using a Work Queue</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/job/fine-parallel-processing-work-queue/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>In this example, you will run a Kubernetes Job that runs multiple
+parallel tasks as worker processes, each running as a separate Pod.</p>
+<p>In this example, as each pod is created, it picks up one unit of work
+from a task queue, processes it, and repeats until the end of the queue
+is reached.</p>
+<p>Here is an overview of the steps in this example:</p>
+<ol type="1">
+<li><strong>Start a storage service to hold the work queue.</strong> In
+this example, you will use Redis to store work items. In the <a
+href="coarse-parallel-processing-work-queue.html">previous
+example</a>, you used RabbitMQ. In this example, you will use Redis and
+a custom work-queue client library; this is because AMQP does not
+provide a good way for clients to detect when a finite-length work queue
+is empty. In practice you would set up a store such as Redis once and
+reuse it for the work queues of many jobs, and other things.</li>
+<li><strong>Create a queue, and fill it with messages.</strong> Each
+message represents one task to be done. In this example, a message is an
+integer that we will do a lengthy computation on.</li>
+<li><strong>Start a Job that works on tasks from the queue</strong>. The
+Job starts several pods. Each pod takes one task from the message queue,
+processes it, and repeats until the end of the queue is reached.</li>
+</ol>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
+</ul>
+<p>You will need a container image registry where you can upload images
+to run in your cluster. The example uses <a
+href="https://hub.docker.com/">Docker Hub</a>, but you could adapt it to
+a different container image registry.</p>
+<p>This task example also assumes that you have Docker installed
+locally. You use Docker to build container images.</p>
+<p>Be familiar with the basic, non-parallel, use of <a
+href="../../concepts/workloads/controllers/job.html">Job</a>.</p>
+<h2 id="starting-redis">Starting Redis</h2>
+<p>For this example, for simplicity, you will start a single instance of
+Redis. See the <a
+href="https://github.com/kubernetes/examples/tree/master/web/guestbook/">Redis
+Example</a> for an example of deploying Redis scalably and
+redundantly.</p>
+<p>You could also download the following files directly:</p>
+<ul>
+<li><a
+href="https://kubernetes.io/examples/application/job/redis/redis-pod.yaml"><code>redis-pod.yaml</code></a></li>
+<li><a
+href="https://kubernetes.io/examples/application/job/redis/redis-service.yaml"><code>redis-service.yaml</code></a></li>
+<li><a
+href="https://kubernetes.io/examples/application/job/redis/Dockerfile"><code>Dockerfile</code></a></li>
+<li><a
+href="https://kubernetes.io/examples/application/job/redis/job.yaml"><code>job.yaml</code></a></li>
+<li><a
+href="https://kubernetes.io/examples/application/job/redis/rediswq.py"><code>rediswq.py</code></a></li>
+<li><a
+href="https://kubernetes.io/examples/application/job/redis/worker.py"><code>worker.py</code></a></li>
+</ul>
+<p>To start a single instance of Redis, you need to create the redis pod
+and redis service:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/job/redis/redis-pod.yaml
+kubectl apply -f https://k8s.io/examples/application/job/redis/redis-service.yaml</code></pre>
+<h2 id="filling-the-queue-with-tasks">Filling the queue with tasks</h2>
+<p>Now let's fill the queue with some "tasks". In this example, the
+tasks are strings to be printed.</p>
+<p>Start a temporary interactive pod for running the Redis CLI.</p>
+<pre class="shell"><code>kubectl run -i --tty temp --image redis --command &quot;/bin/sh&quot;</code></pre>
+<pre><code>Waiting for pod default/redis2-c7h78 to be running, status is Pending, pod ready: false
+Hit enter for command prompt</code></pre>
+<p>Now hit enter, start the Redis CLI, and create a list with some work
+items in it.</p>
+<pre class="shell"><code>redis-cli -h redis</code></pre>
+<pre class="console"><code>redis:6379&gt; rpush job2 &quot;apple&quot;
+(integer) 1
+redis:6379&gt; rpush job2 &quot;banana&quot;
+(integer) 2
+redis:6379&gt; rpush job2 &quot;cherry&quot;
+(integer) 3
+redis:6379&gt; rpush job2 &quot;date&quot;
+(integer) 4
+redis:6379&gt; rpush job2 &quot;fig&quot;
+(integer) 5
+redis:6379&gt; rpush job2 &quot;grape&quot;
+(integer) 6
+redis:6379&gt; rpush job2 &quot;lemon&quot;
+(integer) 7
+redis:6379&gt; rpush job2 &quot;melon&quot;
+(integer) 8
+redis:6379&gt; rpush job2 &quot;orange&quot;
+(integer) 9
+redis:6379&gt; lrange job2 0 -1
+1) &quot;apple&quot;
+2) &quot;banana&quot;
+3) &quot;cherry&quot;
+4) &quot;date&quot;
+5) &quot;fig&quot;
+6) &quot;grape&quot;
+7) &quot;lemon&quot;
+8) &quot;melon&quot;
+9) &quot;orange&quot;</code></pre>
+<p>So, the list with key <code>job2</code> will be the work queue.</p>
+<p>Note: if you do not have Kube DNS setup correctly, you may need to
+change the first step of the above block to
+<code>redis-cli -h $REDIS_SERVICE_HOST</code>.</p>
+<h2 id="create-an-image">Create a container image</h2>
+<p>Now you are ready to create an image that will process the work in
+that queue.</p>
+<p>You're going to use a Python worker program with a Redis client to
+read the messages from the message queue.</p>
+<p>A simple Redis work queue client library is provided, called
+<code>rediswq.py</code> (<a
+href="https://kubernetes.io/examples/application/job/redis/rediswq.py">Download</a>).</p>
+<p>The "worker" program in each Pod of the Job uses the work queue
+client library to get work. Here it is:</p>
+<div class="code-sample">
+<p><code>application/job/redis/worker.py</code></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode python"><code class="sourceCode python"><span class="co">#!/usr/bin/env python</span></span>
+</span>
+<span class="im">import</span> time</span>
+<span class="im">import</span> rediswq</span>
+</span>
+host<span class="op">=</span><span class="st">&quot;redis&quot;</span></span>
+<span class="co"># Uncomment next two lines if you do not have CoreDNS working.</span></span>
+<span class="co"># import os</span></span>
+<span class="co"># host = os.getenv(&quot;REDIS_SERVICE_HOST&quot;)</span></span>
+</span>
+q <span class="op">=</span> rediswq.RedisWQ(name<span class="op">=</span><span class="st">&quot;job2&quot;</span>, host<span class="op">=</span>host)</span>
+<span class="bu">print</span>(<span class="st">&quot;Worker with sessionID: &quot;</span> <span class="op">+</span>  q.sessionID())</span>
+<span class="bu">print</span>(<span class="st">&quot;Initial queue state: empty=&quot;</span> <span class="op">+</span> <span class="bu">str</span>(q.empty()))</span>
+<span class="cf">while</span> <span class="kw">not</span> q.empty():</span>
+  item <span class="op">=</span> q.lease(lease_secs<span class="op">=</span><span class="dv">10</span>, block<span class="op">=</span><span class="va">True</span>, timeout<span class="op">=</span><span class="dv">2</span>) </span>
+  <span class="cf">if</span> item <span class="kw">is</span> <span class="kw">not</span> <span class="va">None</span>:</span>
+    itemstr <span class="op">=</span> item.decode(<span class="st">&quot;utf-8&quot;</span>)</span>
+    <span class="bu">print</span>(<span class="st">&quot;Working on &quot;</span> <span class="op">+</span> itemstr)</span>
+    time.sleep(<span class="dv">10</span>) <span class="co"># Put your actual work here instead of sleep.</span></span>
+    q.complete(item)</span>
+  <span class="cf">else</span>:</span>
+    <span class="bu">print</span>(<span class="st">&quot;Waiting for work&quot;</span>)</span>
+<span class="bu">print</span>(<span class="st">&quot;Queue empty, exiting&quot;</span>)</span></code></pre></div>
+</div>
+<p>You could also download <a
+href="https://kubernetes.io/examples/application/job/redis/worker.py"><code>worker.py</code></a>,
+<a
+href="https://kubernetes.io/examples/application/job/redis/rediswq.py"><code>rediswq.py</code></a>,
+and <a
+href="https://kubernetes.io/examples/application/job/redis/Dockerfile"><code>Dockerfile</code></a>
+files, then build the container image. Here's an example using Docker to
+do the image build:</p>
+<pre class="shell"><code>docker build -t job-wq-2 .</code></pre>
+<h3 id="push-the-image">Push the image</h3>
+<p>For the <a target="_blank" rel="noopener" href="https://hub.docker.com/">Docker Hub</a>, tag your
+app image with your username and push to the Hub with the below
+commands. Replace <code>&lt;username&gt;</code> with your Hub
+username.</p>
+<pre class="shell"><code>docker tag job-wq-2 &lt;username&gt;/job-wq-2
+docker push &lt;username&gt;/job-wq-2</code></pre>
+<p>You need to push to a public repository or <a
+href="../../concepts/containers/images.html">configure your cluster to be
+able to access your private repository</a>.</p>
+<h2 id="defining-a-job">Defining a Job</h2>
+<p>Here is a manifest for the Job you will create:</p>
+<div class="code-sample">
+<p><code>application/job/redis/job.yaml</code></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> batch/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Job</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-wq-2</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">parallelism</span><span class="kw">:</span><span class="at"> </span><span class="dv">2</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> job-wq-2</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> c</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/myproject/job-wq-2</span></span>
+<span class="at">      </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> OnFailure</span></span></code></pre></div>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Be sure to edit the manifest to change <code>gcr.io/myproject</code>
+to your own path.</p>
+</div>
+<p>In this example, each pod works on several items from the queue and
+then exits when there are no more items. Since the workers themselves
+detect when the workqueue is empty, and the Job controller does not know
+about the workqueue, it relies on the workers to signal when they are
+done working. The workers signal that the queue is empty by exiting with
+success. So, as soon as <strong>any</strong> worker exits with success,
+the controller knows the work is done, and that the Pods will exit soon.
+So, you need to leave the completion count of the Job unset. The job
+controller will wait for the other pods to complete too.</p>
+<h2 id="running-the-job">Running the Job</h2>
+<p>So, now run the Job:</p>
+<pre class="shell"><code># this assumes you downloaded and then edited the manifest already
+kubectl apply -f ./job.yaml</code></pre>
+<p>Now wait a bit, then check on the Job:</p>
+<pre class="shell"><code>kubectl describe jobs/job-wq-2</code></pre>
+<pre><code>Name:             job-wq-2
+Namespace:        default
+Selector:         controller-uid=b1c7e4e3-92e1-11e7-b85e-fa163ee3c11f
+Labels:           controller-uid=b1c7e4e3-92e1-11e7-b85e-fa163ee3c11f
+                  job-name=job-wq-2
+Annotations:      &lt;none&gt;
+Parallelism:      2
+Completions:      &lt;unset&gt;
+Start Time:       Mon, 11 Jan 2022 17:07:59 +0000
+Pods Statuses:    1 Running / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:       controller-uid=b1c7e4e3-92e1-11e7-b85e-fa163ee3c11f
+                job-name=job-wq-2
+  Containers:
+   c:
+    Image:              container-registry.example/exampleproject/job-wq-2
+    Port:
+    Environment:        &lt;none&gt;
+    Mounts:             &lt;none&gt;
+  Volumes:              &lt;none&gt;
+Events:
+  FirstSeen    LastSeen    Count    From            SubobjectPath    Type        Reason            Message
+  ---------    --------    -----    ----            -------------    --------    ------            -------
+  33s          33s         1        {job-controller }                Normal      SuccessfulCreate  Created pod: job-wq-2-lglf8</code></pre>
+<p>You can wait for the Job to succeed, with a timeout:</p>
+<pre class="shell"><code># The check for condition name is case insensitive
+kubectl wait --for=condition=complete --timeout=300s job/job-wq-2</code></pre>
+<pre class="shell"><code>kubectl logs pods/job-wq-2-7r7b2</code></pre>
+<pre><code>Worker with sessionID: bbd72d0a-9e5c-4dd6-abf6-416cc267991f
+Initial queue state: empty=False
+Working on banana
+Working on date
+Working on lemon</code></pre>
+<p>As you can see, one of the pods for this Job worked on several work
+units.</p>
+<h2 id="alternatives">Alternatives</h2>
+<p>If running a queue service or modifying your containers to use a work
+queue is inconvenient, you may want to consider one of the other <a
+href="../../concepts/workloads/controllers/job.html#job-patterns">job
+patterns</a>.</p>
+<p>If you have a continuous stream of background processing work to run,
+then consider running your background workers with a ReplicaSet instead,
+and consider running a background processing library such as <a
+href="https://github.com/resque/resque">https://github.com/resque/resque</a>.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="coarse-parallel-processing-work-queue.html"><span>Previous</span>Coarse Parallel Processing Using a Work Queue</a><a class="page-nav-link next" href="indexed-parallel-processing-static.html"><span>Next</span>Indexed Job for Parallel Processing with Static Work Assignment</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#starting-redis">Starting Redis</a></li><li class="toc-l2"><a href="#filling-the-queue-with-tasks">Filling the queue with tasks</a></li><li class="toc-l2"><a href="#create-an-image">Create a container image</a></li><li class="toc-l3"><a href="#push-the-image">Push the image</a></li><li class="toc-l2"><a href="#defining-a-job">Defining a Job</a></li><li class="toc-l2"><a href="#running-the-job">Running the Job</a></li><li class="toc-l2"><a href="#alternatives">Alternatives</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

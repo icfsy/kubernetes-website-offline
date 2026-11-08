@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Set Kubelet Parameters Via A Configuration File · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/administer-cluster/kubelet-config-file" data-title="Set Kubelet Parameters Via A Configuration File" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../administer-cluster.html">Administer a Cluster</a></nav></nav>
+        <header class="page-head">
+          <h1>Set Kubelet Parameters Via A Configuration File</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <h2 id="before-you-begin">Before you begin</h2>
+<p>Some steps in this page use the <code>jq</code> tool. If you don't
+have <code>jq</code>, you can install it via your operating system's
+software sources, or fetch it from <a
+href="https://jqlang.github.io/jq/">https://jqlang.github.io/jq/</a>.</p>
+<p>Some steps also involve installing <code>curl</code>, which can be
+installed via your operating system's software sources.</p>
+<p>A subset of the kubelet's configuration parameters may be set via an
+on-disk config file, as a substitute for command-line flags.</p>
+<p>Providing parameters via a config file is the recommended approach
+because it simplifies node deployment and configuration management.</p>
+<h2 id="create-the-config-file">Create the config file</h2>
+<p>The subset of the kubelet's configuration that can be configured via
+a file is defined by the <a
+href="../../reference/config-api/kubelet-config.v1beta1.html"><code>KubeletConfiguration</code></a>
+struct.</p>
+<p>The configuration file must be a JSON or YAML representation of the
+parameters in this struct. Make sure the kubelet has read permissions on
+the file.</p>
+<p>Here is an example of what this file might look like:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
+<span class="fu">address</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;192.168.0.8&quot;</span></span>
+<span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">20250</span></span>
+<span class="fu">serializeImagePulls</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span class="fu">evictionHard</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">memory.available</span><span class="kw">:</span><span class="at">  </span><span class="st">&quot;100Mi&quot;</span></span>
+<span class="at">    </span><span class="fu">nodefs.available</span><span class="kw">:</span><span class="at">  </span><span class="st">&quot;10%&quot;</span></span>
+<span class="at">    </span><span class="fu">nodefs.inodesFree</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5%&quot;</span></span>
+<span class="at">    </span><span class="fu">imagefs.available</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;15%&quot;</span></span>
+<span class="at">    </span><span class="fu">imagefs.inodesFree</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;5%&quot;</span></span></code></pre></div>
+<p>In this example, the kubelet is configured with the following
+settings:</p>
+<ol type="1">
+<li><p><code>address</code>: The kubelet will serve on IP address
+<code>192.168.0.8</code>.</p></li>
+<li><p><code>port</code>: The kubelet will serve on port
+<code>20250</code>.</p></li>
+<li><p><code>serializeImagePulls</code>: Image pulls will be done in
+parallel.</p></li>
+<li><p><code>evictionHard</code>: The kubelet will evict Pods under one
+of the following conditions:</p>
+<ul>
+<li>When the node's available memory drops below 100MiB.</li>
+<li>When the node's main filesystem's available space is less than
+10%.</li>
+<li>When the image filesystem's available space is less than 15%.</li>
+<li>When more than 95% of the node's main filesystem's inodes are in
+use.</li>
+</ul></li>
+</ol>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>In the example, by changing the default value of only one parameter
+for evictionHard, the default values of other parameters will not be
+inherited and will be set to zero. In order to provide custom values,
+you should provide all the threshold values respectively. Alternatively,
+you can set the MergeDefaultEvictionSettings to true in the kubelet
+configuration file, if any parameter is changed then the other
+parameters will inherit their default values instead of 0.</p>
+</div>
+<p>The <code>imagefs</code> is an optional filesystem that container
+runtimes use to store container images and container writable
+layers.</p>
+<h2 id="start-a-kubelet-process-configured-via-the-config-file">Start a
+kubelet process configured via the config file</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you use kubeadm to initialize your cluster, use the kubelet-config
+while creating your cluster with <code>kubeadm init</code>. See <a
+href="../../setup/production-environment/tools/kubeadm/kubelet-integration.html">configuring
+kubelet using kubeadm</a> for details.</p>
+</div>
+<p>Start the kubelet with the <code>--config</code> flag set to the path
+of the kubelet's config file. The kubelet will then load its config from
+this file.</p>
+<p>Note that command line flags which target the same value as a config
+file will override that value. This helps ensure backwards compatibility
+with the command-line API.</p>
+<p>Note that relative file paths in the kubelet config file are resolved
+relative to the location of the kubelet config file, whereas relative
+paths in command line flags are resolved relative to the kubelet's
+current working directory.</p>
+<p>Note that some default values differ between command-line flags and
+the kubelet config file. If <code>--config</code> is provided and the
+values are not specified via the command line, the defaults for the
+<code>KubeletConfiguration</code> version apply. In the above example,
+this version is <code>kubelet.config.k8s.io/v1beta1</code>.</p>
+<h2 id="kubelet-conf-d">Drop-in directory for kubelet configuration
+files</h2>
+<p>You can specify a drop-in configuration directory for the kubelet. By
+default, the kubelet does not look for drop-in configuration files
+anywhere - you must specify a path. For example:
+<code>--config-dir=/etc/kubernetes/kubelet.conf.d</code></p>
+<p>For Kubernetes v1.28 to v1.29, you can only specify
+<code>--config-dir</code> if you also set the environment variable
+<code>KUBELET_CONFIG_DROPIN_DIR_ALPHA</code> for the kubelet process
+(the value of that variable does not matter).</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The suffix of a valid kubelet drop-in configuration file
+<strong>must</strong> be <code>.conf</code>. For instance:
+<code>99-kubelet-address.conf</code></p>
+</div>
+<p>The kubelet processes files in its config drop-in directory by
+sorting the <strong>entire file name</strong> alphanumerically. For
+instance, <code>00-kubelet.conf</code> is processed first, and then
+overridden with a file named <code>01-kubelet.conf</code>.</p>
+<p>These files may contain partial configurations but should not be
+invalid and must include type metadata, specifically
+<code>apiVersion</code> and <code>kind</code>. Validation is only
+performed on the final resulting configuration structure stored
+internally in the kubelet. This offers flexibility in managing and
+merging kubelet configurations from different sources while preventing
+undesirable configurations. However, it is important to note that
+behavior varies based on the data type of the configuration fields.</p>
+<p>Different data types in the kubelet configuration structure merge
+differently. See the <a
+href="../../reference/node/kubelet-config-directory-merging.html">reference
+document</a> for more information.</p>
+<h3 id="kubelet-configuration-merging-order">Kubelet configuration
+merging order</h3>
+<p>On startup, the kubelet merges configuration from:</p>
+<ul>
+<li>Feature gates specified over the command line (lowest
+precedence).</li>
+<li>The kubelet configuration.</li>
+<li>Drop-in configuration files, according to sort order.</li>
+<li>Command line arguments excluding feature gates (highest
+precedence).</li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The config drop-in dir mechanism for the kubelet is similar but
+different from how the <code>kubeadm</code> tool allows you to patch
+configuration. The <code>kubeadm</code> tool uses a specific <a
+href="../../setup/production-environment/tools/kubeadm/control-plane-flags.html#patches">patching
+strategy</a> for its configuration, whereas the only patch strategy for
+kubelet configuration drop-in files is <code>replace</code>. The kubelet
+determines the order of merges based on sorting the
+<strong>suffixes</strong> alphanumerically, and replaces every field
+present in a higher priority file.</p>
+</div>
+<h2 id="viewing-the-kubelet-configuration">Viewing the kubelet
+configuration</h2>
+<p>Since the configuration could now be spread over multiple files with
+this feature, if someone wants to inspect the final actuated
+configuration, they can follow these steps to inspect the kubelet
+configuration:</p>
+<ol type="1">
+<li><p>Start a proxy server using <a
+href="../../reference/kubectl/generated/kubectl_proxy.html"><code>kubectl proxy</code></a>
+in your terminal.</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> proxy</span></code></pre></div>
+<p>Which gives output like:</p>
+<pre class="none"><code>Starting to serve on 127.0.0.1:8001</code></pre></li>
+<li><p>Open another terminal window and use <code>curl</code> to fetch
+the kubelet configuration. Replace
+<code>&lt;node-name&gt;</code> with the actual name of your
+node:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">curl</span> <span class="at">-X</span> GET http://127.0.0.1:8001/api/v1/nodes/<span class="kw">&amp;</span><span class="ex">lt</span><span class="kw">;</span><span class="ex">node-name</span><span class="kw">&amp;</span><span class="ex">gt</span><span class="kw">;</span><span class="ex">/proxy/configz</span> <span class="kw">|</span> <span class="ex">jq</span> .</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+  <span class="dt">&quot;kubeletconfig&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+    <span class="dt">&quot;enableServer&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;staticPodPath&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/run/kubernetes/static-pods&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;syncFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;1m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;fileCheckFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;20s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;httpCheckFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;20s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;address&quot;</span><span class="fu">:</span> <span class="st">&quot;192.168.1.16&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;port&quot;</span><span class="fu">:</span> <span class="dv">10250</span><span class="fu">,</span></span>
+    <span class="dt">&quot;readOnlyPort&quot;</span><span class="fu">:</span> <span class="dv">10255</span><span class="fu">,</span></span>
+    <span class="dt">&quot;tlsCertFile&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/lib/kubelet/pki/kubelet.crt&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;tlsPrivateKeyFile&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/lib/kubelet/pki/kubelet.key&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;rotateCertificates&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;authentication&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+      <span class="dt">&quot;x509&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;clientCAFile&quot;</span><span class="fu">:</span> <span class="st">&quot;/var/run/kubernetes/client-ca.crt&quot;</span></span>
+      <span class="fu">},</span></span>
+      <span class="dt">&quot;webhook&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;enabled&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+        <span class="dt">&quot;cacheTTL&quot;</span><span class="fu">:</span> <span class="st">&quot;2m0s&quot;</span></span>
+      <span class="fu">},</span></span>
+      <span class="dt">&quot;anonymous&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;enabled&quot;</span><span class="fu">:</span> <span class="kw">true</span></span>
+      <span class="fu">}</span></span>
+    <span class="fu">},</span></span>
+    <span class="dt">&quot;authorization&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+      <span class="dt">&quot;mode&quot;</span><span class="fu">:</span> <span class="st">&quot;AlwaysAllow&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;webhook&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;cacheAuthorizedTTL&quot;</span><span class="fu">:</span> <span class="st">&quot;5m0s&quot;</span><span class="fu">,</span></span>
+        <span class="dt">&quot;cacheUnauthorizedTTL&quot;</span><span class="fu">:</span> <span class="st">&quot;30s&quot;</span></span>
+      <span class="fu">}</span></span>
+    <span class="fu">},</span></span>
+    <span class="dt">&quot;registryPullQPS&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
+    <span class="dt">&quot;registryBurst&quot;</span><span class="fu">:</span> <span class="dv">10</span><span class="fu">,</span></span>
+    <span class="dt">&quot;eventRecordQPS&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
+    <span class="dt">&quot;eventBurst&quot;</span><span class="fu">:</span> <span class="dv">100</span><span class="fu">,</span></span>
+    <span class="dt">&quot;enableDebuggingHandlers&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;healthzPort&quot;</span><span class="fu">:</span> <span class="dv">10248</span><span class="fu">,</span></span>
+    <span class="dt">&quot;healthzBindAddress&quot;</span><span class="fu">:</span> <span class="st">&quot;127.0.0.1&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;oomScoreAdj&quot;</span><span class="fu">:</span> <span class="dv">-999</span><span class="fu">,</span></span>
+    <span class="dt">&quot;clusterDomain&quot;</span><span class="fu">:</span> <span class="st">&quot;cluster.local&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;clusterDNS&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+      <span class="st">&quot;10.0.0.10&quot;</span></span>
+    <span class="ot">]</span><span class="fu">,</span></span>
+    <span class="dt">&quot;streamingConnectionIdleTimeout&quot;</span><span class="fu">:</span> <span class="st">&quot;4h0m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;nodeStatusUpdateFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;10s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;nodeStatusReportFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;5m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;nodeLeaseDurationSeconds&quot;</span><span class="fu">:</span> <span class="dv">40</span><span class="fu">,</span></span>
+    <span class="dt">&quot;imageMinimumGCAge&quot;</span><span class="fu">:</span> <span class="st">&quot;2m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;imageMaximumGCAge&quot;</span><span class="fu">:</span> <span class="st">&quot;0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;imageGCHighThresholdPercent&quot;</span><span class="fu">:</span> <span class="dv">85</span><span class="fu">,</span></span>
+    <span class="dt">&quot;imageGCLowThresholdPercent&quot;</span><span class="fu">:</span> <span class="dv">80</span><span class="fu">,</span></span>
+    <span class="dt">&quot;volumeStatsAggPeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;1m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;cgroupsPerQOS&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;cgroupDriver&quot;</span><span class="fu">:</span> <span class="st">&quot;systemd&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;cpuManagerPolicy&quot;</span><span class="fu">:</span> <span class="st">&quot;none&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;cpuManagerReconcilePeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;10s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;memoryManagerPolicy&quot;</span><span class="fu">:</span> <span class="st">&quot;None&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;topologyManagerPolicy&quot;</span><span class="fu">:</span> <span class="st">&quot;none&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;topologyManagerScope&quot;</span><span class="fu">:</span> <span class="st">&quot;container&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;runtimeRequestTimeout&quot;</span><span class="fu">:</span> <span class="st">&quot;2m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;hairpinMode&quot;</span><span class="fu">:</span> <span class="st">&quot;promiscuous-bridge&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;maxPods&quot;</span><span class="fu">:</span> <span class="dv">110</span><span class="fu">,</span></span>
+    <span class="dt">&quot;podPidsLimit&quot;</span><span class="fu">:</span> <span class="dv">-1</span><span class="fu">,</span></span>
+    <span class="dt">&quot;resolvConf&quot;</span><span class="fu">:</span> <span class="st">&quot;/run/systemd/resolve/resolv.conf&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;cpuCFSQuota&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;cpuCFSQuotaPeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;100ms&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;nodeStatusMaxImages&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
+    <span class="dt">&quot;maxOpenFiles&quot;</span><span class="fu">:</span> <span class="dv">1000000</span><span class="fu">,</span></span>
+    <span class="dt">&quot;contentType&quot;</span><span class="fu">:</span> <span class="st">&quot;application/vnd.kubernetes.protobuf&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;kubeAPIQPS&quot;</span><span class="fu">:</span> <span class="dv">50</span><span class="fu">,</span></span>
+    <span class="dt">&quot;kubeAPIBurst&quot;</span><span class="fu">:</span> <span class="dv">100</span><span class="fu">,</span></span>
+    <span class="dt">&quot;serializeImagePulls&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;evictionHard&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+      <span class="dt">&quot;imagefs.available&quot;</span><span class="fu">:</span> <span class="st">&quot;15%&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;memory.available&quot;</span><span class="fu">:</span> <span class="st">&quot;100Mi&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;nodefs.available&quot;</span><span class="fu">:</span> <span class="st">&quot;10%&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;nodefs.inodesFree&quot;</span><span class="fu">:</span> <span class="st">&quot;5%&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;imagefs.inodesFree&quot;</span><span class="fu">:</span> <span class="st">&quot;5%&quot;</span></span>
+    <span class="fu">},</span></span>
+    <span class="dt">&quot;evictionPressureTransitionPeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;1m0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;mergeDefaultEvictionSettings&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+    <span class="dt">&quot;enableControllerAttachDetach&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;makeIPTablesUtilChains&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;iptablesMasqueradeBit&quot;</span><span class="fu">:</span> <span class="dv">14</span><span class="fu">,</span></span>
+    <span class="dt">&quot;iptablesDropBit&quot;</span><span class="fu">:</span> <span class="dv">15</span><span class="fu">,</span></span>
+    <span class="dt">&quot;featureGates&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+      <span class="dt">&quot;AllAlpha&quot;</span><span class="fu">:</span> <span class="kw">false</span></span>
+    <span class="fu">},</span></span>
+    <span class="dt">&quot;failSwapOn&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+    <span class="dt">&quot;memorySwap&quot;</span><span class="fu">:</span> <span class="fu">{},</span></span>
+    <span class="dt">&quot;containerLogMaxSize&quot;</span><span class="fu">:</span> <span class="st">&quot;10Mi&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;containerLogMaxFiles&quot;</span><span class="fu">:</span> <span class="dv">5</span><span class="fu">,</span></span>
+    <span class="dt">&quot;configMapAndSecretChangeDetectionStrategy&quot;</span><span class="fu">:</span> <span class="st">&quot;Watch&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;enforceNodeAllocatable&quot;</span><span class="fu">:</span> <span class="ot">[</span></span>
+      <span class="st">&quot;pods&quot;</span></span>
+    <span class="ot">]</span><span class="fu">,</span></span>
+    <span class="dt">&quot;volumePluginDir&quot;</span><span class="fu">:</span> <span class="st">&quot;/usr/libexec/kubernetes/kubelet-plugins/volume/exec/&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;logging&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+      <span class="dt">&quot;format&quot;</span><span class="fu">:</span> <span class="st">&quot;text&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;flushFrequency&quot;</span><span class="fu">:</span> <span class="st">&quot;5s&quot;</span><span class="fu">,</span></span>
+      <span class="dt">&quot;verbosity&quot;</span><span class="fu">:</span> <span class="dv">3</span><span class="fu">,</span></span>
+      <span class="dt">&quot;options&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+        <span class="dt">&quot;json&quot;</span><span class="fu">:</span> <span class="fu">{</span></span>
+          <span class="dt">&quot;infoBufferSize&quot;</span><span class="fu">:</span> <span class="st">&quot;0&quot;</span></span>
+        <span class="fu">}</span></span>
+      <span class="fu">}</span></span>
+    <span class="fu">},</span></span>
+    <span class="dt">&quot;enableSystemLogHandler&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;enableSystemLogQuery&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+    <span class="dt">&quot;shutdownGracePeriod&quot;</span><span class="fu">:</span> <span class="st">&quot;0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;shutdownGracePeriodCriticalPods&quot;</span><span class="fu">:</span> <span class="st">&quot;0s&quot;</span><span class="fu">,</span></span>
+    <span class="dt">&quot;enableProfilingHandler&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;enableDebugFlagsHandler&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;seccompDefault&quot;</span><span class="fu">:</span> <span class="kw">false</span><span class="fu">,</span></span>
+    <span class="dt">&quot;registerNode&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;localStorageCapacityIsolation&quot;</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span></span>
+    <span class="dt">&quot;containerRuntimeEndpoint&quot;</span><span class="fu">:</span> <span class="st">&quot;unix:///var/run/crio/crio.sock&quot;</span></span>
+  <span class="fu">}</span></span>
+<span class="fu">}</span></span></code></pre></div></li>
+</ol>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn more about kubelet configuration by checking the <a
+href="../../reference/config-api/kubelet-config.v1beta1.html"><code>KubeletConfiguration</code></a>
+reference.</li>
+<li>Learn more about kubelet configuration merging in the <a
+href="../../reference/node/kubelet-config-directory-merging.html">reference
+document</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="hardening-dra.html"><span>Previous</span>Harden Dynamic Resource Allocation in Your Cluster</a><a class="page-nav-link next" href="namespaces.html"><span>Next</span>Share a Cluster with Namespaces</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#create-the-config-file">Create the config file</a></li><li class="toc-l2"><a href="#start-a-kubelet-process-configured-via-the-config-file">Start a kubelet process configured via the config file</a></li><li class="toc-l2"><a href="#kubelet-conf-d">Drop-in directory for kubelet configuration files</a></li><li class="toc-l3"><a href="#kubelet-configuration-merging-order">Kubelet configuration merging order</a></li><li class="toc-l2"><a href="#viewing-the-kubelet-configuration">Viewing the kubelet configuration</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

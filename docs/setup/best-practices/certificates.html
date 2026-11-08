@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PKI certificates and requirements · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="setup/best-practices/certificates" data-title="PKI certificates and requirements" data-canonical="https://kubernetes.io/docs/setup/best-practices/certificates/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../setup.html">Getting started</a><span>/</span><a href="../best-practices.html">Best practices</a></nav></nav>
+        <header class="page-head">
+          <h1>PKI certificates and requirements</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/setup/best-practices/certificates/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>Kubernetes requires PKI certificates for authentication over TLS. If
+you install Kubernetes with <a
+href="../../reference/setup-tools/kubeadm.html">kubeadm</a>, the
+certificates that your cluster requires are automatically generated. You
+can also generate your own certificates -- for example, to keep your
+private keys more secure by not storing them on the API server. This
+page explains the certificates that your cluster requires.</p>
+<h2 id="how-certificates-are-used-by-your-cluster">How certificates are
+used by your cluster</h2>
+<p>Kubernetes requires PKI for the following operations:</p>
+<h3 id="server-certificates">Server certificates</h3>
+<ul>
+<li>Server certificate for the API server endpoint</li>
+<li>Server certificate for the etcd server</li>
+<li><a
+href="../../reference/access-authn-authz/kubelet-tls-bootstrapping.html#client-and-serving-certificates">Server
+certificates</a> for each kubelet (every <a class="glossary-term" href="../../reference/glossary.html#term-node" title="Glossary: node">node</a> runs a kubelet)</li>
+<li>Optional server certificate for the <a
+href="../../tasks/extend-kubernetes/configure-aggregation-layer.html">front-proxy</a></li>
+</ul>
+<h3 id="client-certificates">Client certificates</h3>
+<ul>
+<li>Client certificates for each kubelet, used to authenticate to the
+API server as a client of the Kubernetes API</li>
+<li>Client certificate for each API server, used to authenticate to
+etcd</li>
+<li>Client certificate for the controller manager to securely
+communicate with the API server</li>
+<li>Client certificate for the scheduler to securely communicate with
+the API server</li>
+<li>Client certificates, one for each node, for kube-proxy to
+authenticate to the API server</li>
+<li>Optional client certificates for administrators of the cluster to
+authenticate to the API server</li>
+<li>Optional client certificate for the <a
+href="../../tasks/extend-kubernetes/configure-aggregation-layer.html">front-proxy</a></li>
+</ul>
+<h3 id="kubelet-s-server-and-client-certificates">Kubelet's server and
+client certificates</h3>
+<p>To establish a secure connection and authenticate itself to the
+kubelet, the API Server requires a client certificate and key pair.</p>
+<p>In this scenario, there are two approaches for certificate usage:</p>
+<ul>
+<li><p>Shared Certificates: The kube-apiserver can utilize the same
+certificate and key pair it uses to authenticate its clients. This means
+that the existing certificates, such as <code>apiserver.crt</code> and
+<code>apiserver.key</code>, can be used for communicating with the
+kubelet servers.</p></li>
+<li><p>Separate Certificates: Alternatively, the kube-apiserver can
+generate a new client certificate and key pair to authenticate its
+communication with the kubelet servers. In this case, a distinct
+certificate named <code>kubelet-client.crt</code> and its corresponding
+private key, <code>kubelet-client.key</code> are created.</p></li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><code>front-proxy</code> certificates are required only when using
+the API server aggregation layer to support <a
+href="../../tasks/extend-kubernetes/setup-extension-api-server.html">an
+extension API server</a>.</p>
+</div>
+<p>etcd also implements mutual TLS to authenticate clients and
+peers.</p>
+<h2 id="where-certificates-are-stored">Where certificates are
+stored</h2>
+<p>If you install Kubernetes with kubeadm, most certificates are stored
+in <code>/etc/kubernetes/pki</code>. All paths in this documentation are
+relative to that directory, with the exception of user account
+certificates which kubeadm places in <code>/etc/kubernetes</code>.</p>
+<h2 id="configure-certificates-manually">Configure certificates
+manually</h2>
+<p>If you don't want kubeadm to generate the required certificates, you
+can create them using a single root CA or by providing all certificates.
+See <a
+href="../../tasks/administer-cluster/certificates.html">Certificates</a>
+for details on creating your own certificate authority. See <a
+href="../../tasks/administer-cluster/kubeadm/kubeadm-certs.html">Certificate
+Management with kubeadm</a> for more on managing certificates.</p>
+<h3 id="single-root-ca">Single root CA</h3>
+<p>You can create a single root CA, controlled by an administrator. This
+root CA can then create multiple intermediate CAs, and delegate all
+further creation to Kubernetes itself.</p>
+<p>Required CAs:</p>
+<table>
+<colgroup>
+<col style="width: 28%" />
+<col style="width: 31%" />
+<col style="width: 40%" />
+</colgroup>
+<thead>
+<tr>
+<th>Path</th>
+<th>Default CN</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ca.crt,key</td>
+<td>kubernetes-ca</td>
+<td>Kubernetes general CA</td>
+</tr>
+<tr>
+<td>etcd/ca.crt,key</td>
+<td>etcd-ca</td>
+<td>For all etcd-related functions</td>
+</tr>
+<tr>
+<td>front-proxy-ca.crt,key</td>
+<td>kubernetes-front-proxy-ca</td>
+<td>For the <a
+href="../../tasks/extend-kubernetes/configure-aggregation-layer.html">front-end
+proxy</a></td>
+</tr>
+</tbody>
+</table>
+<p>On top of the above CAs, it is also necessary to get a public/private
+key pair for service account management, <code>sa.key</code> and
+<code>sa.pub</code>. The following example illustrates the CA key and
+certificate files shown in the previous table:</p>
+<pre><code>/etc/kubernetes/pki/ca.crt
+/etc/kubernetes/pki/ca.key
+/etc/kubernetes/pki/etcd/ca.crt
+/etc/kubernetes/pki/etcd/ca.key
+/etc/kubernetes/pki/front-proxy-ca.crt
+/etc/kubernetes/pki/front-proxy-ca.key</code></pre>
+<h3 id="all-certificates">All certificates</h3>
+<p>If you don't wish to copy the CA private keys to your cluster, you
+can generate all certificates yourself.</p>
+<p>Required certificates:</p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 18%" />
+<col style="width: 11%" />
+<col style="width: 12%" />
+<col style="width: 36%" />
+</colgroup>
+<thead>
+<tr>
+<th>Default CN</th>
+<th>Parent CA</th>
+<th>O (in Subject)</th>
+<th>kind</th>
+<th>hosts (SAN)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>kube-etcd</td>
+<td>etcd-ca</td>
+<td></td>
+<td>server, client</td>
+<td><code>&lt;hostname&gt;</code>, <code>&lt;Host_IP&gt;</code>,
+<code>localhost</code>, <code>127.0.0.1</code></td>
+</tr>
+<tr>
+<td>kube-etcd-peer</td>
+<td>etcd-ca</td>
+<td></td>
+<td>server, client</td>
+<td><code>&lt;hostname&gt;</code>, <code>&lt;Host_IP&gt;</code>,
+<code>localhost</code>, <code>127.0.0.1</code></td>
+</tr>
+<tr>
+<td>kube-etcd-healthcheck-client</td>
+<td>etcd-ca</td>
+<td></td>
+<td>client</td>
+<td></td>
+</tr>
+<tr>
+<td>kube-apiserver-etcd-client</td>
+<td>etcd-ca</td>
+<td></td>
+<td>client</td>
+<td></td>
+</tr>
+<tr>
+<td>kube-apiserver</td>
+<td>kubernetes-ca</td>
+<td></td>
+<td>server</td>
+<td><code>&lt;hostname&gt;</code>, <code>&lt;Host_IP&gt;</code>,
+<code>&lt;advertise_IP&gt;</code><a href="#fn1" class="footnote-ref"
+id="fnref1" role="doc-noteref"><sup>1</sup></a></td>
+</tr>
+<tr>
+<td>kube-apiserver-kubelet-client</td>
+<td>kubernetes-ca</td>
+<td>system:masters</td>
+<td>client</td>
+<td></td>
+</tr>
+<tr>
+<td>front-proxy-client</td>
+<td>kubernetes-front-proxy-ca</td>
+<td></td>
+<td>client</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Instead of using the super-user group <code>system:masters</code> for
+<code>kube-apiserver-kubelet-client</code> a less privileged group can
+be used. kubeadm uses the <code>kubeadm:cluster-admins</code> group for
+that purpose.</p>
+</div>
+<p>where <code>kind</code> maps to one or more of the x509 key usage,
+which is also documented in the <code>.spec.usages</code> of a <a
+href="https://kubernetes.io/docs/reference/kubernetes-api/authentication-resources/certificate-signing-request-v1#CertificateSigningRequest">CertificateSigningRequest</a>
+type:</p>
+<table>
+<colgroup>
+<col style="width: 8%" />
+<col style="width: 91%" />
+</colgroup>
+<thead>
+<tr>
+<th>kind</th>
+<th>Key usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>server</td>
+<td>digital signature, key encipherment, server auth</td>
+</tr>
+<tr>
+<td>client</td>
+<td>digital signature, key encipherment, client auth</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Hosts/SAN listed above are the recommended ones for getting a working
+cluster; if required by a specific setup, it is possible to add
+additional SANs on all the server certificates.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>For kubeadm users only:</p>
+<ul>
+<li>The scenario where you are copying to your cluster CA certificates
+without private keys is referred as external CA in the kubeadm
+documentation.</li>
+<li>If you are comparing the above list with a kubeadm generated PKI,
+please be aware that <code>kube-etcd</code>, <code>kube-etcd-peer</code>
+and <code>kube-etcd-healthcheck-client</code> certificates are not
+generated in case of external etcd.</li>
+</ul>
+</div>
+<h3 id="certificate-paths">Certificate paths</h3>
+<p>Certificates should be placed in a recommended path (as used by <a
+href="../../reference/setup-tools/kubeadm.html">kubeadm</a>). Paths should
+be specified using the given argument regardless of location.</p>
+<table>
+<colgroup>
+<col style="width: 11%" />
+<col style="width: 23%" />
+<col style="width: 25%" />
+<col style="width: 9%" />
+<col style="width: 14%" />
+<col style="width: 15%" />
+</colgroup>
+<thead>
+<tr>
+<th>DefaultCN</th>
+<th>recommendedkeypath</th>
+<th>recommendedcertpath</th>
+<th>command</th>
+<th>keyargument</th>
+<th>certargument</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>etcd-ca</td>
+<td>etcd/ca.key</td>
+<td>etcd/ca.crt</td>
+<td>kube-apiserver</td>
+<td></td>
+<td>--etcd-cafile</td>
+</tr>
+<tr>
+<td>kube-apiserver-etcd-client</td>
+<td>apiserver-etcd-client.key</td>
+<td>apiserver-etcd-client.crt</td>
+<td>kube-apiserver</td>
+<td>--etcd-keyfile</td>
+<td>--etcd-certfile</td>
+</tr>
+<tr>
+<td>kubernetes-ca</td>
+<td>ca.key</td>
+<td>ca.crt</td>
+<td>kube-apiserver</td>
+<td></td>
+<td>--client-ca-file</td>
+</tr>
+<tr>
+<td>kubernetes-ca</td>
+<td>ca.key</td>
+<td>ca.crt</td>
+<td>kube-controller-manager</td>
+<td>--cluster-signing-key-file</td>
+<td>--client-ca-file,--root-ca-file,--cluster-signing-cert-file</td>
+</tr>
+<tr>
+<td>kube-apiserver</td>
+<td>apiserver.key</td>
+<td>apiserver.crt</td>
+<td>kube-apiserver</td>
+<td>--tls-private-key-file</td>
+<td>--tls-cert-file</td>
+</tr>
+<tr>
+<td>kube-apiserver-kubelet-client</td>
+<td>apiserver-kubelet-client.key</td>
+<td>apiserver-kubelet-client.crt</td>
+<td>kube-apiserver</td>
+<td>--kubelet-client-key</td>
+<td>--kubelet-client-certificate</td>
+</tr>
+<tr>
+<td>front-proxy-ca</td>
+<td>front-proxy-ca.key</td>
+<td>front-proxy-ca.crt</td>
+<td>kube-apiserver</td>
+<td></td>
+<td>--requestheader-client-ca-file</td>
+</tr>
+<tr>
+<td>front-proxy-ca</td>
+<td>front-proxy-ca.key</td>
+<td>front-proxy-ca.crt</td>
+<td>kube-controller-manager</td>
+<td></td>
+<td>--requestheader-client-ca-file</td>
+</tr>
+<tr>
+<td>front-proxy-client</td>
+<td>front-proxy-client.key</td>
+<td>front-proxy-client.crt</td>
+<td>kube-apiserver</td>
+<td>--proxy-client-key-file</td>
+<td>--proxy-client-cert-file</td>
+</tr>
+<tr>
+<td>etcd-ca</td>
+<td>etcd/ca.key</td>
+<td>etcd/ca.crt</td>
+<td>etcd</td>
+<td></td>
+<td>--trusted-ca-file,--peer-trusted-ca-file</td>
+</tr>
+<tr>
+<td>kube-etcd</td>
+<td>etcd/server.key</td>
+<td>etcd/server.crt</td>
+<td>etcd</td>
+<td>--key-file</td>
+<td>--cert-file</td>
+</tr>
+<tr>
+<td>kube-etcd-peer</td>
+<td>etcd/peer.key</td>
+<td>etcd/peer.crt</td>
+<td>etcd</td>
+<td>--peer-key-file</td>
+<td>--peer-cert-file</td>
+</tr>
+<tr>
+<td>etcd-ca</td>
+<td></td>
+<td>etcd/ca.crt</td>
+<td>etcdctl</td>
+<td></td>
+<td>--cacert</td>
+</tr>
+<tr>
+<td>kube-etcd-healthcheck-client</td>
+<td>etcd/healthcheck-client.key</td>
+<td>etcd/healthcheck-client.crt</td>
+<td>etcdctl</td>
+<td>--key</td>
+<td>--cert</td>
+</tr>
+</tbody>
+</table>
+<p>Same considerations apply for the service account key pair:</p>
+<table>
+<colgroup>
+<col style="width: 19%" />
+<col style="width: 18%" />
+<col style="width: 25%" />
+<col style="width: 38%" />
+</colgroup>
+<thead>
+<tr>
+<th>private key path</th>
+<th>public key path</th>
+<th>command</th>
+<th>argument</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sa.key</td>
+<td></td>
+<td>kube-controller-manager</td>
+<td>--service-account-private-key-file</td>
+</tr>
+<tr>
+<td></td>
+<td>sa.pub</td>
+<td>kube-apiserver</td>
+<td>--service-account-key-file</td>
+</tr>
+</tbody>
+</table>
+<p>The following example illustrates the file paths <a
+href="#certificate-paths">from the previous tables</a> you need to
+provide if you are generating all of your own keys and certificates:</p>
+<pre><code>/etc/kubernetes/pki/etcd/ca.key
+/etc/kubernetes/pki/etcd/ca.crt
+/etc/kubernetes/pki/apiserver-etcd-client.key
+/etc/kubernetes/pki/apiserver-etcd-client.crt
+/etc/kubernetes/pki/ca.key
+/etc/kubernetes/pki/ca.crt
+/etc/kubernetes/pki/apiserver.key
+/etc/kubernetes/pki/apiserver.crt
+/etc/kubernetes/pki/apiserver-kubelet-client.key
+/etc/kubernetes/pki/apiserver-kubelet-client.crt
+/etc/kubernetes/pki/front-proxy-ca.key
+/etc/kubernetes/pki/front-proxy-ca.crt
+/etc/kubernetes/pki/front-proxy-client.key
+/etc/kubernetes/pki/front-proxy-client.crt
+/etc/kubernetes/pki/etcd/server.key
+/etc/kubernetes/pki/etcd/server.crt
+/etc/kubernetes/pki/etcd/peer.key
+/etc/kubernetes/pki/etcd/peer.crt
+/etc/kubernetes/pki/etcd/healthcheck-client.key
+/etc/kubernetes/pki/etcd/healthcheck-client.crt
+/etc/kubernetes/pki/sa.key
+/etc/kubernetes/pki/sa.pub</code></pre>
+<h2 id="configure-certificates-for-user-accounts">Configure certificates
+for user accounts</h2>
+<p>You must manually configure these administrator accounts and service
+accounts:</p>
+<table>
+<colgroup>
+<col style="width: 21%" />
+<col style="width: 24%" />
+<col style="width: 32%" />
+<col style="width: 21%" />
+</colgroup>
+<thead>
+<tr>
+<th>Filename</th>
+<th>Credential name</th>
+<th>Default CN</th>
+<th>O (in Subject)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>admin.conf</td>
+<td>default-admin</td>
+<td>kubernetes-admin</td>
+<td><code>&lt;admin-group&gt;</code></td>
+</tr>
+<tr>
+<td>super-admin.conf</td>
+<td>default-super-admin</td>
+<td>kubernetes-super-admin</td>
+<td>system:masters</td>
+</tr>
+<tr>
+<td>kubelet.conf</td>
+<td>default-auth</td>
+<td>system:node:<code>&lt;nodeName&gt;</code> (see note)</td>
+<td>system:nodes</td>
+</tr>
+<tr>
+<td>controller-manager.conf</td>
+<td>default-controller-manager</td>
+<td>system:kube-controller-manager</td>
+<td></td>
+</tr>
+<tr>
+<td>scheduler.conf</td>
+<td>default-scheduler</td>
+<td>system:kube-scheduler</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The value of <code>&lt;nodeName&gt;</code> for
+<code>kubelet.conf</code> <strong>must</strong> match precisely the
+value of the node name provided by the kubelet as it registers with the
+apiserver. For further details, read the <a
+href="../../reference/access-authn-authz/node.html">Node
+Authorization</a>.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>In the above example <code>&lt;admin-group&gt;</code> is
+implementation specific. Some tools sign the certificate in the default
+<code>admin.conf</code> to be part of the <code>system:masters</code>
+group. <code>system:masters</code> is a break-glass, super user group
+can bypass the authorization layer of Kubernetes, such as RBAC. Also
+some tools do not generate a separate <code>super-admin.conf</code> with
+a certificate bound to this super user group.</p>
+<p>kubeadm generates two separate administrator certificates in
+kubeconfig files. One is in <code>admin.conf</code> and has
+<code>Subject: O = kubeadm:cluster-admins, CN = kubernetes-admin</code>.
+<code>kubeadm:cluster-admins</code> is a custom group bound to the
+<code>cluster-admin</code> ClusterRole. This file is generated on all
+kubeadm managed control plane machines.</p>
+<p>Another is in <code>super-admin.conf</code> that has
+<code>Subject: O = system:masters, CN = kubernetes-super-admin</code>.
+This file is generated only on the node where <code>kubeadm init</code>
+was called.</p>
+</div>
+<ol type="1">
+<li><p>For each configuration, generate an x509 certificate/key pair
+with the given Common Name (CN) and Organization (O).</p></li>
+<li><p>Run <code>kubectl</code> as follows for each configuration:</p>
+<pre><code>KUBECONFIG=&lt;filename&gt; kubectl config set-cluster default-cluster --server=https://&lt;host ip&gt;:6443 --certificate-authority &lt;path-to-kubernetes-ca&gt; --embed-certs
+KUBECONFIG=&lt;filename&gt; kubectl config set-credentials &lt;credential-name&gt; --client-key &lt;path-to-key&gt;.pem --client-certificate &lt;path-to-cert&gt;.pem --embed-certs
+KUBECONFIG=&lt;filename&gt; kubectl config set-context default-system --cluster default-cluster --user &lt;credential-name&gt;
+KUBECONFIG=&lt;filename&gt; kubectl config use-context default-system</code></pre></li>
+</ol>
+<p>These files are used as follows:</p>
+<table>
+<colgroup>
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 58%" />
+</colgroup>
+<thead>
+<tr>
+<th>Filename</th>
+<th>Command</th>
+<th>Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>admin.conf</td>
+<td>kubectl</td>
+<td>Configures administrator user for the cluster</td>
+</tr>
+<tr>
+<td>super-admin.conf</td>
+<td>kubectl</td>
+<td>Configures super administrator user for the cluster</td>
+</tr>
+<tr>
+<td>kubelet.conf</td>
+<td>kubelet</td>
+<td>One required for each node in the cluster.</td>
+</tr>
+<tr>
+<td>controller-manager.conf</td>
+<td>kube-controller-manager</td>
+<td>Must be added to manifest in
+<code>manifests/kube-controller-manager.yaml</code></td>
+</tr>
+<tr>
+<td>scheduler.conf</td>
+<td>kube-scheduler</td>
+<td>Must be added to manifest in
+<code>manifests/kube-scheduler.yaml</code></td>
+</tr>
+</tbody>
+</table>
+<p>The following files illustrate full paths to the files listed in the
+previous table:</p>
+<pre><code>/etc/kubernetes/admin.conf
+/etc/kubernetes/super-admin.conf
+/etc/kubernetes/kubelet.conf
+/etc/kubernetes/controller-manager.conf
+/etc/kubernetes/scheduler.conf</code></pre>
+<section id="footnotes" class="footnotes footnotes-end-of-document"
+role="doc-endnotes">
+<hr />
+<ol>
+<li
+id="fn1"><p>https://kubernetes.io/docs/setup/best-practices/certificates/any
+other IP or DNS name you contact your cluster on (as used by <a
+href="../../reference/setup-tools/kubeadm.html">kubeadm</a> the load
+balancer stable IP and/or DNS name, <code>kubernetes</code>,
+<code>kubernetes.default</code>, <code>kubernetes.default.svc</code>,
+<code>kubernetes.default.svc.cluster</code>,
+<code>kubernetes.default.svc.cluster.local</code>)<a href="#fnref1"
+class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="enforcing-pod-security-standards.html"><span>Previous</span>Enforcing Pod Security Standards</a><a class="page-nav-link next" href="../../concepts.html"><span>Next</span>Concepts</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#how-certificates-are-used-by-your-cluster">How certificates are used by your cluster</a></li><li class="toc-l3"><a href="#server-certificates">Server certificates</a></li><li class="toc-l3"><a href="#client-certificates">Client certificates</a></li><li class="toc-l3"><a href="#kubelet-s-server-and-client-certificates">Kubelet&#x27;s server and client certificates</a></li><li class="toc-l2"><a href="#where-certificates-are-stored">Where certificates are stored</a></li><li class="toc-l2"><a href="#configure-certificates-manually">Configure certificates manually</a></li><li class="toc-l3"><a href="#single-root-ca">Single root CA</a></li><li class="toc-l3"><a href="#all-certificates">All certificates</a></li><li class="toc-l3"><a href="#certificate-paths">Certificate paths</a></li><li class="toc-l2"><a href="#configure-certificates-for-user-accounts">Configure certificates for user accounts</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

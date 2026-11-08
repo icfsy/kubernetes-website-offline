@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Example: Deploying WordPress and MySQL with Persistent Volumes · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/stateful-application/mysql-wordpress-persistent-volume" data-title="Example: Deploying WordPress and MySQL with Persistent Volumes" data-canonical="https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../stateful-application.html">Stateful Applications</a></nav></nav>
+        <header class="page-head">
+          <h1>Example: Deploying WordPress and MySQL with Persistent Volumes</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/stateful-application/mysql-wordpress-persistent-volume/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This tutorial shows you how to deploy a WordPress site and a MySQL
+database using Minikube. Both applications use PersistentVolumes and
+PersistentVolumeClaims to store data.</p>
+<p>A <a
+href="../../concepts/storage/persistent-volumes.html">PersistentVolume</a>
+(PV) is a piece of storage in the cluster that has been manually
+provisioned by an administrator, or dynamically provisioned by
+Kubernetes using a <a
+href="../../concepts/storage/storage-classes.html">StorageClass</a>. A <a
+href="../../concepts/storage/persistent-volumes.html#persistentvolumeclaims">PersistentVolumeClaim</a>
+(PVC) is a request for storage by a user that can be fulfilled by a PV.
+PersistentVolumes and PersistentVolumeClaims are independent from Pod
+lifecycles and preserve data through restarting, rescheduling, and even
+deleting Pods.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Warning</p>
+</div>
+<p>This deployment is not suitable for production use cases, as it uses
+single instance WordPress and MySQL Pods. Consider using <a
+href="https://github.com/bitnami/charts/tree/master/bitnami/wordpress">WordPress
+Helm Chart</a> to deploy WordPress in production.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>The files provided in this tutorial are using GA Deployment APIs and
+are specific to kubernetes version 1.9 and later. If you wish to use
+this tutorial with an earlier version of Kubernetes, please update the
+API version appropriately, or reference earlier versions of this
+tutorial.</p>
+</div>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>Create PersistentVolumeClaims and PersistentVolumes</li>
+<li>Create a <code>kustomization.yaml</code> with
+<ul>
+<li>a Secret generator</li>
+<li>MySQL resource configs</li>
+<li>WordPress resource configs</li>
+</ul></li>
+<li>Apply the kustomization directory by
+<code>kubectl apply -k ./</code></li>
+<li>Clean up</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a target="_blank" rel="noopener" href="https://kodekloud.com/public-playgrounds">KodeKloud</a> To
+check the version, enter <code>kubectl version</code>.</li>
+</ul>
+<p>The example shown on this page works with <code>kubectl</code> 1.27
+and above.</p>
+<p>Download the following configuration files:</p>
+<ol type="1">
+<li><p><a
+href="https://kubernetes.io/examples/application/wordpress/mysql-deployment.yaml">mysql-deployment.yaml</a></p></li>
+<li><p><a
+href="https://kubernetes.io/examples/application/wordpress/wordpress-deployment.yaml">wordpress-deployment.yaml</a></p></li>
+</ol>
+<h2 id="create-persistentvolumeclaims-and-persistentvolumes">Create
+PersistentVolumeClaims and PersistentVolumes</h2>
+<p>MySQL and Wordpress each require a PersistentVolume to store data.
+Their PersistentVolumeClaims will be created at the deployment step.</p>
+<p>Many cluster environments have a default StorageClass installed. When
+a StorageClass is not specified in the PersistentVolumeClaim, the
+cluster's default StorageClass is used instead.</p>
+<p>When a PersistentVolumeClaim is created, a PersistentVolume is
+dynamically provisioned based on the StorageClass configuration.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Warning</p>
+</div>
+<p>In local clusters, the default StorageClass uses the
+<code>hostPath</code> provisioner. <code>hostPath</code> volumes are
+only suitable for development and testing. With <code>hostPath</code>
+volumes, your data lives in <code>/tmp</code> on the node the Pod is
+scheduled onto and does not move between nodes. If a Pod dies and gets
+scheduled to another node in the cluster, or the node is rebooted, the
+data is lost.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>If you are bringing up a cluster that needs to use the
+<code>hostPath</code> provisioner, the
+<code>--enable-hostpath-provisioner</code> flag must be set in the
+<code>controller-manager</code> component.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>If you have a Kubernetes cluster running on Google Kubernetes Engine,
+please follow <a
+href="https://cloud.google.com/kubernetes-engine/docs/tutorials/persistent-disk">this
+guide</a>.</p>
+</div>
+<h2 id="create-a-kustomization-yaml">Create a kustomization.yaml</h2>
+<h3 id="add-a-secret-generator">Add a Secret generator</h3>
+<p>A <a href="../../concepts/configuration/secret.html">Secret</a> is an
+object that stores a piece of sensitive data like a password or key.
+Since 1.14, <code>kubectl</code> supports the management of Kubernetes
+objects using a kustomization file. You can create a Secret by
+generators in <code>kustomization.yaml</code>.</p>
+<p>Add a Secret generator in <code>kustomization.yaml</code> from the
+following command. You will need to replace <code>YOUR_PASSWORD</code>
+with the password you want to use.</p>
+<pre class="shell"><code>cat &lt;&lt;EOF &gt;./kustomization.yaml
+secretGenerator:
+- name: mysql-pass
+  literals:
+  - password=YOUR_PASSWORD
+EOF</code></pre>
+<h2 id="add-resource-configs-for-mysql-and-wordpress">Add resource
+configs for MySQL and WordPress</h2>
+<p>The following manifest describes a single-instance MySQL Deployment.
+The MySQL container mounts the PersistentVolume at /var/lib/mysql. The
+<code>MYSQL_ROOT_PASSWORD</code> environment variable sets the database
+password from the Secret.</p>
+<div class="code-sample">
+<p><code>application/wordpress/mysql-deployment.yaml</code></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress-mysql</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pv-claim</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 20Gi</span></span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress-mysql</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">      </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> mysql:8.0</span></span>
+<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_ROOT_PASSWORD</span></span>
+<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">secretKeyRef</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pass</span></span>
+<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> password</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_DATABASE</span></span>
+<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_USER</span></span>
+<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MYSQL_PASSWORD</span></span>
+<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">secretKeyRef</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pass</span></span>
+<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> password</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">3306</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql</span></span>
+<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-persistent-storage</span></span>
+<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/lib/mysql</span></span>
+<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-persistent-storage</span></span>
+<span class="at">        </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> mysql-pv-claim</span></span></code></pre></div>
+</div>
+<p>The following manifest describes a single-instance WordPress
+Deployment. The WordPress container mounts the PersistentVolume at
+<code>/var/www/html</code> for website data files. The
+<code>WORDPRESS_DB_HOST</code> environment variable sets the name of the
+MySQL Service defined above, and WordPress will access the database by
+Service. The <code>WORDPRESS_DB_PASSWORD</code> environment variable
+sets the database password from the Secret kustomize generated.</p>
+<div class="code-sample">
+<p><code>application/wordpress/wordpress-deployment.yaml</code></p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">    </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> LoadBalancer</span></span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> PersistentVolumeClaim</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wp-pv-claim</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">accessModes</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">ReadWriteOnce</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 20Gi</span></span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">      </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span class="at">  </span><span class="fu">strategy</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Recreate</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="fu">tier</span><span class="kw">:</span><span class="at"> frontend</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> wordpress:6.2.1-apache</span></span>
+<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> WORDPRESS_DB_HOST</span></span>
+<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> wordpress-mysql</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> WORDPRESS_DB_PASSWORD</span></span>
+<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">secretKeyRef</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> mysql-pass</span></span>
+<span class="at">              </span><span class="fu">key</span><span class="kw">:</span><span class="at"> password</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> WORDPRESS_DB_USER</span></span>
+<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress</span></span>
+<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress-persistent-storage</span></span>
+<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /var/www/html</span></span>
+<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> wordpress-persistent-storage</span></span>
+<span class="at">        </span><span class="fu">persistentVolumeClaim</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">claimName</span><span class="kw">:</span><span class="at"> wp-pv-claim</span></span></code></pre></div>
+</div>
+<ol type="1">
+<li><p>Download the MySQL deployment configuration file.</p>
+<pre class="shell"><code>curl -LO https://k8s.io/examples/application/wordpress/mysql-deployment.yaml</code></pre></li>
+<li><p>Download the WordPress configuration file.</p>
+<pre class="shell"><code>curl -LO https://k8s.io/examples/application/wordpress/wordpress-deployment.yaml</code></pre></li>
+<li><p>Add them to <code>kustomization.yaml</code> file.</p>
+<pre class="shell"><code>cat &lt;&lt;EOF &gt;&gt;./kustomization.yaml
+resources:
+  - mysql-deployment.yaml
+  - wordpress-deployment.yaml
+EOF</code></pre></li>
+</ol>
+<h2 id="apply-and-verify">Apply and Verify</h2>
+<p>The <code>kustomization.yaml</code> contains all the resources for
+deploying a WordPress site and a MySQL database. You can apply the
+directory by</p>
+<pre class="shell"><code>kubectl apply -k ./</code></pre>
+<p>Now you can verify that all objects exist.</p>
+<ol type="1">
+<li><p>Verify that the Secret exists by running the following
+command:</p>
+<pre class="shell"><code>kubectl get secrets</code></pre>
+<p>The response should be like this:</p>
+<pre><code>NAME                    TYPE                                  DATA   AGE
+mysql-pass-c57bb4t7mf   Opaque                                1      9s</code></pre></li>
+<li><p>Verify that a PersistentVolume got dynamically provisioned.</p>
+<pre class="shell"><code>kubectl get pvc</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>It can take up to a few minutes for the PVs to be provisioned and
+bound.</p>
+</div>
+<p>The response should be like this:</p>
+<pre><code>NAME             STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS       AGE
+mysql-pv-claim   Bound     pvc-8cbd7b2e-4044-11e9-b2bb-42010a800002   20Gi       RWO            standard           77s
+wp-pv-claim      Bound     pvc-8cd0df54-4044-11e9-b2bb-42010a800002   20Gi       RWO            standard           77s</code></pre></li>
+<li><p>Verify that the Pod is running by running the following
+command:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>It can take up to a few minutes for the Pod's Status to be
+<code>RUNNING</code>.</p>
+</div>
+<p>The response should be like this:</p>
+<pre><code>NAME                               READY     STATUS    RESTARTS   AGE
+wordpress-mysql-1894417608-x5dzt   1/1       Running   0          40s</code></pre></li>
+<li><p>Verify that the Service is running by running the following
+command:</p>
+<pre class="shell"><code>kubectl get services wordpress</code></pre>
+<p>The response should be like this:</p>
+<pre><code>NAME        TYPE            CLUSTER-IP   EXTERNAL-IP   PORT(S)        AGE
+wordpress   LoadBalancer    10.0.0.89    &lt;pending&gt;     80:32406/TCP   4m</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Minikube can only expose Services through <code>NodePort</code>. The
+EXTERNAL-IP is always pending.</p>
+</div></li>
+<li><p>Run the following command to get the IP Address for the WordPress
+Service:</p>
+<pre class="shell"><code>minikube service wordpress --url</code></pre>
+<p>The response should be like this:</p>
+<pre><code>http://1.2.3.4:32406</code></pre></li>
+<li><p>Copy the IP address, and load the page in your browser to view
+your site.</p>
+<p>You should see the WordPress set up page similar to the following
+screenshot.</p>
+<p><img src="../../../assets/static/images/docs/tutorials/mysql-wordpress-persistent-volume/WordPress-ba6051f4.png"
+alt="wordpress-init" /></p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Warning</p>
+</div>
+<p>Do not leave your WordPress installation on this page. If another
+user finds it, they can set up a website on your instance and use it to
+serve malicious content.<br /><br /> Either install WordPress by
+creating a username and password or delete your instance.</p>
+</div></li>
+</ol>
+<h2 id="cleaning-up">Cleaning up</h2>
+<ol type="1">
+<li><p>Run the following command to delete your Secret, Deployments,
+Services and PersistentVolumeClaims:</p>
+<pre class="shell"><code>kubectl delete -k ./</code></pre></li>
+</ol>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn more about <a
+href="../../tasks/debug/debug-application/debug-running-pod.html">Introspection
+and Debugging</a></li>
+<li>Learn more about <a
+href="../../concepts/workloads/controllers/job.html">Jobs</a></li>
+<li>Learn more about <a
+href="../../tasks/access-application-cluster/port-forward-access-application-cluster.html">Port
+Forwarding</a></li>
+<li>Learn how to <a
+href="../../tasks/debug/debug-application/get-shell-running-container.html">Get
+a Shell to a Container</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="basic-stateful-set.html"><span>Previous</span>StatefulSet Basics</a><a class="page-nav-link next" href="cassandra.html"><span>Next</span>Example: Deploying Cassandra with a StatefulSet</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#create-persistentvolumeclaims-and-persistentvolumes">Create PersistentVolumeClaims and PersistentVolumes</a></li><li class="toc-l2"><a href="#create-a-kustomization-yaml">Create a kustomization.yaml</a></li><li class="toc-l3"><a href="#add-a-secret-generator">Add a Secret generator</a></li><li class="toc-l2"><a href="#add-resource-configs-for-mysql-and-wordpress">Add resource configs for MySQL and WordPress</a></li><li class="toc-l2"><a href="#apply-and-verify">Apply and Verify</a></li><li class="toc-l2"><a href="#cleaning-up">Cleaning up</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

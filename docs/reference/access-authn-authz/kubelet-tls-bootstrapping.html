@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TLS bootstrapping · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="reference/access-authn-authz/kubelet-tls-bootstrapping" data-title="TLS bootstrapping" data-canonical="https://kubernetes.io/docs/reference/access-authn-authz/kubelet-tls-bootstrapping/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../reference.html">Reference</a><span>/</span><a href="../access-authn-authz.html">API Access Control</a></nav></nav>
+        <header class="page-head">
+          <h1>TLS bootstrapping</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/reference/access-authn-authz/kubelet-tls-bootstrapping/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>In a Kubernetes cluster, the components on the worker nodes - kubelet
+and kube-proxy - need to communicate with Kubernetes control plane
+components, specifically kube-apiserver. In order to ensure that
+communication is kept private, not interfered with, and ensure that each
+component of the cluster is talking to another trusted component, we
+strongly recommend using client TLS certificates on nodes.</p>
+<p>The normal process of bootstrapping these components, especially
+worker nodes that need certificates so they can communicate safely with
+kube-apiserver, can be a challenging process as it is often outside of
+the scope of Kubernetes and requires significant additional work. This
+in turn, can make it challenging to initialize or scale a cluster.</p>
+<p>In order to simplify the process, beginning in version 1.4,
+Kubernetes introduced a certificate request and signing API. The
+proposal can be found <a
+href="https://github.com/kubernetes/kubernetes/pull/20439">here</a>.</p>
+<p>This document describes the process of node initialization, how to
+set up TLS client certificate bootstrapping for kubelets, and how it
+works.</p>
+<h2 id="initialization-process">Initialization process</h2>
+<p>When a worker node starts up, the kubelet does the following:</p>
+<ol type="1">
+<li>Look for its <code>kubeconfig</code> file</li>
+<li>Retrieve the URL of the API server and credentials, normally a TLS
+key and signed certificate from the <code>kubeconfig</code> file</li>
+<li>Attempt to communicate with the API server using the
+credentials.</li>
+</ol>
+<p>Assuming that the kube-apiserver successfully validates the kubelet's
+credentials, it will treat the kubelet as a valid node, and begin to
+assign pods to it.</p>
+<p>Note that the above process depends upon:</p>
+<ul>
+<li>Existence of a key and certificate on the local host in the
+<code>kubeconfig</code></li>
+<li>The certificate having been signed by a Certificate Authority (CA)
+trusted by the kube-apiserver</li>
+</ul>
+<p>All of the following are responsibilities of whoever sets up and
+manages the cluster:</p>
+<ol type="1">
+<li>Creating the CA key and certificate</li>
+<li>Distributing the CA certificate to the control plane nodes, where
+kube-apiserver is running</li>
+<li>Creating a key and certificate for each kubelet; strongly
+recommended to have a unique one, with a unique CN, for each
+kubelet</li>
+<li>Signing the kubelet certificate using the CA key</li>
+<li>Distributing the kubelet key and signed certificate to the specific
+node on which the kubelet is running</li>
+</ol>
+<p>The TLS Bootstrapping described in this document is intended to
+simplify, and partially or even completely automate, steps 3 onwards, as
+these are the most common when initializing or scaling a cluster.</p>
+<h3 id="bootstrap-initialization">Bootstrap initialization</h3>
+<p>In the bootstrap initialization process, the following occurs:</p>
+<ol type="1">
+<li>kubelet begins</li>
+<li>kubelet sees that it does <em>not</em> have a
+<code>kubeconfig</code> file</li>
+<li>kubelet searches for and finds a <code>bootstrap-kubeconfig</code>
+file</li>
+<li>kubelet reads its bootstrap file, retrieving the URL of the API
+server and a limited usage "token"</li>
+<li>kubelet connects to the API server, authenticates using the
+token</li>
+<li>kubelet now has limited credentials to create and retrieve a
+certificate signing request (CSR)</li>
+<li>kubelet creates a CSR for itself with the signerName set to
+<code>kubernetes.io/kube-apiserver-client-kubelet</code></li>
+<li>CSR is approved in one of two ways:
+<ul>
+<li>If configured, kube-controller-manager automatically approves the
+CSR</li>
+<li>If configured, an outside process, possibly a person, approves the
+CSR using the Kubernetes API or via <code>kubectl</code></li>
+</ul></li>
+<li>Certificate is created for the kubelet</li>
+<li>Certificate is issued to the kubelet</li>
+<li>kubelet retrieves the certificate</li>
+<li>kubelet creates a proper <code>kubeconfig</code> with the key and
+signed certificate</li>
+<li>kubelet begins normal operation</li>
+<li>Optional: if configured, kubelet automatically requests renewal of
+the certificate when it is close to expiry</li>
+<li>The renewed certificate is approved and issued, either automatically
+or manually, depending on configuration.</li>
+</ol>
+<p>The rest of this document describes the necessary steps to configure
+TLS Bootstrapping, and its limitations.</p>
+<h2 id="configuration">Configuration</h2>
+<p>To configure for TLS bootstrapping and optional automatic approval,
+you must configure options on the following components:</p>
+<ul>
+<li>kube-apiserver</li>
+<li>kube-controller-manager</li>
+<li>kubelet</li>
+<li>in-cluster resources: <code>ClusterRoleBinding</code> and
+potentially <code>ClusterRole</code></li>
+</ul>
+<p>In addition, you need your Kubernetes Certificate Authority (CA).</p>
+<h2 id="certificate-authority">Certificate Authority</h2>
+<p>As without bootstrapping, you will need a Certificate Authority (CA)
+key and certificate. As without bootstrapping, these will be used to
+sign the kubelet certificate. As before, it is your responsibility to
+distribute them to control plane nodes.</p>
+<p>For the purposes of this document, we will assume these have been
+distributed to control plane nodes at
+<code>/var/lib/kubernetes/ca.pem</code> (certificate) and
+<code>/var/lib/kubernetes/ca-key.pem</code> (key). We will refer to
+these as "Kubernetes CA certificate and key".</p>
+<p>All Kubernetes components that use these certificates - kubelet,
+kube-apiserver, kube-controller-manager - assume the key and certificate
+to be PEM-encoded.</p>
+<h2 id="kube-apiserver-configuration">kube-apiserver configuration</h2>
+<p>The kube-apiserver has several requirements to enable TLS
+bootstrapping:</p>
+<ul>
+<li>Recognizing CA that signs the client certificate</li>
+<li>Authenticating the bootstrapping kubelet to the
+<code>system:bootstrappers</code> group</li>
+<li>Authorize the bootstrapping kubelet to create a certificate signing
+request (CSR)</li>
+</ul>
+<h3 id="recognizing-client-certificates">Recognizing client
+certificates</h3>
+<p>This is normal for all client certificate authentication. If not
+already set, add the <code>--client-ca-file=FILENAME</code> flag to the
+kube-apiserver command to enable client certificate authentication,
+referencing a certificate authority bundle containing the signing
+certificate, for example
+<code>--client-ca-file=/var/lib/kubernetes/ca.pem</code>.</p>
+<h3 id="initial-bootstrap-authentication">Initial bootstrap
+authentication</h3>
+<p>In order for the bootstrapping kubelet to connect to kube-apiserver
+and request a certificate, it must first authenticate to the server. You
+can use any <a
+href="authentication.html">authenticator</a>
+that can authenticate the kubelet.</p>
+<p>While any authentication strategy can be used for the kubelet's
+initial bootstrap credentials, the following two authenticators are
+recommended for ease of provisioning.</p>
+<ol type="1">
+<li><a href="#bootstrap-tokens">Bootstrap Tokens</a></li>
+<li><a href="#token-authentication-file">Token authentication
+file</a></li>
+</ol>
+<p>Using bootstrap tokens is a simpler and more easily managed method to
+authenticate kubelets, and does not require any additional flags when
+starting kube-apiserver.</p>
+<p>Whichever method you choose, the requirement is that the kubelet be
+able to authenticate as a user with the rights to:</p>
+<ol type="1">
+<li>create and retrieve CSRs</li>
+<li>be automatically approved to request node client certificates, if
+automatic approval is enabled.</li>
+</ol>
+<p>A kubelet authenticating using bootstrap tokens is authenticated as a
+user in the group <code>system:bootstrappers</code>, which is the
+standard method to use.</p>
+<p>As this feature matures, you should ensure tokens are bound to a Role
+Based Access Control (RBAC) policy which limits requests (using the <a
+href="bootstrap-tokens.html">bootstrap
+token</a>) strictly to client requests related to certificate
+provisioning. With RBAC in place, scoping the tokens to a group allows
+for great flexibility. For example, you could disable a particular
+bootstrap group's access when you are done provisioning the nodes.</p>
+<h4 id="bootstrap-tokens">Bootstrap tokens</h4>
+<p>Bootstrap tokens are described in detail <a
+href="bootstrap-tokens.html">here</a>.
+These are tokens that are stored as secrets in the Kubernetes cluster,
+and then issued to the individual kubelet. You can use a single token
+for an entire cluster, or issue one per worker node.</p>
+<p>The process is two-fold:</p>
+<ol type="1">
+<li>Create a Kubernetes secret with the token ID, secret and
+scope(s).</li>
+<li>Issue the token to the kubelet</li>
+</ol>
+<p>From the kubelet's perspective, one token is like another and has no
+special meaning. From the kube-apiserver's perspective, however, the
+bootstrap token is special. Due to its <code>type</code>,
+<code>namespace</code> and <code>name</code>, kube-apiserver recognizes
+it as a special token, and grants anyone authenticating with that token
+special bootstrap rights, notably treating them as a member of the
+<code>system:bootstrappers</code> group. This fulfills a basic
+requirement for TLS bootstrapping.</p>
+<p>The details for creating the secret are available <a
+href="bootstrap-tokens.html">here</a>.</p>
+<p>If you want to use bootstrap tokens, you must enable it on
+kube-apiserver with the flag:</p>
+<pre class="console"><code>--enable-bootstrap-token-auth=true</code></pre>
+<h4 id="token-authentication-file">Token authentication file</h4>
+<p>kube-apiserver has the ability to accept tokens as authentication.
+These tokens are arbitrary but should represent at least 128 bits of
+entropy derived from a secure random number generator (such as
+<code>/dev/urandom</code> on most modern Linux systems). There are
+multiple ways you can generate a token. For example:</p>
+<pre class="shell"><code>head -c 16 /dev/urandom | od -An -t x | tr -d &#39; &#39;</code></pre>
+<p>This will generate tokens that look like
+<code>02b50b05283e98dd0fd71db496ef01e8</code>.</p>
+<p>The token file should look like the following example, where the
+first three values can be anything and the quoted group name should be
+as depicted:</p>
+<pre class="console"><code>02b50b05283e98dd0fd71db496ef01e8,kubelet-bootstrap,10001,&quot;system:bootstrappers&quot;</code></pre>
+<p>Add the <code>--token-auth-file=FILENAME</code> flag to the
+kube-apiserver command (in your systemd unit file perhaps) to enable the
+token file. See docs <a
+href="authentication.html#static-token-file">here</a>
+for further details.</p>
+<h3 id="authorize-kubelet-to-create-csr">Authorize kubelet to create
+CSR</h3>
+<p>Now that the bootstrapping node is <em>authenticated</em> as part of
+the <code>system:bootstrappers</code> group, it needs to be
+<em>authorized</em> to create a certificate signing request (CSR) as
+well as retrieve it when done. Fortunately, Kubernetes ships with a
+<code>ClusterRole</code> with precisely these (and only these)
+permissions, <code>system:node-bootstrapper</code>.</p>
+<p>To do this, you only need to create a <code>ClusterRoleBinding</code>
+that binds the <code>system:bootstrappers</code> group to the cluster
+role <code>system:node-bootstrapper</code>.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># enable bootstrapping nodes to create CSR</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> create-csrs-for-bootstrapping</span></span>
+<span class="fu">subjects</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:bootstrappers</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+<span class="fu">roleRef</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:node-bootstrapper</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<h2 id="kube-controller-manager-configuration">kube-controller-manager
+configuration</h2>
+<p>While the apiserver receives the requests for certificates from the
+kubelet and authenticates those requests, the controller-manager is
+responsible for issuing actual signed certificates.</p>
+<p>The controller-manager performs this function via a
+certificate-issuing control loop. This takes the form of a <a
+href="https://blog.cloudflare.com/introducing-cfssl/">cfssl</a> local
+signer using assets on disk. Currently, all certificates issued have one
+year validity and a default set of key usages.</p>
+<p>In order for the controller-manager to sign certificates, it needs
+the following:</p>
+<ul>
+<li>access to the "Kubernetes CA key and certificate" that you created
+and distributed</li>
+<li>enabling CSR signing</li>
+</ul>
+<h3 id="access-to-key-and-certificate">Access to key and
+certificate</h3>
+<p>As described earlier, you need to create a Kubernetes CA key and
+certificate, and distribute it to the control plane nodes. These will be
+used by the controller-manager to sign the kubelet certificates.</p>
+<p>Since these signed certificates will, in turn, be used by the kubelet
+to authenticate as a regular kubelet to kube-apiserver, it is important
+that the CA provided to the controller-manager at this stage also be
+trusted by kube-apiserver for authentication. This is provided to
+kube-apiserver with the flag <code>--client-ca-file=FILENAME</code> (for
+example, <code>--client-ca-file=/var/lib/kubernetes/ca.pem</code>), as
+described in the kube-apiserver configuration section.</p>
+<p>To provide the Kubernetes CA key and certificate to
+kube-controller-manager, use the following flags:</p>
+<pre class="shell"><code>--cluster-signing-cert-file=&quot;/etc/path/to/kubernetes/ca/ca.crt&quot; --cluster-signing-key-file=&quot;/etc/path/to/kubernetes/ca/ca.key&quot;</code></pre>
+<p>For example:</p>
+<pre class="shell"><code>--cluster-signing-cert-file=&quot;/var/lib/kubernetes/ca.pem&quot; --cluster-signing-key-file=&quot;/var/lib/kubernetes/ca-key.pem&quot;</code></pre>
+<p>The validity duration of signed certificates can be configured with
+flag:</p>
+<pre class="shell"><code>--cluster-signing-duration</code></pre>
+<h3 id="approval">Approval</h3>
+<p>In order to approve CSRs, you need to tell the controller-manager
+that it is acceptable to approve them. This is done by granting RBAC
+permissions to the correct group.</p>
+<p>There are two distinct sets of permissions:</p>
+<ul>
+<li><code>nodeclient</code>: If a node is creating a new certificate for
+a node, then it does not have a certificate yet. It is authenticating
+using one of the tokens listed above, and thus is part of the group
+<code>system:bootstrappers</code>.</li>
+<li><code>selfnodeclient</code>: If a node is renewing its certificate,
+then it already has a certificate (by definition), which it uses
+continuously to authenticate as part of the group
+<code>system:nodes</code>.</li>
+</ul>
+<p>To enable the kubelet to request and receive a new certificate,
+create a <code>ClusterRoleBinding</code> that binds the group in which
+the bootstrapping node is a member <code>system:bootstrappers</code> to
+the <code>ClusterRole</code> that grants it permission,
+<code>system:certificates.k8s.io:certificatesigningrequests:nodeclient</code>:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Approve all CSRs for the group &quot;system:bootstrappers&quot;</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> auto-approve-csrs-for-group</span></span>
+<span class="fu">subjects</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:bootstrappers</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+<span class="fu">roleRef</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:certificates.k8s.io:certificatesigningrequests:nodeclient</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<p>To enable the kubelet to renew its own client certificate, create a
+<code>ClusterRoleBinding</code> that binds the group in which the fully
+functioning node is a member <code>system:nodes</code> to the
+<code>ClusterRole</code> that grants it permission,
+<code>system:certificates.k8s.io:certificatesigningrequests:selfnodeclient</code>:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Approve renewal CSRs for the group &quot;system:nodes&quot;</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> auto-approve-renewals-for-nodes</span></span>
+<span class="fu">subjects</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> Group</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:nodes</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+<span class="fu">roleRef</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:certificates.k8s.io:certificatesigningrequests:selfnodeclient</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span></code></pre></div>
+<p>The <code>csrapproving</code> controller that ships as part of <a
+href="../command-line-tools-reference/kube-controller-manager.html">kube-controller-manager</a>
+and is enabled by default. The controller uses the <a
+href="authorization.html#checking-api-access"><code>SubjectAccessReview</code>
+API</a> to determine if a given user is authorized to request a CSR,
+then approves based on the authorization outcome. To prevent conflicts
+with other approvers, the built-in approver doesn't explicitly deny
+CSRs. It only ignores unauthorized requests. The controller also prunes
+expired certificates as part of garbage collection.</p>
+<h2 id="kubelet-configuration">kubelet configuration</h2>
+<p>Finally, with the control plane nodes properly set up and all of the
+necessary authentication and authorization in place, we can configure
+the kubelet.</p>
+<p>The kubelet requires the following configuration to bootstrap:</p>
+<ul>
+<li>A path to store the key and certificate it generates (optional, can
+use default)</li>
+<li>A path to a <code>kubeconfig</code> file that does not yet exist; it
+will place the bootstrapped config file here</li>
+<li>A path to a bootstrap <code>kubeconfig</code> file to provide the
+URL for the server and bootstrap credentials, e.g. a bootstrap
+token</li>
+<li>Optional: instructions to rotate certificates</li>
+</ul>
+<p>The bootstrap <code>kubeconfig</code> should be in a path available
+to the kubelet, for example
+<code>/var/lib/kubelet/bootstrap-kubeconfig</code>.</p>
+<p>Its format is identical to a normal <code>kubeconfig</code> file. A
+sample file might look as follows:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Config</span></span>
+<span class="fu">clusters</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">cluster</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">certificate-authority</span><span class="kw">:</span><span class="at"> /var/lib/kubernetes/ca.pem</span></span>
+<span class="at">    </span><span class="fu">server</span><span class="kw">:</span><span class="at"> https://my.server.example.com:6443</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
+<span class="fu">contexts</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">context</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">cluster</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
+<span class="at">    </span><span class="fu">user</span><span class="kw">:</span><span class="at"> kubelet-bootstrap</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
+<span class="fu">current-context</span><span class="kw">:</span><span class="at"> bootstrap</span></span>
+<span class="fu">preferences</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="fu">users</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kubelet-bootstrap</span></span>
+<span class="at">  </span><span class="fu">user</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">token</span><span class="kw">:</span><span class="at"> 07401b.f395accd246ae52d</span></span></code></pre></div>
+<p>The important elements to note are:</p>
+<ul>
+<li><code>certificate-authority</code>: path to a CA file, used to
+validate the server certificate presented by kube-apiserver</li>
+<li><code>server</code>: URL to kube-apiserver</li>
+<li><code>token</code>: the token to use</li>
+</ul>
+<p>The format of the token does not matter, as long as it matches what
+kube-apiserver expects. In the above example, we used a bootstrap token.
+As stated earlier, <em>any</em> valid authentication method can be used,
+not only tokens.</p>
+<p>Because the bootstrap <code>kubeconfig</code> <em>is</em> a standard
+<code>kubeconfig</code>, you can use <code>kubectl</code> to generate
+it. To create the above example file:</p>
+<pre><code>kubectl config --kubeconfig=/var/lib/kubelet/bootstrap-kubeconfig set-cluster bootstrap --server=&#39;https://my.server.example.com:6443&#39; --certificate-authority=/var/lib/kubernetes/ca.pem
+kubectl config --kubeconfig=/var/lib/kubelet/bootstrap-kubeconfig set-credentials kubelet-bootstrap --token=07401b.f395accd246ae52d
+kubectl config --kubeconfig=/var/lib/kubelet/bootstrap-kubeconfig set-context bootstrap --user=kubelet-bootstrap --cluster=bootstrap
+kubectl config --kubeconfig=/var/lib/kubelet/bootstrap-kubeconfig use-context bootstrap</code></pre>
+<p>To indicate to the kubelet to use the bootstrap
+<code>kubeconfig</code>, use the following kubelet flag:</p>
+<pre><code>--bootstrap-kubeconfig=&quot;/var/lib/kubelet/bootstrap-kubeconfig&quot; --kubeconfig=&quot;/var/lib/kubelet/kubeconfig&quot;</code></pre>
+<p>When starting the kubelet, if the file specified via
+<code>--kubeconfig</code> does not exist, the bootstrap kubeconfig
+specified via <code>--bootstrap-kubeconfig</code> is used to request a
+client certificate from the API server. On approval of the certificate
+request and receipt back by the kubelet, a kubeconfig file referencing
+the generated key and obtained certificate is written to the path
+specified by <code>--kubeconfig</code>. The certificate and key file
+will be placed in the directory specified by
+<code>--cert-dir</code>.</p>
+<h3 id="client-and-serving-certificates">Client and serving
+certificates</h3>
+<p>All of the above relate to kubelet <em>client</em> certificates,
+specifically, the certificates a kubelet uses to authenticate to
+kube-apiserver.</p>
+<p>A kubelet also can use <em>serving</em> certificates. The kubelet
+itself exposes an https endpoint for certain features. To secure these,
+the kubelet can do one of:</p>
+<ul>
+<li>use provided key and certificate, via the
+<code>--tls-private-key-file</code> and <code>--tls-cert-file</code>
+flags</li>
+<li>create self-signed key and certificate, if a key and certificate are
+not provided</li>
+<li>request serving certificates from the cluster server, via the CSR
+API</li>
+</ul>
+<p>The client certificate provided by TLS bootstrapping is signed, by
+default, for <code>client auth</code> only, and thus cannot be used as
+serving certificates, or <code>server auth</code>.</p>
+<p>However, you <em>can</em> enable its server certificate, at least
+partially, via certificate rotation.</p>
+<h3 id="certificate-rotation">Certificate rotation</h3>
+<p>Kubernetes v1.8 and higher kubelet implements features for enabling
+rotation of its client and/or serving certificates. Note, rotation of
+serving certificate is a <strong>beta</strong> feature and requires the
+<code>RotateKubeletServerCertificate</code> feature flag on the kubelet
+(enabled by default).</p>
+<p>You can configure the kubelet to rotate its client certificates by
+creating new CSRs as its existing credentials expire. To enable this
+feature, use the <code>rotateCertificates</code> field of <a
+href="../../tasks/administer-cluster/kubelet-config-file.html">kubelet
+configuration file</a> or pass the following command line argument to
+the kubelet (deprecated):</p>
+<pre><code>--rotate-certificates</code></pre>
+<p>Enabling <code>RotateKubeletServerCertificate</code> causes the
+kubelet <strong>both</strong> to request a serving certificate after
+bootstrapping its client credentials <strong>and</strong> to rotate that
+certificate. To enable this behavior, use the field
+<code>serverTLSBootstrap</code> of the <a
+href="../../tasks/administer-cluster/kubelet-config-file.html">kubelet
+configuration file</a> or pass the following command line argument to
+the kubelet (deprecated):</p>
+<pre><code>--rotate-server-certificates</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The CSR approving controllers implemented in core Kubernetes do not
+approve node <em>serving</em> certificates for <a
+href="https://github.com/kubernetes/community/pull/1982">security
+reasons</a>. To use <code>RotateKubeletServerCertificate</code>
+operators need to run a custom approving controller, or manually approve
+the serving certificate requests.</p>
+<p>A deployment-specific approval process for kubelet serving
+certificates should typically only approve CSRs which:</p>
+<ol type="1">
+<li>are requested by nodes (ensure the <code>spec.username</code> field
+is of the form <code>system:node:&lt;nodeName&gt;</code> and
+<code>spec.groups</code> contains <code>system:nodes</code>)</li>
+<li>request usages for a serving certificate (ensure
+<code>spec.usages</code> contains <code>server auth</code>, optionally
+contains <code>digital signature</code> and
+<code>key encipherment</code>, and contains no other usages)</li>
+<li>only have IP and DNS subjectAltNames that belong to the requesting
+node, and have no URI and Email subjectAltNames (parse the x509
+Certificate Signing Request in <code>spec.request</code> to verify
+<code>subjectAltNames</code>)</li>
+</ol>
+</div>
+<h2 id="other-authenticating-components">Other authenticating
+components</h2>
+<p>All of TLS bootstrapping described in this document relates to the
+kubelet. However, other components may need to communicate directly with
+kube-apiserver. Notable is kube-proxy, which is part of the Kubernetes
+node components and runs on every node, but may also include other
+components such as monitoring or networking.</p>
+<p>Like the kubelet, these other components also require a method of
+authenticating to kube-apiserver. You have several options for
+generating these credentials:</p>
+<ul>
+<li>The old way: Create and distribute certificates the same way you did
+for kubelet before TLS bootstrapping</li>
+<li>DaemonSet: Since the kubelet itself is loaded on each node, and is
+sufficient to start base services, you can run kube-proxy and other
+node-specific services not as a standalone process, but rather as a
+daemonset in the <code>kube-system</code> namespace. Since it will be
+in-cluster, you can give it a proper service account with appropriate
+permissions to perform its activities. This may be the simplest way to
+configure such services.</li>
+</ul>
+<h2 id="kubectl-approval">kubectl approval</h2>
+<p>CSRs can be approved outside of the approval flows built into the
+controller manager.</p>
+<p>The signing controller does not immediately sign all certificate
+requests. Instead, it waits until they have been flagged with an
+"Approved" status by an appropriately-privileged user. This flow is
+intended to allow for automated approval handled by an external approval
+controller or the approval controller implemented in the core
+controller-manager. However cluster administrators can also manually
+approve certificate requests using kubectl. An administrator can list
+CSRs with <code>kubectl get csr</code> and describe one in detail with
+<code>kubectl describe csr &lt;name&gt;</code>. An administrator
+can approve or deny a CSR with
+<code>kubectl certificate approve &lt;name&gt;</code> and
+<code>kubectl certificate deny &lt;name&gt;</code>.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="kubelet-authn-authz.html"><span>Previous</span>Kubelet authentication/authorization</a><a class="page-nav-link next" href="manifest-admission-control.html"><span>Next</span>Manifest-Based Admission Control</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#initialization-process">Initialization process</a></li><li class="toc-l3"><a href="#bootstrap-initialization">Bootstrap initialization</a></li><li class="toc-l2"><a href="#configuration">Configuration</a></li><li class="toc-l2"><a href="#certificate-authority">Certificate Authority</a></li><li class="toc-l2"><a href="#kube-apiserver-configuration">kube-apiserver configuration</a></li><li class="toc-l3"><a href="#recognizing-client-certificates">Recognizing client certificates</a></li><li class="toc-l3"><a href="#initial-bootstrap-authentication">Initial bootstrap authentication</a></li><li class="toc-l3"><a href="#authorize-kubelet-to-create-csr">Authorize kubelet to create CSR</a></li><li class="toc-l2"><a href="#kube-controller-manager-configuration">kube-controller-manager configuration</a></li><li class="toc-l3"><a href="#access-to-key-and-certificate">Access to key and certificate</a></li><li class="toc-l3"><a href="#approval">Approval</a></li><li class="toc-l2"><a href="#kubelet-configuration">kubelet configuration</a></li><li class="toc-l3"><a href="#client-and-serving-certificates">Client and serving certificates</a></li><li class="toc-l3"><a href="#certificate-rotation">Certificate rotation</a></li><li class="toc-l2"><a href="#other-authenticating-components">Other authenticating components</a></li><li class="toc-l2"><a href="#kubectl-approval">kubectl approval</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

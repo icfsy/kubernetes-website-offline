@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assigning Pods to Nodes · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/scheduling-eviction/assign-pod-node" data-title="Assigning Pods to Nodes" data-canonical="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../scheduling-eviction.html">Scheduling, Preemption and Eviction</a></nav></nav>
+        <header class="page-head">
+          <h1>Assigning Pods to Nodes</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>You can constrain a <a class="glossary-term" href="../../reference/glossary.html#term-pod" title="Glossary: pod">Pod</a> so that it is <em>restricted</em> to run on
+particular <a class="glossary-term" href="../../reference/glossary.html#term-node" title="Glossary: node">node(s)</a>,
+or to <em>prefer</em> to run on particular nodes. There are several ways
+to do this and the recommended approaches all use <a
+href="../overview/working-with-objects/labels.html">label
+selectors</a> to facilitate the selection. Often, you do not need to set
+any such constraints; the <a class="glossary-term" href="../../reference/glossary.html#term-kube-scheduler" title="Glossary: kube-scheduler">scheduler</a> will automatically do a
+reasonable placement (for example, spreading your Pods across nodes so
+as not place Pods on a node with insufficient free resources). However,
+there are some circumstances where you may want to control which node
+the Pod deploys to, for example, to ensure that a Pod ends up on a node
+with an SSD attached to it, or to co-locate Pods from two different
+services that communicate a lot into the same availability zone.</p>
+<p>You can use any of the following methods to choose where Kubernetes
+schedules specific Pods:</p>
+<ul>
+<li><a href="#nodeselector">nodeSelector</a> field matching against <a
+href="#built-in-node-labels">node labels</a></li>
+<li><a href="#affinity-and-anti-affinity">Affinity and
+anti-affinity</a></li>
+<li><a href="#nodename">nodeName</a> field</li>
+<li><a href="#pod-topology-spread-constraints">Pod topology spread
+constraints</a></li>
+</ul>
+<h2 id="built-in-node-labels">Node labels</h2>
+<p>Like many other Kubernetes objects, nodes have <a
+href="../overview/working-with-objects/labels.html">labels</a>.
+You can <a
+href="../../tasks/configure-pod-container/assign-pods-nodes.html#add-a-label-to-a-node">attach
+labels manually</a>. Kubernetes also populates a <a
+href="../../reference/node/node-labels.html">standard set of labels</a> on
+all nodes in a cluster.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The value of these labels is cloud provider specific and is not
+guaranteed to be reliable. For example, the value of
+<code>kubernetes.io/hostname</code> may be the same as the node name in
+some environments and a different value in other environments.</p>
+</div>
+<h3 id="node-isolation-restriction">Node isolation/restriction</h3>
+<p>Adding labels to nodes allows you to target Pods for scheduling on
+specific nodes or groups of nodes. You can use this functionality to
+ensure that specific Pods only run on nodes with certain isolation,
+security, or regulatory properties.</p>
+<p>If you use labels for node isolation, choose label keys that the
+<a class="glossary-term" href="../../reference/glossary.html#term-kubelet" title="Glossary: kubelet">kubelet</a> cannot
+modify. This prevents a compromised node from setting those labels on
+itself so that the scheduler schedules workloads onto the compromised
+node.</p>
+<p>The <a
+href="../../reference/access-authn-authz/admission-controllers.html#noderestriction"><code>NodeRestriction</code>
+admission plugin</a> prevents the kubelet from setting or modifying
+labels with a <code>node-restriction.kubernetes.io/</code> prefix.</p>
+<p>To make use of that label prefix for node isolation:</p>
+<ol type="1">
+<li>Ensure you are using the <a
+href="../../reference/access-authn-authz/node.html">Node authorizer</a> and
+have <em>enabled</em> the <code>NodeRestriction</code> admission
+plugin.</li>
+<li>Add labels with the <code>node-restriction.kubernetes.io/</code>
+prefix to your nodes, and use those labels in your <a
+href="#nodeselector">node selectors</a>. For example,
+<code>example.com.node-restriction.kubernetes.io/fips=true</code> or
+<code>example.com.node-restriction.kubernetes.io/pci-dss=true</code>.</li>
+</ol>
+<h2 id="nodeselector">nodeSelector</h2>
+<p><code>nodeSelector</code> is the simplest recommended form of node
+selection constraint. You can add the <code>nodeSelector</code> field to
+your Pod specification and specify the <a
+href="#built-in-node-labels">node labels</a> you want the target node to
+have. Kubernetes only schedules the Pod onto nodes that have each of the
+labels you specify.</p>
+<p>See <a
+href="../../tasks/configure-pod-container/assign-pods-nodes.html">Assign
+Pods to Nodes</a> for more information.</p>
+<h2 id="affinity-and-anti-affinity">Affinity and anti-affinity</h2>
+<p><code>nodeSelector</code> is the simplest way to constrain Pods to
+nodes with specific labels. Affinity and anti-affinity expand the types
+of constraints you can define. Some of the benefits of affinity and
+anti-affinity include:</p>
+<ul>
+<li>The affinity/anti-affinity language is more expressive.
+<code>nodeSelector</code> only selects nodes with all the specified
+labels. Affinity/anti-affinity gives you more control over the selection
+logic.</li>
+<li>You can indicate that a rule is <em>soft</em> or <em>preferred</em>,
+so that the scheduler still schedules the Pod even if it can't find a
+matching node.</li>
+<li>You can constrain a Pod using labels on other Pods running on the
+node (or other topological domain), instead of just node labels, which
+allows you to define rules for which Pods can be co-located on a
+node.</li>
+</ul>
+<p>The affinity feature consists of two types of affinity:</p>
+<ul>
+<li><em>Node affinity</em> functions like the <code>nodeSelector</code>
+field but is more expressive and allows you to specify soft rules.</li>
+<li><em>Inter-pod affinity/anti-affinity</em> allows you to constrain
+Pods against labels on other Pods.</li>
+</ul>
+<h3 id="node-affinity">Node affinity</h3>
+<p>Node affinity is conceptually similar to <code>nodeSelector</code>,
+allowing you to constrain which nodes your Pod can be scheduled on based
+on node labels. There are two types of node affinity:</p>
+<ul>
+<li><code>requiredDuringSchedulingIgnoredDuringExecution</code>: The
+scheduler can't schedule the Pod unless the rule is met. This functions
+like <code>nodeSelector</code>, but with a more expressive syntax.</li>
+<li><code>preferredDuringSchedulingIgnoredDuringExecution</code>: The
+scheduler tries to find a node that meets the rule. If a matching node
+is not available, the scheduler still schedules the Pod.</li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>In the preceding types, <code>IgnoredDuringExecution</code> means
+that if the node labels change after Kubernetes schedules the Pod, the
+Pod continues to run.</p>
+</div>
+<p>You can specify node affinities using the
+<code>.spec.affinity.nodeAffinity</code> field in your Pod spec.</p>
+<p>For example, consider the following Pod spec:</p>
+<div class="code-sample">
+<p><code>pods/pod-with-node-affinity.yaml</code></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">antarctica-east1</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">antarctica-west1</span></span>
+<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> another-node-label-key</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">another-node-label-value</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+</div>
+<p>In this example, the following rules apply:</p>
+<ul>
+<li>The node <em>must</em> have a label with the key
+<code>topology.kubernetes.io/zone</code> and the value of that label
+<em>must</em> be either <code>antarctica-east1</code> or
+<code>antarctica-west1</code>.</li>
+<li>The node <em>preferably</em> has a label with the key
+<code>another-node-label-key</code> and the value
+<code>another-node-label-value</code>.</li>
+</ul>
+<p>You can use the <code>operator</code> field to specify a logical
+operator for Kubernetes to use when interpreting the rules. You can use
+<code>In</code>, <code>NotIn</code>, <code>Exists</code>,
+<code>DoesNotExist</code>, <code>Gt</code> and <code>Lt</code>.</p>
+<p>Read <a href="#operators">Operators</a> to learn more about how these
+work.</p>
+<p><code>NotIn</code> and <code>DoesNotExist</code> allow you to define
+node anti-affinity behavior. Alternatively, you can use <a
+href="taint-and-toleration.html">node
+taints</a> to repel Pods from specific nodes.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you specify both <code>nodeSelector</code> and
+<code>nodeAffinity</code>, <em>both</em> must be satisfied for the Pod
+to be scheduled onto a node.</p>
+<p>If you specify multiple terms in <code>nodeSelectorTerms</code>
+associated with <code>nodeAffinity</code> types, then the Pod can be
+scheduled onto a node if one of the specified terms can be satisfied
+(terms are ORed).</p>
+<p>If you specify multiple expressions in a single
+<code>matchExpressions</code> field associated with a term in
+<code>nodeSelectorTerms</code>, then the Pod can be scheduled onto a
+node only if all the expressions are satisfied (expressions are
+ANDed).</p>
+</div>
+<p>See <a
+href="../../tasks/configure-pod-container/assign-pods-nodes-using-node-affinity.html">Assign
+Pods to Nodes using Node Affinity</a> for more information.</p>
+<h4 id="node-affinity-weight">Node affinity weight</h4>
+<p>You can specify a <code>weight</code> between 1 and 100 for each
+instance of the
+<code>preferredDuringSchedulingIgnoredDuringExecution</code> affinity
+type. When the scheduler finds nodes that meet all the other scheduling
+requirements of the Pod, the scheduler iterates through every preferred
+rule that the node satisfies and adds the value of the
+<code>weight</code> for that expression to a sum.</p>
+<p>The final sum is added to the score of other priority functions for
+the node. Nodes with the highest total score are prioritized when the
+scheduler makes a scheduling decision for the Pod.</p>
+<p>For example, consider the following Pod spec:</p>
+<div class="code-sample">
+<p><code>pods/pod-with-affinity-preferred-weight.yaml</code></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-affinity-preferred-weight</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">nodeAffinity</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> kubernetes.io/os</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">linux</span></span>
+<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> label-1</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">key-1</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">50</span></span>
+<span class="at">        </span><span class="fu">preference</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> label-2</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">key-2</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-node-affinity</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+</div>
+<p>If there are two possible nodes that match the
+<code>preferredDuringSchedulingIgnoredDuringExecution</code> rule, one
+with the <code>label-1:key-1</code> label and another with the
+<code>label-2:key-2</code> label, the scheduler considers the
+<code>weight</code> of each node and adds the weight to the other scores
+for that node, and schedules the Pod onto the node with the highest
+final score.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>If you want Kubernetes to successfully schedule the Pods in this
+example, you must have existing nodes with the
+<code>kubernetes.io/os=linux</code> label.</p>
+</div>
+<h4 id="node-affinity-per-scheduling-profile">Node affinity per
+scheduling profile</h4>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.20</p>
+</div>
+<p>When configuring multiple <a
+href="../../reference/scheduling/config.html#multiple-profiles">scheduling
+profiles</a>, you can associate a profile with a node affinity, which is
+useful if a profile only applies to a specific set of nodes. To do so,
+add an <code>addedAffinity</code> to the <code>args</code> field of the
+<a
+href="../../reference/scheduling/config.html#scheduling-plugins"><code>NodeAffinity</code>
+plugin</a> in the <a
+href="../../reference/scheduling/config.html">scheduler configuration</a>.
+For example:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubescheduler.config.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeSchedulerConfiguration</span></span>
+</span>
+<span class="fu">profiles</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> default-scheduler</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">schedulerName</span><span class="kw">:</span><span class="at"> foo-scheduler</span></span>
+<span class="at">    </span><span class="fu">pluginConfig</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> NodeAffinity</span></span>
+<span class="at">        </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">addedAffinity</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">nodeSelectorTerms</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> scheduler-profile</span></span>
+<span class="at">                  </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">                  </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">                  </span><span class="kw">- </span><span class="at">foo</span></span></code></pre></div>
+<p>The <code>addedAffinity</code> is applied to all Pods that set
+<code>.spec.schedulerName</code> to <code>foo-scheduler</code>, in
+addition to the NodeAffinity specified in the PodSpec. That is, in order
+to match the Pod, nodes need to satisfy <code>addedAffinity</code> and
+the Pod's <code>.spec.NodeAffinity</code>.</p>
+<p>Since the <code>addedAffinity</code> is not visible to end users, its
+behavior might be unexpected to them. Use node labels that have a clear
+correlation to the scheduler profile name.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The DaemonSet controller, which <a
+href="../workloads/controllers/daemonset.html#how-daemon-pods-are-scheduled">creates
+Pods for DaemonSets</a>, does not support scheduling profiles. When the
+DaemonSet controller creates Pods, the default Kubernetes scheduler
+places those Pods and honors any <code>nodeAffinity</code> rules in the
+DaemonSet controller.</p>
+</div>
+<h3 id="inter-pod-affinity-and-anti-affinity">Inter-pod affinity and
+anti-affinity</h3>
+<p>Inter-pod affinity and anti-affinity allow you to constrain which
+nodes your Pods can be scheduled on based on the labels of Pods already
+running on that node, instead of the node labels.</p>
+<h4 id="types-of-inter-pod-affinity-and-anti-affinity">Types of
+Inter-pod Affinity and Anti-affinity</h4>
+<p>Inter-pod affinity and anti-affinity take the form "this Pod should
+(or, in the case of anti-affinity, should not) run in an X if that X is
+already running one or more Pods that meet rule Y", where X is a
+topology domain like node, rack, cloud provider zone or region, or
+similar and Y is the rule Kubernetes tries to satisfy.</p>
+<p>You express these rules (Y) as <a
+href="../overview/working-with-objects/labels.html#label-selectors">label
+selectors</a> with an optional associated list of namespaces. Pods are
+namespaced objects in Kubernetes, so Pod labels also implicitly have
+namespaces. Any label selectors for Pod labels should specify the
+namespaces in which Kubernetes should look for those labels.</p>
+<p>You express the topology domain (X) using a <code>topologyKey</code>,
+which is the key for the node label that the system uses to denote the
+domain. For examples, see <a
+href="../../reference/labels-annotations-taints.html">Well-Known Labels,
+Annotations and Taints</a>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Inter-pod affinity and anti-affinity require substantial amounts of
+processing which can slow down scheduling in large clusters
+significantly. We do not recommend using them in clusters larger than
+several hundred nodes.</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Pod anti-affinity requires nodes to be consistently labeled, in other
+words, every node in the cluster must have an appropriate label matching
+<code>topologyKey</code>. If some or all nodes are missing the specified
+<code>topologyKey</code> label, it can lead to unintended behavior.</p>
+</div>
+<p>Similar to <a href="#node-affinity">node affinity</a> are two types
+of Pod affinity and anti-affinity as follows:</p>
+<ul>
+<li><code>requiredDuringSchedulingIgnoredDuringExecution</code></li>
+<li><code>preferredDuringSchedulingIgnoredDuringExecution</code></li>
+</ul>
+<p>For example, you could use
+<code>requiredDuringSchedulingIgnoredDuringExecution</code> affinity to
+tell the scheduler to co-locate Pods of two services in the same cloud
+provider zone because they communicate with each other a lot. Similarly,
+you could use
+<code>preferredDuringSchedulingIgnoredDuringExecution</code>
+anti-affinity to spread Pods from a service across multiple cloud
+provider zones.</p>
+<p>To use inter-pod affinity, use the <code>affinity.podAffinity</code>
+field in the Pod spec. For inter-pod anti-affinity, use the
+<code>affinity.podAntiAffinity</code> field in the Pod spec.</p>
+<h4 id="scheduling-behavior">Scheduling Behavior</h4>
+<p>When scheduling a new Pod, the Kubernetes scheduler evaluates the
+Pod's affinity/anti-affinity rules in the context of the current cluster
+state:</p>
+<ol type="1">
+<li>Hard Constraints (Node Filtering):
+<ul>
+<li><code>podAffinity.requiredDuringSchedulingIgnoredDuringExecution</code>
+and
+<code>podAntiAffinity.requiredDuringSchedulingIgnoredDuringExecution</code>:
+<ul>
+<li>The scheduler ensures the new Pod is assigned to nodes that satisfy
+these required affinity and anti-affinity rules based on existing
+Pods.</li>
+</ul></li>
+</ul></li>
+<li>Soft Constraints (Scoring):
+<ul>
+<li><code>podAffinity.preferredDuringSchedulingIgnoredDuringExecution</code>
+and
+<code>podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution</code>:
+<ul>
+<li>The scheduler scores nodes based on how well they meet these
+preferred affinity and anti-affinity rules to optimize Pod
+placement.</li>
+</ul></li>
+</ul></li>
+<li>Ignored Fields:
+<ul>
+<li>Existing Pods'
+<code>podAffinity.preferredDuringSchedulingIgnoredDuringExecution</code>:
+<ul>
+<li>These preferred affinity rules are not considered during the
+scheduling decision for new Pods.</li>
+</ul></li>
+<li>Existing Pods'
+<code>podAntiAffinity.preferredDuringSchedulingIgnoredDuringExecution</code>:
+<ul>
+<li>Similarly, preferred anti-affinity rules of existing Pods are
+ignored during scheduling.</li>
+</ul></li>
+</ul></li>
+</ol>
+<h4
+id="scheduling-a-group-of-pods-with-inter-pod-affinity-to-themselves">Scheduling
+a Group of Pods with Inter-pod Affinity to Themselves</h4>
+<p>If the current Pod being scheduled is the first in a series that have
+affinity to themselves, it is allowed to be scheduled if it passes all
+other affinity checks. This is determined by verifying that no other Pod
+in the cluster matches the namespace and selector of this Pod, that the
+Pod matches its own terms, and the chosen node matches all requested
+topologies. This ensures that there will not be a deadlock even if all
+the Pods have inter-pod affinity specified.</p>
+<h4 id="an-example-of-a-pod-that-uses-pod-affinity">Pod Affinity
+Example</h4>
+<p>Consider the following Pod spec:</p>
+<div class="code-sample">
+<p><code>pods/pod-with-pod-affinity.yaml</code></p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-pod-affinity</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> security</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">            </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">S1</span></span>
+<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
+<span class="at">    </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">preferredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">100</span></span>
+<span class="at">        </span><span class="fu">podAffinityTerm</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> security</span></span>
+<span class="at">              </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">              </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="at">S2</span></span>
+<span class="at">          </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> topology.kubernetes.io/zone</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> with-pod-affinity</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/pause:3.8</span></span></code></pre></div>
+</div>
+<p>This example defines one Pod affinity rule and one Pod anti-affinity
+rule. The Pod affinity rule uses the "hard"
+<code>requiredDuringSchedulingIgnoredDuringExecution</code>, while the
+anti-affinity rule uses the "soft"
+<code>preferredDuringSchedulingIgnoredDuringExecution</code>.</p>
+<p>The affinity rule specifies that the scheduler is allowed to place
+the example Pod on a node only if that node belongs to a specific <a
+href="topology-spread-constraints.html">zone</a>
+where other Pods have been labeled with <code>security=S1</code>. For
+instance, if we have a cluster with a designated zone, let's call it
+"Zone V," consisting of nodes labeled with
+<code>topology.kubernetes.io/zone=V</code>, the scheduler can assign the
+Pod to any node within Zone V, as long as there is at least one Pod
+within Zone V already labeled with <code>security=S1</code>. Conversely,
+if there are no Pods with <code>security=S1</code> labels in Zone V, the
+scheduler will not assign the example Pod to any node in that zone.</p>
+<p>The anti-affinity rule specifies that the scheduler should try to
+avoid scheduling the Pod on a node if that node belongs to a specific <a
+href="topology-spread-constraints.html">zone</a>
+where other Pods have been labeled with <code>security=S2</code>. For
+instance, if we have a cluster with a designated zone, let's call it
+"Zone R," consisting of nodes labeled with
+<code>topology.kubernetes.io/zone=R</code>, the scheduler should avoid
+assigning the Pod to any node within Zone R, as long as there is at
+least one Pod within Zone R already labeled with
+<code>security=S2</code>. Conversely, the anti-affinity rule does not
+impact scheduling into Zone R if there are no Pods with
+<code>security=S2</code> labels.</p>
+<p>To get yourself more familiar with the examples of Pod affinity and
+anti-affinity, refer to the <a
+href="https://git.k8s.io/design-proposals-archive/scheduling/podaffinity.md">design
+proposal</a>.</p>
+<p>You can use the <code>In</code>, <code>NotIn</code>,
+<code>Exists</code> and <code>DoesNotExist</code> values in the
+<code>operator</code> field for Pod affinity and anti-affinity.</p>
+<p>Read <a href="#operators">Operators</a> to learn more about how these
+work.</p>
+<p>In principle, the <code>topologyKey</code> can be any allowed label
+key with the following exceptions for performance and security
+reasons:</p>
+<ul>
+<li>For Pod affinity and anti-affinity, an empty
+<code>topologyKey</code> field is not allowed in both
+<code>requiredDuringSchedulingIgnoredDuringExecution</code> and
+<code>preferredDuringSchedulingIgnoredDuringExecution</code>.</li>
+<li>For <code>requiredDuringSchedulingIgnoredDuringExecution</code> Pod
+anti-affinity rules, the admission controller
+<code>LimitPodHardAntiAffinityTopology</code> limits
+<code>topologyKey</code> to <code>kubernetes.io/hostname</code>. You can
+modify or disable the admission controller if you want to allow custom
+topologies.</li>
+</ul>
+<p>In addition to <code>labelSelector</code> and
+<code>topologyKey</code>, you can optionally specify a list of
+namespaces which the <code>labelSelector</code> should match against
+using the <code>namespaces</code> field at the same level as
+<code>labelSelector</code> and <code>topologyKey</code>. If omitted or
+empty, <code>namespaces</code> defaults to the namespace of the Pod
+where the affinity/anti-affinity definition appears.</p>
+<h4 id="namespace-selector">Namespace Selector</h4>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.24</p>
+</div>
+<p>You can also select matching namespaces using
+<code>namespaceSelector</code>, which is a label query over the set of
+namespaces. The affinity term is applied to namespaces selected by both
+<code>namespaceSelector</code> and the <code>namespaces</code> field.
+Note that an empty <code>namespaceSelector</code> ({}) matches all
+namespaces, while a null or empty <code>namespaces</code> list and null
+<code>namespaceSelector</code> matches the namespace of the Pod where
+the rule is defined.</p>
+<h4 id="matchlabelkeys">matchLabelKeys</h4>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.33; enabled by default
+(<code>MatchLabelKeysInPodAffinity</code>)</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>matchLabelKeys</code> field is a beta-level field and is
+enabled by default in Kubernetes 1.37. When you want to disable it, you
+have to disable it explicitly via the
+<code>MatchLabelKeysInPodAffinity</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a>.</p>
+</div>
+<p>Kubernetes includes an optional <code>matchLabelKeys</code> field for
+Pod affinity or anti-affinity. The field specifies keys for the labels
+that should match with the incoming Pod's labels, when satisfying the
+Pod (anti)affinity.</p>
+<p>The keys are used to look up values from the Pod labels; those
+key-value labels are combined (using <code>AND</code>) with the match
+restrictions defined using the <code>labelSelector</code> field. The
+combined filtering selects the set of existing Pods that will be taken
+into Pod (anti)affinity calculation.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>It's not recommended to use <code>matchLabelKeys</code> with labels
+that might be updated directly on pods. Even if you edit the pod's label
+that is specified at <code>matchLabelKeys</code>
+<strong>directly</strong>, (that is, not via a deployment),
+kube-apiserver doesn't reflect the label update onto the merged
+<code>labelSelector</code>.</p>
+</div>
+<p>A common use case is to use <code>matchLabelKeys</code> with
+<code>pod-template-hash</code> (set on Pods managed as part of a
+Deployment, where the value is unique for each revision). Using
+<code>pod-template-hash</code> in <code>matchLabelKeys</code> allows you
+to target the Pods that belong to the same revision as the incoming Pod,
+so that a rolling upgrade won't break affinity.</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> application-server</span></span>
+<span class="co">...</span></span>
+<span class="er">spec:</span></span>
+<span class="er">  template:</span></span>
+<span class="er">    spec:</span></span>
+<span class="er">      affinity:</span></span>
+<span class="er">        podAffinity:</span></span>
+<span class="er">          requiredDuringSchedulingIgnoredDuringExecution:</span></span>
+<span class="er">          - labelSelector:</span></span>
+<span class="er">              matchExpressions:</span></span>
+<span class="er">              - key: app</span></span>
+<span class="er">                operator: In</span></span>
+<span class="er">                values:</span></span>
+<span class="er">                - database</span></span>
+<span class="er">            topologyKey: topology.kubernetes.io/zone</span></span>
+<span class="er">            </span><span class="co"># Only Pods from a given rollout are taken into consideration when calculating pod affinity.</span></span>
+<span class="at">            </span><span class="co"># If you update the Deployment, the replacement Pods follow their own affinity rules</span></span>
+<span class="at">            </span><span class="co"># (if there are any defined in the new Pod template)</span></span>
+<span class="at">            </span><span class="fu">matchLabelKeys</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">pod-template-hash</span></span></code></pre></div>
+<h4 id="mismatchlabelkeys">mismatchLabelKeys</h4>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.33; enabled by default
+(<code>MatchLabelKeysInPodAffinity</code>)</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>mismatchLabelKeys</code> field is a beta-level field and is
+enabled by default in Kubernetes 1.37. When you want to disable it, you
+have to disable it explicitly via the
+<code>MatchLabelKeysInPodAffinity</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a>.</p>
+</div>
+<p>Kubernetes includes an optional <code>mismatchLabelKeys</code> field
+for Pod affinity or anti-affinity. The field specifies keys for the
+labels that should not match with the incoming Pod's labels, when
+satisfying the Pod (anti)affinity.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>It's not recommended to use <code>mismatchLabelKeys</code> with
+labels that might be updated directly on pods. Even if you edit the
+pod's label that is specified at <code>mismatchLabelKeys</code>
+<strong>directly</strong>, (that is, not via a deployment),
+kube-apiserver doesn't reflect the label update onto the merged
+<code>labelSelector</code>.</p>
+</div>
+<p>One example use case is to ensure Pods go to the topology domain
+(node, zone, etc) where only Pods from the same tenant or team are
+scheduled in. In other words, you want to avoid running Pods from two
+different tenants on the same topology domain at the same time.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="co"># Assume that all relevant Pods have a &quot;tenant&quot; label set</span></span>
+<span class="at">    </span><span class="fu">tenant</span><span class="kw">:</span><span class="at"> tenant-a</span></span>
+<span class="co">...</span></span>
+<span class="er">spec:</span></span>
+<span class="er">  affinity:</span></span>
+<span class="er">    podAffinity:</span></span>
+<span class="er">      requiredDuringSchedulingIgnoredDuringExecution:</span></span>
+<span class="er">      </span><span class="co"># ensure that Pods associated with this tenant land on the correct node pool</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">matchLabelKeys</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">tenant</span></span>
+<span class="at">        </span><span class="fu">labelSelector</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> node-pool</span></span>
+<span class="at">    </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="co"># ensure that Pods associated with this tenant can&#39;t schedule to nodes used for another tenant</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">mismatchLabelKeys</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="at">tenant</span><span class="co"> # whatever the value of the &quot;tenant&quot; label for this Pod, prevent</span></span>
+<span class="at">                 </span><span class="co"># scheduling to nodes in any pool where any Pod from a different</span></span>
+<span class="at">                 </span><span class="co"># tenant is running.</span></span>
+<span class="at">        </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="co"># We have to have the labelSelector which selects only Pods with the tenant label,</span></span>
+<span class="at">          </span><span class="co"># otherwise this Pod would have anti-affinity against Pods from daemonsets as well, for example,</span></span>
+<span class="at">          </span><span class="co"># which aren&#39;t supposed to have the tenant label.</span></span>
+<span class="at">          </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> tenant</span></span>
+<span class="at">            </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> Exists</span></span>
+<span class="at">        </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> node-pool</span></span></code></pre></div>
+<h4 id="more-practical-use-cases">More practical use-cases</h4>
+<p>Inter-pod affinity and anti-affinity can be even more useful when
+they are used with higher level collections such as ReplicaSets,
+StatefulSets, Deployments, etc. These rules allow you to configure that
+a set of workloads should be co-located in the same defined topology;
+for example, preferring to place two related Pods onto the same
+node.</p>
+<p>For example: imagine a three-node cluster. You use the cluster to run
+a web application and also an in-memory cache (such as Redis). For this
+example, also assume that latency between the web application and the
+memory cache should be as low as is practical. You could use inter-pod
+affinity and anti-affinity to co-locate the web servers with the cache
+as much as possible.</p>
+<p>In the following example Deployment for the Redis cache, the replicas
+get the label <code>app=store</code>. The <code>podAntiAffinity</code>
+rule tells the scheduler to avoid placing multiple replicas with the
+<code>app=store</code> label on a single node. This creates each cache
+in a separate node.</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-cache</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> store</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> store</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
+<span class="at">                </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">                </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="kw">- </span><span class="at">store</span></span>
+<span class="at">            </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> redis-server</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> redis:3.2-alpine</span></span></code></pre></div>
+<p>The following example Deployment for the web servers creates replicas
+with the label <code>app=web-store</code>. The Pod affinity rule tells
+the scheduler to place each replica on a node that has a Pod with the
+label <code>app=store</code>. The Pod anti-affinity rule tells the
+scheduler never to place multiple <code>app=web-store</code> servers on
+a single node.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-server</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> web-store</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> web-store</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">affinity</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">podAntiAffinity</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
+<span class="at">                </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">                </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="kw">- </span><span class="at">web-store</span></span>
+<span class="at">            </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span>
+<span class="at">        </span><span class="fu">podAffinity</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">requiredDuringSchedulingIgnoredDuringExecution</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">labelSelector</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">matchExpressions</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> app</span></span>
+<span class="at">                </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> In</span></span>
+<span class="at">                </span><span class="fu">values</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="kw">- </span><span class="at">store</span></span>
+<span class="at">            </span><span class="fu">topologyKey</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;kubernetes.io/hostname&quot;</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> web-app</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx:1.16-alpine</span></span></code></pre></div>
+<p>Creating the two preceding Deployments results in the following
+cluster layout, where each web server is co-located with a cache, on
+three separate nodes.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">node-1</th>
+<th style="text-align: center;">node-2</th>
+<th style="text-align: center;">node-3</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><em>webserver-1</em></td>
+<td style="text-align: center;"><em>webserver-2</em></td>
+<td style="text-align: center;"><em>webserver-3</em></td>
+</tr>
+<tr>
+<td style="text-align: center;"><em>cache-1</em></td>
+<td style="text-align: center;"><em>cache-2</em></td>
+<td style="text-align: center;"><em>cache-3</em></td>
+</tr>
+</tbody>
+</table>
+<p>The overall effect is that each cache instance is likely to be
+accessed by a single client that is running on the same node. This
+approach aims to minimize both skew (imbalanced load) and latency.</p>
+<p>You might have other reasons to use Pod anti-affinity. See the <a
+href="../../tutorials/stateful-application/zookeeper.html#tolerating-node-failure">ZooKeeper
+tutorial</a> for an example of a StatefulSet configured with
+anti-affinity for high availability, using the same technique as this
+example.</p>
+<h2 id="nodename">nodeName</h2>
+<p><code>nodeName</code> is a more direct form of node selection than
+affinity or <code>nodeSelector</code>. <code>nodeName</code> is a field
+in the Pod spec. If the <code>nodeName</code> field is not empty, the
+scheduler ignores the Pod and the kubelet on the named node tries to
+place the Pod on that node. Using <code>nodeName</code> overrules using
+<code>nodeSelector</code> or affinity and anti-affinity rules.</p>
+<p>Some of the limitations of using <code>nodeName</code> to select
+nodes are:</p>
+<ul>
+<li>If the named node does not exist, the Pod will not run, and in some
+cases may be automatically deleted.</li>
+<li>If the named node does not have the resources to accommodate the
+Pod, the Pod will fail and its reason will indicate why, for example
+OutOfmemory or OutOfcpu.</li>
+<li>Node names in cloud environments are not always predictable or
+stable.</li>
+</ul>
+<div class="admonition warning">
+<div class="admonition-title">
+<p>Warning:</p>
+</div>
+<p><code>nodeName</code> is intended for use by custom schedulers or
+advanced use cases where you need to bypass any configured schedulers.
+Bypassing the schedulers might lead to failed Pods if the assigned Nodes
+get oversubscribed. You can use <a href="#node-affinity">node
+affinity</a> or the <a href="#nodeselector"><code>nodeSelector</code>
+field</a> to assign a Pod to a specific Node without bypassing the
+schedulers.</p>
+</div>
+<p>Here is an example of a Pod spec using the <code>nodeName</code>
+field:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">  </span><span class="fu">nodeName</span><span class="kw">:</span><span class="at"> kube-01</span></span></code></pre></div>
+<p>The above Pod will only run on the node <code>kube-01</code>.</p>
+<h2 id="nominatednodename">nominatedNodeName</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.35; enabled by default
+(<code>NominatedNodeNameForExpectation</code>)</p>
+</div>
+<p><code>nominatedNodeName</code> can be used for external components to
+nominate node for a pending pod. This nomination is best effort: it
+might be ignored if the scheduler determines the pod cannot go to a
+nominated node.</p>
+<p>Also, this field can be (over)written by the scheduler:</p>
+<ul>
+<li>If the scheduler finds a node to nominate via the preemption.</li>
+<li>If the scheduler decides where the pod is going, and move it to the
+binding cycle.
+<ul>
+<li>Note that, in this case, <code>nominatedNodeName</code> is put only
+when the pod has to go through <code>WaitOnPermit</code> or
+<code>PreBind</code> extension points.</li>
+</ul></li>
+</ul>
+<p>Here is an example of a Pod status using the
+<code>nominatedNodeName</code> field:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="co">...</span></span>
+<span class="er">status:</span></span>
+<span class="er">  nominatedNodeName: kube-01</span></span></code></pre></div>
+<h2 id="pod-topology-spread-constraints">Pod topology spread
+constraints</h2>
+<p>You can use <em>topology spread constraints</em> to control how <span
+class="glossary-term" data-term="Pod">Pods</span> are spread across your
+cluster among failure-domains such as regions, zones, nodes, or among
+any other topology domains that you define. You might do this to improve
+performance, expected availability, or overall utilization.</p>
+<p>Read <a
+href="topology-spread-constraints.html">Pod
+topology spread constraints</a> to learn more about how these work.</p>
+<h2 id="pod-topology-labels">Pod topology labels</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.35; enabled by default
+(<code>PodTopologyLabelsAdmission</code>)</p>
+</div>
+<p>Pods inherit the topology labels
+(<code>topology.kubernetes.io/zone</code> and
+<code>topology.kubernetes.io/region</code>) from their assigned Node if
+those labels are present. These labels can then be utilized via the
+Downward API to provide the workload with node topology awareness.</p>
+<p>Here is an example of a Pod using downward API for it's zone and
+region:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-with-topology-labels</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> app</span></span>
+<span class="at">      </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span class="at">      </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;env&quot;</span><span class="kw">]</span></span>
+<span class="at">      </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_ZONE</span></span>
+<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.labels[&#39;topology.kubernetes.io/zone&#39;]</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MY_REGION</span></span>
+<span class="at">          </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> metadata.labels[&#39;topology.kubernetes.io/region&#39;]</span></span></code></pre></div>
+<h2 id="operators">Operators</h2>
+<p>The following are all the logical operators that you can use in the
+<code>operator</code> field for <code>nodeAffinity</code> and
+<code>podAffinity</code> mentioned above.</p>
+<table>
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Operator</th>
+<th style="text-align: center;">Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>In</code></td>
+<td style="text-align: center;">The label value is present in the
+supplied set of strings</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>NotIn</code></td>
+<td style="text-align: center;">The label value is not contained in the
+supplied set of strings</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>Exists</code></td>
+<td style="text-align: center;">A label with this key exists on the
+object</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>DoesNotExist</code></td>
+<td style="text-align: center;">No label with this key exists on the
+object</td>
+</tr>
+</tbody>
+</table>
+<p>The following operators can only be used with
+<code>nodeAffinity</code>.</p>
+<table>
+<colgroup>
+<col style="width: 48%" />
+<col style="width: 51%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;">Operator</th>
+<th style="text-align: center;">Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><code>Gt</code></td>
+<td style="text-align: center;">The field value will be parsed as an
+integer, and the integer that results from parsing the value of a label
+named by this selector is greater than this integer</td>
+</tr>
+<tr>
+<td style="text-align: center;"><code>Lt</code></td>
+<td style="text-align: center;">The field value will be parsed as an
+integer, and the integer that results from parsing the value of a label
+named by this selector is less than this integer</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><code>Gt</code> and <code>Lt</code> operators will not work with
+non-integer values. If the given value doesn't parse as an integer, the
+Pod will fail to get scheduled. Also, <code>Gt</code> and
+<code>Lt</code> are not available for <code>podAffinity</code>.</p>
+</div>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read more about <a
+href="taint-and-toleration.html">taints
+and tolerations</a>.</li>
+<li>Read the design docs for <a
+href="https://git.k8s.io/design-proposals-archive/scheduling/nodeaffinity.md">node
+affinity</a> and for <a
+href="https://git.k8s.io/design-proposals-archive/scheduling/podaffinity.md">inter-pod
+affinity/anti-affinity</a>.</li>
+<li>Learn about how the <a
+href="../../tasks/administer-cluster/topology-manager.html">topology
+manager</a> takes part in node-level resource allocation decisions.</li>
+<li>Learn how to use <a
+href="../../tasks/configure-pod-container/assign-pods-nodes.html">nodeSelector</a>.</li>
+<li>Learn how to use <a
+href="../../tasks/configure-pod-container/assign-pods-nodes-using-node-affinity.html">affinity
+and anti-affinity</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="kube-scheduler.html"><span>Previous</span>Kubernetes Scheduler</a><a class="page-nav-link next" href="pod-overhead.html"><span>Next</span>Pod Overhead</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#built-in-node-labels">Node labels</a></li><li class="toc-l3"><a href="#node-isolation-restriction">Node isolation/restriction</a></li><li class="toc-l2"><a href="#nodeselector">nodeSelector</a></li><li class="toc-l2"><a href="#affinity-and-anti-affinity">Affinity and anti-affinity</a></li><li class="toc-l3"><a href="#node-affinity">Node affinity</a></li><li class="toc-l3"><a href="#inter-pod-affinity-and-anti-affinity">Inter-pod affinity and anti-affinity</a></li><li class="toc-l2"><a href="#nodename">nodeName</a></li><li class="toc-l2"><a href="#nominatednodename">nominatedNodeName</a></li><li class="toc-l2"><a href="#pod-topology-spread-constraints">Pod topology spread constraints</a></li><li class="toc-l2"><a href="#pod-topology-labels">Pod topology labels</a></li><li class="toc-l2"><a href="#operators">Operators</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

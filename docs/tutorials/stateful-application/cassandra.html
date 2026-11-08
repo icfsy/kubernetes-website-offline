@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Example: Deploying Cassandra with a StatefulSet · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/stateful-application/cassandra" data-title="Example: Deploying Cassandra with a StatefulSet" data-canonical="https://kubernetes.io/docs/tutorials/stateful-application/cassandra/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../stateful-application.html">Stateful Applications</a></nav></nav>
+        <header class="page-head">
+          <h1>Example: Deploying Cassandra with a StatefulSet</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/stateful-application/cassandra/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This tutorial shows you how to run <a
+href="https://cassandra.apache.org/">Apache Cassandra</a> on Kubernetes.
+Cassandra, a database, needs persistent storage to provide data
+durability (application <em>state</em>). In this example, a custom
+Cassandra seed provider lets the database discover new Cassandra
+instances as they join the Cassandra cluster.</p>
+<p><em>StatefulSets</em> make it easier to deploy stateful applications
+into your Kubernetes cluster. For more information on the features used
+in this tutorial, see <a
+href="../../concepts/workloads/controllers/statefulset.html">StatefulSet</a>.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Cassandra and Kubernetes both use the term <em>node</em> to mean a
+member of a cluster. In this tutorial, the Pods that belong to the
+StatefulSet are Cassandra nodes and are members of the Cassandra cluster
+(called a <em>ring</em>). When those Pods run in your Kubernetes
+cluster, the Kubernetes control plane schedules those Pods onto
+Kubernetes <a class="glossary-term" href="../../reference/glossary.html#term-node" title="Glossary: node">Nodes</a>.</p>
+<p>When a Cassandra node starts, it uses a <em>seed list</em> to
+bootstrap discovery of other nodes in the ring. This tutorial deploys a
+custom Cassandra seed provider that lets the database discover new
+Cassandra Pods as they appear inside your Kubernetes cluster.</p>
+</div>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>Create and validate a Cassandra headless <a class="glossary-term" href="../../reference/glossary.html#term-service" title="Glossary: service">Service</a>.</li>
+<li>Use a Statefulset to create a Cassandra
+ring.</li>
+<li>Validate the StatefulSet.</li>
+<li>Modify the StatefulSet.</li>
+<li>Delete the StatefulSet and its <a class="glossary-term" href="../../reference/glossary.html#term-pod" title="Glossary: pod">Pods</a>.</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
+</ul>
+<p>To complete this tutorial, you should already have a basic
+familiarity with <a class="glossary-term" href="../../reference/glossary.html#term-pod" title="Glossary: pod">Pods</a>, <a class="glossary-term" href="../../reference/glossary.html#term-service" title="Glossary: service">Services</a>, and StatefulSets.</p>
+<h3 id="additional-minikube-setup-instructions">Additional Minikube
+setup instructions</h3>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution</p>
+</div>
+<p><a target="_blank" rel="noopener" href="https://minikube.sigs.k8s.io/docs/">Minikube</a> defaults to
+2048MB of memory and 2 CPU. Running Minikube with the default resource
+configuration results in insufficient resource errors during this
+tutorial. To avoid these errors, start Minikube with the following
+settings:</p>
+<pre class="shell"><code>minikube start --memory 5120 --cpus=4</code></pre>
+</div>
+<h2 id="creating-a-cassandra-headless-service">Creating a headless
+Service for Cassandra</h2>
+<p>In Kubernetes, a <a class="glossary-term" href="../../reference/glossary.html#term-service" title="Glossary: service">Service</a> describes a set of <span
+class="glossary-term" data-term="pod">Pods</span> that perform the same
+task.</p>
+<p>The following Service is used for DNS lookups between Cassandra Pods
+and clients within your cluster:</p>
+<div class="code-sample">
+<p><code>application/cassandra/cassandra-service.yaml</code></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">clusterIP</span><span class="kw">:</span><span class="at"> None</span></span>
+<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">9042</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span></code></pre></div>
+</div>
+<p>Create a Service to track all Cassandra StatefulSet members from the
+<code>cassandra-service.yaml</code> file:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/cassandra/cassandra-service.yaml</code></pre>
+<h3 id="validating">Validating (optional)</h3>
+<p>Get the Cassandra Service.</p>
+<pre class="shell"><code>kubectl get svc cassandra</code></pre>
+<p>The response is</p>
+<pre><code>NAME        TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
+cassandra   ClusterIP   None         &lt;none&gt;        9042/TCP   45s</code></pre>
+<p>If you don't see a Service named <code>cassandra</code>, that means
+creation failed. Read <a
+href="../../tasks/debug/debug-application/debug-service.html">Debug
+Services</a> for help troubleshooting common issues.</p>
+<h2 id="using-a-statefulset-to-create-a-cassandra-ring">Using a
+StatefulSet to create a Cassandra ring</h2>
+<p>The StatefulSet manifest, included below, creates a Cassandra ring
+that consists of three Pods.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>This example uses the default provisioner for Minikube. Please update
+the following StatefulSet for the cloud you are working with.</p>
+</div>
+<div class="code-sample">
+<p><code>application/cassandra/cassandra-statefulset.yaml</code></p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">serviceName</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">terminationGracePeriodSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">500</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/cassandra:v13</span></span>
+<span class="at">        </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">7000</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> intra-node</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">7001</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> tls-intra-node</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">7199</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> jmx</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">9042</span></span>
+<span class="at">          </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cql</span></span>
+<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
+<span class="at">          </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span class="at">            </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
+<span class="at">        </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">capabilities</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">add</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="at">IPC_LOCK</span></span>
+<span class="at">        </span><span class="fu">lifecycle</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">preStop</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">exec</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span></span>
+<span class="at">              </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">              </span><span class="kw">- </span><span class="at">nodetool drain</span></span>
+<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> MAX_HEAP_SIZE</span></span>
+<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 512M</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> HEAP_NEWSIZE</span></span>
+<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> 100M</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_SEEDS</span></span>
+<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;cassandra-0.cassandra.default.svc.cluster.local&quot;</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_CLUSTER_NAME</span></span>
+<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;K8Demo&quot;</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_DC</span></span>
+<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;DC1-K8Demo&quot;</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> CASSANDRA_RACK</span></span>
+<span class="at">            </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Rack1-K8Demo&quot;</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> POD_IP</span></span>
+<span class="at">            </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">              </span><span class="fu">fieldRef</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="fu">fieldPath</span><span class="kw">:</span><span class="at"> status.podIP</span></span>
+<span class="at">        </span><span class="fu">readinessProbe</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">exec</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/bin/bash</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/ready-probe.sh</span></span>
+<span class="at">          </span><span class="fu">initialDelaySeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">15</span></span>
+<span class="at">          </span><span class="fu">timeoutSeconds</span><span class="kw">:</span><span class="at"> </span><span class="dv">5</span></span>
+<span class="at">        </span><span class="co"># These volume mounts are persistent. They are like inline claims,</span></span>
+<span class="at">        </span><span class="co"># but not exactly because the names need to match exactly one of</span></span>
+<span class="at">        </span><span class="co"># the stateful pod volumes.</span></span>
+<span class="at">        </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra-data</span></span>
+<span class="at">          </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /cassandra_data</span></span>
+<span class="at">  </span><span class="co"># These are converted to volume claims by the controller</span></span>
+<span class="at">  </span><span class="co"># and mounted at the paths mentioned above.</span></span>
+<span class="at">  </span><span class="co"># do not use these in production until ssd GCEPersistentDisk or other ssd pd</span></span>
+<span class="at">  </span><span class="fu">volumeClaimTemplates</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra-data</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">accessModes</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;ReadWriteOnce&quot;</span><span class="at"> </span><span class="kw">]</span></span>
+<span class="at">      </span><span class="fu">storageClassName</span><span class="kw">:</span><span class="at"> fast</span></span>
+<span class="at">      </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">storage</span><span class="kw">:</span><span class="at"> 1Gi</span></span>
+<span class="pp">---</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> StorageClass</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> storage.k8s.io/v1</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fast</span></span>
+<span class="fu">provisioner</span><span class="kw">:</span><span class="at"> k8s.io/minikube-hostpath</span></span>
+<span class="fu">parameters</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> pd-ssd</span></span></code></pre></div>
+</div>
+<p>Create the Cassandra StatefulSet from the
+<code>cassandra-statefulset.yaml</code> file:</p>
+<pre class="shell"><code># Use this if you are able to apply cassandra-statefulset.yaml unmodified
+kubectl apply -f https://k8s.io/examples/application/cassandra/cassandra-statefulset.yaml</code></pre>
+<p>If you need to modify <code>cassandra-statefulset.yaml</code> to suit
+your cluster, download
+https://k8s.io/examples/application/cassandra/cassandra-statefulset.yaml
+and then apply that manifest, from the folder you saved the modified
+version into:</p>
+<pre class="shell"><code># Use this if you needed to modify cassandra-statefulset.yaml locally
+kubectl apply -f cassandra-statefulset.yaml</code></pre>
+<h2 id="validating-the-cassandra-statefulset">Validating the Cassandra
+StatefulSet</h2>
+<ol type="1">
+<li><p>Get the Cassandra StatefulSet:</p>
+<pre class="shell"><code>kubectl get statefulset cassandra</code></pre>
+<p>The response should be similar to:</p>
+<pre><code>NAME        DESIRED   CURRENT   AGE
+cassandra   3         0         13s</code></pre>
+<p>The <code>StatefulSet</code> resource deploys Pods
+sequentially.</p></li>
+<li><p>Get the Pods to see the ordered creation status:</p>
+<pre class="shell"><code>kubectl get pods -l=&quot;app=cassandra&quot;</code></pre>
+<p>The response should be similar to:</p>
+<pre class="shell"><code>NAME          READY     STATUS              RESTARTS   AGE
+cassandra-0   1/1       Running             0          1m
+cassandra-1   0/1       ContainerCreating   0          8s</code></pre>
+<p>It can take several minutes for all three Pods to deploy. Once they
+are deployed, the same command returns output similar to:</p>
+<pre><code>NAME          READY     STATUS    RESTARTS   AGE
+cassandra-0   1/1       Running   0          10m
+cassandra-1   1/1       Running   0          9m
+cassandra-2   1/1       Running   0          8m</code></pre></li>
+<li><p>Run the Cassandra <a
+href="https://cwiki.apache.org/confluence/display/CASSANDRA2/NodeTool">nodetool</a>
+inside the first Pod, to display the status of the ring.</p>
+<pre class="shell"><code>kubectl exec -it cassandra-0 -- nodetool status</code></pre>
+<p>The response should look something like:</p>
+<pre><code>Datacenter: DC1-K8Demo
+======================
+Status=Up/Down
+|/ State=Normal/Leaving/Joining/Moving
+--  Address     Load       Tokens       Owns (effective)  Host ID                               Rack
+UN  172.17.0.5  83.57 KiB  32           74.0%             e2dd09e6-d9d3-477e-96c5-45094c08db0f  Rack1-K8Demo
+UN  172.17.0.4  101.04 KiB  32           58.8%             f89d6835-3a42-4419-92b3-0e62cae1479c  Rack1-K8Demo
+UN  172.17.0.6  84.74 KiB  32           67.1%             a6a1e8c2-3dc5-4417-b1a0-26507af2aaad  Rack1-K8Demo</code></pre></li>
+</ol>
+<h2 id="modifying-the-cassandra-statefulset">Modifying the Cassandra
+StatefulSet</h2>
+<p>Use <code>kubectl edit</code> to modify the size of a Cassandra
+StatefulSet.</p>
+<ol type="1">
+<li><p>Run the following command:</p>
+<pre class="shell"><code>kubectl edit statefulset cassandra</code></pre>
+<p>This command opens an editor in your terminal. The line you need to
+change is the <code>replicas</code> field. The following sample is an
+excerpt of the StatefulSet file:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co"># Please edit the object below. Lines beginning with a &#39;#&#39; will be ignored,</span></span>
+<span class="co"># and an empty file will abort the edit. If an error occurs while saving this file will be</span></span>
+<span class="co"># reopened with the relevant failures.</span></span>
+<span class="co">#</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> StatefulSet</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="bn">2016-08-13T18:40:58Z</span></span>
+<span class="at">  </span><span class="fu">generation</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">app</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cassandra</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;323&quot;</span></span>
+<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 7a219483-6185-11e6-a910-42010a8a0fc0</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span></code></pre></div></li>
+<li><p>Change the number of replicas to 4, and then save the
+manifest.</p>
+<p>The StatefulSet now scales to run with 4 Pods.</p></li>
+<li><p>Get the Cassandra StatefulSet to verify your change:</p>
+<pre class="shell"><code>kubectl get statefulset cassandra</code></pre>
+<p>The response should be similar to:</p>
+<pre><code>NAME        DESIRED   CURRENT   AGE
+cassandra   4         4         36m</code></pre></li>
+</ol>
+<h2 id="cleaning-up">Cleaning up</h2>
+<p>Deleting or scaling a StatefulSet down does not delete the volumes
+associated with the StatefulSet. This setting is for your safety because
+your data is more valuable than automatically purging all related
+StatefulSet resources.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Warning</p>
+</div>
+<p>Depending on the storage class and reclaim policy, deleting the
+<em>PersistentVolumeClaims</em> may cause the associated volumes to also
+be deleted. Never assume you'll be able to access data if its volume
+claims are deleted.</p>
+</div>
+<ol type="1">
+<li><p>Run the following commands (chained together into a single
+command) to delete everything in the Cassandra StatefulSet:</p>
+<pre class="shell"><code>grace=$(kubectl get pod cassandra-0 -o=jsonpath=&#39;{.spec.terminationGracePeriodSeconds}&#39;) \
+  &amp;&amp; kubectl delete statefulset -l app=cassandra \
+  &amp;&amp; echo &quot;Sleeping ${grace} seconds&quot; 1&gt;&amp;2 \
+  &amp;&amp; sleep $grace \
+  &amp;&amp; kubectl delete persistentvolumeclaim -l app=cassandra</code></pre></li>
+<li><p>Run the following command to delete the Service you set up for
+Cassandra:</p>
+<pre class="shell"><code>kubectl delete service -l app=cassandra</code></pre></li>
+</ol>
+<h2 id="cassandra-container-environment-variables">Cassandra container
+environment variables</h2>
+<p>The Pods in this tutorial use the <a
+href="https://github.com/kubernetes/examples/blob/master/databases/cassandra/image/Dockerfile"><code>gcr.io/google-samples/cassandra:v13</code></a>
+image from Google's <a
+href="https://cloud.google.com/container-registry/docs/">container
+registry</a>. The Docker image above is based on <a
+href="https://github.com/kubernetes/release/tree/master/images/build/debian-base">debian-base</a>
+and includes OpenJDK 8.</p>
+<p>This image includes a standard Cassandra installation from the Apache
+Debian repo. By using environment variables you can change values that
+are inserted into <code>cassandra.yaml</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Environment variable</th>
+<th style="text-align: center;">Default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>CASSANDRA_CLUSTER_NAME</code></td>
+<td style="text-align: center;"><code>'Test Cluster'</code></td>
+</tr>
+<tr>
+<td><code>CASSANDRA_NUM_TOKENS</code></td>
+<td style="text-align: center;"><code>32</code></td>
+</tr>
+<tr>
+<td><code>CASSANDRA_RPC_ADDRESS</code></td>
+<td style="text-align: center;"><code>0.0.0.0</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn how to <a
+href="../../tasks/run-application/scale-stateful-set.html">Scale a
+StatefulSet</a>.</li>
+<li>Learn more about the <a
+href="https://github.com/kubernetes/examples/blob/master/databases/cassandra/java/src/main/java/io/k8s/cassandra/KubernetesSeedProvider.java"><em>KubernetesSeedProvider</em></a></li>
+<li>See more custom <a
+href="https://github.com/kubernetes/examples/blob/master/databases/cassandra/java/README.md">Seed
+Provider Configurations</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="mysql-wordpress-persistent-volume.html"><span>Previous</span>Example: Deploying WordPress and MySQL with Persistent Volumes</a><a class="page-nav-link next" href="zookeeper.html"><span>Next</span>Running ZooKeeper, A Distributed System Coordinator</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l3"><a href="#additional-minikube-setup-instructions">Additional Minikube setup instructions</a></li><li class="toc-l2"><a href="#creating-a-cassandra-headless-service">Creating a headless Service for Cassandra</a></li><li class="toc-l3"><a href="#validating">Validating (optional)</a></li><li class="toc-l2"><a href="#using-a-statefulset-to-create-a-cassandra-ring">Using a StatefulSet to create a Cassandra ring</a></li><li class="toc-l2"><a href="#validating-the-cassandra-statefulset">Validating the Cassandra StatefulSet</a></li><li class="toc-l2"><a href="#modifying-the-cassandra-statefulset">Modifying the Cassandra StatefulSet</a></li><li class="toc-l2"><a href="#cleaning-up">Cleaning up</a></li><li class="toc-l2"><a href="#cassandra-container-environment-variables">Cassandra container environment variables</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

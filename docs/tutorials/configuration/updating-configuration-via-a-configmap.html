@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Updating Configuration via a ConfigMap · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/configuration/updating-configuration-via-a-configmap" data-title="Updating Configuration via a ConfigMap" data-canonical="https://kubernetes.io/docs/tutorials/configuration/updating-configuration-via-a-configmap/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../configuration.html">Configuration</a></nav></nav>
+        <header class="page-head">
+          <h1>Updating Configuration via a ConfigMap</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/configuration/updating-configuration-via-a-configmap/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page provides a step-by-step example of updating configuration
+within a Pod via a ConfigMap and builds upon the <a
+href="../../tasks/configure-pod-container/configure-pod-configmap.html">Configure
+a Pod to Use a ConfigMap</a> task.<br />
+At the end of this tutorial, you will understand how to change the
+configuration for a running application.<br />
+This tutorial uses the <code>alpine</code> and <code>nginx</code> images
+as examples.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
+</ul>
+<p>You need to have the <a target="_blank" rel="noopener" href="https://curl.se/">curl</a> command-line
+tool for making HTTP requests from the terminal or command prompt. If
+you do not have <code>curl</code> available, you can install it. Check
+the documentation for your local operating system.</p>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>Update configuration via a ConfigMap mounted as a Volume</li>
+<li>Update environment variables of a Pod via a ConfigMap</li>
+<li>Update configuration via a ConfigMap in a multi-container Pod</li>
+<li>Update configuration via a ConfigMap in a Pod possessing a Sidecar
+Container</li>
+</ul>
+<h2 id="rollout-configmap-volume">Update configuration via a ConfigMap
+mounted as a Volume</h2>
+<p>Use the <code>kubectl create configmap</code> command to create a
+ConfigMap from <a
+href="../../tasks/configure-pod-container/configure-pod-configmap.html#create-configmaps-from-literal-values">literal
+values</a>:</p>
+<pre class="shell"><code>kubectl create configmap sport --from-literal=sport=football</code></pre>
+<p>Below is an example of a Deployment manifest with the ConfigMap
+<code>sport</code> mounted as a <a class="glossary-term" href="../../reference/glossary.html#term-volume" title="Glossary: volume">volume</a> into the Pod's only container.</p>
+<div class="code-sample">
+<p><code>deployments/deployment-with-configmap-as-volume.yaml</code></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-volume</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-volume</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-volume</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-volume</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:3</span></span>
+<span class="at">          </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">while true; do echo &quot;$(date) My preferred sport is $(cat /etc/config/sport)&quot;;</span></span>
+<span class="at">              sleep 10; done;</span></span>
+<span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
+<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">          </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sport</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/deployments/deployment-with-configmap-as-volume.yaml</code></pre>
+<p>Check the pods for this Deployment to ensure they are ready (matching
+by <a class="glossary-term" href="../../reference/glossary.html#term-selector" title="Glossary: selector">selector</a>):</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=configmap-volume</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>NAME                                READY   STATUS    RESTARTS   AGE
+configmap-volume-6b976dfdcf-qxvbm   1/1     Running   0          72s
+configmap-volume-6b976dfdcf-skpvm   1/1     Running   0          72s
+configmap-volume-6b976dfdcf-tbc6r   1/1     Running   0          72s</code></pre>
+<p>On each node where one of these Pods is running, the kubelet fetches
+the data for that ConfigMap and translates it to files in a local
+volume. The kubelet then mounts that volume into the container, as
+specified in the Pod template. The code running in that container loads
+the information from the file and uses it to print a report to stdout.
+You can check this report by viewing the logs for one of the Pods in
+that Deployment:</p>
+<pre class="shell"><code># Pick one Pod that belongs to the Deployment, and view its logs
+kubectl logs deployments/configmap-volume</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>Found 3 pods, using pod/configmap-volume-76d9c5678f-x5rgj
+Thu Jan  4 14:06:46 UTC 2024 My preferred sport is football
+Thu Jan  4 14:06:56 UTC 2024 My preferred sport is football
+Thu Jan  4 14:07:06 UTC 2024 My preferred sport is football
+Thu Jan  4 14:07:16 UTC 2024 My preferred sport is football
+Thu Jan  4 14:07:26 UTC 2024 My preferred sport is football</code></pre>
+<p>Edit the ConfigMap:</p>
+<pre class="shell"><code>kubectl edit configmap sport</code></pre>
+<p>In the editor that appears, change the value of key
+<code>sport</code> from <code>football</code> to <code>cricket</code>.
+Save your changes. The kubectl tool updates the ConfigMap accordingly
+(if you see an error, try again).</p>
+<p>Here's an example of how that manifest could look after you edit
+it:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">sport</span><span class="kw">:</span><span class="at"> cricket</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span class="co"># You can leave the existing metadata as they are.</span></span>
+<span class="co"># The values you&#39;ll see won&#39;t exactly match these.</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2024-01-04T14:05:06Z&quot;</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> sport</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1743935&quot;</span></span>
+<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 024ee001-fe72-487e-872e-34d6464a8a23</span></span></code></pre></div>
+<p>You should see the following output:</p>
+<pre><code>configmap/sport edited</code></pre>
+<p>Tail (follow the latest entries in) the logs of one of the pods that
+belongs to this Deployment:</p>
+<pre class="shell"><code>kubectl logs deployments/configmap-volume --follow</code></pre>
+<p>After few seconds, you should see the log output change as
+follows:</p>
+<pre><code>Thu Jan  4 14:11:36 UTC 2024 My preferred sport is football
+Thu Jan  4 14:11:46 UTC 2024 My preferred sport is football
+Thu Jan  4 14:11:56 UTC 2024 My preferred sport is football
+Thu Jan  4 14:12:06 UTC 2024 My preferred sport is cricket
+Thu Jan  4 14:12:16 UTC 2024 My preferred sport is cricket</code></pre>
+<p>When you have a ConfigMap that is mapped into a running Pod using
+either a <code>configMap</code> volume or a <code>projected</code>
+volume, and you update that ConfigMap, the running Pod sees the update
+almost immediately.<br />
+However, your application only sees the change if it is written to
+either poll for changes, or watch for file updates.<br />
+An application that loads its configuration once at startup will not
+notice a change.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>The total delay from the moment when the ConfigMap is updated to the
+moment when new keys are projected to the Pod can be as long as kubelet
+sync period.<br />
+Also check <a
+href="../../tasks/configure-pod-container/configure-pod-configmap.html#mounted-configmaps-are-updated-automatically">Mounted
+ConfigMaps are updated automatically</a>.</p>
+</div>
+<h2 id="rollout-configmap-env">Update environment variables of a Pod via
+a ConfigMap</h2>
+<p>Use the <code>kubectl create configmap</code> command to create a
+ConfigMap from <a
+href="../../tasks/configure-pod-container/configure-pod-configmap.html#create-configmaps-from-literal-values">literal
+values</a>:</p>
+<pre class="shell"><code>kubectl create configmap fruits --from-literal=fruits=apples</code></pre>
+<p>Below is an example of a Deployment manifest with an environment
+variable configured via the ConfigMap <code>fruits</code>.</p>
+<div class="code-sample">
+<p><code>deployments/deployment-with-configmap-as-envvar.yaml</code></p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-env-var</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-env-var</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-env-var</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-env-var</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:3</span></span>
+<span class="at">          </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> FRUITS</span></span>
+<span class="at">              </span><span class="fu">valueFrom</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="fu">configMapKeyRef</span><span class="kw">:</span></span>
+<span class="at">                  </span><span class="fu">key</span><span class="kw">:</span><span class="at"> fruits</span></span>
+<span class="at">                  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fruits</span></span>
+<span class="at">          </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">while true; do echo &quot;$(date) The basket is full of $FRUITS&quot;;</span></span>
+<span class="at">                sleep 10; done;</span></span>
+<span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/deployments/deployment-with-configmap-as-envvar.yaml</code></pre>
+<p>Check the pods for this Deployment to ensure they are ready (matching
+by <a class="glossary-term" href="../../reference/glossary.html#term-selector" title="Glossary: selector">selector</a>):</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=configmap-env-var</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>NAME                                 READY   STATUS    RESTARTS   AGE
+configmap-env-var-59cfc64f7d-74d7z   1/1     Running   0          46s
+configmap-env-var-59cfc64f7d-c4wmj   1/1     Running   0          46s
+configmap-env-var-59cfc64f7d-dpr98   1/1     Running   0          46s</code></pre>
+<p>The key-value pair in the ConfigMap is configured as an environment
+variable in the container of the Pod. Check this by viewing the logs of
+one Pod that belongs to the Deployment.</p>
+<pre class="shell"><code>kubectl logs deployment/configmap-env-var</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>Found 3 pods, using pod/configmap-env-var-7c994f7769-l74nq
+Thu Jan  4 16:07:06 UTC 2024 The basket is full of apples
+Thu Jan  4 16:07:16 UTC 2024 The basket is full of apples
+Thu Jan  4 16:07:26 UTC 2024 The basket is full of apples</code></pre>
+<p>Edit the ConfigMap:</p>
+<pre class="shell"><code>kubectl edit configmap fruits</code></pre>
+<p>In the editor that appears, change the value of key
+<code>fruits</code> from <code>apples</code> to <code>mangoes</code>.
+Save your changes. The kubectl tool updates the ConfigMap accordingly
+(if you see an error, try again).</p>
+<p>Here's an example of how that manifest could look after you edit
+it:</p>
+<div class="sourceCode" id="cb21"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">fruits</span><span class="kw">:</span><span class="at"> mangoes</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span class="co"># You can leave the existing metadata as they are.</span></span>
+<span class="co"># The values you&#39;ll see won&#39;t exactly match these.</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2024-01-04T16:04:19Z&quot;</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> fruits</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1749472&quot;</span></span></code></pre></div>
+<p>You should see the following output:</p>
+<pre><code>configmap/fruits edited</code></pre>
+<p>Tail the logs of the Deployment and observe the output for few
+seconds:</p>
+<pre class="shell"><code># As the text explains, the output does NOT change
+kubectl logs deployments/configmap-env-var --follow</code></pre>
+<p>Notice that the output remains <strong>unchanged</strong>, even
+though you edited the ConfigMap:</p>
+<pre><code>Thu Jan  4 16:12:56 UTC 2024 The basket is full of apples
+Thu Jan  4 16:13:06 UTC 2024 The basket is full of apples
+Thu Jan  4 16:13:16 UTC 2024 The basket is full of apples
+Thu Jan  4 16:13:26 UTC 2024 The basket is full of apples</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Although the value of the key inside the ConfigMap has changed, the
+environment variable in the Pod still shows the earlier value. This is
+because environment variables for a process running inside a Pod are
+<strong>not</strong> updated when the source data changes; if you wanted
+to force an update, you would need to have Kubernetes replace your
+existing Pods. The new Pods would then run with the updated
+information.</p>
+</div>
+<p>You can trigger that replacement. Perform a rollout for the
+Deployment, using <a
+href="../../reference/kubectl/generated/kubectl_rollout.html"><code>kubectl rollout</code></a>:</p>
+<pre class="shell"><code># Trigger the rollout
+kubectl rollout restart deployment configmap-env-var
+
+# Wait for the rollout to complete
+kubectl rollout status deployment configmap-env-var --watch=true</code></pre>
+<p>Next, check the Deployment:</p>
+<pre class="shell"><code>kubectl get deployment configmap-env-var</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>NAME                READY   UP-TO-DATE   AVAILABLE   AGE
+configmap-env-var   3/3     3            3           12m</code></pre>
+<p>Check the Pods:</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=configmap-env-var</code></pre>
+<p>The rollout causes Kubernetes to make a new <span
+class="glossary-term" data-term="replica-set">ReplicaSet</span> for the
+Deployment; that means the existing Pods eventually terminate, and new
+ones are created. After few seconds, you should see an output similar
+to:</p>
+<pre><code>NAME                                 READY   STATUS        RESTARTS   AGE
+configmap-env-var-6d94d89bf5-2ph2l   1/1     Running       0          13s
+configmap-env-var-6d94d89bf5-74twx   1/1     Running       0          8s
+configmap-env-var-6d94d89bf5-d5vx8   1/1     Running       0          11s</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Please wait for the older Pods to fully terminate before proceeding
+with the next steps.</p>
+</div>
+<p>View the logs for a Pod in this Deployment:</p>
+<pre class="shell"><code># Pick one Pod that belongs to the Deployment, and view its logs
+kubectl logs deployment/configmap-env-var</code></pre>
+<p>You should see an output similar to the below:</p>
+<pre><code>Found 3 pods, using pod/configmap-env-var-6d9ff89fb6-bzcf6
+Thu Jan  4 16:30:35 UTC 2024 The basket is full of mangoes
+Thu Jan  4 16:30:45 UTC 2024 The basket is full of mangoes
+Thu Jan  4 16:30:55 UTC 2024 The basket is full of mangoes</code></pre>
+<p>This demonstrates the scenario of updating environment variables in a
+Pod that are derived from a ConfigMap. Changes to the ConfigMap values
+are applied to the Pod during the subsequent rollout. If Pods get
+created for another reason, such as scaling up the Deployment, then the
+new Pods also use the latest configuration values; if you don't trigger
+a rollout, then you might find that your app is running with a mix of
+old and new environment variable values.</p>
+<h2 id="rollout-configmap-multiple-containers">Update configuration via
+a ConfigMap in a multi-container Pod</h2>
+<p>Use the <code>kubectl create configmap</code> command to create a
+ConfigMap from <a
+href="../../tasks/configure-pod-container/configure-pod-configmap.html#create-configmaps-from-literal-values">literal
+values</a>:</p>
+<pre class="shell"><code>kubectl create configmap color --from-literal=color=red</code></pre>
+<p>Below is an example manifest for a Deployment that manages a set of
+Pods, each with two containers. The two containers share an
+<code>emptyDir</code> volume that they use to communicate. The first
+container runs a web server (<code>nginx</code>). The mount path for the
+shared volume in the web server container is
+<code>/usr/share/nginx/html</code>. The second helper container is based
+on <code>alpine</code>, and for this container the <code>emptyDir</code>
+volume is mounted at <code>/pod-data</code>. The helper container writes
+a file in HTML that has its content based on a ConfigMap. The web server
+container serves the HTML via HTTP.</p>
+<div class="code-sample">
+<p><code>deployments/deployment-with-configmap-two-containers.yaml</code></p>
+<div class="sourceCode" id="cb33"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-two-containers</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-two-containers</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-two-containers</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-two-containers</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span class="at">          </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">          </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> color</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:3</span></span>
+<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /pod-data</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
+<span class="at">          </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">while true; do echo &quot;$(date) My preferred color is $(cat /etc/config/color)&quot; &gt; /pod-data/index.html;</span></span>
+<span class="at">              sleep 10; done;</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/deployments/deployment-with-configmap-two-containers.yaml</code></pre>
+<p>Check the pods for this Deployment to ensure they are ready (matching
+by <a class="glossary-term" href="../../reference/glossary.html#term-selector" title="Glossary: selector">selector</a>):</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=configmap-two-containers</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>NAME                                        READY   STATUS    RESTARTS   AGE
+configmap-two-containers-565fb6d4f4-2xhxf   2/2     Running   0          20s
+configmap-two-containers-565fb6d4f4-g5v4j   2/2     Running   0          20s
+configmap-two-containers-565fb6d4f4-mzsmf   2/2     Running   0          20s</code></pre>
+<p>Expose the Deployment (the <code>kubectl</code> tool creates a <span
+class="glossary-term" data-term="service">Service</span> for you):</p>
+<pre class="shell"><code>kubectl expose deployment configmap-two-containers --name=configmap-service --port=8080 --target-port=80</code></pre>
+<p>Use <code>kubectl</code> to forward the port:</p>
+<pre class="shell"><code># this stays running in the background
+kubectl port-forward service/configmap-service 8080:8080 &amp;</code></pre>
+<p>Access the service.</p>
+<pre class="shell"><code>curl http://localhost:8080</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>Fri Jan  5 08:08:22 UTC 2024 My preferred color is red</code></pre>
+<p>Edit the ConfigMap:</p>
+<pre class="shell"><code>kubectl edit configmap color</code></pre>
+<p>In the editor that appears, change the value of key
+<code>color</code> from <code>red</code> to <code>blue</code>. Save your
+changes. The kubectl tool updates the ConfigMap accordingly (if you see
+an error, try again).</p>
+<p>Here's an example of how that manifest could look after you edit
+it:</p>
+<div class="sourceCode" id="cb42"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">color</span><span class="kw">:</span><span class="at"> blue</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span class="co"># You can leave the existing metadata as they are.</span></span>
+<span class="co"># The values you&#39;ll see won&#39;t exactly match these.</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2024-01-05T08:12:05Z&quot;</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> color</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> configmap</span></span>
+<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1801272&quot;</span></span>
+<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> 80d33e4a-cbb4-4bc9-ba8c-544c68e425d6</span></span></code></pre></div>
+<p>Loop over the service URL for few seconds.</p>
+<pre class="shell"><code># Cancel this when you&#39;re happy with it (Ctrl-C)
+while true; do curl --connect-timeout 7.5 http://localhost:8080; sleep 10; done</code></pre>
+<p>You should see the output change as follows:</p>
+<pre><code>Fri Jan  5 08:14:00 UTC 2024 My preferred color is red
+Fri Jan  5 08:14:02 UTC 2024 My preferred color is red
+Fri Jan  5 08:14:20 UTC 2024 My preferred color is red
+Fri Jan  5 08:14:22 UTC 2024 My preferred color is red
+Fri Jan  5 08:14:32 UTC 2024 My preferred color is blue
+Fri Jan  5 08:14:43 UTC 2024 My preferred color is blue
+Fri Jan  5 08:15:00 UTC 2024 My preferred color is blue</code></pre>
+<h2 id="rollout-configmap-sidecar">Update configuration via a ConfigMap
+in a Pod possessing a sidecar container</h2>
+<p>The above scenario can be replicated by using a <a
+href="../../concepts/workloads/pods/sidecar-containers.html">Sidecar
+Container</a> as a helper container to write the HTML file.<br />
+As a Sidecar Container is conceptually an Init Container, it is
+guaranteed to start before the main web server container.<br />
+This ensures that the HTML file is always available when the web server
+is ready to serve it.</p>
+<p>If you are continuing from the previous scenario, you can reuse the
+ConfigMap named <code>color</code> for this scenario.<br />
+If you are executing this scenario independently, use the
+<code>kubectl create configmap</code> command to create a ConfigMap from
+<a
+href="../../tasks/configure-pod-container/configure-pod-configmap.html#create-configmaps-from-literal-values">literal
+values</a>:</p>
+<pre class="shell"><code>kubectl create configmap color --from-literal=color=blue</code></pre>
+<p>Below is an example manifest for a Deployment that manages a set of
+Pods, each with a main container and a sidecar container. The two
+containers share an <code>emptyDir</code> volume that they use to
+communicate. The main container runs a web server (NGINX). The mount
+path for the shared volume in the web server container is
+<code>/usr/share/nginx/html</code>. The second container is a Sidecar
+Container based on Alpine Linux which acts as a helper container. For
+this container the <code>emptyDir</code> volume is mounted at
+<code>/pod-data</code>. The Sidecar Container writes a file in HTML that
+has its content based on a ConfigMap. The web server container serves
+the HTML via HTTP.</p>
+<div class="code-sample">
+<p><code>deployments/deployment-with-configmap-and-sidecar-container.yaml</code></p>
+<div class="sourceCode" id="cb46"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> configmap-sidecar-container</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-sidecar-container</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-sidecar-container</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> configmap-sidecar-container</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span class="at">          </span><span class="fu">emptyDir</span><span class="kw">:</span><span class="at"> </span><span class="kw">{}</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">          </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> color</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /usr/share/nginx/html</span></span>
+<span class="at">      </span><span class="fu">initContainers</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:3</span></span>
+<span class="at">          </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Always</span></span>
+<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> shared-data</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /pod-data</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
+<span class="at">          </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">while true; do echo &quot;$(date) My preferred color is $(cat /etc/config/color)&quot; &gt; /pod-data/index.html;</span></span>
+<span class="at">              sleep 10; done;</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/deployments/deployment-with-configmap-and-sidecar-container.yaml</code></pre>
+<p>Check the pods for this Deployment to ensure they are ready (matching
+by <a class="glossary-term" href="../../reference/glossary.html#term-selector" title="Glossary: selector">selector</a>):</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=configmap-sidecar-container</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>NAME                                           READY   STATUS    RESTARTS   AGE
+configmap-sidecar-container-5fb59f558b-87rp7   2/2     Running   0          94s
+configmap-sidecar-container-5fb59f558b-ccs7s   2/2     Running   0          94s
+configmap-sidecar-container-5fb59f558b-wnmgk   2/2     Running   0          94s</code></pre>
+<p>Expose the Deployment (the <code>kubectl</code> tool creates a <span
+class="glossary-term" data-term="service">Service</span> for you):</p>
+<pre class="shell"><code>kubectl expose deployment configmap-sidecar-container --name=configmap-sidecar-service --port=8081 --target-port=80</code></pre>
+<p>Use <code>kubectl</code> to forward the port:</p>
+<pre class="shell"><code># this stays running in the background
+kubectl port-forward service/configmap-sidecar-service 8081:8081 &amp;</code></pre>
+<p>Access the service.</p>
+<pre class="shell"><code>curl http://localhost:8081</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>Sat Feb 17 13:09:05 UTC 2024 My preferred color is blue</code></pre>
+<p>Edit the ConfigMap:</p>
+<pre class="shell"><code>kubectl edit configmap color</code></pre>
+<p>In the editor that appears, change the value of key
+<code>color</code> from <code>blue</code> to <code>green</code>. Save
+your changes. The kubectl tool updates the ConfigMap accordingly (if you
+see an error, try again).</p>
+<p>Here's an example of how that manifest could look after you edit
+it:</p>
+<div class="sourceCode" id="cb55"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">color</span><span class="kw">:</span><span class="at"> green</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span class="co"># You can leave the existing metadata as they are.</span></span>
+<span class="co"># The values you&#39;ll see won&#39;t exactly match these.</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">creationTimestamp</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2024-02-17T12:20:30Z&quot;</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> color</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> default</span></span>
+<span class="at">  </span><span class="fu">resourceVersion</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1054&quot;</span></span>
+<span class="at">  </span><span class="fu">uid</span><span class="kw">:</span><span class="at"> e40bb34c-58df-4280-8bea-6ed16edccfaa</span></span></code></pre></div>
+<p>Loop over the service URL for few seconds.</p>
+<pre class="shell"><code># Cancel this when you&#39;re happy with it (Ctrl-C)
+while true; do curl --connect-timeout 7.5 http://localhost:8081; sleep 10; done</code></pre>
+<p>You should see the output change as follows:</p>
+<pre><code>Sat Feb 17 13:12:35 UTC 2024 My preferred color is blue
+Sat Feb 17 13:12:45 UTC 2024 My preferred color is blue
+Sat Feb 17 13:12:55 UTC 2024 My preferred color is blue
+Sat Feb 17 13:13:05 UTC 2024 My preferred color is blue
+Sat Feb 17 13:13:15 UTC 2024 My preferred color is green
+Sat Feb 17 13:13:25 UTC 2024 My preferred color is green
+Sat Feb 17 13:13:35 UTC 2024 My preferred color is green</code></pre>
+<h2 id="rollout-configmap-immutable-volume">Update configuration via an
+immutable ConfigMap that is mounted as a volume</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Immutable ConfigMaps are especially used for configuration that is
+constant and is <strong>not</strong> expected to change over time.
+Marking a ConfigMap as immutable allows a performance improvement where
+the kubelet does not watch for changes.</p>
+<p>If you do need to make a change, you should plan to either:</p>
+<ul>
+<li>change the name of the ConfigMap, and switch to running Pods that
+reference the new name</li>
+<li>replace all the nodes in your cluster that have previously run a Pod
+that used the old value</li>
+<li>restart the kubelet on any node where the kubelet previously loaded
+the old ConfigMap</li>
+</ul>
+</div>
+<p>An example manifest for an <a
+href="../../concepts/configuration/configmap.html#configmap-immutable">Immutable
+ConfigMap</a> is shown below.</p>
+<div class="code-sample">
+<p><code>configmap/immutable-configmap.yaml</code></p>
+<div class="sourceCode" id="cb58"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">company_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;ACME, Inc.&quot;</span><span class="at"> </span><span class="co"># existing fictional company name</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span class="fu">immutable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> company-name-20150801</span></span></code></pre></div>
+</div>
+<p>Create the Immutable ConfigMap:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/configmap/immutable-configmap.yaml</code></pre>
+<p>Below is an example of a Deployment manifest with the Immutable
+ConfigMap <code>company-name-20150801</code> mounted as a <span
+class="glossary-term" data-term="volume">volume</span> into the Pod's
+only container.</p>
+<div class="code-sample">
+<p><code>deployments/deployment-with-immutable-configmap-as-volume.yaml</code></p>
+<div class="sourceCode" id="cb60"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> immutable-configmap-volume</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> immutable-configmap-volume</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> immutable-configmap-volume</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> immutable-configmap-volume</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> alpine</span></span>
+<span class="at">          </span><span class="fu">image</span><span class="kw">:</span><span class="at"> alpine:3</span></span>
+<span class="at">          </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">/bin/sh</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">-c</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="at">while true; do echo &quot;$(date) The name of the company is $(cat /etc/config/company_name)&quot;;</span></span>
+<span class="at">              sleep 10; done;</span></span>
+<span class="at">          </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">          </span><span class="fu">volumeMounts</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">              </span><span class="fu">mountPath</span><span class="kw">:</span><span class="at"> /etc/config</span></span>
+<span class="at">      </span><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span>
+<span class="at">          </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">name</span><span class="kw">:</span><span class="at"> company-name-20150801</span></span></code></pre></div>
+</div>
+<p>Create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/deployments/deployment-with-immutable-configmap-as-volume.yaml</code></pre>
+<p>Check the pods for this Deployment to ensure they are ready (matching
+by <a class="glossary-term" href="../../reference/glossary.html#term-selector" title="Glossary: selector">selector</a>):</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=immutable-configmap-volume</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>NAME                                          READY   STATUS    RESTARTS   AGE
+immutable-configmap-volume-78b6fbff95-5gsfh   1/1     Running   0          62s
+immutable-configmap-volume-78b6fbff95-7vcj4   1/1     Running   0          62s
+immutable-configmap-volume-78b6fbff95-vdslm   1/1     Running   0          62s</code></pre>
+<p>The Pod's container refers to the data defined in the ConfigMap and
+uses it to print a report to stdout. You can check this report by
+viewing the logs for one of the Pods in that Deployment:</p>
+<pre class="shell"><code># Pick one Pod that belongs to the Deployment, and view its logs
+kubectl logs deployments/immutable-configmap-volume</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>Found 3 pods, using pod/immutable-configmap-volume-78b6fbff95-5gsfh
+Wed Mar 20 03:52:34 UTC 2024 The name of the company is ACME, Inc.
+Wed Mar 20 03:52:44 UTC 2024 The name of the company is ACME, Inc.
+Wed Mar 20 03:52:54 UTC 2024 The name of the company is ACME, Inc.</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Once a ConfigMap is marked as immutable, it is not possible to revert
+this change nor to mutate the contents of the data or the binaryData
+field.<br />
+In order to modify the behavior of the Pods that use this configuration,
+you will create a new immutable ConfigMap and edit the Deployment to
+define a slightly different pod template, referencing the new
+ConfigMap.</p>
+</div>
+<p>Create a new immutable ConfigMap by using the manifest shown
+below:</p>
+<div class="code-sample">
+<p><code>configmap/new-immutable-configmap.yaml</code></p>
+<div class="sourceCode" id="cb66"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">data</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">company_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Fiktivesunternehmen GmbH&quot;</span><span class="at"> </span><span class="co"># new fictional company name</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ConfigMap</span></span>
+<span class="fu">immutable</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> company-name-20240312</span></span></code></pre></div>
+</div>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/configmap/new-immutable-configmap.yaml</code></pre>
+<p>You should see an output similar to:</p>
+<pre><code>configmap/company-name-20240312 created</code></pre>
+<p>Check the newly created ConfigMap:</p>
+<pre class="shell"><code>kubectl get configmap</code></pre>
+<p>You should see an output displaying both the old and new
+ConfigMaps:</p>
+<pre><code>NAME                    DATA   AGE
+company-name-20150801   1      22m
+company-name-20240312   1      24s</code></pre>
+<p>Modify the Deployment to reference the new ConfigMap.</p>
+<p>Edit the Deployment:</p>
+<pre class="shell"><code>kubectl edit deployment immutable-configmap-volume</code></pre>
+<p>In the editor that appears, update the existing volume definition to
+use the new ConfigMap.</p>
+<div class="sourceCode" id="cb72"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">volumes</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="fu">configMap</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">defaultMode</span><span class="kw">:</span><span class="at"> </span><span class="dv">420</span></span>
+<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> company-name-20240312</span><span class="co"> # Update this field</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> config-volume</span></span></code></pre></div>
+<p>You should see the following output:</p>
+<pre><code>deployment.apps/immutable-configmap-volume edited</code></pre>
+<p>This will trigger a rollout. Wait for all the previous Pods to
+terminate and the new Pods to be in a ready state.</p>
+<p>Monitor the status of the Pods:</p>
+<pre class="shell"><code>kubectl get pods --selector=app.kubernetes.io/name=immutable-configmap-volume</code></pre>
+<pre><code>NAME                                          READY   STATUS        RESTARTS   AGE
+immutable-configmap-volume-5fdb88fcc8-29v8n   1/1     Running       0          13s
+immutable-configmap-volume-5fdb88fcc8-52ddd   1/1     Running       0          14s
+immutable-configmap-volume-5fdb88fcc8-n5jx4   1/1     Running       0          15s
+immutable-configmap-volume-78b6fbff95-5gsfh   1/1     Terminating   0          32m
+immutable-configmap-volume-78b6fbff95-7vcj4   1/1     Terminating   0          32m
+immutable-configmap-volume-78b6fbff95-vdslm   1/1     Terminating   0          32m</code></pre>
+<p>You should eventually see an output similar to:</p>
+<pre><code>NAME                                          READY   STATUS    RESTARTS   AGE
+immutable-configmap-volume-5fdb88fcc8-29v8n   1/1     Running   0          43s
+immutable-configmap-volume-5fdb88fcc8-52ddd   1/1     Running   0          44s
+immutable-configmap-volume-5fdb88fcc8-n5jx4   1/1     Running   0          45s</code></pre>
+<p>View the logs for a Pod in this Deployment:</p>
+<pre class="shell"><code># Pick one Pod that belongs to the Deployment, and view its logs
+kubectl logs deployment/immutable-configmap-volume</code></pre>
+<p>You should see an output similar to the below:</p>
+<pre><code>Found 3 pods, using pod/immutable-configmap-volume-5fdb88fcc8-n5jx4
+Wed Mar 20 04:24:17 UTC 2024 The name of the company is Fiktivesunternehmen GmbH
+Wed Mar 20 04:24:27 UTC 2024 The name of the company is Fiktivesunternehmen GmbH
+Wed Mar 20 04:24:37 UTC 2024 The name of the company is Fiktivesunternehmen GmbH</code></pre>
+<p>Once all the deployments have migrated to use the new immutable
+ConfigMap, it is advised to delete the old one.</p>
+<pre class="shell"><code>kubectl delete configmap company-name-20150801</code></pre>
+<h2 id="summary">Summary</h2>
+<p>Changes to a ConfigMap mounted as a Volume on a Pod are available
+seamlessly after the subsequent kubelet sync.</p>
+<p>Changes to a ConfigMap that configures environment variables for a
+Pod are available after the subsequent rollout for the Pod.</p>
+<p>Once a ConfigMap is marked as immutable, it is not possible to revert
+this change (you cannot make an immutable ConfigMap mutable), and you
+also cannot make any change to the contents of the <code>data</code> or
+the <code>binaryData</code> field. You can delete and recreate the
+ConfigMap, or you can make a new different ConfigMap. When you delete a
+ConfigMap, running containers and their Pods maintain a mount point to
+any volume that referenced that existing ConfigMap.</p>
+<h2 id="cleaning-up">Cleaning up</h2>
+<p>Terminate the <code>kubectl port-forward</code> commands in case they
+are running.</p>
+<p>Delete the resources created during the tutorial:</p>
+<pre class="shell"><code>kubectl delete deployment configmap-volume configmap-env-var configmap-two-containers configmap-sidecar-container immutable-configmap-volume
+kubectl delete service configmap-service configmap-sidecar-service
+kubectl delete configmap sport fruits color company-name-20240312
+
+kubectl delete configmap company-name-20150801 # In case it was not handled during the task execution</code></pre>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../configuration.html"><span>Previous</span>Configuration</a><a class="page-nav-link next" href="configure-redis-using-configmap.html"><span>Next</span>Configuring Redis using a ConfigMap</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#rollout-configmap-volume">Update configuration via a ConfigMap mounted as a Volume</a></li><li class="toc-l2"><a href="#rollout-configmap-env">Update environment variables of a Pod via a ConfigMap</a></li><li class="toc-l2"><a href="#rollout-configmap-multiple-containers">Update configuration via a ConfigMap in a multi-container Pod</a></li><li class="toc-l2"><a href="#rollout-configmap-sidecar">Update configuration via a ConfigMap in a Pod possessing a sidecar container</a></li><li class="toc-l2"><a href="#rollout-configmap-immutable-volume">Update configuration via an immutable ConfigMap that is mounted as a volume</a></li><li class="toc-l2"><a href="#summary">Summary</a></li><li class="toc-l2"><a href="#cleaning-up">Cleaning up</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

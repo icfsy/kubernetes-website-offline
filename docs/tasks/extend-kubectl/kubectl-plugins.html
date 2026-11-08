@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Extend kubectl with plugins · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/extend-kubectl/kubectl-plugins" data-title="Extend kubectl with plugins" data-canonical="https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a></nav></nav>
+        <header class="page-head">
+          <h1>Extend kubectl with plugins</h1>
+          <p class="lead">Extend kubectl by creating and installing kubectl plugins.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/extend-kubectl/kubectl-plugins/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This guide demonstrates how to install and write extensions for <a
+href="../../reference/kubectl/kubectl.html">kubectl</a>. By thinking of
+core <code>kubectl</code> commands as essential building blocks for
+interacting with a Kubernetes cluster, a cluster administrator can think
+of plugins as a means of utilizing these building blocks to create more
+complex behavior. Plugins extend <code>kubectl</code> with new
+sub-commands, allowing for new and custom features not included in the
+main distribution of <code>kubectl</code>.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a working <code>kubectl</code> binary installed.</p>
+<h2 id="installing-kubectl-plugins">Installing kubectl plugins</h2>
+<p>A plugin is a standalone executable file, whose name begins with
+<code>kubectl-</code>. To install a plugin, move its executable file to
+anywhere on your <code>PATH</code>.</p>
+<p>You can also discover and install kubectl plugins available in the
+open source using <a target="_blank" rel="noopener" href="https://krew.dev/">Krew</a>. Krew is a plugin
+manager maintained by the Kubernetes SIG CLI community.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Kubectl plugins available via the Krew <a
+href="https://krew.sigs.k8s.io/plugins/">plugin index</a> are not
+audited for security. You should install and run third-party plugins at
+your own risk, since they are arbitrary programs running on your
+machine.</p>
+</div>
+<h3 id="discovering-plugins">Discovering plugins</h3>
+<p><code>kubectl</code> provides a command
+<code>kubectl plugin list</code> that searches your <code>PATH</code>
+for valid plugin executables. Executing this command causes a traversal
+of all files in your <code>PATH</code>. Any files that are executable,
+and begin with <code>kubectl-</code> will show up <em>in the order in
+which they are present in your <code>PATH</code></em> in this command's
+output. A warning will be included for any files beginning with
+<code>kubectl-</code> that are <em>not</em> executable. A warning will
+also be included for any valid plugin files that overlap each other's
+name.</p>
+<p>You can use <a target="_blank" rel="noopener" href="https://krew.dev/">Krew</a> to discover and
+install <code>kubectl</code> plugins from a community-curated <a
+href="https://krew.sigs.k8s.io/plugins/">plugin index</a>.</p>
+<h4 id="create-plugins">Create plugins</h4>
+<p><code>kubectl</code> allows plugins to add custom create commands of
+the shape <code>kubectl create something</code> by providing a
+<code>kubectl-create-something</code> binary in the
+<code>PATH</code>.</p>
+<h4 id="limitations">Limitations</h4>
+<p>It is currently not possible to create plugins that overwrite
+existing <code>kubectl</code> commands or extend commands other than
+<code>create</code>. For example, creating a plugin
+<code>kubectl-version</code> will cause that plugin to never be
+executed, as the existing <code>kubectl version</code> command will
+always take precedence over it. Due to this limitation, it is also
+<em>not</em> possible to use plugins to add new subcommands to existing
+<code>kubectl</code> commands. For example, adding a subcommand
+<code>kubectl attach vm</code> by naming your plugin
+<code>kubectl-attach-vm</code> will cause that plugin to be ignored.</p>
+<p><code>kubectl plugin list</code> shows warnings for any valid plugins
+that attempt to do this.</p>
+<h2 id="writing-kubectl-plugins">Writing kubectl plugins</h2>
+<p>You can write a plugin in any programming language or script that
+allows you to write command-line commands.</p>
+<p>There is no plugin installation or pre-loading required. Plugin
+executables receive the inherited environment from the
+<code>kubectl</code> binary. A plugin determines which command path it
+wishes to implement based on its name. For example, a plugin named
+<code>kubectl-foo</code> provides a command <code>kubectl foo</code>.
+You must install the plugin executable somewhere in your
+<code>PATH</code>.</p>
+<h3 id="example-plugin">Example plugin</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span></span>
+</span>
+<span class="co"># optional argument handling</span></span>
+<span class="cf">if</span> <span class="kw">[[</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;version&quot;</span> <span class="kw">]]</span></span>
+<span class="cf">then</span></span>
+    <span class="bu">echo</span> <span class="st">&quot;1.0.0&quot;</span></span>
+    <span class="bu">exit</span> 0</span>
+<span class="cf">fi</span></span>
+</span>
+<span class="co"># optional argument handling</span></span>
+<span class="cf">if</span> <span class="kw">[[</span> <span class="st">&quot;</span><span class="va">$1</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;config&quot;</span> <span class="kw">]]</span></span>
+<span class="cf">then</span></span>
+    <span class="bu">echo</span> <span class="st">&quot;</span><span class="va">$KUBECONFIG</span><span class="st">&quot;</span></span>
+    <span class="bu">exit</span> 0</span>
+<span class="cf">fi</span></span>
+</span>
+<span class="bu">echo</span> <span class="st">&quot;I am a plugin named kubectl-foo&quot;</span></span></code></pre></div>
+<h3 id="using-a-plugin">Using a plugin</h3>
+<p>To use a plugin, make the plugin executable:</p>
+<pre class="shell"><code>sudo chmod +x ./kubectl-foo</code></pre>
+<p>and place it anywhere in your <code>PATH</code>:</p>
+<pre class="shell"><code>sudo mv ./kubectl-foo /usr/local/bin</code></pre>
+<p>You may now invoke your plugin as a <code>kubectl</code> command:</p>
+<pre class="shell"><code>kubectl foo</code></pre>
+<pre><code>I am a plugin named kubectl-foo</code></pre>
+<p>All args and flags are passed as-is to the executable:</p>
+<pre class="shell"><code>kubectl foo version</code></pre>
+<pre><code>1.0.0</code></pre>
+<p>All environment variables are also passed as-is to the
+executable:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="bu">export</span> <span class="va">KUBECONFIG</span><span class="op">=</span>~/.kube/config</span>
+<span class="ex">kubectl</span> foo config</span></code></pre></div>
+<pre><code>/home/&lt;user&gt;/.kube/config</code></pre>
+<pre class="shell"><code>KUBECONFIG=/etc/kube/config kubectl foo config</code></pre>
+<pre><code>/etc/kube/config</code></pre>
+<p>Additionally, the first argument that is passed to a plugin will
+always be the full path to the location where it was invoked
+(<code>$0</code> would equal <code>/usr/local/bin/kubectl-foo</code> in
+the example above).</p>
+<h3 id="naming-a-plugin">Naming a plugin</h3>
+<p>As seen in the example above, a plugin determines the command path
+that it will implement based on its filename. Every sub-command in the
+command path that a plugin targets, is separated by a dash
+(<code>-</code>). For example, a plugin that wishes to be invoked
+whenever the command <code>kubectl foo bar baz</code> is invoked by the
+user, would have the filename of <code>kubectl-foo-bar-baz</code>.</p>
+<h4 id="flags-and-argument-handling">Flags and argument handling</h4>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The plugin mechanism does <em>not</em> create any custom,
+plugin-specific values or environment variables for a plugin
+process.</p>
+<p>An older kubectl plugin mechanism provided environment variables such
+as <code>KUBECTL_PLUGINS_CURRENT_NAMESPACE</code>; that no longer
+happens.</p>
+</div>
+<p>kubectl plugins must parse and validate all of the arguments passed
+to them. See <a href="#using-the-command-line-runtime-package">using the
+command line runtime package</a> for details of a Go library aimed at
+plugin authors.</p>
+<p>Here are some additional cases where users invoke your plugin while
+providing additional flags and arguments. This builds upon the
+<code>kubectl-foo-bar-baz</code> plugin from the scenario above.</p>
+<p>If you run <code>kubectl foo bar baz arg1 --flag=value arg2</code>,
+kubectl's plugin mechanism will first try to find the plugin with the
+longest possible name, which in this case would be
+<code>kubectl-foo-bar-baz-arg1</code>. Upon not finding that plugin,
+kubectl then treats the last dash-separated value as an argument
+(<code>arg1</code> in this case), and attempts to find the next longest
+possible name, <code>kubectl-foo-bar-baz</code>. Upon having found a
+plugin with this name, kubectl then invokes that plugin, passing all
+args and flags after the plugin's name as arguments to the plugin
+process.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co"># create a plugin</span></span>
+<span class="bu">echo</span> <span class="at">-e</span> <span class="st">&#39;#!/bin/bash\n\necho &quot;My first command-line argument was $1&quot;&#39;</span> <span class="op">&gt;</span> kubectl-foo-bar-baz</span>
+<span class="fu">sudo</span> chmod +x ./kubectl-foo-bar-baz</span>
+</span>
+<span class="co"># &quot;install&quot; your plugin by moving it to a directory in your $PATH</span></span>
+<span class="fu">sudo</span> mv ./kubectl-foo-bar-baz /usr/local/bin</span>
+</span>
+<span class="co"># check that kubectl recognizes your plugin</span></span>
+<span class="ex">kubectl</span> plugin list</span></code></pre></div>
+<pre><code>The following kubectl-compatible plugins are available:
+
+/usr/local/bin/kubectl-foo-bar-baz</code></pre>
+<pre><code># test that calling your plugin via a &quot;kubectl&quot; command works
+# even when additional arguments and flags are passed to your
+# plugin executable by the user.
+kubectl foo bar baz arg1 --meaningless-flag=true</code></pre>
+<pre><code>My first command-line argument was arg1</code></pre>
+<p>As you can see, your plugin was found based on the
+<code>kubectl</code> command specified by a user, and all extra
+arguments and flags were passed as-is to the plugin executable once it
+was found.</p>
+<h4 id="names-with-dashes-and-underscores">Names with dashes and
+underscores</h4>
+<p>Although the <code>kubectl</code> plugin mechanism uses the dash
+(<code>-</code>) in plugin filenames to separate the sequence of
+sub-commands processed by the plugin, it is still possible to create a
+plugin command containing dashes in its commandline invocation by using
+underscores (<code>_</code>) in its filename.</p>
+<p>Example:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co"># create a plugin containing an underscore in its filename</span></span>
+<span class="bu">echo</span> <span class="at">-e</span> <span class="st">&#39;#!/bin/bash\n\necho &quot;I am a plugin with a dash in my name&quot;&#39;</span> <span class="op">&gt;</span> ./kubectl-foo_bar</span>
+<span class="fu">sudo</span> chmod +x ./kubectl-foo_bar</span>
+</span>
+<span class="co"># move the plugin into your $PATH</span></span>
+<span class="fu">sudo</span> mv ./kubectl-foo_bar /usr/local/bin</span>
+</span>
+<span class="co"># You can now invoke your plugin via kubectl:</span></span>
+<span class="ex">kubectl</span> foo-bar</span></code></pre></div>
+<pre><code>I am a plugin with a dash in my name</code></pre>
+<p>Note that the introduction of underscores to a plugin filename does
+not prevent you from having commands such as
+<code>kubectl foo_bar</code>. The command from the above example, can be
+invoked using either a dash (<code>-</code>) or an underscore
+(<code>_</code>):</p>
+<div class="sourceCode" id="cb18"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co"># You can invoke your custom command with a dash</span></span>
+<span class="ex">kubectl</span> foo-bar</span></code></pre></div>
+<pre><code>I am a plugin with a dash in my name</code></pre>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co"># You can also invoke your custom command with an underscore</span></span>
+<span class="ex">kubectl</span> foo_bar</span></code></pre></div>
+<pre><code>I am a plugin with a dash in my name</code></pre>
+<h4 id="name-conflicts-and-overshadowing">Name conflicts and
+overshadowing</h4>
+<p>It is possible to have multiple plugins with the same filename in
+different locations throughout your <code>PATH</code>. For example,
+given a <code>PATH</code> with the following value:
+<code>PATH=/usr/local/bin/plugins:/usr/local/bin/moreplugins</code>, a
+copy of plugin <code>kubectl-foo</code> could exist in
+<code>/usr/local/bin/plugins</code> and
+<code>/usr/local/bin/moreplugins</code>, such that the output of the
+<code>kubectl plugin list</code> command is:</p>
+<div class="sourceCode" id="cb22"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="va">PATH</span><span class="op">=</span>/usr/local/bin/plugins:/usr/local/bin/moreplugins <span class="ex">kubectl</span> plugin list</span></code></pre></div>
+<pre><code>The following kubectl-compatible plugins are available:
+
+/usr/local/bin/plugins/kubectl-foo
+/usr/local/bin/moreplugins/kubectl-foo
+  - warning: /usr/local/bin/moreplugins/kubectl-foo is overshadowed by a similarly named plugin: /usr/local/bin/plugins/kubectl-foo
+
+error: one plugin warning was found</code></pre>
+<p>In the above scenario, the warning under
+<code>/usr/local/bin/moreplugins/kubectl-foo</code> tells you that this
+plugin will never be executed. Instead, the executable that appears
+first in your <code>PATH</code>,
+<code>/usr/local/bin/plugins/kubectl-foo</code>, will always be found
+and executed first by the <code>kubectl</code> plugin mechanism.</p>
+<p>A way to resolve this issue is to ensure that the location of the
+plugin that you wish to use with <code>kubectl</code> always comes first
+in your <code>PATH</code>. For example, if you want to always use
+<code>/usr/local/bin/moreplugins/kubectl-foo</code> anytime that the
+<code>kubectl</code> command <code>kubectl foo</code> was invoked,
+change the value of your <code>PATH</code> to be
+<code>/usr/local/bin/moreplugins:/usr/local/bin/plugins</code>.</p>
+<h4 id="invocation-of-the-longest-executable-filename">Invocation of the
+longest executable filename</h4>
+<p>There is another kind of overshadowing that can occur with plugin
+filenames. Given two plugins present in a user's <code>PATH</code>:
+<code>kubectl-foo-bar</code> and <code>kubectl-foo-bar-baz</code>, the
+<code>kubectl</code> plugin mechanism will always choose the longest
+possible plugin name for a given user command. Some examples below,
+clarify this further:</p>
+<div class="sourceCode" id="cb24"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="co"># for a given kubectl command, the plugin with the longest possible filename will always be preferred</span></span>
+<span class="ex">kubectl</span> foo bar baz</span></code></pre></div>
+<pre><code>Plugin kubectl-foo-bar-baz is executed</code></pre>
+<div class="sourceCode" id="cb26"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> foo bar</span></code></pre></div>
+<pre><code>Plugin kubectl-foo-bar is executed</code></pre>
+<div class="sourceCode" id="cb28"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> foo bar baz buz</span></code></pre></div>
+<pre><code>Plugin kubectl-foo-bar-baz is executed, with &quot;buz&quot; as its first argument</code></pre>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> foo bar buz</span></code></pre></div>
+<pre><code>Plugin kubectl-foo-bar is executed, with &quot;buz&quot; as its first argument</code></pre>
+<p>This design choice ensures that plugin sub-commands can be
+implemented across multiple files, if needed, and that these
+sub-commands can be nested under a "parent" plugin command:</p>
+<div class="sourceCode" id="cb32"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="fu">ls</span> ./plugin_command_tree</span></code></pre></div>
+<pre><code>kubectl-parent
+kubectl-parent-subcommand
+kubectl-parent-subcommand-subsubcommand</code></pre>
+<h3 id="checking-for-plugin-warnings">Checking for plugin warnings</h3>
+<p>You can use the aforementioned <code>kubectl plugin list</code>
+command to ensure that your plugin is visible by <code>kubectl</code>,
+and verify that there are no warnings preventing it from being called as
+a <code>kubectl</code> command.</p>
+<div class="sourceCode" id="cb34"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubectl</span> plugin list</span></code></pre></div>
+<pre><code>The following kubectl-compatible plugins are available:
+
+test/fixtures/pkg/kubectl/plugins/kubectl-foo
+/usr/local/bin/kubectl-foo
+  - warning: /usr/local/bin/kubectl-foo is overshadowed by a similarly named plugin: test/fixtures/pkg/kubectl/plugins/kubectl-foo
+plugins/kubectl-invalid
+  - warning: plugins/kubectl-invalid identified as a kubectl plugin, but it is not executable
+
+error: 2 plugin warnings were found</code></pre>
+<h3 id="using-the-command-line-runtime-package">Using the command line
+runtime package</h3>
+<p>If you're writing a plugin for kubectl and you're using Go, you can
+make use of the <a
+href="https://github.com/kubernetes/cli-runtime">cli-runtime</a> utility
+libraries.</p>
+<p>These libraries provide helpers for parsing or updating a user's <a
+href="../../concepts/configuration/organize-cluster-access-kubeconfig.html">kubeconfig</a>
+file, for making REST-style requests to the API server, or to bind flags
+associated with configuration and printing.</p>
+<p>See the <a
+href="https://github.com/kubernetes/sample-cli-plugin">Sample CLI
+Plugin</a> for an example usage of the tools provided in the CLI Runtime
+repo.</p>
+<h2 id="distributing-kubectl-plugins">Distributing kubectl plugins</h2>
+<p>If you have developed a plugin for others to use, you should consider
+how you package it, distribute it and deliver updates to your users.</p>
+<h3 id="distributing-krew">Krew</h3>
+<p><a target="_blank" rel="noopener" href="https://krew.dev/">Krew</a> offers a cross-platform way to
+package and distribute your plugins. This way, you use a single
+packaging format for all target platforms (Linux, Windows, macOS etc)
+and deliver updates to your users. Krew also maintains a <a
+href="https://krew.sigs.k8s.io/plugins/">plugin index</a> so that other
+people can discover your plugin and install it.</p>
+<h3 id="distributing-native">Native / platform specific package
+management</h3>
+<p>Alternatively, you can use traditional package managers such as,
+<code>apt</code> or <code>dnf</code> on Linux, Chocolatey on Windows,
+and Homebrew on macOS. Any package manager will be suitable if it can
+place new executables placed somewhere in the user's <code>PATH</code>.
+As a plugin author, if you pick this option then you also have the
+burden of updating your kubectl plugin's distribution package across
+multiple platforms for each release.</p>
+<h3 id="distributing-source-code">Source code</h3>
+<p>You can publish the source code; for example, as a Git repository. If
+you choose this option, someone who wants to use that plugin must fetch
+the code, set up a build environment (if it needs compiling), and deploy
+the plugin. If you also make compiled packages available, or use Krew,
+that will make installs easier.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Check the Sample CLI Plugin repository for a <a
+href="https://github.com/kubernetes/sample-cli-plugin">detailed
+example</a> of a plugin written in Go. In case of any questions, feel
+free to reach out to the <a
+href="https://github.com/kubernetes/community/tree/main/sig-cli">SIG CLI
+team</a>.</li>
+<li>Read about <a target="_blank" rel="noopener" href="https://krew.dev/">Krew</a>, a package manager
+for kubectl plugins.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../network/validate-dual-stack.html"><span>Previous</span>Validate IPv4/IPv6 dual-stack</a><a class="page-nav-link next" href="../manage-hugepages/scheduling-hugepages.html"><span>Next</span>Manage HugePages</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#installing-kubectl-plugins">Installing kubectl plugins</a></li><li class="toc-l3"><a href="#discovering-plugins">Discovering plugins</a></li><li class="toc-l2"><a href="#writing-kubectl-plugins">Writing kubectl plugins</a></li><li class="toc-l3"><a href="#example-plugin">Example plugin</a></li><li class="toc-l3"><a href="#using-a-plugin">Using a plugin</a></li><li class="toc-l3"><a href="#naming-a-plugin">Naming a plugin</a></li><li class="toc-l3"><a href="#checking-for-plugin-warnings">Checking for plugin warnings</a></li><li class="toc-l3"><a href="#using-the-command-line-runtime-package">Using the command line runtime package</a></li><li class="toc-l2"><a href="#distributing-kubectl-plugins">Distributing kubectl plugins</a></li><li class="toc-l3"><a href="#distributing-krew">Krew</a></li><li class="toc-l3"><a href="#distributing-native">Native / platform specific package management</a></li><li class="toc-l3"><a href="#distributing-source-code">Source code</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitoring, Logging, and Debugging · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../" data-key="tasks/debug" data-title="Monitoring, Logging, and Debugging" data-canonical="https://kubernetes.io/docs/tasks/debug/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../home.html">Kubernetes Documentation</a><span>/</span><a href="../tasks.html">Tasks</a></nav></nav>
+        <header class="page-head">
+          <h1>Monitoring, Logging, and Debugging</h1>
+          <p class="lead">Set up monitoring and logging to troubleshoot a cluster, or debug a containerized application.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/debug/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>Sometimes things go wrong. This guide helps you gather the relevant
+information and resolve issues. It has four sections:</p>
+<ul>
+<li><a href="debug/debug-application.html">Debugging your
+application</a> - Useful for users who are deploying code into
+Kubernetes and wondering why it is not working.</li>
+<li><a href="debug/debug-cluster.html">Debugging your
+cluster</a> - Useful for cluster administrators and operators
+troubleshooting issues with the Kubernetes cluster itself.</li>
+<li><a href="debug/logging.html">Logging in Kubernetes</a> -
+Useful for cluster administrators who want to set up and manage logging
+in Kubernetes.</li>
+<li><a href="debug/monitoring.html">Monitoring in
+Kubernetes</a> - Useful for cluster administrators who want to enable
+monitoring in a Kubernetes cluster.</li>
+</ul>
+<p>You should also check the known issues for the <a
+href="https://github.com/kubernetes/kubernetes/releases">release</a>
+you're using.</p>
+<h2 id="getting-help">Getting help</h2>
+<p>If your problem isn't answered by any of the guides above, there are
+variety of ways for you to get help from the Kubernetes community.</p>
+<h3 id="questions">Questions</h3>
+<p>The documentation on this site has been structured to provide answers
+to a wide range of questions. <a href="../concepts.html">Concepts</a>
+explain the Kubernetes architecture and how each component works, while
+<a href="../setup.html">Setup</a> provides practical instructions for
+getting started. <a href="../tasks.html">Tasks</a> show how to
+accomplish commonly used tasks, and <a
+href="../tutorials.html">Tutorials</a> are more comprehensive
+walkthroughs of real-world, industry-specific, or end-to-end development
+scenarios. The <a href="../reference.html">Reference</a> section
+provides detailed documentation on the <a
+href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.37/">Kubernetes
+API</a> and command-line interfaces (CLIs), such as <a
+href="../reference/kubectl.html"><code>kubectl</code></a>.</p>
+<h2 id="help-my-question-isn-t-covered-i-need-help-now">Help! My
+question isn't covered! I need help now!</h2>
+<h3 id="stack-exchange">Stack Exchange, Stack Overflow, or Server
+Fault</h3>
+<p>If you have questions related to <em>software development</em> for
+your containerized app, you can ask those on <a
+href="https://stackoverflow.com/questions/tagged/kubernetes">Stack
+Overflow</a>.</p>
+<p>If you have Kubernetes questions related to <em>cluster
+management</em> or <em>configuration</em>, you can ask those on <a
+href="https://serverfault.com/questions/tagged/kubernetes">Server
+Fault</a>.</p>
+<p>There are also several more specific Stack Exchange network sites
+which might be the right place to ask Kubernetes questions in areas such
+as <a
+href="https://devops.stackexchange.com/questions/tagged/kubernetes">DevOps</a>,
+<a
+href="https://softwareengineering.stackexchange.com/questions/tagged/kubernetes">Software
+Engineering</a>, or <a
+href="https://security.stackexchange.com/questions/tagged/kubernetes">InfoSec</a>.</p>
+<p>Someone else from the community may have already asked a similar
+question or may be able to help with your problem.</p>
+<p>The Kubernetes team will also monitor <a
+href="https://stackoverflow.com/questions/tagged/kubernetes">posts
+tagged Kubernetes</a>. If there aren't any existing questions that help,
+<strong>please ensure that your question is <a
+href="https://stackoverflow.com/help/on-topic">on-topic on Stack
+Overflow</a>, <a target="_blank" rel="noopener" href="https://serverfault.com/help/on-topic">Server
+Fault</a>, or the Stack Exchange Network site you're asking on</strong>,
+and read through the guidance on <a
+href="https://stackoverflow.com/help/how-to-ask">how to ask a new
+question</a>, before asking a new one!</p>
+<h3 id="slack">Slack</h3>
+<p>Many people from the Kubernetes community hang out on Kubernetes
+Slack in the <code>#kubernetes-users</code> channel. Slack requires
+registration; you can <a target="_blank" rel="noopener" href="https://slack.kubernetes.io">request an
+invitation</a>, and registration is open to everyone). Feel free to come
+and ask any and all questions. Once registered, access the <a
+href="https://kubernetes.slack.com">Kubernetes organisation in Slack</a>
+via your web browser or via Slack's own dedicated app.</p>
+<p>Once you are registered, browse the growing list of channels for
+various subjects of interest. For example, people new to Kubernetes may
+also want to join the <a
+href="https://kubernetes.slack.com/messages/kubernetes-novice"><code>#kubernetes-novice</code></a>
+channel. As another example, developers should join the <a
+href="https://kubernetes.slack.com/messages/kubernetes-contributors"><code>#kubernetes-contributors</code></a>
+channel.</p>
+<p>There are also many country specific / local language channels. Feel
+free to join these channels for localized support and info:</p>
+<table>
+<colgroup>
+<col style="width: 43%" />
+<col style="width: 56%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: left;">Country</th>
+<th style="text-align: left;">Channels</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">China</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/cn-users"><code>#cn-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/cn-events"><code>#cn-events</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Finland</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/fi-users"><code>#fi-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">France</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/fr-users"><code>#fr-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/fr-events"><code>#fr-events</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Germany</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/de-users"><code>#de-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/de-events"><code>#de-events</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">India</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/in-users"><code>#in-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/in-events"><code>#in-events</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Italy</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/it-users"><code>#it-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/it-events"><code>#it-events</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Japan</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/jp-users"><code>#jp-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/jp-events"><code>#jp-events</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Korea</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/kr-users"><code>#kr-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Netherlands</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/nl-users"><code>#nl-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Norway</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/norw-users"><code>#norw-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Poland</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/pl-users"><code>#pl-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Russia</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/ru-users"><code>#ru-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Spain</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/es-users"><code>#es-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Sweden</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/se-users"><code>#se-users</code></a></td>
+</tr>
+<tr>
+<td style="text-align: left;">Turkey</td>
+<td style="text-align: left;"><a
+href="https://kubernetes.slack.com/messages/tr-users"><code>#tr-users</code></a>,
+<a
+href="https://kubernetes.slack.com/messages/tr-events"><code>#tr-events</code></a></td>
+</tr>
+</tbody>
+</table>
+<h3 id="forum">Forum</h3>
+<p>You're welcome to join the official Kubernetes Forum: <a
+href="https://discuss.kubernetes.io">discuss.kubernetes.io</a>.</p>
+<h3 id="bugs-and-feature-requests">Bugs and feature requests</h3>
+<p>If you have what looks like a bug, or you would like to make a
+feature request, please use the <a
+href="https://github.com/kubernetes/kubernetes/issues">GitHub issue
+tracking system</a>.</p>
+<p>Before you file an issue, please search existing issues to see if
+your issue is already covered.</p>
+<p>If filing a bug, please include detailed information about how to
+reproduce the problem, such as:</p>
+<ul>
+<li>Kubernetes version: <code>kubectl version</code></li>
+<li>Cloud provider, OS distro, network configuration, and container
+runtime version</li>
+<li>Steps to reproduce the problem</li>
+</ul>
+<section class="child-index" aria-label="Pages in this section"><h2>In this section</h2><ul><li><a class="child-link" href="debug/logging.html">Logging in Kubernetes</a><span class="child-desc">Logging architecture and system logs.</span></li><li><a class="child-link" href="debug/monitoring.html">Monitoring in Kubernetes</a><span class="child-desc">Monitoring kubernetes system components.</span></li><li><a class="child-link" href="debug/debug-application.html">Troubleshooting Applications</a><span class="child-desc">Debugging common containerized application issues.</span></li><li><a class="child-link" href="debug/debug-cluster.html">Troubleshooting Clusters</a><span class="child-desc">Debugging common cluster issues.</span></li></ul></section>
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="configure-pod-container/migrate-from-psp.html"><span>Previous</span>Migrate from PodSecurityPolicy to the Built-In PodSecurity Admission Controller</a><a class="page-nav-link next" href="debug/logging.html"><span>Next</span>Logging in Kubernetes</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#getting-help">Getting help</a></li><li class="toc-l3"><a href="#questions">Questions</a></li><li class="toc-l2"><a href="#help-my-question-isn-t-covered-i-need-help-now">Help! My question isn&#x27;t covered! I need help now!</a></li><li class="toc-l3"><a href="#stack-exchange">Stack Exchange, Stack Overflow, or Server Fault</a></li><li class="toc-l3"><a href="#slack">Slack</a></li><li class="toc-l3"><a href="#forum">Forum</a></li><li class="toc-l3"><a href="#bugs-and-feature-requests">Bugs and feature requests</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../assets/nav.js"></script>
+<script src="../../assets/site.js"></script>
+</body>
+</html>

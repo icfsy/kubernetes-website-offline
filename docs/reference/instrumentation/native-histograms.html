@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Native Histogram Support for Kubernetes Metrics · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="reference/instrumentation/native-histograms" data-title="Native Histogram Support for Kubernetes Metrics" data-canonical="https://kubernetes.io/docs/reference/instrumentation/native-histograms/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../reference.html">Reference</a><span>/</span><a href="../instrumentation.html">Instrumentation</a></nav></nav>
+        <header class="page-head">
+          <h1>Native Histogram Support for Kubernetes Metrics</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/reference/instrumentation/native-histograms/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.37; enabled by default
+(<code>NativeHistograms</code>)</p>
+</div>
+<p>Kubernetes components can expose histogram metrics in <a
+href="https://prometheus.io/docs/specs/native_histograms/">Prometheus
+Native Histogram</a> format, alongside the classic histogram format.
+Native histograms use exponential bucket boundaries instead of fixed
+boundaries, providing significant storage efficiency, improved query
+performance, and finer-grained visibility into distributions.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>To use native histograms, you need:</p>
+<ul>
+<li><strong>Kubernetes v1.36 or later</strong>. In v1.36, the
+<code>NativeHistograms</code> <a
+href="../command-line-tools-reference/feature-gates.html#NativeHistograms">feature
+gate</a> must be enabled manually. From v1.37, the feature is in Beta
+and enabled by default.</li>
+<li><strong>Prometheus 2.40 or later</strong> to scrape and store native
+histograms. Prometheus 3.0+ is recommended for per-job
+configuration.</li>
+</ul>
+<h2 id="what-are-native-histograms">What are native histograms?</h2>
+<p>Classic Prometheus histograms use fixed bucket boundaries (for
+example,
+<code>[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10]</code>
+seconds). Each bucket creates a separate time series
+(<code>_bucket</code>, <code>_count</code>, <code>_sum</code>), which
+can lead to:</p>
+<ul>
+<li><strong>High storage costs</strong> at scale, because each histogram
+generates many time series.</li>
+<li><strong>Accuracy issues</strong>, because data points within a wide
+bucket range are indistinguishable. For example, a request completing in
+1µs and one completing in 4ms both fall into the same
+<code>le="0.005"</code> bucket.</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://prometheus.io/docs/specs/native_histograms/">Native
+histograms</a> address these limitations by using exponential bucket
+boundaries that automatically adjust to the data distribution. Benefits
+include:</p>
+<ul>
+<li><strong>~10x reduction in time series count</strong> per histogram
+metric, significantly reducing Prometheus storage and improving query
+performance.</li>
+<li><strong>Finer-grained resolution</strong> for detecting performance
+regressions and setting precise SLO thresholds.</li>
+</ul>
+<h2 id="how-it-works">How it works</h2>
+<p>When the <code>NativeHistograms</code> feature gate is enabled,
+Kubernetes components expose histogram metrics in both classic and
+native formats simultaneously (dual exposition). The format returned
+depends on the <code>Accept</code> header in the HTTP request (<a
+href="https://prometheus.io/docs/instrumenting/exposition_formats/#content-negotiation">Prometheus
+content negotiation</a>). Prometheus sets this header automatically
+based on your scrape configuration; you only need to be aware of it when
+querying the <code>/metrics</code> endpoint directly.</p>
+<ul>
+<li><p><strong>Text format</strong> (Accept: <code>text/plain</code>,
+OpenMetrics 1.0): Returns only classic histogram buckets. Backward
+compatible with all existing tooling.</p>
+<pre><code># Classic histogram buckets (always present)
+apiserver_request_duration_seconds_bucket{le=&quot;0.005&quot;} 1000
+apiserver_request_duration_seconds_bucket{le=&quot;0.01&quot;} 2000
+...
+apiserver_request_duration_seconds_bucket{le=&quot;+Inf&quot;} 10000
+apiserver_request_duration_seconds_count 10000
+apiserver_request_duration_seconds_sum 450.5</code></pre></li>
+<li><p><strong>Protobuf format</strong> (Accept:
+<code>application/vnd.google.protobuf</code>): Contains both classic
+buckets and native histogram data. Prometheus automatically requests
+this format when <code>scrape_native_histograms: true</code> is set in
+the <a
+href="https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config">Prometheus
+scrape configuration</a> for the corresponding scrape job.</p></li>
+</ul>
+<p>This dual exposition strategy ensures:</p>
+<ul>
+<li>Existing dashboards and alerts continue to work without
+changes.</li>
+<li>Users can migrate queries to native histograms at their own
+pace.</li>
+<li>Prometheus stores whichever format it is configured to ingest.</li>
+</ul>
+<h2 id="enabling-native-histograms">Enabling native histograms</h2>
+<p>Enabling native histograms is a two-step process: enable the feature
+gate on Kubernetes components, and configure Prometheus to scrape native
+histograms.</p>
+<h3 id="step-1-ensure-the-kubernetes-feature-gate-is-enabled">Step 1:
+Ensure the Kubernetes feature gate is enabled</h3>
+<p>The <code>NativeHistograms</code> feature gate is enabled by default
+in Kubernetes v1.37. If you are using Kubernetes v1.36, or if you have
+explicitly disabled the feature, enable the
+<code>NativeHistograms</code> feature gate on the Kubernetes components
+you want to expose native histograms from:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">--feature-gates=NativeHistograms=true</span></span></code></pre></div>
+<p>This feature gate applies to the following components:</p>
+<ul>
+<li>kube-apiserver</li>
+<li>kube-controller-manager</li>
+<li>kube-scheduler</li>
+<li>kubelet</li>
+<li>kube-proxy</li>
+</ul>
+<p>Each component's metrics are independent; you can enable or disable
+the feature gate per component.</p>
+<h3 id="step-2-configure-prometheus">Step 2: Configure Prometheus</h3>
+<p>The Prometheus configuration depends on your Prometheus version.</p>
+<table>
+<colgroup>
+<col style="width: 9%" />
+<col style="width: 12%" />
+<col style="width: 38%" />
+<col style="width: 39%" />
+</colgroup>
+<thead>
+<tr>
+<th>Prometheus version</th>
+<th>Native histogram support</th>
+<th>Configuration</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>&lt; 2.40</td>
+<td>None</td>
+<td>N/A</td>
+<td>Classic histograms only. Enabling the Kubernetes feature gate has no
+effect.</td>
+</tr>
+<tr>
+<td>2.40 – 2.x</td>
+<td>Experimental</td>
+<td><code>--enable-feature=native-histograms</code> (global)</td>
+<td>All-or-nothing; no per-job control.</td>
+</tr>
+<tr>
+<td>3.0 – 3.7</td>
+<td>Stable</td>
+<td>Per-job <code>scrape_native_histograms</code> and
+<code>always_scrape_classic_histograms</code></td>
+<td>Per-job configuration recommended. Global flag still supported.</td>
+</tr>
+<tr>
+<td>3.8</td>
+<td>Stable</td>
+<td>Per-job configuration (required for fine-grained control)</td>
+<td>Global flag only changes default for all jobs.</td>
+</tr>
+<tr>
+<td>3.9+</td>
+<td>Stable</td>
+<td>Per-job <code>scrape_native_histograms</code> only</td>
+<td>Global flag removed. Must use per-job configuration.</td>
+</tr>
+</tbody>
+</table>
+<p>For Prometheus 3.x, use per-job configuration for fine-grained
+control:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">scrape_configs</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">job_name</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;kubernetes-apiservers&#39;</span></span>
+<span class="at">    </span><span class="fu">scrape_native_histograms</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at">            # Ingest native histograms</span></span>
+<span class="at">    </span><span class="fu">always_scrape_classic_histograms</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span><span class="at">     # Keep classic format during migration</span></span></code></pre></div>
+<p>Set both options to <code>true</code> during the migration period.
+This allows you to ingest native histograms while keeping classic
+histograms for existing dashboards.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Native histograms require the Protobuf exposition format. This is
+handled automatically by Prometheus by default. However, if you have
+customized <code>scrape_protocols</code>, ensure that
+<code>PrometheusProto</code> is included in the list.</p>
+</div>
+<h2 id="migrating-dashboards-and-alerts">Migrating dashboards and
+alerts</h2>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>If Prometheus is configured with
+<code>scrape_native_histograms: true</code> but
+<code>always_scrape_classic_histograms: false</code> (the default),
+Prometheus ingests native histograms only. Existing dashboards that use
+classic histogram queries (for example,
+<code>histogram_quantile(..._bucket...)</code>) will show no data.
+Always set <code>always_scrape_classic_histograms: true</code> during
+migration.</p>
+</div>
+<p>When migrating from classic to native histogram queries, follow this
+workflow:</p>
+<ol type="1">
+<li><p><strong>Enable both formats</strong>: Set
+<code>scrape_native_histograms: true</code> and
+<code>always_scrape_classic_histograms: true</code> in your Prometheus
+scrape config.</p></li>
+<li><p><strong>Migrate queries</strong>: Update dashboard queries and
+alert expressions from classic histogram functions to native histogram
+equivalents.</p>
+<p>Classic query:</p>
+<pre class="promql"><code>histogram_quantile(0.99, rate(apiserver_request_duration_seconds_bucket[5m]))</code></pre>
+<p>Native histogram query:</p>
+<pre class="promql"><code>histogram_quantile(0.99, rate(apiserver_request_duration_seconds[5m]))</code></pre></li>
+<li><p><strong>Verify in staging</strong>: Test all dashboards and
+alerts with native histogram queries before rolling out to
+production.</p></li>
+<li><p><strong>Disable classic scraping</strong>: Once migration is
+complete and verified, set
+<code>always_scrape_classic_histograms: false</code> to reduce storage
+overhead.</p></li>
+</ol>
+<h2 id="disabling-native-histograms">Disabling native histograms</h2>
+<p>You can disable native histograms at any time using either of two
+approaches:</p>
+<ul>
+<li><p><strong>Prometheus-side (fastest, no Kubernetes restart needed;
+Prometheus 3.x only)</strong>: Set
+<code>scrape_native_histograms: false</code> per scrape job. Prometheus
+resumes scraping classic format on the next scrape interval.</p></li>
+<li><p><strong>Kubernetes feature gate</strong>: Restart the component
+with <code>--feature-gates=NativeHistograms=false</code>. Only classic
+histogram format is exposed after restart.</p></li>
+</ul>
+<p>When native histograms are disabled, the metrics endpoint reverts to
+classic histogram format only. Historical native histogram data in
+Prometheus remains queryable.</p>
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong>Dashboards show no data after enabling native
+histograms</strong></li>
+</ul>
+<p>: This occurs when Prometheus is configured with
+<code>scrape_native_histograms: true</code> but
+<code>always_scrape_classic_histograms: false</code> (the default), and
+your dashboards still use classic histogram queries (for example,
+<code>histogram_quantile(..._bucket...)</code>).</p>
+<p>Fix: Set <code>always_scrape_classic_histograms: true</code> to
+restore classic format ingestion while you migrate dashboards.</p>
+<ul>
+<li><strong>Memory usage increase after enabling native
+histograms</strong></li>
+</ul>
+<p>: A small memory increase is expected for native histogram bucket
+storage, bounded by a maximum of 160 buckets per histogram. Monitor
+<code>process_resident_memory_bytes</code> for unexpected increases.</p>
+<p>Fix: If memory pressure is severe, disable native histogram ingestion
+in Prometheus (<code>scrape_native_histograms: false</code>) or disable
+the Kubernetes feature gate.</p>
+<ul>
+<li><strong>Prometheus logs errors about unknown metric
+format</strong></li>
+</ul>
+<p>: Your Prometheus version is too old to understand native
+histograms.</p>
+<p>Fix: Upgrade Prometheus to 2.40+ or disable native histograms in
+Kubernetes.</p>
+<ul>
+<li><strong>Not sure if native histograms are being
+exposed</strong></li>
+</ul>
+<p>: Check the feature gate status by querying
+<code>kubernetes_feature_enabled{name="NativeHistograms"}</code> in
+Prometheus. A value of <code>1</code> indicates the feature is enabled.
+You can also query the metrics endpoint directly with protobuf format:
+<code>bash   curl -H "Accept: application/vnd.google.protobuf;proto=io.prometheus.client.MetricFamily;encoding=delimited" \     https://&lt;component-address&gt;/metrics</code>
+The response should contain native histogram encoding for histogram
+metrics.</p>
+<h2 id="references">References</h2>
+<ul>
+<li>Read the <a
+href="https://prometheus.io/docs/specs/native_histograms/">Prometheus
+Native Histograms documentation</a> for details on the native histogram
+format and query functions.</li>
+<li>See the <a
+href="metrics.html">Kubernetes metrics
+reference</a> for the full list of metrics exposed by Kubernetes
+components.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="cri-pod-container-metrics.html"><span>Previous</span>CRI Pod &amp; Container Metrics</a><a class="page-nav-link next" href="node-metrics.html"><span>Next</span>Node metrics data</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#what-are-native-histograms">What are native histograms?</a></li><li class="toc-l2"><a href="#how-it-works">How it works</a></li><li class="toc-l2"><a href="#enabling-native-histograms">Enabling native histograms</a></li><li class="toc-l3"><a href="#step-1-ensure-the-kubernetes-feature-gate-is-enabled">Step 1: Ensure the Kubernetes feature gate is enabled</a></li><li class="toc-l3"><a href="#step-2-configure-prometheus">Step 2: Configure Prometheus</a></li><li class="toc-l2"><a href="#migrating-dashboards-and-alerts">Migrating dashboards and alerts</a></li><li class="toc-l2"><a href="#disabling-native-histograms">Disabling native histograms</a></li><li class="toc-l2"><a href="#troubleshooting">Troubleshooting</a></li><li class="toc-l2"><a href="#references">References</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

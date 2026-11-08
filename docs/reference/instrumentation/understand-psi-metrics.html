@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Understand Pressure Stall Information (PSI) Metrics · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="reference/instrumentation/understand-psi-metrics" data-title="Understand Pressure Stall Information (PSI) Metrics" data-canonical="https://kubernetes.io/docs/reference/instrumentation/understand-psi-metrics/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../reference.html">Reference</a><span>/</span><a href="../instrumentation.html">Instrumentation</a></nav></nav>
+        <header class="page-head">
+          <h1>Understand Pressure Stall Information (PSI) Metrics</h1>
+          <p class="lead">Detailed explanation of Pressure Stall Information (PSI) metrics and how to use them to identify resource pressure in Kubernetes.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Reference</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/reference/instrumentation/understand-psi-metrics/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.36; enabled by default
+(<code>KubeletPSI</code>)</p>
+</div>
+<p>As a stable feature, Kubernetes lets you configure the kubelet to
+collect Linux kernel <a
+href="https://docs.kernel.org/accounting/psi.html">Pressure Stall
+Information</a> (PSI) for CPU, memory, and I/O usage. The information is
+collected at node, pod and container level. Starting with Kubernetes
+v.1.36, the <code>KubeletPSI</code> <a
+href="../command-line-tools-reference/feature-gates.html">feature
+gate</a> is locked to true and cannot be disabled.</p>
+<p>PSI metrics are exposed through two different sources:</p>
+<ul>
+<li>The kubelet's <a
+href="../kubelet-api/stats.v1alpha1.html">Summary API</a>,
+which provides PSI data at the node, pod, and container level.</li>
+<li>The <code>/metrics/cadvisor</code> endpoint on the kubelet, which
+exposes PSI metrics in the <a
+href="../../concepts/cluster-administration/system-metrics.html">Prometheus
+format</a>.</li>
+</ul>
+<h3 id="requirements">Requirements</h3>
+<p>Pressure Stall Information requires the following on your Linux
+nodes:</p>
+<ul>
+<li>The Linux kernel must be version <strong>4.20 or
+newer</strong>.</li>
+<li>The kernel must be compiled with the <code>CONFIG_PSI=y</code>
+option. Most modern distributions enable this by default. You can check
+your kernel's configuration by running
+<code>zgrep CONFIG_PSI /proc/config.gz</code>.</li>
+<li>Some Linux distributions may compile PSI into the kernel but disable
+it by default. If so, you need to enable it at boot time by adding the
+<code>psi=1</code> parameter to the kernel command line.</li>
+<li>The node must be using <a
+href="../../concepts/architecture/cgroups.html">cgroup v2</a>.</li>
+</ul>
+<h2 id="understanding-psi-metrics">Understanding PSI Metrics</h2>
+<p>Pressure Stall Information (PSI) metrics are provided for three
+resources: CPU, memory, and I/O. They are categorized into two main
+types of pressure: <code>some</code> and <code>full</code>.</p>
+<ul>
+<li><strong><code>some</code></strong>: This value indicates that some
+tasks (one or more) are stalled on a resource. For example, if some
+tasks are waiting for I/O, this metric will increase. This can be an
+early indicator of resource contention.</li>
+<li><strong><code>full</code></strong>: This value indicates that
+<em>all</em> non-idle tasks are stalled on a resource simultaneously.
+This signifies a more severe resource shortage, where the entire system
+is unable to make progress.</li>
+</ul>
+<p>Each pressure type provides four metrics: <code>avg10</code>,
+<code>avg60</code>, <code>avg300</code>, and <code>total</code>. The
+<code>avg</code> values represent the percentage of wall-clock time that
+tasks were stalled over 10-second, 60-second, and 5-minute moving
+averages. The <code>total</code> value is a cumulative counter in
+microseconds showing the total time tasks have been stalled.</p>
+<p>Let's take for example the following query from the Summary
+API:<br />
+<code>kubectl get --raw "/api/v1/nodes/$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')/proxy/stats/summary" | jq '.pods[].containers[] | select(.name=="&lt;CONTAINER_NAME&gt;") | {name, cpu: .cpu.psi, memory: .memory.psi, io: .io.psi}'</code>.
+This returns the information in a json format as such.</p>
+<pre><code>{
+  &quot;name&quot;: &quot;&lt;CONTAINER_NAME&gt;&quot;,
+  &quot;cpu&quot;: {
+    &quot;full&quot;: {
+      &quot;total&quot;: 0,
+      &quot;avg10&quot;: 0,
+      &quot;avg60&quot;: 0,
+      &quot;avg300&quot;: 0
+    },
+    &quot;some&quot;: {
+      &quot;total&quot;: 35232438,
+      &quot;avg10&quot;: 0.74,
+      &quot;avg60&quot;: 0.52,
+      &quot;avg300&quot;: 0.21,
+    },  
+  },
+  &quot;memory&quot;: {
+    &quot;full&quot;: {
+      &quot;total&quot;: 539105,
+      &quot;avg10&quot;: 0,
+      &quot;avg60&quot;: 0,
+      &quot;avg300&quot;: 0
+    },
+    &quot;some&quot;: {
+      &quot;total&quot;: 658164,
+      &quot;avg10&quot;: 0.01,
+      &quot;avg60&quot;: 0.01,
+      &quot;avg300&quot;: 0.00,
+    },
+    }
+  },
+  &quot;io&quot;: {
+    &quot;full&quot;: {
+      &quot;total&quot;: 33190987,
+      &quot;avg10&quot;: 0.31,
+      &quot;avg60&quot;: 0.22,
+      &quot;avg300&quot;: 0.05,
+    },
+    &quot;some&quot;: {
+      &quot;total&quot;: 40809937,
+      &quot;avg10&quot;: 0.52,
+      &quot;avg60&quot;: 0.45,
+      &quot;avg300&quot;: 0.12,
+    }
+  }
+}</code></pre>
+<p>Here is a simple spike scenario. The cpu.some <code>avg10</code>
+value of <code>0.74</code> indicates that in the last 10 seconds, at
+least one task in this container was stalled on the CPU for 0.74% of the
+time (0.0074 seconds or 74 milliseconds). Because <code>avg10</code>
+(0.74) is significantly higher than <code>avg300</code> (0.21) on the
+same resource, this suggests a recent surge in resource contention
+rather than a sustained long-term bottleneck. If monitored continuously
+and the <code>avg300</code> metrics increase as well, we can diagnose a
+more serious, lasting issue!</p>
+<p>Additionally, notice how in this example <code>cpu.some</code> shows
+pressure, while <code>cpu.full</code> remains at 0.00. This tells us
+that while some processes were delayed waiting for CPU time, the
+container as a whole was still making progress. A non-zero full value
+would indicate that all non-idle tasks were stalled simultaneously, a
+much bigger problem. Although not as human-readable, the
+<code>total</code> value of 35232438 represents the cumulative stall
+time in microseconds, that allow latency spike detection that otherwise
+may not show in the averages.</p>
+<p>As a final note, when observing high I/O Pressure alongside low
+Memory Pressure, it can indicate that the application is waiting on disk
+throughput rather than failing due to a lack of available RAM. The node
+is not over-committed on memory, and a different diagnosis for disk
+consumption can be investigated.</p>
+<h2 id="example-scenarios">Example Scenarios</h2>
+<p>You can use a simple Pod with a stress-testing tool to generate
+resource pressure and observe the PSI metrics. The following examples
+use the <code>agnhost</code> container image, which includes the
+<code>stress</code> tool.</p>
+<h3 id="generating-cpu-pressure">Generating CPU Pressure</h3>
+<p>Create a Pod that generates CPU pressure using the
+<code>stress</code> utility. This workload will put a heavy load on one
+CPU core.</p>
+<p>Create a file named <code>cpu-pressure-pod.yaml</code>:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu-pressure-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu-stress</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.47</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;stress&quot;</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;--cpus&quot;</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;1&quot;</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span>
+<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;500m&quot;</span></span></code></pre></div>
+<p>Apply it to your cluster:
+<code>kubectl apply -f cpu-pressure-pod.yaml</code></p>
+<h4 id="observing-cpu-pressure">Observing CPU Pressure</h4>
+<p>After the Pod is running, you can observe the CPU pressure through
+either the Summary API or the Prometheus metrics endpoint.</p>
+<p><strong>Using the Summary API:</strong></p>
+<p>Watch the summary stats for your node. In a separate terminal,
+run:</p>
+<pre class="shell"><code># Replace &lt;node-name&gt; with the name of a node in your cluster
+kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/stats/summary&quot; | jq &#39;.pods[] | select(.podRef.name | contains(&quot;cpu-pressure-pod&quot;))&#39;</code></pre>
+<p>You will see the <code>some</code> PSI metrics for CPU increase in
+the summary API output. The <code>avg10</code> value for
+<code>some</code> pressure should rise above zero, indicating that tasks
+are spending time stalled on the CPU.</p>
+<p><strong>Using the Prometheus metrics endpoint:</strong></p>
+<p>Query the <code>/metrics/cadvisor</code> endpoint to see the
+<code>container_pressure_cpu_waiting_seconds_total</code> metric.</p>
+<pre class="shell"><code># Replace &lt;node-name&gt; with the name of the node where the pod is running
+kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/metrics/cadvisor&quot; | \
+    grep &#39;container_pressure_cpu_waiting_seconds_total{container=&quot;cpu-stress&quot;&#39;</code></pre>
+<p>The output should show an increasing value, indicating that the
+container is spending time stalled waiting for CPU resources.</p>
+<h4 id="cleanup">Cleanup</h4>
+<p>Clean up the Pod when you are finished:</p>
+<pre class="shell"><code>kubectl delete pod cpu-pressure-pod</code></pre>
+<h3 id="generating-memory-pressure">Generating Memory Pressure</h3>
+<p>This example creates a Pod that continuously writes to files in the
+container's writable layer, causing the kernel's page cache to grow and
+forcing memory reclamation, which generates pressure.</p>
+<p>Create a file named <code>memory-pressure-pod.yaml</code>:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-pressure-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-stress</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.47</span></span>
+<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;i=0; while true; do dd if=/dev/zero of=testfile.$i bs=1M count=50 &amp;&gt;/dev/null; i=$(((i+1)%5)); sleep 0.1; done&quot;</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200M&quot;</span></span>
+<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200M&quot;</span></span></code></pre></div>
+<p>Apply it to your cluster:
+<code>kubectl apply -f memory-pressure-pod.yaml</code></p>
+<h4 id="observing-memory-pressure">Observing Memory Pressure</h4>
+<p><strong>Using the Summary API:</strong></p>
+<p>In the summary output, you will observe an increase in the
+<code>full</code> PSI metrics for memory, indicating that the system is
+under significant memory pressure.</p>
+<pre class="shell"><code># Replace &lt;node-name&gt; with the name of a node in your cluster
+kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/stats/summary&quot; | jq &#39;.pods[] | select(.podRef.name | contains(&quot;memory-pressure-pod&quot;))&#39;</code></pre>
+<p><strong>Using the Prometheus metrics endpoint:</strong></p>
+<p>Query the <code>/metrics/cadvisor</code> endpoint to see the
+<code>container_pressure_memory_waiting_seconds_total</code> metric.</p>
+<pre class="shell"><code># Replace &lt;node-name&gt; with the name of the node where the pod is running
+kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/metrics/cadvisor&quot; | \
+    grep &#39;container_pressure_memory_waiting_seconds_total{container=&quot;memory-stress&quot;&#39;</code></pre>
+<p>In the output, you will observe an increasing value for the metric,
+indicating that the system is under significant memory pressure.</p>
+<h4 id="cleanup-1">Cleanup</h4>
+<p>Clean up the Pod when you are finished:</p>
+<pre class="shell"><code>kubectl delete pod memory-pressure-pod</code></pre>
+<h3 id="generating-i-o-pressure">Generating I/O Pressure</h3>
+<p>This Pod generates I/O pressure by repeatedly writing a file to disk
+and using <code>sync</code> to flush the data from memory, which creates
+I/O stalls.</p>
+<p>Create a file named <code>io-pressure-pod.yaml</code>:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> io-pressure-pod</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">restartPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> io-stress</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/e2e-test-images/agnhost:2.47</span></span>
+<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;/bin/sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="st">&quot;while true; do dd if=/dev/zero of=testfile bs=1M count=128 &amp;&gt;/dev/null; sync; rm testfile &amp;&gt;/dev/null; done&quot;</span></span></code></pre></div>
+<p>Apply this to your cluster:
+<code>kubectl apply -f io-pressure-pod.yaml</code></p>
+<h4 id="observing-i-o-pressure">Observing I/O Pressure</h4>
+<p><strong>Using the Summary API:</strong></p>
+<p>You will see the <code>some</code> PSI metrics for I/O increase as
+the Pod continuously writes to disk.</p>
+<pre class="shell"><code># Replace &lt;node-name&gt; with the name of a node in your cluster
+kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/stats/summary&quot; | jq &#39;.pods[] | select(.podRef.name | contains(&quot;io-pressure-pod&quot;))&#39;</code></pre>
+<p><strong>Using the Prometheus metrics endpoint:</strong></p>
+<p>Query the <code>/metrics/cadvisor</code> endpoint to see the
+<code>container_pressure_io_waiting_seconds_total</code> metric.</p>
+<pre class="shell"><code># Replace &lt;node-name&gt; with the name of the node where the pod is running
+kubectl get --raw &quot;/api/v1/nodes/&lt;node-name&gt;/proxy/metrics/cadvisor&quot; | \
+    grep &#39;container_pressure_io_waiting_seconds_total{container=&quot;io-stress&quot;&#39;</code></pre>
+<p>You will see the metric's value increase as the Pod continuously
+writes to disk.</p>
+<h4 id="cleanup-2">Cleanup</h4>
+<p>Clean up the Pod when you are finished:</p>
+<pre class="shell"><code>kubectl delete pod io-pressure-pod</code></pre>
+<h2 id="what-s-next">What's next</h2>
+<p>The task pages for <a
+href="../../tasks/debug/debug-cluster.html">Troubleshooting Clusters</a>
+discuss how to use a metrics pipeline that rely on these data.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="node-metrics.html"><span>Previous</span>Node metrics data</a><a class="page-nav-link next" href="zpages.html"><span>Next</span>Kubernetes z-pages</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l3"><a href="#requirements">Requirements</a></li><li class="toc-l2"><a href="#understanding-psi-metrics">Understanding PSI Metrics</a></li><li class="toc-l2"><a href="#example-scenarios">Example Scenarios</a></li><li class="toc-l3"><a href="#generating-cpu-pressure">Generating CPU Pressure</a></li><li class="toc-l3"><a href="#generating-memory-pressure">Generating Memory Pressure</a></li><li class="toc-l3"><a href="#generating-i-o-pressure">Generating I/O Pressure</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

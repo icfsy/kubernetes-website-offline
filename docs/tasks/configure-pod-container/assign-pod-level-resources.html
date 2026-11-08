@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Assign Pod-level CPU and memory resources · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/configure-pod-container/assign-pod-level-resources" data-title="Assign Pod-level CPU and memory resources" data-canonical="https://kubernetes.io/docs/tasks/configure-pod-container/assign-pod-level-resources/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../configure-pod-container.html">Configure Pods and Containers</a></nav></nav>
+        <header class="page-head">
+          <h1>Assign Pod-level CPU and memory resources</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/configure-pod-container/assign-pod-level-resources/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.34; enabled by default
+(<code>PodLevelResources</code>)</p>
+</div>
+<p>This page shows how to specify CPU and memory resources for a Pod at
+pod-level in addition to container-level resource specifications. A
+Kubernetes node allocates resources to a pod based on the pod's resource
+requests. These requests can be defined at the pod level or individually
+for containers within the pod. When both are present, the pod-level
+requests take precedence.</p>
+<p>Similarly, a pod's resource usage is restricted by limits, which can
+also be set at the pod-level or individually for containers within the
+pod. Again, pod-level limits are prioritized when both are present. This
+allows for flexible resource management, enabling you to control
+resource allocation at both the pod and container levels.</p>
+<p>In order to specify the resources at pod-level, it is required to
+enable <code>PodLevelResources</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a>.</p>
+<p>For Pod Level Resources:</p>
+<ul>
+<li>Priority: When both pod-level and container-level resources are
+specified, pod-level resources take precedence.</li>
+<li>QoS: Pod-level resources take precedence in influencing the QoS
+class of the pod.</li>
+<li>OOM Score: The OOM score adjustment calculation considers both
+pod-level and container-level resources.</li>
+<li>Compatibility: Pod-level resources are designed to be compatible
+with existing features.</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a target="_blank" rel="noopener" href="https://kodekloud.com/public-playgrounds">KodeKloud</a>
+Your Kubernetes server must be at or later than version 1.34. To check
+the version, enter <code>kubectl version</code>.</li>
+</ul>
+<p>The <code>PodLevelResources</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a> must be enabled for your control plane and for all nodes in
+your cluster.</p>
+<h2 id="limitations">Limitations</h2>
+<p>For Kubernetes 1.37, pod-level resources have the following
+limitations:</p>
+<ul>
+<li><strong>Resource Types:</strong> Only CPU, memory and hugepages
+resources can be specified at pod-level.</li>
+<li><strong>Operating System:</strong> Pod-level resources are not
+supported for Windows pods.</li>
+<li><strong>Resource Managers:</strong> The Topology Manager, Memory
+Manager and CPU Manager support pod-level resources when the
+<code>PodLevelResourceManagers</code> <a
+href="../../reference/command-line-tools-reference/feature-gates.html">feature
+gate</a> is enabled. See <a
+href="../../concepts/resource-management/resource-managers.html#pod-level-resource-managers">Pod-level
+resource managers</a> for more details. Without this feature gate
+enabled, they do not align pods and containers based on pod-level
+resources.</li>
+<li><strong>In-Place Resize:</strong> <a
+href="resize-container-resources.html">In-place
+resize</a> of pod-level resources requires the
+<code>InPlacePodLevelResourcesVerticalScaling</code> feature gate, which
+is alpha in Kubernetes 1.37. For more details, see <a
+href="resize-pod-resources.html">Resize
+Pod CPU and Memory Resources</a>.</li>
+</ul>
+<h2 id="create-a-namespace">Create a namespace</h2>
+<p>Create a namespace so that the resources you create in this exercise
+are isolated from the rest of your cluster.</p>
+<pre class="shell"><code>kubectl create namespace pod-resources-example</code></pre>
+<h2
+id="create-a-pod-with-memory-requests-and-limits-at-pod-level">Create a
+pod with memory requests and limits at pod-level</h2>
+<p>To specify memory requests for a Pod at pod-level, include the
+<code>resources.requests.memory</code> field in the Pod spec manifest.
+To specify a memory limit, include
+<code>resources.limits.memory</code>.</p>
+<p>In this exercise, you create a Pod that has one Container. The Pod
+has a memory request of 100 MiB and a memory limit of 200 MiB. Here's
+the configuration file for the Pod:</p>
+<div class="code-sample">
+<p><code>pods/resource/pod-level-memory-request-limit.yaml</code></p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> pod-resources-example</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
+<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> memory-demo-ctr</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;stress&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;--vm&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-bytes&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;150M&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;--vm-hang&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;1&quot;</span><span class="kw">]</span></span></code></pre></div>
+</div>
+<p>The <code>args</code> section in the manifest provides arguments for
+the container when it starts. The <code>"--vm-bytes", "150M"</code>
+arguments tell the Container to attempt to allocate 150 MiB of
+memory.</p>
+<p>Create the Pod:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/resource/pod-level-memory-request-limit.yaml --namespace=pod-resources-example</code></pre>
+<p>Verify that the Pod is running:</p>
+<pre class="shell"><code>kubectl get pod memory-demo --namespace=pod-resources-example</code></pre>
+<p>View detailed information about the Pod:</p>
+<pre class="shell"><code>kubectl get pod memory-demo --output=yaml --namespace=pod-resources-example</code></pre>
+<p>The output shows that the Pod has a memory request of 100 MiB and a
+memory limit of 200 MiB.</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
+<span class="er">spec:</span></span>
+<span class="er">  containers:</span></span>
+<span class="er">  ...</span></span>
+<span class="er">  resources:</span></span>
+<span class="er">    requests:</span></span>
+<span class="er">      memory: 100Mi</span></span>
+<span class="er">    limits:</span></span>
+<span class="er">      memory: 200Mi</span></span>
+<span class="er">...</span></span></code></pre></div>
+<p>Run <code>kubectl top</code> to fetch the metrics for the pod:</p>
+<pre class="shell"><code>kubectl top pod memory-demo --namespace=pod-resources-example</code></pre>
+<p>The output shows that the Pod is using about 162,900,000 bytes of
+memory, which is about 150 MiB. This is greater than the Pod's 100 MiB
+request, but within the Pod's 200 MiB limit.</p>
+<pre><code>NAME                        CPU(cores)   MEMORY(bytes)
+memory-demo                 &lt;something&gt;  162856960</code></pre>
+<h2 id="create-a-pod-with-cpu-requests-and-limits-at-pod-level">Create a
+pod with CPU requests and limits at pod-level</h2>
+<p>To specify a CPU request for a Pod, include the
+<code>resources.requests.cpu</code> field in the Pod spec manifest. To
+specify a CPU limit, include <code>resources.limits.cpu</code>.</p>
+<p>In this exercise, you create a Pod that has one container. The Pod
+has a request of 0.5 CPU and a limit of 1 CPU. Here is the configuration
+file for the Pod:</p>
+<div class="code-sample">
+<p><code>pods/resource/pod-level-cpu-request-limit.yaml</code></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu-demo</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> pod-resources-example</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.5&quot;</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> cpu-demo-ctr</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> vish/stress</span></span>
+<span class="at">    </span><span class="fu">args</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">-cpus</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="st">&quot;2&quot;</span></span></code></pre></div>
+</div>
+<p>The <code>args</code> section of the configuration file provides
+arguments for the container when it starts. The <code>-cpus "2"</code>
+argument tells the Container to attempt to use 2 CPUs.</p>
+<p>Create the Pod:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/resource/pod-level-cpu-request-limit.yaml --namespace=pod-resources-example</code></pre>
+<p>Verify that the Pod is running:</p>
+<pre class="shell"><code>kubectl get pod cpu-demo --namespace=pod-resources-example</code></pre>
+<p>View detailed information about the Pod:</p>
+<pre class="shell"><code>kubectl get pod cpu-demo --output=yaml --namespace=pod-resources-example</code></pre>
+<p>The output shows that the Pod has a CPU request of 500 milliCPU and a
+CPU limit of 1 CPU.</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  ...</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> 500m</span></span></code></pre></div>
+<p>Use <code>kubectl top</code> to fetch the metrics for the Pod:</p>
+<pre class="shell"><code>kubectl top pod cpu-demo --namespace=pod-resources-example</code></pre>
+<p>This example output shows that the Pod is using 974 milliCPU, which
+is slightly less than the limit of 1 CPU specified in the Pod
+configuration.</p>
+<pre><code>NAME                        CPU(cores)   MEMORY(bytes)
+cpu-demo                    974m         &lt;something&gt;</code></pre>
+<p>Recall that by setting <code>-cpu "2"</code>, you configured the
+Container to attempt to use 2 CPUs, but the Container is only being
+allowed to use about 1 CPU. The container's CPU use is being throttled,
+because the container is attempting to use more CPU resources than the
+Pod CPU limit.</p>
+<h2
+id="create-a-pod-with-resource-requests-and-limits-at-both-pod-level-and-container-level">Create
+a pod with resource requests and limits at both pod-level and
+container-level</h2>
+<p>To assign CPU and memory resources to a Pod, you can specify them at
+both the pod level and the container level. Include the
+<code>resources</code> field in the Pod spec to define resources for the
+entire Pod. Additionally, include the <code>resources</code> field
+within container's specification in the Pod's manifest to set
+container-specific resource requirements.</p>
+<p>In this exercise, you'll create a Pod with two containers to explore
+the interaction of pod-level and container-level resource
+specifications. The Pod itself will have defined CPU requests and
+limits, while only one of the containers will have its own explicit
+resource requests and limits. The other container will inherit the
+resource constraints from the pod-level settings. Here's the
+configuration file for the Pod:</p>
+<div class="code-sample">
+<p><code>pods/resource/pod-level-resources.yaml</code></p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-resources-demo</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> pod-resources-example</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
+<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;200Mi&quot;</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
+<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-resources-demo-ctr-1</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.5&quot;</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;100Mi&quot;</span></span>
+<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;0.5&quot;</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;50Mi&quot;</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> pod-resources-demo-ctr-2</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> fedora</span></span>
+<span class="at">    </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">sleep</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="at">inf</span></span></code></pre></div>
+</div>
+<p>Create the Pod:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/pods/resource/pod-level-resources.yaml --namespace=pod-resources-example</code></pre>
+<p>Verify that the Pod Container is running:</p>
+<pre class="shell"><code>kubectl get pod pod-resources-demo --namespace=pod-resources-example</code></pre>
+<p>View detailed information about the Pod:</p>
+<pre class="shell"><code>kubectl get pod pod-resources-demo --output=yaml --namespace=pod-resources-example</code></pre>
+<p>The output shows that one container in the Pod has a memory request
+of 50 MiB and a CPU request of 0.5 cores, with a memory limit of 100 MiB
+and a CPU limit of 0.5 cores. The Pod itself has a memory request of 100
+MiB and a CPU request of 1 core, and a memory limit of 200 MiB and a CPU
+limit of 1 core.</p>
+<div class="sourceCode" id="cb20"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="co">...</span></span>
+<span class="er">  containers:</span></span>
+<span class="er">  -</span></span>
+<span class="er">    name: pod-resources-demo-ctr-1</span></span>
+<span class="er">    resources:</span></span>
+<span class="er">      limits:</span></span>
+<span class="er">        cpu: 500m</span></span>
+<span class="er">        memory: 100Mi</span></span>
+<span class="er">      requests:</span></span>
+<span class="er">        cpu: 500m</span></span>
+<span class="er">        memory: 50Mi</span></span>
+<span class="er">...</span></span>
+<span class="er">  -</span></span>
+<span class="er">    name: pod-resources-demo-ctr-2</span></span>
+<span class="er">    resources: {</span><span class="kw">}</span></span>
+<span class="co">...</span></span>
+<span class="er">  resources:</span></span>
+<span class="er">    limits:</span></span>
+<span class="er">      cpu: &quot;</span><span class="st">1&quot;</span></span>
+<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 200Mi</span></span>
+<span class="at">    </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;1&quot;</span></span>
+<span class="at">      </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 100Mi</span></span>
+<span class="co">...</span></span></code></pre></div>
+<p>Since pod-level requests and limits are specified, the request
+guarantees for both containers in the pod will be equal 1 core or CPU
+and 100Mi of memory. Additionally, both containers together won't be
+able to use more resources than specified in the pod-level limits,
+ensuring they cannot exceed a combined total of 200 MiB of memory and 1
+core of CPU.</p>
+<h2 id="clean-up">Clean up</h2>
+<p>Delete your namespace:</p>
+<pre class="shell"><code>kubectl delete namespace pod-resources-example</code></pre>
+<h2 id="what-s-next">What's next</h2>
+<h3 id="for-application-developers">For application developers</h3>
+<ul>
+<li><p><a
+href="assign-memory-resource.html">Assign
+Memory Resources to Containers and Pods</a></p></li>
+<li><p><a
+href="assign-cpu-resource.html">Assign
+CPU Resources to Containers and Pods</a></p></li>
+</ul>
+<h3 id="for-cluster-administrators">For cluster administrators</h3>
+<ul>
+<li><p><a
+href="../administer-cluster/manage-resources/memory-default-namespace.html">Configure
+Default Memory Requests and Limits for a Namespace</a></p></li>
+<li><p><a
+href="../administer-cluster/manage-resources/cpu-default-namespace.html">Configure
+Default CPU Requests and Limits for a Namespace</a></p></li>
+<li><p><a
+href="../administer-cluster/manage-resources/memory-constraint-namespace.html">Configure
+Minimum and Maximum Memory Constraints for a Namespace</a></p></li>
+<li><p><a
+href="../administer-cluster/manage-resources/cpu-constraint-namespace.html">Configure
+Minimum and Maximum CPU Constraints for a Namespace</a></p></li>
+<li><p><a
+href="../administer-cluster/manage-resources/quota-memory-cpu-namespace.html">Configure
+Memory and CPU Quotas for a Namespace</a></p></li>
+<li><p><a
+href="../../concepts/resource-management/resource-managers.html#pod-level-resource-managers">Pod-level
+resource managers</a></p></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="assign-resources/access-dra-device-metadata.html"><span>Previous</span>Access DRA Device Metadata</a><a class="page-nav-link next" href="configure-gmsa.html"><span>Next</span>Configure GMSA for Windows Pods and containers</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#limitations">Limitations</a></li><li class="toc-l2"><a href="#create-a-namespace">Create a namespace</a></li><li class="toc-l2"><a href="#create-a-pod-with-memory-requests-and-limits-at-pod-level">Create a pod with memory requests and limits at pod-level</a></li><li class="toc-l2"><a href="#create-a-pod-with-cpu-requests-and-limits-at-pod-level">Create a pod with CPU requests and limits at pod-level</a></li><li class="toc-l2"><a href="#create-a-pod-with-resource-requests-and-limits-at-both-pod-level-and-container-level">Create a pod with resource requests and limits at both pod-level and container-level</a></li><li class="toc-l2"><a href="#clean-up">Clean up</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li><li class="toc-l3"><a href="#for-application-developers">For application developers</a></li><li class="toc-l3"><a href="#for-cluster-administrators">For cluster administrators</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

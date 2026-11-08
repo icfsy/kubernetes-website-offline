@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apply Pod Security Standards at the Cluster Level · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/security/cluster-level-pss" data-title="Apply Pod Security Standards at the Cluster Level" data-canonical="https://kubernetes.io/docs/tutorials/security/cluster-level-pss/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../security.html">Security</a></nav></nav>
+        <header class="page-head">
+          <h1>Apply Pod Security Standards at the Cluster Level</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/security/cluster-level-pss/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>This tutorial applies only for new clusters.</p>
+</div>
+<p>Pod Security is an admission controller that carries out checks
+against the Kubernetes <a
+href="../../concepts/security/pod-security-standards.html">Pod Security
+Standards</a> when new pods are created. It is a feature GA'ed in v1.25.
+This tutorial shows you how to enforce the <code>baseline</code> Pod
+Security Standard at the cluster level which applies a standard
+configuration to all namespaces in a cluster.</p>
+<p>To apply Pod Security Standards to specific namespaces, refer to <a
+href="ns-level-pss.html">Apply Pod Security
+Standards at the namespace level</a>.</p>
+<p>If you are running a version of Kubernetes other than v1.37, check
+the documentation for that version.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>Install the following on your workstation:</p>
+<ul>
+<li><a
+href="https://kind.sigs.k8s.io/docs/user/quick-start/#installation">kind</a></li>
+<li><a href="../../tasks/tools.html">kubectl</a></li>
+</ul>
+<p>This tutorial demonstrates what you can configure for a Kubernetes
+cluster that you fully control. If you are learning how to configure Pod
+Security Admission for a managed cluster where you are not able to
+configure the control plane, read <a
+href="ns-level-pss.html">Apply Pod Security
+Standards at the namespace level</a>.</p>
+<h2 id="choose-the-right-pod-security-standard-to-apply">Choose the
+right Pod Security Standard to apply</h2>
+<p><a href="../../concepts/security/pod-security-admission.html">Pod
+Security Admission</a> lets you apply built-in <a
+href="../../concepts/security/pod-security-standards.html">Pod Security
+Standards</a> with the following modes: <code>enforce</code>,
+<code>audit</code>, and <code>warn</code>.</p>
+<p>To gather information that helps you to choose the Pod Security
+Standards that are most appropriate for your configuration, do the
+following:</p>
+<ol type="1">
+<li><p>Create a cluster with no Pod Security Standards applied:</p>
+<pre class="shell"><code>kind create cluster --name psa-wo-cluster-pss</code></pre>
+<p>The output is similar to:</p>
+<pre><code>Creating cluster &quot;psa-wo-cluster-pss&quot; ...
+✓ Ensuring node image (kindest/node:v1.37.1) 🖼
+✓ Preparing nodes 📦
+✓ Writing configuration 📜
+✓ Starting control-plane 🕹️
+✓ Installing CNI 🔌
+✓ Installing StorageClass 💾
+Set kubectl context to &quot;kind-psa-wo-cluster-pss&quot;
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-psa-wo-cluster-pss
+
+Thanks for using kind! 😊</code></pre></li>
+<li><p>Set the kubectl context to the new cluster:</p>
+<pre class="shell"><code>kubectl cluster-info --context kind-psa-wo-cluster-pss</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>Kubernetes control plane is running at https://127.0.0.1:61350
+
+CoreDNS is running at https://127.0.0.1:61350/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use &#39;kubectl cluster-info dump&#39;.</code></pre></li>
+<li><p>Get a list of namespaces in the cluster:</p>
+<pre class="shell"><code>kubectl get ns</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>NAME                 STATUS   AGE
+default              Active   9m30s
+kube-node-lease      Active   9m32s
+kube-public          Active   9m32s
+kube-system          Active   9m32s
+local-path-storage   Active   9m26s</code></pre></li>
+<li><p>Use <code>--dry-run=server</code> to understand what happens when
+different Pod Security Standards are applied:</p>
+<ol type="1">
+<li><p>Privileged</p>
+<pre class="shell"><code>kubectl label --dry-run=server --overwrite ns --all \
+pod-security.kubernetes.io/enforce=privileged</code></pre>
+<p>The output is similar to:</p>
+<pre><code>namespace/default labeled
+namespace/kube-node-lease labeled
+namespace/kube-public labeled
+namespace/kube-system labeled
+namespace/local-path-storage labeled</code></pre></li>
+<li><p>Baseline</p>
+<pre class="shell"><code>kubectl label --dry-run=server --overwrite ns --all \
+pod-security.kubernetes.io/enforce=baseline</code></pre>
+<p>The output is similar to:</p>
+<pre><code>namespace/default labeled
+namespace/kube-node-lease labeled
+namespace/kube-public labeled
+Warning: existing pods in namespace &quot;kube-system&quot; violate the new PodSecurity enforce level &quot;baseline:latest&quot;
+Warning: etcd-psa-wo-cluster-pss-control-plane (and 3 other pods): host namespaces, hostPath volumes
+Warning: kindnet-vzj42: non-default capabilities, host namespaces, hostPath volumes
+Warning: kube-proxy-m6hwf: host namespaces, hostPath volumes, privileged
+namespace/kube-system labeled
+namespace/local-path-storage labeled</code></pre></li>
+<li><p>Restricted</p>
+<pre class="shell"><code>kubectl label --dry-run=server --overwrite ns --all \
+pod-security.kubernetes.io/enforce=restricted</code></pre>
+<p>The output is similar to:</p>
+<pre><code>namespace/default labeled
+namespace/kube-node-lease labeled
+namespace/kube-public labeled
+Warning: existing pods in namespace &quot;kube-system&quot; violate the new PodSecurity enforce level &quot;restricted:latest&quot;
+Warning: coredns-7bb9c7b568-hsptc (and 1 other pod): unrestricted capabilities, runAsNonRoot != true, seccompProfile
+Warning: etcd-psa-wo-cluster-pss-control-plane (and 3 other pods): host namespaces, hostPath volumes, allowPrivilegeEscalation != false, unrestricted capabilities, restricted volume types, runAsNonRoot != true
+Warning: kindnet-vzj42: non-default capabilities, host namespaces, hostPath volumes, allowPrivilegeEscalation != false, unrestricted capabilities, restricted volume types, runAsNonRoot != true, seccompProfile
+Warning: kube-proxy-m6hwf: host namespaces, hostPath volumes, privileged, allowPrivilegeEscalation != false, unrestricted capabilities, restricted volume types, runAsNonRoot != true, seccompProfile
+namespace/kube-system labeled
+Warning: existing pods in namespace &quot;local-path-storage&quot; violate the new PodSecurity enforce level &quot;restricted:latest&quot;
+Warning: local-path-provisioner-d6d9f7ffc-lw9lh: allowPrivilegeEscalation != false, unrestricted capabilities, runAsNonRoot != true, seccompProfile
+namespace/local-path-storage labeled</code></pre></li>
+</ol></li>
+</ol>
+<p>From the previous output, you'll notice that applying the
+<code>privileged</code> Pod Security Standard shows no warnings for any
+namespaces. However, <code>baseline</code> and <code>restricted</code>
+standards both have warnings, specifically in the
+<code>kube-system</code> namespace.</p>
+<h2 id="set-modes-versions-and-standards">Set modes, versions and
+standards</h2>
+<p>In this section, you apply the following Pod Security Standards to
+the <code>latest</code> version:</p>
+<ul>
+<li><code>baseline</code> standard in <code>enforce</code> mode.</li>
+<li><code>restricted</code> standard in <code>warn</code> and
+<code>audit</code> mode.</li>
+</ul>
+<p>The <code>baseline</code> Pod Security Standard provides a convenient
+middle ground that allows keeping the exemption list short and prevents
+known privilege escalations.</p>
+<p>Additionally, to prevent pods from failing in
+<code>kube-system</code>, you'll exempt the namespace from having Pod
+Security Standards applied.</p>
+<p>When you implement Pod Security Admission in your own environment,
+consider the following:</p>
+<ol type="1">
+<li><p>Based on the risk posture applied to a cluster, a stricter Pod
+Security Standard like <code>restricted</code> might be a better
+choice.</p></li>
+<li><p>Exempting the <code>kube-system</code> namespace allows pods to
+run as <code>privileged</code> in this namespace. For real world use,
+the Kubernetes project strongly recommends that you apply strict RBAC
+policies that limit access to <code>kube-system</code>, following the
+principle of least privilege. To implement the preceding standards, do
+the following:</p></li>
+<li><p>Create a configuration file that can be consumed by the Pod
+Security Admission Controller to implement these Pod Security
+Standards:</p>
+<pre><code>mkdir -p /tmp/pss
+cat &lt;&lt;EOF &gt; /tmp/pss/cluster-level-pss.yaml
+apiVersion: apiserver.config.k8s.io/v1
+kind: AdmissionConfiguration
+plugins:
+- name: PodSecurity
+  configuration:
+    apiVersion: pod-security.admission.config.k8s.io/v1
+    kind: PodSecurityConfiguration
+    defaults:
+      enforce: &quot;baseline&quot;
+      enforce-version: &quot;latest&quot;
+      audit: &quot;restricted&quot;
+      audit-version: &quot;latest&quot;
+      warn: &quot;restricted&quot;
+      warn-version: &quot;latest&quot;
+    exemptions:
+      usernames: []
+      runtimeClasses: []
+      namespaces: [kube-system]
+EOF</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p><code>pod-security.admission.config.k8s.io/v1</code> configuration
+requires v1.25+. For v1.23 and v1.24, use <a
+href="https://v1-24.docs.kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-admission-controller/">v1beta1</a>.
+For v1.22, use <a
+href="https://v1-22.docs.kubernetes.io/docs/tasks/configure-pod-container/enforce-standards-admission-controller/">v1alpha1</a>.</p>
+</div></li>
+<li><p>Configure the API server to consume this file during cluster
+creation:</p>
+<pre><code>cat &lt;&lt;EOF &gt; /tmp/pss/cluster-config.yaml
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+        extraArgs:
+          admission-control-config-file: /etc/config/cluster-level-pss.yaml
+        extraVolumes:
+          - name: accf
+            hostPath: /etc/config
+            mountPath: /etc/config
+            readOnly: false
+            pathType: &quot;DirectoryOrCreate&quot;
+  extraMounts:
+  - hostPath: /tmp/pss
+    containerPath: /etc/config
+    # optional: if set, the mount is read-only.
+    # default false
+    readOnly: false
+    # optional: if set, the mount needs SELinux relabeling.
+    # default false
+    selinuxRelabel: false
+    # optional: set propagation mode (None, HostToContainer or Bidirectional)
+    # see https://kubernetes.io/docs/concepts/storage/volumes/#mount-propagation
+    # default None
+    propagation: None
+EOF</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>If you use Docker Desktop with <em>kind</em> on macOS, you can add
+<code>/tmp</code> as a Shared Directory under the menu item
+<strong>Preferences &gt; Resources &gt; File Sharing</strong>.</p>
+</div></li>
+<li><p>Create a cluster that uses Pod Security Admission to apply these
+Pod Security Standards:</p>
+<pre class="shell"><code>kind create cluster --name psa-with-cluster-pss --config /tmp/pss/cluster-config.yaml</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>Creating cluster &quot;psa-with-cluster-pss&quot; ...
+ ✓ Ensuring node image (kindest/node:v1.37.1) 🖼
+ ✓ Preparing nodes 📦
+ ✓ Writing configuration 📜
+ ✓ Starting control-plane 🕹️
+ ✓ Installing CNI 🔌
+ ✓ Installing StorageClass 💾
+Set kubectl context to &quot;kind-psa-with-cluster-pss&quot;
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-psa-with-cluster-pss
+
+Have a question, bug, or feature request? Let us know! https://kind.sigs.k8s.io/#community 🙂</code></pre></li>
+<li><p>Point kubectl to the cluster:</p>
+<pre class="shell"><code>kubectl cluster-info --context kind-psa-with-cluster-pss</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>Kubernetes control plane is running at https://127.0.0.1:63855
+CoreDNS is running at https://127.0.0.1:63855/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+To further debug and diagnose cluster problems, use &#39;kubectl cluster-info dump&#39;.</code></pre></li>
+<li><p>Create a Pod in the default namespace:</p>
+<p>::: {.code-sample}
+<code>security/example-baseline-pod.yaml</code></p>
+<div class="sourceCode" id="cb19"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">image</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">      </span><span class="fu">name</span><span class="kw">:</span><span class="at"> nginx</span></span>
+<span class="at">      </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span></code></pre></div>
+<p>:::</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/security/example-baseline-pod.yaml</code></pre>
+<p>The pod is started normally, but the output includes a warning:</p>
+<pre><code>Warning: would violate PodSecurity &quot;restricted:latest&quot;: allowPrivilegeEscalation != false (container &quot;nginx&quot; must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container &quot;nginx&quot; must set securityContext.capabilities.drop=[&quot;ALL&quot;]), runAsNonRoot != true (pod or container &quot;nginx&quot; must set securityContext.runAsNonRoot=true), seccompProfile (pod or container &quot;nginx&quot; must set securityContext.seccompProfile.type to &quot;RuntimeDefault&quot; or &quot;Localhost&quot;)
+pod/nginx created</code></pre></li>
+</ol>
+<h2 id="clean-up">Clean up</h2>
+<p>Now delete the clusters which you created above by running the
+following command:</p>
+<pre class="shell"><code>kind delete cluster --name psa-with-cluster-pss</code></pre>
+<pre class="shell"><code>kind delete cluster --name psa-wo-cluster-pss</code></pre>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Run a <a
+href="https://kubernetes.io/examples/security/kind-with-cluster-level-baseline-pod-security.sh">shell
+script</a> to perform all the preceding steps at once:
+<ol type="1">
+<li>Create a Pod Security Standards based cluster level
+Configuration</li>
+<li>Create a file to let API server consume this configuration</li>
+<li>Create a cluster that creates an API server with this
+configuration</li>
+<li>Set kubectl context to this new cluster</li>
+<li>Create a minimal pod yaml file</li>
+<li>Apply this file to create a Pod in the new cluster</li>
+</ol></li>
+<li><a href="../../concepts/security/pod-security-admission.html">Pod
+Security Admission</a></li>
+<li><a href="../../concepts/security/pod-security-standards.html">Pod
+Security Standards</a></li>
+<li><a href="ns-level-pss.html">Apply Pod Security
+Standards at the namespace level</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../security.html"><span>Previous</span>Security</a><a class="page-nav-link next" href="ns-level-pss.html"><span>Next</span>Apply Pod Security Standards at the Namespace Level</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#choose-the-right-pod-security-standard-to-apply">Choose the right Pod Security Standard to apply</a></li><li class="toc-l2"><a href="#set-modes-versions-and-standards">Set modes, versions and standards</a></li><li class="toc-l2"><a href="#clean-up">Clean up</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

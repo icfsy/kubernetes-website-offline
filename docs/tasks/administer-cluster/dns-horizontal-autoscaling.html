@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autoscale the DNS Service in a Cluster · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tasks/administer-cluster/dns-horizontal-autoscaling" data-title="Autoscale the DNS Service in a Cluster" data-canonical="https://kubernetes.io/docs/tasks/administer-cluster/dns-horizontal-autoscaling/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tasks.html">Tasks</a><span>/</span><a href="../administer-cluster.html">Administer a Cluster</a></nav></nav>
+        <header class="page-head">
+          <h1>Autoscale the DNS Service in a Cluster</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/administer-cluster/dns-horizontal-autoscaling/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page shows how to enable and configure autoscaling of the DNS
+service in your Kubernetes cluster.</p>
+<h2 id="before-you-begin">Before you begin</h2>
+<ul>
+<li><p>You need to have a Kubernetes cluster, and the kubectl
+command-line tool must be configured to communicate with your cluster.
+It is recommended to run this tutorial on a cluster with at least two
+nodes that are not acting as control plane hosts. If you do not already
+have a cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p></li>
+<li><p><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></p></li>
+<li><p><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></p></li>
+<li><p><a target="_blank" rel="noopener" href="https://kodekloud.com/public-playgrounds">KodeKloud</a>
+To check the version, enter <code>kubectl version</code>.</p></li>
+<li><p>This guide assumes your nodes use the AMD64 or Intel 64 CPU
+architecture.</p></li>
+<li><p>Make sure <a
+href="../../concepts/services-networking/dns-pod-service.html">Kubernetes
+DNS</a> is enabled.</p></li>
+</ul>
+<h2
+id="determining-whether-dns-horizontal-autoscaling-is-already-enabled">Determine
+whether DNS horizontal autoscaling is already enabled</h2>
+<p>List the <a class="glossary-term" href="../../reference/glossary.html#term-deployment" title="Glossary: deployment">Deployments</a> in your cluster in the
+kube-system <a class="glossary-term" href="../../reference/glossary.html#term-namespace" title="Glossary: namespace">namespace</a>:</p>
+<pre class="shell"><code>kubectl get deployment --namespace=kube-system</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+...
+kube-dns-autoscaler    1/1     1            1           ...
+...</code></pre>
+<p>If you see "kube-dns-autoscaler" in the output, DNS horizontal
+autoscaling is already enabled, and you can skip to <a
+href="#tuning-autoscaling-parameters">Tuning autoscaling
+parameters</a>.</p>
+<h2 id="find-scaling-target">Get the name of your DNS Deployment</h2>
+<p>List the DNS deployments in your cluster in the kube-system
+namespace:</p>
+<pre class="shell"><code>kubectl get deployment -l k8s-app=kube-dns --namespace=kube-system</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>NAME      READY   UP-TO-DATE   AVAILABLE   AGE
+...
+coredns   2/2     2            2           ...
+...</code></pre>
+<p>If you don't see a Deployment for DNS services, you can also look for
+it by name:</p>
+<pre class="shell"><code>kubectl get deployment --namespace=kube-system</code></pre>
+<p>and look for a deployment named <code>coredns</code>.</p>
+<p>Your scale target is</p>
+<pre><code>Deployment/&lt;your-deployment-name&gt;</code></pre>
+<p>where <code>&lt;your-deployment-name&gt;</code> is the name
+of your DNS Deployment. For example, if the name of your Deployment for
+DNS is coredns, your scale target is Deployment/coredns.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>CoreDNS is the default DNS service for Kubernetes. CoreDNS sets the
+label <code>k8s-app=kube-dns</code> so that it can work in clusters that
+originally used kube-dns.</p>
+</div>
+<h2 id="enablng-dns-horizontal-autoscaling">Enable DNS horizontal
+autoscaling</h2>
+<p>In this section, you create a new Deployment. The Pods in the
+Deployment run a container based on the
+<code>cluster-proportional-autoscaler-amd64</code> image.</p>
+<p>Create a file named <code>dns-horizontal-autoscaler.yaml</code> with
+this content:</p>
+<div class="code-sample">
+<p><code>admin/dns/dns-horizontal-autoscaler.yaml</code></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
+<span class="pp">---</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-dns-autoscaler</span></span>
+<span class="fu">rules</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;nodes&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;list&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;watch&quot;</span><span class="kw">]</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;replicationcontrollers/scale&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">]</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;apps&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;deployments/scale&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;replicasets/scale&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;update&quot;</span><span class="kw">]</span></span>
+<span class="co"># Remove the configmaps rule once below issue is fixed:</span></span>
+<span class="co"># kubernetes-incubator/cluster-proportional-autoscaler#16</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">apiGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;configmaps&quot;</span><span class="kw">]</span></span>
+<span class="at">    </span><span class="fu">verbs</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;get&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;create&quot;</span><span class="kw">]</span></span>
+<span class="pp">---</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRoleBinding</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io/v1</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-dns-autoscaler</span></span>
+<span class="fu">subjects</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ServiceAccount</span></span>
+<span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
+<span class="at">    </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
+<span class="fu">roleRef</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterRole</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> system:kube-dns-autoscaler</span></span>
+<span class="at">  </span><span class="fu">apiGroup</span><span class="kw">:</span><span class="at"> rbac.authorization.k8s.io</span></span>
+</span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
+<span class="at">  </span><span class="fu">namespace</span><span class="kw">:</span><span class="at"> kube-system</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
+<span class="at">    </span><span class="fu">kubernetes.io/cluster-service</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;true&quot;</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">k8s-app</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">priorityClassName</span><span class="kw">:</span><span class="at"> system-cluster-critical</span></span>
+<span class="at">      </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">seccompProfile</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="fu">type</span><span class="kw">:</span><span class="at"> RuntimeDefault</span></span>
+<span class="at">        </span><span class="fu">supplementalGroups</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="dv">65534</span><span class="at"> </span><span class="kw">]</span></span>
+<span class="at">        </span><span class="fu">fsGroup</span><span class="kw">:</span><span class="at"> </span><span class="dv">65534</span></span>
+<span class="at">      </span><span class="fu">nodeSelector</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">kubernetes.io/os</span><span class="kw">:</span><span class="at"> linux</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> autoscaler</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> registry.k8s.io/cpa/cluster-proportional-autoscaler:1.8.4</span></span>
+<span class="at">        </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">            </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">                </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;20m&quot;</span></span>
+<span class="at">                </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;10Mi&quot;</span></span>
+<span class="at">        </span><span class="fu">command</span><span class="kw">:</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">/cluster-proportional-autoscaler</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">--namespace=kube-system</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">--configmap=kube-dns-autoscaler</span></span>
+<span class="at">          </span><span class="co"># Should keep target in sync with cluster/addons/dns/coredns/coredns.yaml.base</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">--target=&lt;SCALE_TARGET&gt;</span></span>
+<span class="at">          </span><span class="co"># When cluster is using large nodes(with more cores), &quot;coresPerReplica&quot; should dominate.</span></span>
+<span class="at">          </span><span class="co"># If using small nodes, &quot;nodesPerReplica&quot; should dominate.</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">--default-params={&quot;linear&quot;:{&quot;coresPerReplica&quot;:256,&quot;nodesPerReplica&quot;:16,&quot;preventSinglePointFailure&quot;:true,&quot;includeUnschedulableNodes&quot;:true}}</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">--logtostderr=true</span></span>
+<span class="at">          </span><span class="kw">- </span><span class="at">--v=2</span></span>
+<span class="at">      </span><span class="fu">tolerations</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">key</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;CriticalAddonsOnly&quot;</span></span>
+<span class="at">        </span><span class="fu">operator</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;Exists&quot;</span></span>
+<span class="at">      </span><span class="fu">serviceAccountName</span><span class="kw">:</span><span class="at"> kube-dns-autoscaler</span></span></code></pre></div>
+</div>
+<p>In the file, replace <code>&lt;SCALE_TARGET&gt;</code> with your
+scale target.</p>
+<p>Go to the directory that contains your configuration file, and enter
+this command to create the Deployment:</p>
+<pre class="shell"><code>kubectl apply -f dns-horizontal-autoscaler.yaml</code></pre>
+<p>The output of a successful command is:</p>
+<pre><code>deployment.apps/kube-dns-autoscaler created</code></pre>
+<p>DNS horizontal autoscaling is now enabled.</p>
+<h2 id="tuning-autoscaling-parameters">Tune DNS autoscaling
+parameters</h2>
+<p>Verify that the kube-dns-autoscaler <a class="glossary-term" href="../../reference/glossary.html#term-configmap" title="Glossary: configmap">ConfigMap</a> exists:</p>
+<pre class="shell"><code>kubectl get configmap --namespace=kube-system</code></pre>
+<p>The output is similar to this:</p>
+<pre><code>NAME                  DATA      AGE
+...
+kube-dns-autoscaler   1         ...
+...</code></pre>
+<p>Modify the data in the ConfigMap:</p>
+<pre class="shell"><code>kubectl edit configmap kube-dns-autoscaler --namespace=kube-system</code></pre>
+<p>Look for this line:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">linear</span><span class="kw">:</span><span class="at"> </span><span class="st">&#39;{&quot;coresPerReplica&quot;:256,&quot;min&quot;:1,&quot;nodesPerReplica&quot;:16}&#39;</span></span></code></pre></div>
+<p>Modify the fields according to your needs. The "min" field indicates
+the minimal number of DNS backends. The actual number of backends is
+calculated using this equation:</p>
+<pre><code>replicas = max( ceil( cores × 1/coresPerReplica ) , ceil( nodes × 1/nodesPerReplica ) )</code></pre>
+<p>Note that the values of both <code>coresPerReplica</code> and
+<code>nodesPerReplica</code> are floats.</p>
+<p>The idea is that when a cluster is using nodes that have many cores,
+<code>coresPerReplica</code> dominates. When a cluster is using nodes
+that have fewer cores, <code>nodesPerReplica</code> dominates.</p>
+<p>There are other supported scaling patterns. For details, see <a
+href="https://github.com/kubernetes-sigs/cluster-proportional-autoscaler">cluster-proportional-autoscaler</a>.</p>
+<h2 id="disable-dns-horizontal-autoscaling">Disable DNS horizontal
+autoscaling</h2>
+<p>There are a few options for tuning DNS horizontal autoscaling. Which
+option to use depends on different conditions.</p>
+<h3
+id="option-1-scale-down-the-kube-dns-autoscaler-deployment-to-0-replicas">Option
+1: Scale down the kube-dns-autoscaler deployment to 0 replicas</h3>
+<p>This option works for all situations. Enter this command:</p>
+<pre class="shell"><code>kubectl scale deployment --replicas=0 kube-dns-autoscaler --namespace=kube-system</code></pre>
+<p>The output is:</p>
+<pre><code>deployment.apps/kube-dns-autoscaler scaled</code></pre>
+<p>Verify that the replica count is zero:</p>
+<pre class="shell"><code>kubectl get rs --namespace=kube-system</code></pre>
+<p>The output displays 0 in the DESIRED and CURRENT columns:</p>
+<pre><code>NAME                                  DESIRED   CURRENT   READY   AGE
+...
+kube-dns-autoscaler-6b59789fc8        0         0         0       ...
+...</code></pre>
+<h3 id="option-2-delete-the-kube-dns-autoscaler-deployment">Option 2:
+Delete the kube-dns-autoscaler deployment</h3>
+<p>This option works if kube-dns-autoscaler is under your own control,
+which means no one will re-create it:</p>
+<pre class="shell"><code>kubectl delete deployment kube-dns-autoscaler --namespace=kube-system</code></pre>
+<p>The output is:</p>
+<pre><code>deployment.apps &quot;kube-dns-autoscaler&quot; deleted</code></pre>
+<h3
+id="option-3-delete-the-kube-dns-autoscaler-manifest-file-from-the-master-node">Option
+3: Delete the kube-dns-autoscaler manifest file from the master
+node</h3>
+<p>This option works if kube-dns-autoscaler is under control of the
+(deprecated) <a
+href="https://git.k8s.io/kubernetes/cluster/addons/README.md">Addon
+Manager</a>, and you have write access to the master node.</p>
+<p>Sign in to the master node and delete the corresponding manifest
+file. The common path for this kube-dns-autoscaler is:</p>
+<pre><code>/etc/kubernetes/addons/dns-horizontal-autoscaler/dns-horizontal-autoscaler.yaml</code></pre>
+<p>After the manifest file is deleted, the Addon Manager will delete the
+kube-dns-autoscaler Deployment.</p>
+<h2
+id="understanding-how-dns-horizontal-autoscaling-works">Understanding
+how DNS horizontal autoscaling works</h2>
+<ul>
+<li><p>The cluster-proportional-autoscaler application is deployed
+separately from the DNS service.</p></li>
+<li><p>An autoscaler Pod runs a client that polls the Kubernetes API
+server for the number of nodes and cores in the cluster.</p></li>
+<li><p>A desired replica count is calculated and applied to the DNS
+backends based on the current schedulable nodes and cores and the given
+scaling parameters.</p></li>
+<li><p>The scaling parameters and data points are provided via a
+ConfigMap to the autoscaler, and it refreshes its parameters table every
+poll interval to be up to date with the latest desired scaling
+parameters.</p></li>
+<li><p>Changes to the scaling parameters are allowed without rebuilding
+or restarting the autoscaler Pod.</p></li>
+<li><p>The autoscaler provides a controller interface to support two
+control patterns: <em>linear</em> and <em>ladder</em>.</p></li>
+</ul>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read about <a
+href="guaranteed-scheduling-critical-addon-pods.html">Guaranteed
+Scheduling For Critical Add-On Pods</a>.</li>
+<li>Learn more about the <a
+href="https://github.com/kubernetes-sigs/cluster-proportional-autoscaler">implementation
+of cluster-proportional-autoscaler</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="extended-resource-node.html"><span>Previous</span>Advertise Extended Resources for a Node</a><a class="page-nav-link next" href="change-pv-access-mode-readwriteoncepod.html"><span>Next</span>Change the Access Mode of a PersistentVolume to ReadWriteOncePod</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#determining-whether-dns-horizontal-autoscaling-is-already-enabled">Determine whether DNS horizontal autoscaling is already enabled</a></li><li class="toc-l2"><a href="#find-scaling-target">Get the name of your DNS Deployment</a></li><li class="toc-l2"><a href="#enablng-dns-horizontal-autoscaling">Enable DNS horizontal autoscaling</a></li><li class="toc-l2"><a href="#tuning-autoscaling-parameters">Tune DNS autoscaling parameters</a></li><li class="toc-l2"><a href="#disable-dns-horizontal-autoscaling">Disable DNS horizontal autoscaling</a></li><li class="toc-l3"><a href="#option-1-scale-down-the-kube-dns-autoscaler-deployment-to-0-replicas">Option 1: Scale down the kube-dns-autoscaler deployment to 0 replicas</a></li><li class="toc-l3"><a href="#option-2-delete-the-kube-dns-autoscaler-deployment">Option 2: Delete the kube-dns-autoscaler deployment</a></li><li class="toc-l3"><a href="#option-3-delete-the-kube-dns-autoscaler-manifest-file-from-the-master-node">Option 3: Delete the kube-dns-autoscaler manifest file from the master node</a></li><li class="toc-l2"><a href="#understanding-how-dns-horizontal-autoscaling-works">Understanding how DNS horizontal autoscaling works</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

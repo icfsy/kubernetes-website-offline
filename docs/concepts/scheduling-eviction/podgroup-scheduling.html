@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PodGroup Scheduling · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/scheduling-eviction/podgroup-scheduling" data-title="PodGroup Scheduling" data-canonical="https://kubernetes.io/docs/concepts/scheduling-eviction/podgroup-scheduling/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../scheduling-eviction.html">Scheduling, Preemption and Eviction</a></nav></nav>
+        <header class="page-head">
+          <h1>PodGroup Scheduling</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/scheduling-eviction/podgroup-scheduling/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Beta since Kubernetes v1.37; disabled by default
+(<code>GenericWorkload</code>)</p>
+</div>
+<p>The standard Kubernetes scheduler evaluates Pods sequentially. When
+multiple workloads, such as machine learning training jobs, are
+submitted concurrently, this sequential evaluation can lead to resource
+deadlocks. For example, two competing workloads might each schedule a
+subset of their Pods, consuming cluster capacity but leaving neither
+workload with enough resources to fully start.</p>
+<p>The PodGroup scheduling cycle evaluates a group of Pods as a single
+unit. The scheduler attempts to find placements for all Pods in the
+group simultaneously. If it cannot find sufficient resources to satisfy
+the entire group's requirements, none of the Pods are bound.</p>
+<p>Additionally, treating the group as a unified entity establishes a
+foundational architecture that simplifies the implementation of other
+group-based scheduling features.</p>
+<p>This feature depends on the <a
+href="../workloads/workload-api.html">Workload API</a>. Ensure
+the <code>scheduling.k8s.io/v1beta1</code> <a class="glossary-term" href="../../reference/glossary.html#term-api-group" title="Glossary: api-group">API group</a> is enabled in the cluster.</p>
+<h2 id="podgroup-scheduling-cycle">PodGroup scheduling cycle</h2>
+<p>To support scheduling a group of Pods together, the kube-scheduler
+uses the <strong>PodGroup scheduling cycle</strong>. Instead of
+processing Pods individually and holding them at a
+<code>WaitOnPermit</code> gate, the scheduler evaluates the entire group
+of pending Pods belonging to a specific PodGroup collectively. Rather
+than executing separate scheduling cycles for each Pod, it evaluates
+feasibility for the entire group and moves directly to the binding phase
+afterwards.</p>
+<p>When observing a Pod belonging to a PodGroup, the scheduler
+associates the Pod with that PodGroup rather than adding it directly to
+the scheduling queue. A PodGroup does not enter the scheduling queue
+until the scheduler observes both the PodGroup object and at least one
+Pod belonging to it. When the scheduler pops a PodGroup, it retrieves
+all observed unscheduled Pods in that group. It then sorts them
+deterministically based on priority and the time they were initially
+observed by the scheduler, and initiates the PodGroup scheduling cycle
+as follows:</p>
+<ol type="1">
+<li><p><strong>Snapshotting the cluster state:</strong> When the
+scheduler begins evaluating a PodGroup, it takes a single snapshot of
+the cluster state that lasts for the entire duration of the cycle. This
+ensures the evaluation remains consistent for the whole group and
+prevents race conditions with other events.</p></li>
+<li><p><strong>Finding feasible placements:</strong> The scheduler runs
+the <a href="#podgroup-scheduling-algorithm">PodGroup scheduling
+algorithm</a> to find valid Node placements for the Pods in the
+group.</p></li>
+<li><p><strong>Atomic decision:</strong> Depending on the algorithm's
+outcome, the scheduling decision is applied atomically for the entire
+PodGroup.</p>
+<ul>
+<li><p><strong>Success:</strong> If the scheduler finds sufficient
+resources and valid placements for the Pods (e.g., satisfying the
+<code>minCount</code> constraint for <a
+href="gang-scheduling.html">gang
+scheduling</a>), those Pods proceed directly to the binding cycle with
+their selected nodes. Any remaining unschedulable Pods in the group are
+requeued directly into the active scheduling queue without backoff,
+retaining their previous timestamp so they are re-evaluated immediately
+to attempt preemption.</p>
+<p>Furthermore, if new Pods are added to a PodGroup after others have
+already been scheduled, the cycle evaluates the new Pods while
+accounting for the existing ones.</p></li>
+<li><p><strong>Failure:</strong> If the scheduler cannot find enough
+resources to make the PodGroup feasible (e.g., failing to meet the
+<code>minCount</code> constraint), the entire PodGroup is considered
+unschedulable.</p>
+<p>The scheduler attempts to make a PodGroup schedulable by running the
+<code>PodGroupPostFilter</code> extension point. The
+<code>DefaultPreemption</code> plugin's <code>PodGroupPostFilter</code>
+extenion point runs <a
+href="workload-aware-preemption.html">workload
+aware preemption</a>. If any plugin implementing
+<code>PodGroupPostFilter</code>extension point returns
+<code>Success</code>, no more plugins for
+<code>PodGroupPostFilter</code> extension point are run.</p>
+<p>Even when <code>PodGroupPostFilter</code> plugin returns a
+<code>Success</code>, no Pods are bound, but instead, all are returned
+to the scheduling queue, hoping that the actions taken by
+<code>PodGroupPostFilter</code> make a PodGroup schedulable in the next
+scheduling cycle. Standard scheduling backoff logic applies, allowing
+the PodGroup to be retried later.</p></li>
+</ul></li>
+</ol>
+<p>By using this single-cycle approach, the scheduler avoids inefficient
+bottlenecks where partially scheduled groups reserve cluster capacity
+while waiting indefinitely for the rest of their group to fit.</p>
+<h2 id="podgroup-scheduling-algorithm">PodGroup scheduling
+algorithm</h2>
+<p>The default PodGroup scheduling algorithm relies heavily on the
+baseline Pod-based scheduling algorithm. It iterates over the Pods and
+performs the following for each:</p>
+<ol type="1">
+<li><p>Finds a feasible node using the standard per-Pod filtering and
+scoring phases.</p>
+<ul>
+<li>If the Pod fits, it is temporarily assumed and reserved on the
+selected node until the end of the scheduling algorithm.</li>
+<li>If the Pod cannot fit, the scheduler does not run the
+<code>PostFilter</code> extension point. Instead it relies on
+<code>PodGroupPostFilter</code> extension point executed for the whole
+PodGroup.</li>
+</ul></li>
+<li><p>Checks whether the schedulable Pods meet the group's scheduling
+criteria (e.g., the <code>minCount</code> for <a
+href="gang-scheduling.html">gang
+scheduling</a>) by invoking the <code>PlacementFeasible</code> extension
+point after evaluating each Pod in the group against the cumulative
+scheduling results. If it returns a <code>Success</code> status for any
+Pod, the PodGroup is deemed feasible. If the algorithm processes all
+Pods without achieving a <code>Success</code> status, or if no Pods are
+scheduled during this cycle, the PodGroup is considered
+unschedulable.</p></li>
+</ol>
+<h2 id="placement-scheduling-algorithm">Placement scheduling
+algorithm</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.36; disabled by default
+(<code>TopologyAwareWorkloadScheduling</code>)</p>
+</div>
+<p>Placement scheduling algorithm is an alternative PodGroup scheduling
+algorithm, which uses <a
+href="../../reference/scheduling/config.html#scheduling-plugins">scheduling
+plugins</a> to find the optimal placement for the considered PodGroup.
+Users can accommodate the algorithm to their specific needs by using and
+configuring plugins.</p>
+<p>The algorithm proceeds in three main phases for a given PodGroup:</p>
+<h3 id="phase-1-candidate-placement-generation">Phase 1: Candidate
+placement generation</h3>
+<p>Generates candidate <em>placements</em> (subsets of nodes, that are
+theoretically feasible for PodGroup assignment), for example based on
+the PodGroup's scheduling constraints (which can be defined in the
+PodGroup object).</p>
+<p>This phase executes as extension point:
+<code>PlacementGeneratePlugin</code>.</p>
+<h3 id="phase-2-pod-level-filtering-and-feasibility-check">Phase 2:
+Pod-level filtering and feasibility check</h3>
+<p>Validates each proposed placement, by running a default PodGroup
+scheduling algorithm, to see if the required number of Pods from the
+PodGroup can fit. If they can, the placement is marked as feasible.</p>
+<h3 id="phase-3-placement-scoring-and-selection">Phase 3: Placement
+scoring and selection</h3>
+<p>Scores all feasible placements to select the optimal domain for the
+PodGroup.</p>
+<p>This phase executes as extension point:
+<code>PlacementScorePlugin</code>.</p>
+<h3 id="limitations">Limitations</h3>
+<p>The PodGroup scheduling algorithm relies on specific Pod sorting and
+may fail to find a valid placement that could have been discovered by
+processing the group's Pods in a different order. In particular:</p>
+<ul>
+<li><p>For basic <strong>homogeneous</strong> Pod groups (i.e., those
+where all Pods have identical scheduling requirements and lack inter-Pod
+dependencies like affinity, anti-affinity, or topology spread
+constraints), the algorithm is expected to find a placement if one
+exists.</p></li>
+<li><p>For <strong>heterogeneous</strong> Pod groups, finding a valid
+placement is not guaranteed.</p></li>
+<li><p>For Pod groups with <strong>inter-Pod dependencies</strong>,
+finding a valid placement is not guaranteed.</p></li>
+</ul>
+<p>In addition to the above, for cases involving <strong>intra-group
+dependencies</strong> (e.g., when the schedulability of one Pod depends
+on another group member via inter-Pod affinity), this algorithm may fail
+to find a placement regardless of cluster state due to its deterministic
+processing order.</p>
+<p>For consistent behavior throughout the entire cycle, the algorithm
+requires that all Pods belonging to a single PodGroup share the same
+<code>.spec.schedulerName</code>. This requirement is validated before
+the cycle starts, and the PodGroup is rejected if the constraint is not
+met.</p>
+<h2 id="hierarchical-scheduling-with-compositepodgroups">Hierarchical
+scheduling with CompositePodGroups</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.37; disabled by default
+(<code>CompositePodGroup</code>)</p>
+</div>
+<p>When the <a
+href="../../reference/command-line-tools-reference/feature-gates.html#CompositePodGroup"><code>CompositePodGroup</code></a>
+feature gate and the <code>scheduling.k8s.io/v1alpha3</code> <span
+class="glossary-term" data-term="api-group">API group</span> are
+enabled, the scheduler extends the PodGroup scheduling cycle to support
+multi-level group hierarchies.</p>
+<p>In a hierarchical workload, Pods belong to leaf <code>PodGroup</code>
+objects, which in turn specify parent <code>CompositePodGroup</code>
+resources up to the root <code>CompositePodGroup</code>. The scheduler
+evaluates the entire hierarchy of groups as a single, unified scheduling
+unit.</p>
+<h3 id="hierarchical-scheduling-cycle-execution">Hierarchical scheduling
+cycle execution</h3>
+<p>After observing a root <code>CompositePodGroup</code>, the scheduler
+places it in the scheduling queue as long as there is at least one
+pending Pod that belongs to that root's group hierarchy.</p>
+<p>Once the root <code>CompositePodGroup</code> satisfies the <a
+href="gang-scheduling.html#hierarchical-quorum">hierarchical
+quorum</a>, it enters the active scheduling queue from which it can be
+popped by the scheduling cycle. The flow of the scheduling cycle for
+<code>CompositePodGroups</code> is as follows:</p>
+<ol type="1">
+<li><p><strong>Unified cluster snapshot and validation</strong>: The
+scheduler takes a snapshot of cluster resources to mirror the latest
+observed cluster state. It verifies that the shape of the group
+hierarchy popped from the queue matches the snapshotted hierarchy and
+validates the configuration consistency of the hierarchy (such as
+identical <code>.spec.schedulerName</code> and priority across member
+Pods).</p>
+<p>If the hierarchy shape changed concurrently or fails the validation,
+the cycle halts and requeues the root
+<code>CompositePodGroup</code>.</p></li>
+<li><p><strong>Top-down candidate placement generation</strong>: At each
+level of the hierarchy, before evaluating child groups, the scheduler
+invokes <code>PlacementGeneratePlugin</code> plugins to generate
+candidate placements (subsets of nodes) for the group being
+evaluated.</p>
+<p>Candidate placements for a child <code>CompositePodGroup</code> or
+leaf <code>PodGroup</code> are generated exclusively from the subset of
+nodes belonging to the parent group's currently evaluated placement. For
+the root <code>CompositePodGroup</code>, candidate placements are
+generated across all available cluster nodes.</p></li>
+<li><p><strong>Recursive subtree simulation and feasibility
+check</strong>: The scheduler evaluates each candidate placement for a
+<code>CompositePodGroup</code> by temporarily assuming that placement in
+the cluster snapshot and recursively scheduling its child groups:</p>
+<ul>
+<li><strong>Recursive traversal</strong>: The scheduler traverses child
+groups in a pre-sorted order, invoking itself recursively from the
+<code>CompositePodGroup</code> down to leaf <code>PodGroup</code>
+objects. For each leaf <code>PodGroup</code>, the scheduler runs the
+placement scheduling algorithm scoped to the parent's candidate
+placement to make tentative Pod assignments in memory.</li>
+<li><strong>Feasibility checks</strong>: After evaluating each child
+group, the scheduler invokes <code>PlacementFeasible</code> plugins to
+determine whether the parent group's scheduling policy can still be met:
+<ul>
+<li>If the policy constraints remain achievable (or are already
+satisfied), the scheduler continues evaluating subsequent sibling
+groups.</li>
+<li>If the policy constraints can no longer be satisfied, the scheduler
+immediately aborts the evaluation of that <code>CompositePodGroup</code>
+and reverts all tentative in-memory Pod assignments made for that
+group.</li>
+</ul></li>
+<li><strong>Simulation rollback</strong>: After simulating a candidate
+placement (regardless of success or failure), the scheduler reverts the
+tentative node reservations made during that simulation before
+evaluating the next candidate placement.</li>
+</ul></li>
+<li><p><strong>Placement scoring and subtree commitment</strong>: Once
+all candidate placements for a <code>CompositePodGroup</code> have been
+evaluated:</p>
+<ul>
+<li><p><strong>Scoring</strong>: If one or more candidate placements are
+feasible, the scheduler invokes <code>PlacementScorePlugin</code>
+plugins to score all feasible candidate placements. The scoring plugins
+evaluate the combined proposed Pod assignments across all descendant
+leaf <code>PodGroup</code> objects in the subtree and select the
+placement with the highest overall score.</p></li>
+<li><p><strong>Commitment</strong>: After selecting the winning
+placement, the scheduler commits (assumes) the tentative Pod assignments
+corresponding to that optimal placement in memory. This ensures that
+subsequent sibling group evaluations or parent-level evaluations observe
+consistent, optimal scheduling decisions for that subtree.</p>
+<p>If no feasible placement is found among all generated candidates, the
+entire <code>CompositePodGroup</code> is considered
+unschedulable.</p></li>
+</ul></li>
+<li><p><strong>Atomic binding</strong>: If the root-level recursive
+evaluation succeeds and at least one Pod was successfully scheduled, the
+scheduler commits the Pod assignments by proceeding to the binding
+cycle.</p>
+<p>Otherwise, the entire <code>CompositePodGroup</code> is considered
+unschedulable.</p></li>
+</ol>
+<h3 id="limitations-1">Limitations</h3>
+<p>Similar to how the PodGroup scheduling algorithm relies on specific
+Pod sorting, the hierarchical scheduling algorithm relies on a specific
+sorting of child groups within every <code>CompositePodGroup</code>
+hierarchy. As a result, it may fail to find a valid placement that could
+have been discovered by processing the child groups in a different
+order.</p>
+<p>In addition, because the scheduler evaluates group hierarchies using
+a greedy approach:</p>
+<ul>
+<li>Finding a valid placement is not guaranteed in all cases, even if
+one exists in the cluster.</li>
+<li>Even when the scheduler successfully finds a valid placement for a
+<code>CompositePodGroup</code> hierarchy, that placement is not
+guaranteed to be optimal across the cluster.</li>
+</ul>
+<h2 id="podgroup-conditions">PodGroup conditions</h2>
+<p>After a PodGroup scheduling cycle completes, the scheduler updates
+conditions on the PodGroup's <code>status.conditions</code>:</p>
+<ul>
+<li><code>PodGroupInitiallyScheduled</code>: reports whether the
+PodGroup has been successfully scheduled for the first time.</li>
+</ul>
+<h3
+id="podgroupinitiallyscheduled"><code>PodGroupInitiallyScheduled</code></h3>
+<p>When the scheduling cycle succeeds, the condition is set to
+<code>True</code> with reason <code>Scheduled</code>. For
+<code>gang</code> policy PodGroups, this means at least
+<code>minCount</code> Pods were placed.</p>
+<p>When scheduling fails, the condition is set to <code>False</code>
+with one of the following reasons:</p>
+<ul>
+<li><code>Unschedulable</code> — the group could not be placed due to
+resource constraints, affinity or anti-affinity rules, or insufficient
+capacity for the gang.</li>
+<li><code>SchedulerError</code> — scheduling failed because of an
+internal scheduler error (for example, while parsing scheduling
+constraints such as <code>nodeAffinity</code>).</li>
+</ul>
+<p>Once this condition is set to <code>True</code>, it never
+changes.</p>
+<p>You can check conditions with:</p>
+<pre class="shell"><code>kubectl get podgroup &lt;name&gt; -o jsonpath=&#39;{.status.conditions}&#39;</code></pre>
+<h2 id="compositepodgroup-conditions">CompositePodGroup conditions</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Alpha since Kubernetes v1.37; disabled by default
+(<code>CompositePodGroup</code>)</p>
+</div>
+<p>CompositePodGroup API exposes the <code>status.conditions</code>
+field as well.</p>
+<p>In v1.37, the scheduler does not populate this field, however.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn about the <a
+href="../workloads/workload-api.html">Workload API</a>.</li>
+<li>Read about the <a
+href="../workloads/compositepodgroup-api.html">CompositePodGroup
+API</a> and its <a
+href="../workloads/compositepodgroup-api/lifecycle.html">lifecycle</a>.</li>
+<li>Learn about <a
+href="../workloads/workload-api/topology-aware-scheduling.html">Topology-aware
+workload scheduling</a>.</li>
+<li>See how to <a
+href="https://kubernetes.io/docs/concepts/workloads/pods/workload-reference/">reference
+a Workload</a> in a Pod.</li>
+<li>Read about <a
+href="gang-scheduling.html">gang
+scheduling</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="scheduler-perf-tuning.html"><span>Previous</span>Scheduler Performance Tuning</a><a class="page-nav-link next" href="resource-bin-packing.html"><span>Next</span>Resource Bin Packing</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#podgroup-scheduling-cycle">PodGroup scheduling cycle</a></li><li class="toc-l2"><a href="#podgroup-scheduling-algorithm">PodGroup scheduling algorithm</a></li><li class="toc-l2"><a href="#placement-scheduling-algorithm">Placement scheduling algorithm</a></li><li class="toc-l3"><a href="#phase-1-candidate-placement-generation">Phase 1: Candidate placement generation</a></li><li class="toc-l3"><a href="#phase-2-pod-level-filtering-and-feasibility-check">Phase 2: Pod-level filtering and feasibility check</a></li><li class="toc-l3"><a href="#phase-3-placement-scoring-and-selection">Phase 3: Placement scoring and selection</a></li><li class="toc-l3"><a href="#limitations">Limitations</a></li><li class="toc-l2"><a href="#hierarchical-scheduling-with-compositepodgroups">Hierarchical scheduling with CompositePodGroups</a></li><li class="toc-l3"><a href="#hierarchical-scheduling-cycle-execution">Hierarchical scheduling cycle execution</a></li><li class="toc-l3"><a href="#limitations-1">Limitations</a></li><li class="toc-l2"><a href="#podgroup-conditions">PodGroup conditions</a></li><li class="toc-l3"><a href="#podgroupinitiallyscheduled">PodGroupInitiallyScheduled</a></li><li class="toc-l2"><a href="#compositepodgroup-conditions">CompositePodGroup conditions</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

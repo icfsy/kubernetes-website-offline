@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuring each kubelet in your cluster using kubeadm · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../../" data-key="setup/production-environment/tools/kubeadm/kubelet-integration" data-title="Configuring each kubelet in your cluster using kubeadm" data-canonical="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../../setup.html">Getting started</a><span>/</span><a href="../../../production-environment.html">Production environment</a><span>/</span><a href="../../tools.html">Installing Kubernetes with deployment tools</a><span>/</span><a href="../kubeadm.html">Bootstrapping clusters with kubeadm</a></nav></nav>
+        <header class="page-head">
+          <h1>Configuring each kubelet in your cluster using kubeadm</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/kubelet-integration/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Dockershim has been removed from the Kubernetes project as of release
+1.24. Read the <a target="_blank" rel="noopener" href="https://kubernetes.io/dockershim">Dockershim
+Removal FAQ</a> for further details.</p>
+</div>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.11</p>
+</div>
+<p>The lifecycle of the kubeadm CLI tool is decoupled from the <a
+href="../../../../reference/command-line-tools-reference/kubelet.html">kubelet</a>,
+which is a daemon that runs on each node within the Kubernetes cluster.
+The kubeadm CLI tool is executed by the user when Kubernetes is
+initialized or upgraded, whereas the kubelet is always running in the
+background.</p>
+<p>Since the kubelet is a daemon, it needs to be maintained by some kind
+of an init system or service manager. When the kubelet is installed
+using DEBs or RPMs, systemd is configured to manage the kubelet. You can
+use a different service manager instead, but you need to configure it
+manually.</p>
+<p>Some kubelet configuration details need to be the same across all
+kubelets involved in the cluster, while other configuration aspects need
+to be set on a per-kubelet basis to accommodate the different
+characteristics of a given machine (such as OS, storage, and
+networking). You can manage the configuration of your kubelets manually,
+but kubeadm now provides a <code>KubeletConfiguration</code> API type
+for <a href="#configure-kubelets-using-kubeadm">managing your kubelet
+configurations centrally</a>.</p>
+<h2 id="kubelet-configuration-patterns">Kubelet configuration
+patterns</h2>
+<p>The following sections describe patterns to kubelet configuration
+that are simplified by using kubeadm, rather than managing the kubelet
+configuration for each Node manually.</p>
+<h3
+id="propagating-cluster-level-configuration-to-each-kubelet">Propagating
+cluster-level configuration to each kubelet</h3>
+<p>You can provide the kubelet with default values to be used by
+<code>kubeadm init</code> and <code>kubeadm join</code> commands.
+Interesting examples include using a different container runtime or
+setting the default subnet used by services.</p>
+<p>If you want your services to use the subnet <code>10.96.0.0/12</code>
+as the default for services, you can pass the
+<code>--service-cidr</code> parameter to kubeadm:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">kubeadm</span> init <span class="at">--service-cidr</span> 10.96.0.0/12</span></code></pre></div>
+<p>Virtual IPs for services are now allocated from this subnet. You also
+need to set the DNS address used by the kubelet, using the
+<code>--cluster-dns</code> flag. This setting needs to be the same for
+every kubelet on every manager and Node in the cluster. The kubelet
+provides a versioned, structured API object that can configure most
+parameters in the kubelet and push out this configuration to each
+running kubelet in the cluster. This object is called <a
+href="../../../../reference/config-api/kubelet-config.v1beta1.html"><code>KubeletConfiguration</code></a>.
+The <code>KubeletConfiguration</code> allows the user to specify flags
+such as the cluster DNS IP addresses expressed as a list of values to a
+camelCased key, illustrated by the following example:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubelet.config.k8s.io/v1beta1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> KubeletConfiguration</span></span>
+<span class="fu">clusterDNS</span><span class="kw">:</span></span>
+<span class="kw">- </span><span class="at">10.96.0.10</span></span></code></pre></div>
+<p>For more details on the <code>KubeletConfiguration</code> have a look
+at <a href="#configure-kubelets-using-kubeadm">this section</a>.</p>
+<h3 id="providing-instance-specific-configuration-details">Providing
+instance-specific configuration details</h3>
+<p>Some hosts require specific kubelet configurations due to differences
+in hardware, operating system, networking, or other host-specific
+parameters. The following list provides a few examples.</p>
+<ul>
+<li><p>The path to the DNS resolution file, as specified by the
+<code>--resolv-conf</code> kubelet configuration flag, may differ among
+operating systems, or depending on whether you are using
+<code>systemd-resolved</code>. If this path is wrong, DNS resolution
+will fail on the Node whose kubelet is configured incorrectly.</p></li>
+<li><p>The Node API object <code>.metadata.name</code> is set to the
+machine's hostname by default, unless you are using a cloud provider.
+You can use the <code>--hostname-override</code> flag to override the
+default behavior if you need to specify a Node name different from the
+machine's hostname.</p></li>
+<li><p>Currently, the kubelet cannot automatically detect the cgroup
+driver used by the container runtime, but the value of
+<code>--cgroup-driver</code> must match the cgroup driver used by the
+container runtime to ensure the health of the kubelet.</p></li>
+<li><p>To specify the container runtime you must set its endpoint with
+the <code>--container-runtime-endpoint=&lt;path&gt;</code>
+flag.</p></li>
+</ul>
+<p>The recommended way of applying such instance-specific configuration
+is by using <a
+href="control-plane-flags.html#patches"><code>KubeletConfiguration</code>
+patches</a>.</p>
+<h2 id="configure-kubelets-using-kubeadm">Configure kubelets using
+kubeadm</h2>
+<p>It is possible to configure the kubelet that kubeadm will start if a
+custom <a
+href="../../../../reference/config-api/kubelet-config.v1beta1.html"><code>KubeletConfiguration</code></a>
+API object is passed with a configuration file like so
+<code>kubeadm ... --config some-config-file.yaml</code>.</p>
+<p>By calling
+<code>kubeadm config print init-defaults --component-configs KubeletConfiguration</code>
+you can see all the default values for this structure.</p>
+<p>It is also possible to apply instance-specific patches over the base
+<code>KubeletConfiguration</code>. Have a look at <a
+href="control-plane-flags.html">Customizing
+the kubelet</a> for more details.</p>
+<h3 id="workflow-when-using-kubeadm-init">Workflow when using
+<code>kubeadm init</code></h3>
+<p>When you call <code>kubeadm init</code>, the kubelet configuration is
+marshalled to disk at <code>/var/lib/kubelet/config.yaml</code>, and
+also uploaded to a <code>kubelet-config</code> ConfigMap in the
+<code>kube-system</code> namespace of the cluster. Additionally, the
+kubeadm tool detects the CRI socket on the node and writes its details
+(including the socket path) into a local configuration,
+<code>/var/lib/kubelet/instance-config.yaml</code>. A kubelet
+configuration file is also written to
+<code>/etc/kubernetes/kubelet.conf</code> with the baseline cluster-wide
+configuration for all kubelets in the cluster. This configuration file
+points to the client certificates that allow the kubelet to communicate
+with the API server. This addresses the need to <a
+href="#propagating-cluster-level-configuration-to-each-kubelet">propagate
+cluster-level configuration to each kubelet</a>.</p>
+<p>To address the second pattern of <a
+href="#providing-instance-specific-configuration-details">providing
+instance-specific configuration details</a>, kubeadm writes an
+environment file to <code>/var/lib/kubelet/kubeadm-flags.env</code>,
+which contains a list of flags to pass to the kubelet when it starts.
+The flags are presented in the file like this:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="va">KUBELET_KUBEADM_ARGS</span><span class="op">=</span><span class="st">&quot;--flag1=value1 --flag2=value2 ...&quot;</span></span></code></pre></div>
+<p>In addition to the flags used when starting the kubelet, the file
+also contains dynamic parameters such as the cgroup driver.</p>
+<p>After marshalling these two files to disk, kubeadm attempts to run
+the following two commands, if you are using systemd:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">systemctl</span> daemon-reload <span class="kw">&amp;&amp;</span> <span class="ex">systemctl</span> restart kubelet</span></code></pre></div>
+<p>If the reload and restart are successful, the normal
+<code>kubeadm init</code> workflow continues.</p>
+<h3 id="workflow-when-using-kubeadm-join">Workflow when using
+<code>kubeadm join</code></h3>
+<p>When you run <code>kubeadm join</code>, kubeadm uses the Bootstrap
+Token credential to perform a TLS bootstrap, which fetches the
+credential needed to download the <code>kubelet-config</code> ConfigMap
+and writes it to <code>/var/lib/kubelet/config.yaml</code>.
+Additionally, the kubeadm tool detects the CRI socket on the node and
+writes its details (including the socket path) into a local
+configuration, <code>/var/lib/kubelet/instance-config.yaml</code>. The
+dynamic environment file is generated in exactly the same way as
+<code>kubeadm init</code>.</p>
+<p>Next, <code>kubeadm</code> runs the following two commands to load
+the new configuration into the kubelet:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span class="ex">systemctl</span> daemon-reload <span class="kw">&amp;&amp;</span> <span class="ex">systemctl</span> restart kubelet</span></code></pre></div>
+<p>After the kubelet loads the new configuration, kubeadm writes the
+<code>/etc/kubernetes/bootstrap-kubelet.conf</code> KubeConfig file,
+which contains a CA certificate and Bootstrap Token. These are used by
+the kubelet to perform the TLS Bootstrap and obtain a unique credential,
+which is stored in <code>/etc/kubernetes/kubelet.conf</code>.</p>
+<p>When the <code>/etc/kubernetes/kubelet.conf</code> file is written,
+the kubelet has finished performing the TLS Bootstrap. Kubeadm deletes
+the <code>/etc/kubernetes/bootstrap-kubelet.conf</code> file after
+completing the TLS Bootstrap.</p>
+<h2 id="the-kubelet-drop-in-file-for-systemd">The kubelet drop-in file
+for systemd</h2>
+<p><code>kubeadm</code> ships with configuration for how systemd should
+run the kubelet. Note that the kubeadm CLI command never touches this
+drop-in file.</p>
+<p>This configuration file installed by the <code>kubeadm</code> <a
+href="https://github.com/kubernetes/release/blob/cd53840/cmd/krel/templates/latest/kubeadm/10-kubeadm.conf">package</a>
+is written to
+<code>/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf</code>
+and is used by systemd. It augments the basic <a
+href="https://github.com/kubernetes/release/blob/cd53840/cmd/krel/templates/latest/kubelet/kubelet.service"><code>kubelet.service</code></a>.</p>
+<p>If you want to override that further, you can make a directory
+<code>/etc/systemd/system/kubelet.service.d/</code> (not
+<code>/usr/lib/systemd/system/kubelet.service.d/</code>) and put your
+own customizations into a file there. For example, you might add a new
+local file
+<code>/etc/systemd/system/kubelet.service.d/local-overrides.conf</code>
+to override the unit settings configured by <code>kubeadm</code>.</p>
+<p>Here is what you are likely to find in
+<code>/usr/lib/systemd/system/kubelet.service.d/10-kubeadm.conf</code>:</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The contents below are just an example. If you don't want to use a
+package manager follow the guide outlined in the (<a
+href="install-kubeadm.html">Without
+a package manager</a>) section.</p>
+</div>
+<pre class="none"><code>[Service]
+Environment=&quot;KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf&quot;
+Environment=&quot;KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml&quot;
+# This is a file that &quot;kubeadm init&quot; and &quot;kubeadm join&quot; generate at runtime, populating
+# the KUBELET_KUBEADM_ARGS variable dynamically
+EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+# This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably,
+# the user should use the .NodeRegistration.KubeletExtraArgs object in the configuration files instead.
+# KUBELET_EXTRA_ARGS should be sourced from this file.
+EnvironmentFile=-/etc/default/kubelet
+ExecStart=
+ExecStart=/usr/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS</code></pre>
+<p>This file specifies the default locations for all of the files
+managed by kubeadm for the kubelet.</p>
+<ul>
+<li>The KubeConfig file to use for the TLS Bootstrap is
+<code>/etc/kubernetes/bootstrap-kubelet.conf</code>, but it is only used
+if <code>/etc/kubernetes/kubelet.conf</code> does not exist.</li>
+<li>The KubeConfig file with the unique kubelet identity is
+<code>/etc/kubernetes/kubelet.conf</code>.</li>
+<li>The file containing the kubelet's ComponentConfig is
+<code>/var/lib/kubelet/config.yaml</code>.</li>
+<li>The dynamic environment file that contains
+<code>KUBELET_KUBEADM_ARGS</code> is sourced from
+<code>/var/lib/kubelet/kubeadm-flags.env</code>.</li>
+<li>The file that can contain user-specified flag overrides with
+<code>KUBELET_EXTRA_ARGS</code> is sourced from
+<code>/etc/default/kubelet</code> (for DEBs), or
+<code>/etc/sysconfig/kubelet</code> (for RPMs).
+<code>KUBELET_EXTRA_ARGS</code> is last in the flag chain and has the
+highest priority in the event of conflicting settings.</li>
+</ul>
+<h2 id="kubernetes-binaries-and-package-contents">Kubernetes binaries
+and package contents</h2>
+<p>The DEB and RPM packages shipped with the Kubernetes releases
+are:</p>
+<table>
+<colgroup>
+<col style="width: 51%" />
+<col style="width: 48%" />
+</colgroup>
+<thead>
+<tr>
+<th>Package name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>kubeadm</code></td>
+<td>Installs the <code>/usr/bin/kubeadm</code> CLI tool and the <a
+href="#the-kubelet-drop-in-file-for-systemd">kubelet drop-in file</a>
+for the kubelet.</td>
+</tr>
+<tr>
+<td><code>kubelet</code></td>
+<td>Installs the <code>/usr/bin/kubelet</code> binary.</td>
+</tr>
+<tr>
+<td><code>kubectl</code></td>
+<td>Installs the <code>/usr/bin/kubectl</code> binary.</td>
+</tr>
+<tr>
+<td><code>cri-tools</code></td>
+<td>Installs the <code>/usr/bin/crictl</code> binary from the <a
+href="https://github.com/kubernetes-sigs/cri-tools">cri-tools git
+repository</a>.</td>
+</tr>
+<tr>
+<td><code>kubernetes-cni</code></td>
+<td>Installs the <code>/opt/cni/bin</code> binaries from the <a
+href="https://github.com/containernetworking/plugins">plugins git
+repository</a>.</td>
+</tr>
+</tbody>
+</table>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="setup-ha-etcd-with-kubeadm.html"><span>Previous</span>Set up a High Availability etcd Cluster with kubeadm</a><a class="page-nav-link next" href="dual-stack-support.html"><span>Next</span>Dual-stack support with kubeadm</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#kubelet-configuration-patterns">Kubelet configuration patterns</a></li><li class="toc-l3"><a href="#propagating-cluster-level-configuration-to-each-kubelet">Propagating cluster-level configuration to each kubelet</a></li><li class="toc-l3"><a href="#providing-instance-specific-configuration-details">Providing instance-specific configuration details</a></li><li class="toc-l2"><a href="#configure-kubelets-using-kubeadm">Configure kubelets using kubeadm</a></li><li class="toc-l3"><a href="#workflow-when-using-kubeadm-init">Workflow when using kubeadm init</a></li><li class="toc-l3"><a href="#workflow-when-using-kubeadm-join">Workflow when using kubeadm join</a></li><li class="toc-l2"><a href="#the-kubelet-drop-in-file-for-systemd">The kubelet drop-in file for systemd</a></li><li class="toc-l2"><a href="#kubernetes-binaries-and-package-contents">Kubernetes binaries and package contents</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../../assets/nav.js"></script>
+<script src="../../../../../assets/site.js"></script>
+</body>
+</html>

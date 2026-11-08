@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Node Autoscaling · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/cluster-administration/node-autoscaling" data-title="Node Autoscaling" data-canonical="https://kubernetes.io/docs/concepts/cluster-administration/node-autoscaling/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../cluster-administration.html">Cluster Administration</a></nav></nav>
+        <header class="page-head">
+          <h1>Node Autoscaling</h1>
+          <p class="lead">Automatically provision and consolidate the Nodes in your cluster to adapt to demand and optimize cost.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/cluster-administration/node-autoscaling/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>In order to run workloads in your cluster, you need <span
+class="glossary-term" data-term="node">Nodes</span>. Nodes in your
+cluster can be <em>autoscaled</em> - dynamically <a
+href="#provisioning"><em>provisioned</em></a>, or <a
+href="#consolidation"><em>consolidated</em></a> to provide needed
+capacity while optimizing cost. Autoscaling is performed by Node <a
+href="#autoscalers"><em>autoscalers</em></a>.</p>
+<h2 id="provisioning">Node provisioning</h2>
+<p>If there are Pods in a cluster that can't be scheduled on existing
+Nodes, new Nodes can be automatically added to the
+cluster—<em>provisioned</em>—to accommodate the Pods. This is especially
+useful if the number of Pods changes over time, for example as a result
+of <a href="#horizontal-workload-autoscaling">combining horizontal
+workload with Node autoscaling</a>.</p>
+<p>Autoscalers provision the Nodes by creating and deleting cloud
+provider resources backing them. Most commonly, the resources backing
+the Nodes are Virtual Machines.</p>
+<p>The main goal of provisioning is to make all Pods schedulable. This
+goal is not always attainable because of various limitations, including
+reaching configured provisioning limits, provisioning configuration not
+being compatible with a particular set of pods, or the lack of cloud
+provider capacity. While provisioning, Node autoscalers often try to
+achieve additional goals (for example minimizing the cost of the
+provisioned Nodes or balancing the number of Nodes between failure
+domains).</p>
+<p>There are two main inputs to a Node autoscaler when determining Nodes
+to provision—<a href="#provisioning-pod-constraints">Pod scheduling
+constraints</a>, and <a href="#provisioning-node-constraints">Node
+constraints imposed by autoscaler configuration</a>.</p>
+<p>Autoscaler configuration may also include other Node provisioning
+triggers (for example the number of Nodes falling below a configured
+minimum limit).</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Provisioning was formerly known as <em>scale-up</em> in Cluster
+Autoscaler.</p>
+</div>
+<h3 id="provisioning-pod-constraints">Pod scheduling constraints</h3>
+<p>Pods can express <a
+href="../scheduling-eviction/assign-pod-node.html">scheduling
+constraints</a> to impose limitations on the kind of Nodes they can be
+scheduled on. Node autoscalers take these constraints into account to
+ensure that the pending Pods can be scheduled on the provisioned
+Nodes.</p>
+<p>The most common kind of scheduling constraints are the resource
+requests specified by Pod containers. Autoscalers will make sure that
+the provisioned Nodes have enough resources to satisfy the requests.
+However, they don't directly take into account the real resource usage
+of the Pods after they start running. In order to autoscale Nodes based
+on actual workload resource usage, you can combine <a
+href="#horizontal-workload-autoscaling">horizontal workload
+autoscaling</a> with Node autoscaling.</p>
+<p>Other common Pod scheduling constraints include <a
+href="../scheduling-eviction/assign-pod-node.html#node-affinity">Node
+affinity</a>, <a
+href="../scheduling-eviction/assign-pod-node.html#inter-pod-affinity-and-anti-affinity">inter-Pod
+affinity</a>, or a requirement for a particular <a
+href="../storage/volumes.html">storage volume</a>.</p>
+<h3 id="provisioning-node-constraints">Node constraints imposed by
+autoscaler configuration</h3>
+<p>The specifics of the provisioned Nodes (for example the amount of
+resources, the presence of a given label) depend on autoscaler
+configuration. Autoscalers can either choose them from a pre-defined set
+of Node configurations, or use <a
+href="#autoprovisioning">auto-provisioning</a>.</p>
+<h3 id="autoprovisioning">Auto-provisioning</h3>
+<p>Node auto-provisioning is a mode of provisioning in which a user
+doesn't have to fully configure the specifics of the Nodes that can be
+provisioned. Instead, the autoscaler dynamically chooses the Node
+configuration based on the pending Pods it's reacting to, as well as
+pre-configured constraints (for example, the minimum amount of resources
+or the need for a given label).</p>
+<h2 id="consolidation">Node consolidation</h2>
+<p>The main consideration when running a cluster is ensuring that all
+schedulable pods are running, whilst keeping the cost of the cluster as
+low as possible. To achieve this, the Pods' resource requests should
+utilize as much of the Nodes' resources as possible. From this
+perspective, the overall Node utilization in a cluster can be used as a
+proxy for how cost-effective the cluster is.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Correctly setting the resource requests of your Pods is as important
+to the overall cost-effectiveness of a cluster as optimizing Node
+utilization. Combining Node autoscaling with <a
+href="#vertical-workload-autoscaling">vertical workload autoscaling</a>
+can help you achieve this.</p>
+</div>
+<p>Nodes in your cluster can be automatically <em>consolidated</em> in
+order to improve the overall Node utilization, and in turn the
+cost-effectiveness of the cluster. Consolidation happens through
+removing a set of underutilized Nodes from the cluster. Optionally, a
+different set of Nodes can be <a href="#provisioning">provisioned</a> to
+replace them.</p>
+<p>Consolidation, like provisioning, only considers Pod resource
+requests and not real resource usage when making decisions.</p>
+<p>For the purpose of consolidation, a Node is considered <em>empty</em>
+if it only has DaemonSet and static Pods running on it. Removing empty
+Nodes during consolidation is more straightforward than non-empty ones,
+and autoscalers often have optimizations designed specifically for
+consolidating empty Nodes.</p>
+<p>Removing non-empty Nodes during consolidation is disruptive—the Pods
+running on them are terminated, and possibly have to be recreated (for
+example by a Deployment). However, all such recreated Pods should be
+able to schedule on existing Nodes in the cluster, or the replacement
+Nodes provisioned as part of consolidation. <strong>No Pods should
+normally become pending as a result of consolidation.</strong></p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Autoscalers predict how a recreated Pod will likely be scheduled
+after a Node is provisioned or consolidated, but they don't control the
+actual scheduling. Because of this, some Pods might become pending as a
+result of consolidation - if for example a completely new Pod appears
+while consolidation is being performed.</p>
+</div>
+<p>Autoscaler configuration may also enable triggering consolidation by
+other conditions (for example, the time elapsed since a Node was
+created), in order to optimize different properties (for example, the
+maximum lifespan of Nodes in a cluster).</p>
+<p>The details of how consolidation is performed depend on the
+configuration of a given autoscaler.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Consolidation was formerly known as <em>scale-down</em> in Cluster
+Autoscaler.</p>
+</div>
+<h2 id="autoscalers">Autoscalers</h2>
+<p>The functionalities described in previous sections are provided by
+Node <em>autoscalers</em>. In addition to the Kubernetes API,
+autoscalers also need to interact with cloud provider APIs to provision
+and consolidate Nodes. This means that they need to be explicitly
+integrated with each supported cloud provider. The performance and
+feature set of a given autoscaler can differ between cloud provider
+integrations.</p>
+<p><img src="../../../assets/diagrams/2bf290dc2a27.svg"
+alt="Kubernetes diagram" /></p>
+<h3 id="autoscaler-implementations">Autoscaler implementations</h3>
+<p><a
+href="https://github.com/kubernetes/autoscaler/tree/master/cluster-autoscaler">Cluster
+Autoscaler</a> and <a
+href="https://github.com/kubernetes-sigs/karpenter">Karpenter</a> are
+the two Node autoscalers currently sponsored by <a
+href="https://github.com/kubernetes/community/tree/main/sig-autoscaling">SIG
+Autoscaling</a>.</p>
+<p>From the perspective of a cluster user, both autoscalers should
+provide a similar Node autoscaling experience. Both will provision new
+Nodes for unschedulable Pods, and both will consolidate the Nodes that
+are no longer optimally utilized.</p>
+<p>Different autoscalers may also provide features outside the Node
+autoscaling scope described on this page, and those additional features
+may differ between them.</p>
+<p>Consult the sections below, and the linked documentation for the
+individual autoscalers to decide which autoscaler fits your use case
+better.</p>
+<h4 id="cluster-autoscaler">Cluster Autoscaler</h4>
+<p>Cluster Autoscaler adds or removes Nodes to pre-configured <em>Node
+groups</em>. Node groups generally map to some sort of cloud provider
+resource group (most commonly a Virtual Machine group). A single
+instance of Cluster Autoscaler can simultaneously manage multiple Node
+groups. When provisioning, Cluster Autoscaler will add Nodes to the
+group that best fits the requests of pending Pods. When consolidating,
+Cluster Autoscaler always selects specific Nodes to remove, as opposed
+to just resizing the underlying cloud provider resource group.</p>
+<p>Additional context:</p>
+<ul>
+<li><a
+href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/README.md">Documentation
+overview</a></li>
+<li><a
+href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/README.md#faqdocumentation">Cloud
+provider integrations</a></li>
+<li><a
+href="https://github.com/kubernetes/autoscaler/blob/master/cluster-autoscaler/FAQ.md">Cluster
+Autoscaler FAQ</a></li>
+<li><a
+href="https://github.com/kubernetes/community/tree/main/sig-autoscaling#contact">Contact</a></li>
+</ul>
+<h4 id="karpenter">Karpenter</h4>
+<p>Karpenter auto-provisions Nodes based on <a
+href="https://karpenter.sh/docs/concepts/nodepools/">NodePool</a>
+configurations provided by the cluster operator. Karpenter handles all
+aspects of node lifecycle, not just autoscaling. This includes
+automatically refreshing Nodes once they reach a certain lifetime, and
+auto-upgrading Nodes when new worker Node images are released. It works
+directly with individual cloud provider resources (most commonly
+individual Virtual Machines), and doesn't rely on cloud provider
+resource groups.</p>
+<p>Additional context:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://karpenter.sh/">Documentation</a></li>
+<li><a
+href="https://github.com/kubernetes-sigs/karpenter?tab=readme-ov-file#karpenter-implementations">Cloud
+provider integrations</a></li>
+<li><a target="_blank" rel="noopener" href="https://karpenter.sh/docs/faq/">Karpenter FAQ</a></li>
+<li><a
+href="https://github.com/kubernetes-sigs/karpenter#community-discussion-contribution-and-support">Contact</a></li>
+</ul>
+<h4 id="implementation-comparison">Implementation comparison</h4>
+<p>Main differences between Cluster Autoscaler and Karpenter:</p>
+<ul>
+<li>Cluster Autoscaler provides features related to just Node
+autoscaling. Karpenter has a wider scope, and also provides features
+intended for managing Node lifecycle altogether (for example, utilizing
+disruption to auto-recreate Nodes once they reach a certain lifetime, or
+auto-upgrade them to new versions).</li>
+<li>Cluster Autoscaler doesn't support auto-provisioning, the Node
+groups it can provision from have to be pre-configured. Karpenter
+supports auto-provisioning, so the user only has to configure a set of
+constraints for the provisioned Nodes, instead of fully configuring
+homogeneous groups.</li>
+<li>Cluster Autoscaler provides cloud provider integrations directly,
+which means that they're a part of the Kubernetes project. For
+Karpenter, the Kubernetes project publishes Karpenter as a library that
+cloud providers can integrate with to build a Node autoscaler.</li>
+<li>Cluster Autoscaler provides integrations with numerous cloud
+providers, including smaller and less popular providers. There are fewer
+cloud providers that integrate with Karpenter, including <a
+href="https://github.com/aws/karpenter-provider-aws">AWS</a>, and <a
+href="https://github.com/Azure/karpenter-provider-azure">Azure</a>.</li>
+</ul>
+<h2 id="combine-workload-and-node-autoscaling">Combine workload and Node
+autoscaling</h2>
+<h3 id="horizontal-workload-autoscaling">Horizontal workload
+autoscaling</h3>
+<p>Node autoscaling usually works in response to Pods—it provisions new
+Nodes to accommodate unschedulable Pods, and then consolidates the Nodes
+once they're no longer needed.</p>
+<p><a
+href="../workloads/autoscaling.html#scaling-workloads-horizontally">Horizontal
+workload autoscaling</a> automatically scales the number of workload
+replicas to maintain a desired average resource utilization across the
+replicas. In other words, it automatically creates new Pods in response
+to application load, and then removes the Pods once the load
+decreases.</p>
+<p>You can use Node autoscaling together with horizontal workload
+autoscaling to autoscale the Nodes in your cluster based on the average
+real resource utilization of your Pods.</p>
+<p>If the application load increases, the average utilization of its
+Pods should also increase, prompting workload autoscaling to create new
+Pods. Node autoscaling should then provision new Nodes to accommodate
+the new Pods.</p>
+<p>Once the application load decreases, workload autoscaling should
+remove unnecessary Pods. Node autoscaling should, in turn, consolidate
+the Nodes that are no longer needed.</p>
+<p>If configured correctly, this pattern ensures that your application
+always has the Node capacity to handle load spikes if needed, but you
+don't have to pay for the capacity when it's not needed.</p>
+<h3 id="vertical-workload-autoscaling">Vertical workload
+autoscaling</h3>
+<p>When using Node autoscaling, it's important to set Pod resource
+requests correctly. If the requests of a given Pod are too low,
+provisioning a new Node for it might not help the Pod actually run. If
+the requests of a given Pod are too high, it might incorrectly prevent
+consolidating its Node.</p>
+<p><a
+href="../workloads/autoscaling.html#scaling-workloads-vertically">Vertical
+workload autoscaling</a> automatically adjusts the resource requests of
+your Pods based on their historical resource usage.</p>
+<p>You can use Node autoscaling together with vertical workload
+autoscaling in order to adjust the resource requests of your Pods while
+preserving Node autoscaling capabilities in your cluster.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>When using Node autoscaling, it's not recommended to set up vertical
+workload autoscaling for DaemonSet Pods. Autoscalers have to predict
+what DaemonSet Pods on a new Node will look like in order to predict
+available Node resources. Vertical workload autoscaling might make these
+predictions unreliable, leading to incorrect scaling decisions.</p>
+</div>
+<h2 id="related-components">Related components</h2>
+<p>This section describes components providing functionality related to
+Node autoscaling.</p>
+<h3 id="descheduler">Descheduler</h3>
+<p>The <a
+href="https://github.com/kubernetes-sigs/descheduler">descheduler</a> is
+a component providing Node consolidation functionality based on custom
+policies, as well as other features related to optimizing Nodes and Pods
+(for example deleting frequently restarting Pods).</p>
+<h3 id="workload-autoscalers-based-on-cluster-size">Workload autoscalers
+based on cluster size</h3>
+<p><a
+href="https://github.com/kubernetes-sigs/cluster-proportional-autoscaler">Cluster
+Proportional Autoscaler</a> and <a
+href="https://github.com/kubernetes-sigs/cluster-proportional-vertical-autoscaler">Cluster
+Proportional Vertical Autoscaler</a> provide horizontal, and vertical
+workload autoscaling based on the number of Nodes in the cluster. You
+can read more in <a
+href="../workloads/autoscaling.html#autoscaling-based-on-cluster-size">autoscaling
+based on cluster size</a>.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Read about <a
+href="../workloads/autoscaling.html">workload-level
+autoscaling</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="swap-memory-management.html"><span>Previous</span>Swap memory management</a><a class="page-nav-link next" href="certificates.html"><span>Next</span>Certificates</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#provisioning">Node provisioning</a></li><li class="toc-l3"><a href="#provisioning-pod-constraints">Pod scheduling constraints</a></li><li class="toc-l3"><a href="#provisioning-node-constraints">Node constraints imposed by autoscaler configuration</a></li><li class="toc-l3"><a href="#autoprovisioning">Auto-provisioning</a></li><li class="toc-l2"><a href="#consolidation">Node consolidation</a></li><li class="toc-l2"><a href="#autoscalers">Autoscalers</a></li><li class="toc-l3"><a href="#autoscaler-implementations">Autoscaler implementations</a></li><li class="toc-l2"><a href="#combine-workload-and-node-autoscaling">Combine workload and Node autoscaling</a></li><li class="toc-l3"><a href="#horizontal-workload-autoscaling">Horizontal workload autoscaling</a></li><li class="toc-l3"><a href="#vertical-workload-autoscaling">Vertical workload autoscaling</a></li><li class="toc-l2"><a href="#related-components">Related components</a></li><li class="toc-l3"><a href="#descheduler">Descheduler</a></li><li class="toc-l3"><a href="#workload-autoscalers-based-on-cluster-size">Workload autoscalers based on cluster size</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

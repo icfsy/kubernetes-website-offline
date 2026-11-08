@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Restrict a Container&#x27;s Access to Resources with AppArmor · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/security/apparmor" data-title="Restrict a Container&#x27;s Access to Resources with AppArmor" data-canonical="https://kubernetes.io/docs/tutorials/security/apparmor/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../security.html">Security</a></nav></nav>
+        <header class="page-head">
+          <h1>Restrict a Container&#x27;s Access to Resources with AppArmor</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/security/apparmor/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Removed; last recognized in Kubernetes v1.31
+(<code>AppArmor</code>)</p>
+</div>
+<p>This page shows you how to load AppArmor profiles on your nodes and
+enforce those profiles in Pods. To learn more about how Kubernetes can
+confine Pods using AppArmor, see <a
+href="../../concepts/security/linux-kernel-security-constraints.html#apparmor">Linux
+kernel security constraints for Pods and containers</a>.</p>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>See an example of how to load a profile on a Node</li>
+<li>Learn how to enforce the profile on a Pod</li>
+<li>Learn how to check that the profile is loaded</li>
+<li>See what happens when a profile is violated</li>
+<li>See what happens when a profile cannot be loaded</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>AppArmor is an optional kernel module and Kubernetes feature, so
+verify it is supported on your Nodes before proceeding:</p>
+<ol type="1">
+<li><p>AppArmor kernel module is enabled -- For the Linux kernel to
+enforce an AppArmor profile, the AppArmor kernel module must be
+installed and enabled. Several distributions enable the module by
+default, such as Ubuntu and SUSE, and many others provide optional
+support. To check whether the module is enabled, check the
+<code>/sys/module/apparmor/parameters/enabled</code> file:</p>
+<pre class="shell"><code>cat /sys/module/apparmor/parameters/enabled
+Y</code></pre>
+<p>The kubelet verifies that AppArmor is enabled on the host before
+admitting a pod with AppArmor explicitly configured.</p></li>
+<li><p>Container runtime supports AppArmor -- All common
+Kubernetes-supported container runtimes should support AppArmor,
+including <a class="glossary-term" href="../../reference/glossary.html#term-containerd" title="Glossary: containerd">containerd</a> and <a class="glossary-term" href="../../reference/glossary.html#term-cri-o" title="Glossary: cri-o">CRI-O</a>. Please refer to the corresponding
+runtime documentation and verify that the cluster fulfills the
+requirements to use AppArmor.</p></li>
+<li><p>Profile is loaded -- AppArmor is applied to a Pod by specifying
+an AppArmor profile that each container should be run with. If any of
+the specified profiles are not loaded in the kernel, the kubelet will
+reject the Pod. You can view which profiles are loaded on a node by
+checking the <code>/sys/kernel/security/apparmor/profiles</code> file.
+For example:</p>
+<pre class="shell"><code>ssh gke-test-default-pool-239f5d02-gyn2 &quot;sudo cat /sys/kernel/security/apparmor/profiles | sort&quot;</code></pre>
+<pre><code>apparmor-test-deny-write (enforce)
+apparmor-test-audit-write (enforce)
+docker-default (enforce)
+k8s-nginx (enforce)</code></pre>
+<p>For more details on loading profiles on nodes, see <a
+href="#setting-up-nodes-with-profiles">Setting up nodes with
+profiles</a>.</p></li>
+</ol>
+<h2 id="securing-a-pod">Securing a Pod</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>Prior to Kubernetes v1.30, AppArmor was specified through
+annotations. Use the documentation version selector to view the
+documentation with this deprecated API.</p>
+</div>
+<p>AppArmor profiles can be specified at the pod level or container
+level. The container AppArmor profile takes precedence over the pod
+profile.</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">appArmorProfile</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">type</span><span class="kw">:</span><span class="at"> &lt;profile_type&gt;</span></span></code></pre></div>
+<p>Where <code>&lt;profile_type&gt;</code> is one of:</p>
+<ul>
+<li><code>RuntimeDefault</code> to use the runtime's default
+profile</li>
+<li><code>Localhost</code> to use a profile loaded on the host (see
+below)</li>
+<li><code>Unconfined</code> to run without AppArmor</li>
+</ul>
+<p>See <a href="#specifying-apparmor-confinement">Specifying AppArmor
+Confinement</a> for full details on the AppArmor profile API.</p>
+<p>To verify that the profile was applied, you can check that the
+container's root process is running with the correct profile by
+examining its proc attr:</p>
+<pre class="shell"><code>kubectl exec &lt;pod_name&gt; -- cat /proc/1/attr/current</code></pre>
+<p>The output should look something like this:</p>
+<pre><code>cri-containerd.apparmor.d (enforce)</code></pre>
+<h2 id="example">Example</h2>
+<p><em>This example assumes you have already set up a cluster with
+AppArmor support.</em></p>
+<p>First, load the profile you want to use onto your Nodes. This profile
+blocks all file write operations:</p>
+<pre><code>#include &lt;tunables/global&gt;
+
+profile k8s-apparmor-example-deny-write flags=(attach_disconnected) {
+  #include &lt;abstractions/base&gt;
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}</code></pre>
+<p>The profile needs to be loaded onto all nodes, since you don't know
+where the pod will be scheduled. For this example you can use SSH to
+install the profiles, but other approaches are discussed in <a
+href="#setting-up-nodes-with-profiles">Setting up nodes with
+profiles</a>.</p>
+<pre class="shell"><code># This example assumes that node names match host names, and are reachable via SSH.
+NODES=($( kubectl get node -o jsonpath=&#39;{.items[*].status.addresses[?(.type == &quot;Hostname&quot;)].address}&#39; ))
+
+for NODE in ${NODES[*]}; do ssh $NODE &#39;sudo apparmor_parser -q &lt;&lt;EOF
+#include &lt;tunables/global&gt;
+
+profile k8s-apparmor-example-deny-write flags=(attach_disconnected) {
+  #include &lt;abstractions/base&gt;
+
+  file,
+
+  # Deny all file writes.
+  deny /** w,
+}
+EOF&#39;
+done</code></pre>
+<p>Next, run a simple "Hello AppArmor" Pod with the deny-write
+profile:</p>
+<div class="code-sample">
+<p><code>pods/security/hello-apparmor.yaml</code></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello-apparmor</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">securityContext</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">appArmorProfile</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Localhost</span></span>
+<span class="at">      </span><span class="fu">localhostProfile</span><span class="kw">:</span><span class="at"> k8s-apparmor-example-deny-write</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> hello</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> busybox:1.28</span></span>
+<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at"> </span><span class="st">&quot;sh&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;-c&quot;</span><span class="kw">,</span><span class="at"> </span><span class="st">&quot;echo &#39;Hello AppArmor!&#39; &amp;&amp; sleep 1h&quot;</span><span class="at"> </span><span class="kw">]</span></span></code></pre></div>
+</div>
+<pre class="shell"><code>kubectl create -f hello-apparmor.yaml</code></pre>
+<p>You can verify that the container is actually running with that
+profile by checking <code>/proc/1/attr/current</code>:</p>
+<pre class="shell"><code>kubectl exec hello-apparmor -- cat /proc/1/attr/current</code></pre>
+<p>The output should be:</p>
+<pre><code>k8s-apparmor-example-deny-write (enforce)</code></pre>
+<p>Finally, you can see what happens if you violate the profile by
+writing to a file:</p>
+<pre class="shell"><code>kubectl exec hello-apparmor -- touch /tmp/test</code></pre>
+<pre><code>touch: /tmp/test: Permission denied
+error: error executing remote command: command terminated with non-zero exit code: Error executing in Docker Container: 1</code></pre>
+<p>To wrap up, see what happens if you try to specify a profile that
+hasn't been loaded:</p>
+<pre class="shell"><code>kubectl create -f /dev/stdin &lt;&lt;EOF
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hello-apparmor-2
+spec:
+  securityContext:
+    appArmorProfile:
+      type: Localhost
+      localhostProfile: k8s-apparmor-example-allow-write
+  containers:
+  - name: hello
+    image: busybox:1.28
+    command: [ &quot;sh&quot;, &quot;-c&quot;, &quot;echo &#39;Hello AppArmor!&#39; &amp;&amp; sleep 1h&quot; ]
+EOF</code></pre>
+<pre><code>pod/hello-apparmor-2 created</code></pre>
+<p>Although the Pod was created successfully, further examination will
+show that it is stuck in pending:</p>
+<pre class="shell"><code>kubectl describe pod hello-apparmor-2</code></pre>
+<pre><code>Name:          hello-apparmor-2
+Namespace:     default
+Node:          gke-test-default-pool-239f5d02-x1kf/10.128.0.27
+Start Time:    Tue, 30 Aug 2016 17:58:56 -0700
+Labels:        &lt;none&gt;
+Annotations:   container.apparmor.security.beta.kubernetes.io/hello=localhost/k8s-apparmor-example-allow-write
+Status:        Pending
+... 
+Events:
+  Type     Reason     Age              From               Message
+  ----     ------     ----             ----               -------
+  Normal   Scheduled  10s              default-scheduler  Successfully assigned default/hello-apparmor to gke-test-default-pool-239f5d02-x1kf
+  Normal   Pulled     8s               kubelet            Successfully pulled image &quot;busybox:1.28&quot; in 370.157088ms (370.172701ms including waiting)
+  Normal   Pulling    7s (x2 over 9s)  kubelet            Pulling image &quot;busybox:1.28&quot;
+  Warning  Failed     7s (x2 over 8s)  kubelet            Error: failed to get container spec opts: failed to generate apparmor spec opts: apparmor profile not found k8s-apparmor-example-allow-write
+  Normal   Pulled     7s               kubelet            Successfully pulled image &quot;busybox:1.28&quot; in 90.980331ms (91.005869ms including waiting)</code></pre>
+<p>An Event provides the error message with the reason, the specific
+wording is runtime-dependent:</p>
+<pre><code>  Warning  Failed     7s (x2 over 8s)  kubelet            Error: failed to get container spec opts: failed to generate apparmor spec opts: apparmor profile not found </code></pre>
+<h2 id="administration">Administration</h2>
+<h3 id="setting-up-nodes-with-profiles">Setting up Nodes with
+profiles</h3>
+<p>Kubernetes 1.37 does not provide any built-in mechanisms for loading
+AppArmor profiles onto Nodes. Profiles can be loaded through custom
+infrastructure or tools like the <a
+href="https://github.com/kubernetes-sigs/security-profiles-operator">Kubernetes
+Security Profiles Operator</a>.</p>
+<p>The scheduler is not aware of which profiles are loaded onto which
+Node, so the full set of profiles must be loaded onto every Node. An
+alternative approach is to add a Node label for each profile (or class
+of profiles) on the Node, and use a <a
+href="../../concepts/scheduling-eviction/assign-pod-node.html">node
+selector</a> to ensure the Pod is run on a Node with the required
+profile.</p>
+<h2 id="authoring-profiles">Authoring Profiles</h2>
+<p>Getting AppArmor profiles specified correctly can be a tricky
+business. Fortunately there are some tools to help with that:</p>
+<ul>
+<li><code>aa-genprof</code> and <code>aa-logprof</code> generate profile
+rules by monitoring an application's activity and logs, and admitting
+the actions it takes. Further instructions are provided by the <a
+href="https://gitlab.com/apparmor/apparmor/wikis/Profiling_with_tools">AppArmor
+documentation</a>.</li>
+<li><a target="_blank" rel="noopener" href="https://github.com/jfrazelle/bane">bane</a> is an AppArmor
+profile generator for Docker that uses a simplified profile
+language.</li>
+</ul>
+<p>To debug problems with AppArmor, you can check the system logs to see
+what, specifically, was denied. AppArmor logs verbose messages to
+<code>dmesg</code>, and errors can usually be found in the system logs
+or through <code>journalctl</code>. More information is provided in <a
+href="https://gitlab.com/apparmor/apparmor/wikis/AppArmor_Failures">AppArmor
+failures</a>.</p>
+<h2 id="specifying-apparmor-confinement">Specifying AppArmor
+confinement</h2>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution</p>
+</div>
+<p>Prior to Kubernetes v1.30, AppArmor was specified through
+annotations. Use the documentation version selector to view the
+documentation with this deprecated API.</p>
+</div>
+<h3 id="appArmorProfile">AppArmor profile within security context</h3>
+<p>You can specify the <code>appArmorProfile</code> on either a
+container's <code>securityContext</code> or on a Pod's
+<code>securityContext</code>. If the profile is set at the pod level, it
+will be used as the default profile for all containers in the pod
+(including init, sidecar, and ephemeral containers). If both a pod &amp;
+container AppArmor profile are set, the container's profile will be
+used.</p>
+<p>An AppArmor profile has 2 fields:</p>
+<p><code>type</code> <em>(required)</em> - indicates which kind of
+AppArmor profile will be applied. Valid options are:</p>
+<dl>
+<dt><code>Localhost</code></dt>
+<dd>
+a profile pre-loaded on the node (specified by
+<code>localhostProfile</code>).
+</dd>
+<dt><code>RuntimeDefault</code></dt>
+<dd>
+the container runtime's default profile.
+</dd>
+<dt><code>Unconfined</code></dt>
+<dd>
+no AppArmor enforcement.
+</dd>
+</dl>
+<p><code>localhostProfile</code> - The name of a profile loaded on the
+node that should be used. The profile must be preconfigured on the node
+to work. This option must be provided if and only if the
+<code>type</code> is <code>Localhost</code>.</p>
+<h2 id="what-s-next">What's next</h2>
+<p>Additional resources:</p>
+<ul>
+<li><a
+href="https://gitlab.com/apparmor/apparmor/wikis/QuickProfileLanguage">Quick
+guide to the AppArmor profile language</a></li>
+<li><a
+href="https://gitlab.com/apparmor/apparmor/wikis/Policy_Layout">AppArmor
+core policy reference</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="ns-level-pss.html"><span>Previous</span>Apply Pod Security Standards at the Namespace Level</a><a class="page-nav-link next" href="seccomp.html"><span>Next</span>Restrict a Container&#x27;s Syscalls with seccomp</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#securing-a-pod">Securing a Pod</a></li><li class="toc-l2"><a href="#example">Example</a></li><li class="toc-l2"><a href="#administration">Administration</a></li><li class="toc-l3"><a href="#setting-up-nodes-with-profiles">Setting up Nodes with profiles</a></li><li class="toc-l2"><a href="#authoring-profiles">Authoring Profiles</a></li><li class="toc-l2"><a href="#specifying-apparmor-confinement">Specifying AppArmor confinement</a></li><li class="toc-l3"><a href="#appArmorProfile">AppArmor profile within security context</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

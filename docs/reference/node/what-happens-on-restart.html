@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Happens After A Node Restart · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="reference/node/what-happens-on-restart" data-title="What Happens After A Node Restart" data-canonical="https://kubernetes.io/docs/reference/node/what-happens-on-restart/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../reference.html">Reference</a><span>/</span><a href="../node.html">Node Reference Information</a></nav></nav>
+        <header class="page-head">
+          <h1>What Happens After A Node Restart</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Reference</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/reference/node/what-happens-on-restart/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>System components on a node sometimes restart, either because of an
+upgrade, a crash, or an explicit operator action. This page describes
+what happens to Pods and to the node when the <span
+class="glossary-term" data-term="kubelet">kubelet</span>, the <span
+class="glossary-term" data-term="container-runtime">container
+runtime</span>, or the node as a whole restarts.</p>
+<p>In a healthy cluster these restarts are usually safe and do not break
+running workloads. The sections below describe the effects to be aware
+of, which become more pronounced on large or heavily loaded nodes. The
+most disruptive case is a <a href="#impact-of-a-node-reboot">node
+reboot</a>, which encompasses both a container runtime restart and a
+kubelet restart, but with more consequences because every container on
+the node stops first.</p>
+<h2 id="impact-of-a-kubelet-restart">Impact of a kubelet restart</h2>
+<p>If only the kubelet restarts, the containers that are already running
+<strong>continue to run</strong>. The kubelet re-establishes its view of
+the Node, and reconciles the running containers against the desired
+state. During this period of time, the following happens:</p>
+<ul>
+<li><p>The kubelet re-initializes and re-synchronizes its caches, which
+produces a burst of requests to the <a class="glossary-term" href="../glossary.html#term-kube-apiserver" title="Glossary: kube-apiserver">API server</a>. On large nodes with many
+Pods this burst can be significant.</p></li>
+<li><p>The node is temporarily reported as <code>NotReady</code> until
+the kubelet finishes initializing. While the node is
+<code>NotReady</code>, the <a class="glossary-term" href="../glossary.html#term-kube-scheduler" title="Glossary: kube-scheduler">scheduler</a> does not place new Pods on
+it.</p></li>
+<li><p><a
+href="../../concepts/architecture/nodes.html#node-heartbeats">Node
+heartbeats</a> pause while the kubelet is down and resume once it has
+restarted and finished initializing, when the kubelet renews its
+<code>Lease</code> object and posts node status again.</p></li>
+<li><p>The kubelet preserves the readiness of running containers across
+a restart. Each Pod's readiness drives <a class="glossary-term" href="../glossary.html#term-endpoint-slice" title="Glossary: endpoint-slice">EndpointSlices</a>, Endpoints, and
+downstream configuration (such as Gateways or Ingresses); this means
+that resetting container readiness on every restart would place a large
+load on the API server and on components that watch endpoint state, and
+could briefly remove healthy Pods from Service load balancing. This
+behavior is described in <a
+href="https://www.kubernetes.dev/resources/keps/4781/">KEP-4781: Fix
+inconsistent container ready state after kubelet restart</a>. Resetting
+container readiness to <code>false</code> on every restart was the
+default behavior for a long time. The
+<code>ChangeContainerStatusOnKubeletRestart</code> <a
+href="../command-line-tools-reference/feature-gates.html">feature
+gate</a> lets you revert to that behavior, but it is a deprecated legacy
+escape hatch that is slated for removal, so you should not rely on it.
+For more detail, see <a
+href="../../concepts/workloads/pods/pod-lifecycle.html#kubelet-restarts">Pod
+behavior during kubelet restarts</a>.</p></li>
+<li><p>During the initial kubelet startup, <a class="glossary-term" href="../glossary.html#term-garbage-collection" title="Glossary: garbage-collection">garbage collection</a> of unused
+images and containers, and Pod <a
+href="../../concepts/scheduling-eviction/node-pressure-eviction.html">evictions</a>
+driven by node-pressure, are paused. This pause continues for a short
+grace period after the kubelet has completed its main startup routines.
+This delay can slow the node's reaction to memory or disk
+pressure.</p></li>
+<li><p>Ongoing image pulls are cancelled. Depending on the container
+runtime, a cancelled pull may have to start over from the beginning when
+it is retried.</p></li>
+<li><p>Pod admission runs again for the Pods on the node as the kubelet
+replays them through its admission checks. If the node's <span
+class="glossary-term" data-term="label">labels</span> or <span
+class="glossary-term" data-term="taint">taints</span> have changed while
+the kubelet was down, a Pod can fail admission and be rejected even
+though it was already running. This is an existing behavior, and whether
+it should be considered a bug is still debated; see <a
+href="https://github.com/kubernetes/kubernetes/issues/123859">kubernetes/kubernetes#123859</a>
+for the discussion and details.</p></li>
+<li><p>If the kubelet configuration is updated, restarting the kubelet
+does not dynamically reapply most configuration settings to already
+running Pods. Most updated settings apply only to newly created
+Pods.</p></li>
+</ul>
+<p>Overall, in a healthy cluster a kubelet restart does not break
+running workloads. On large clusters with overcommitted nodes, however,
+the re-initialization load and the paused garbage collection and
+eviction can contribute to system instability.</p>
+<p>Kubernetes does not define the behavior of your container runtime if
+you restart it. Depending on the container runtime you use, a restart
+may trigger a stop or restart for all local containers. However, most
+container runtimes used with Kubernetes use a configuration that allows
+you to restart the runtime and leave containers executing.</p>
+<h2 id="impact-of-a-container-runtime-restart">Impact of a container
+runtime restart</h2>
+<p>When the container runtime (such as <a class="glossary-term" href="../glossary.html#term-containerd" title="Glossary: containerd">containerd</a> or CRI-O) restarts, the kubelet
+loses its connection to the runtime until it comes back. During this
+window:</p>
+<ul>
+<li><p><code>exec</code> <a
+href="../../concepts/workloads/pods/pod-lifecycle.html#container-probes">probes</a>
+fail for the duration of the restart, because the kubelet cannot run
+commands inside containers. With a short timeout and failure threshold,
+a failing liveness probe can cause a container to be restarted, and a
+failing readiness probe can cause the Pod to flap out of the
+<code>Ready</code> state.</p></li>
+<li><p>The node is reported as <code>NotReady</code> by the kubelet,
+which blocks scheduling of new Pods onto the node.</p></li>
+<li><p>Container operations such as restarts, initialization, and status
+updates are delayed until the runtime is available again.</p></li>
+<li><p>If an <a class="glossary-term" href="../glossary.html#term-init-container" title="Glossary: init-container">init
+container</a> was executing when the runtime restarted, its execution
+state can be lost, in which case the init container runs again.</p></li>
+<li><p>In rare cases, interrupting an operation at a precise moment can
+leave state inconsistent:</p>
+<ul>
+<li><p>An interrupted image pull may leave inconsistent image layers,
+which can render the image unusable until it is pulled again.</p></li>
+<li><p>An interrupted sandbox creation, if it is terminated in the
+middle of a CNI or NRI call, may leave the sandbox in an inconsistent
+state, with CNI only partially initialized and the possibility of a
+resource leak.</p></li>
+</ul></li>
+</ul>
+<p>Interrupting an operation at a precise moment is a low-probability
+situation, so restarting a container runtime is generally a safe
+operation. On a heavily loaded node, where every operation is slower,
+the window for interrupting a critical operation is larger and the
+probability of hitting one of these edge cases increases.</p>
+<h2 id="impact-of-a-node-reboot">Impact of a node reboot</h2>
+<p>A node reboot is the most disruptive of these events, because every
+container on the node stops. A reboot encompasses both a container
+runtime restart and a kubelet restart, but with more consequences: where
+a standalone kubelet or runtime restart leaves the already-running
+containers in place, a reboot stops every container first. After the
+node boots, the kubelet and container runtime start again with no
+containers actually running.</p>
+<p>Before a planned reboot you can reduce the impact by cordoning the
+node, so the scheduler stops placing new Pods on it, and then <span
+class="glossary-term" data-term="drain">draining</span> it to evict the
+existing Pods gracefully. When <a
+href="../../concepts/cluster-administration/node-shutdown.html#graceful-node-shutdown">graceful
+node shutdown</a> is enabled, the kubelet also attempts to stop running
+Pods cleanly when it detects that the node is shutting down.</p>
+<p>When the node comes back:</p>
+<ul>
+<li><p>The reboot stops all containers, and the kubelet recreates them
+when the node comes back. If the node stays down longer than the
+configured toleration period described below, only Pods managed by a
+controller (such as a <a class="glossary-term" href="../glossary.html#term-deployment" title="Glossary: deployment">Deployment</a>, <a class="glossary-term" href="../glossary.html#term-statefulset" title="Glossary: statefulset">StatefulSet</a>, or <span
+class="glossary-term" data-term="daemonset">DaemonSet</span>) get a
+replacement Pod. The replacement Pod might schedule onto a different
+node. Standalone Pods (without another object or controller managing
+them) are <strong>not</strong> recreated after deletion.</p></li>
+<li><p>The node renews the lease and reconciles its status. It is
+reported as <code>NotReady</code> until the kubelet, container runtime,
+and network are ready. While the node is <code>NotReady</code>, the node
+may be <a
+href="../../concepts/scheduling-eviction/taint-and-toleration.html">tainted</a>
+with <code>node.kubernetes.io/not-ready</code>, and after the configured
+toleration period the control plane can evict Pods that do not tolerate
+it.</p></li>
+<li><p>The kubelet re-runs admission for the Pods assigned to the node,
+so the label and taint considerations described under <a
+href="#impact-of-a-kubelet-restart">kubelet restart</a> apply here as
+well.</p></li>
+<li><p>For Pods that request devices, the kubelet calls the relevant <a
+href="../../concepts/extend-kubernetes/compute-storage-net/device-plugins.html">device
+plugin</a> again to confirm the device allocations for the Pods that are
+being restored on the node. The device plugin must re-register with the
+kubelet after the reboot so that these allocations can be
+reconciled.</p></li>
+<li><p>Local storage tied to the lifetime of a container or Pod can be
+lost. A container's writable layer is discarded when the container is
+recreated, so data written there does not survive the reboot. An <a
+href="../../concepts/storage/volumes.html#emptydir"><code>emptyDir</code></a>
+volume lasts as long as the Pod stays on the node: a memory-backed
+<code>emptyDir</code> (<code>medium: Memory</code>) is always lost on
+reboot because it is held in RAM, while a disk-backed
+<code>emptyDir</code> survives a reboot as long as the Pod is not
+evicted or deleted, and is removed only when the Pod leaves the
+node.</p></li>
+</ul>
+<p>For workloads that must tolerate node reboots, run Pods through a
+controller, use <a
+href="../../concepts/storage/persistent-volumes.html">persistent
+volumes</a> for data that must survive, and configure <a
+href="../../concepts/workloads/pods/disruptions.html">disruption
+budgets</a> and probes so that traffic is only sent to Pods once they
+are ready.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn about the kubelet's <a
+href="kubelet-sync-loop.html">sync loop</a>.</li>
+<li>Read about <a
+href="../../concepts/workloads/pods/pod-lifecycle.html">Pod
+lifecycle</a>.</li>
+<li>Read about <a
+href="../../concepts/scheduling-eviction/node-pressure-eviction.html">node-pressure
+eviction</a>.</li>
+<li>Learn how to <a
+href="../../tasks/administer-cluster/safely-drain-node.html">safely drain a
+node</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="seccomp.html"><span>Previous</span>Seccomp and Kubernetes</a><a class="page-nav-link next" href="swap-behavior.html"><span>Next</span>Linux Node Swap Behaviors</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#impact-of-a-kubelet-restart">Impact of a kubelet restart</a></li><li class="toc-l2"><a href="#impact-of-a-container-runtime-restart">Impact of a container runtime restart</a></li><li class="toc-l2"><a href="#impact-of-a-node-reboot">Impact of a node reboot</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

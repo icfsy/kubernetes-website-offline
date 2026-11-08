@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admission Webhook Good Practices · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="concepts/cluster-administration/admission-webhooks-good-practices" data-title="Admission Webhook Good Practices" data-canonical="https://kubernetes.io/docs/concepts/cluster-administration/admission-webhooks-good-practices/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../concepts.html">Concepts</a><span>/</span><a href="../cluster-administration.html">Cluster Administration</a></nav></nav>
+        <header class="page-head">
+          <h1>Admission Webhook Good Practices</h1>
+          <p class="lead">Recommendations for designing and deploying admission webhooks in Kubernetes.</p>
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/cluster-administration/admission-webhooks-good-practices/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page provides good practices and considerations when designing
+<em>admission webhooks</em> in Kubernetes. This information is intended
+for cluster operators who run admission webhook servers or third-party
+applications that modify or validate your API requests.</p>
+<p>Before reading this page, ensure that you're familiar with the
+following concepts:</p>
+<ul>
+<li><a
+href="../../reference/access-authn-authz/admission-controllers.html">Admission
+controllers</a></li>
+<li><a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#what-are-admission-webhooks">Admission
+webhooks</a></li>
+</ul>
+<h2 id="why-good-webhook-design-matters">Importance of good webhook
+design</h2>
+<p>Admission control occurs when any create, update, or delete request
+is sent to the Kubernetes API. Admission controllers intercept requests
+that match specific criteria that you define. These requests are then
+sent to mutating admission webhooks or validating admission webhooks.
+These webhooks are often written to ensure that specific fields in
+object specifications exist or have specific allowed values.</p>
+<p>Webhooks are a powerful mechanism to extend the Kubernetes API.
+Badly-designed webhooks often result in workload disruptions because of
+how much control the webhooks have over objects in the cluster. Like
+other API extension mechanisms, webhooks are challenging to test at
+scale for compatibility with all of your workloads, other webhooks,
+add-ons, and plugins.</p>
+<p>Additionally, with every release, Kubernetes adds or modifies the API
+with new features, feature promotions to beta or stable status, and
+deprecations. Even stable Kubernetes APIs are likely to change. For
+example, the <code>Pod</code> API changed in v1.29 to add the <a
+href="../workloads/pods/sidecar-containers.html">Sidecar
+containers</a> feature. While it's rare for a Kubernetes object to enter
+a broken state because of a new Kubernetes API, webhooks that worked as
+expected with earlier versions of an API might not be able to reconcile
+more recent changes to that API. This can result in unexpected behavior
+after you upgrade your clusters to newer versions.</p>
+<p>This page describes common webhook failure scenarios and how to avoid
+them by cautiously and thoughtfully designing and implementing your
+webhooks.</p>
+<h2 id="identify-admission-webhooks">Identify whether you use admission
+webhooks</h2>
+<p>Even if you don't run your own admission webhooks, some third-party
+applications that you run in your clusters might use mutating or
+validating admission webhooks.</p>
+<p>To check whether your cluster has any mutating admission webhooks,
+run the following command:</p>
+<pre class="shell"><code>kubectl get mutatingwebhookconfigurations</code></pre>
+<p>The output lists any mutating admission controllers in the
+cluster.</p>
+<p>To check whether your cluster has any validating admission webhooks,
+run the following command:</p>
+<pre class="shell"><code>kubectl get validatingwebhookconfigurations</code></pre>
+<p>The output lists any validating admission controllers in the
+cluster.</p>
+<h2 id="choose-admission-mechanism">Choose an admission control
+mechanism</h2>
+<p>Kubernetes includes multiple admission control and policy enforcement
+options. Knowing when to use a specific option can help you to improve
+latency and performance, reduce management overhead, and avoid issues
+during version upgrades. The following table describes the mechanisms
+that let you mutate or validate resources during admission:</p>
+<table>
+<caption>
+Mutating and validating admission control in Kubernetes
+</caption>
+<thead>
+<tr>
+<th>
+Mechanism
+</th>
+<th>
+Description
+</th>
+<th>
+Use cases
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>
+<a href="../../reference/access-authn-authz/extensible-admission-controllers.html">Mutating
+admission webhook</a>
+</td>
+<td>
+Intercept API requests before admission and modify as needed using
+custom logic.
+</td>
+<td>
+<ul>
+<li>
+Make critical modifications that must happen before resource admission.
+</li>
+<li>
+Make complex modifications that require advanced logic, like calling
+external APIs.
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../../reference/access-authn-authz/mutating-admission-policy.html">Mutating
+admission policy</a>
+</td>
+<td>
+Intercept API requests before admission and modify as needed using
+Common Expression Language (CEL) expressions.
+</td>
+<td>
+<ul>
+<li>
+Make critical modifications that must happen before resource admission.
+</li>
+<li>
+Make simple modifications, such as adjusting labels or replica counts.
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../../reference/access-authn-authz/extensible-admission-controllers.html">Validating
+admission webhook</a>
+</td>
+<td>
+Intercept API requests before admission and validate against complex
+policy declarations.
+</td>
+<td>
+<ul>
+<li>
+Validate critical configurations before resource admission.
+</li>
+<li>
+Enforce complex policy logic before admission.
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td>
+<a href="../../reference/access-authn-authz/validating-admission-policy.html">Validating
+admission policy</a>
+</td>
+<td>
+Intercept API requests before admission and validate against CEL
+expressions.
+</td>
+<td>
+<ul>
+<li>
+Validate critical configurations before resource admission.
+</li>
+<li>
+Enforce policy logic using CEL expressions.
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>In general, use <em>webhook</em> admission control when you want an
+extensible way to declare or configure the logic. Use built-in CEL-based
+admission control when you want to declare simpler logic without the
+overhead of running a webhook server. The Kubernetes project recommends
+that you use CEL-based admission control when possible.</p>
+<h3 id="no-crd-validation-defaulting">Use built-in validation and
+defaulting for CustomResourceDefinitions</h3>
+<p>If you use CustomResourceDefinitions,
+don't use admission webhooks to validate values in CustomResource
+specifications or to set default values for fields. Kubernetes lets you
+define validation rules and default field values when you create
+CustomResourceDefinitions.</p>
+<p>To learn more, see the following resources:</p>
+<ul>
+<li><a
+href="../../tasks/extend-kubernetes/custom-resources/custom-resource-definitions.html#validation-rules">Validation
+rules</a></li>
+<li><a
+href="../../tasks/extend-kubernetes/custom-resources/custom-resource-definitions.html#defaulting">Defaulting</a></li>
+</ul>
+<h2 id="performance-latency">Performance and latency</h2>
+<p>This section describes recommendations for improving performance and
+reducing latency. In summary, these are as follows:</p>
+<ul>
+<li>Consolidate webhooks and limit the number of API calls per
+webhook.</li>
+<li>Use audit logs to check for webhooks that repeatedly do the same
+action.</li>
+<li>Use load balancing for webhook availability.</li>
+<li>Set a small timeout value for each webhook.</li>
+<li>Consider cluster availability needs during webhook design.</li>
+</ul>
+<h3 id="design-admission-webhooks-low-latency">Design admission webhooks
+for low latency</h3>
+<p>Mutating admission webhooks are called in sequence. Depending on the
+mutating webhook setup, some webhooks might be called multiple times.
+Every mutating webhook call adds latency to the admission process. This
+is unlike validating webhooks, which get called in parallel.</p>
+<p>When designing your mutating webhooks, consider your latency
+requirements and tolerance. The more mutating webhooks there are in your
+cluster, the greater the chance of latency increases.</p>
+<p>Consider the following to reduce latency:</p>
+<ul>
+<li>Consolidate webhooks that perform a similar mutation on different
+objects.</li>
+<li>Reduce the number of API calls made in the mutating webhook server
+logic.</li>
+<li>Limit the match conditions of each mutating webhook to reduce how
+many webhooks are triggered by a specific API request.</li>
+<li>Consolidate small webhooks into one server and configuration to help
+with ordering and organization.</li>
+</ul>
+<h3 id="prevent-loops-competing-controllers">Prevent loops caused by
+competing controllers</h3>
+<p>Consider any other components that run in your cluster that might
+conflict with the mutations that your webhook makes. For example, if
+your webhook adds a label that a different controller removes, your
+webhook gets called again. This leads to a loop.</p>
+<p>To detect these loops, try the following:</p>
+<ol type="1">
+<li><p>Update your cluster audit policy to log audit events. Use the
+following parameters:</p>
+<ul>
+<li><code>level</code>: <code>RequestResponse</code></li>
+<li><code>verbs</code>: <code>["patch"]</code></li>
+<li><code>omitStages</code>: <code>RequestReceived</code></li>
+</ul>
+<p>Set the audit rule to create events for the specific resources that
+your webhook mutates.</p></li>
+<li><p>Check your audit events for webhooks being reinvoked multiple
+times with the same patch being applied to the same object, or for an
+object having a field updated and reverted multiple times.</p></li>
+</ol>
+<h3 id="small-timeout">Set a small timeout value</h3>
+<p>Admission webhooks should evaluate as quickly as possible (typically
+in milliseconds), since they add to API request latency. Use a small
+timeout for webhooks.</p>
+<p>For details, see <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#timeouts">Timeouts</a>.</p>
+<h3 id="load-balancer-webhook">Use a load balancer to ensure webhook
+availability</h3>
+<p>Admission webhooks should leverage some form of load-balancing to
+provide high availability and performance benefits. If a webhook is
+running within the cluster, you can run multiple webhook backends behind
+a Service of type <code>ClusterIP</code>.</p>
+<h3 id="ha-deployment">Use a high-availability deployment model</h3>
+<p>Consider your cluster's availability requirements when designing your
+webhook. For example, during node downtime or zonal outages, Kubernetes
+marks Pods as <code>NotReady</code> to allow load balancers to reroute
+traffic to available zones and nodes. These updates to Pods might
+trigger your mutating webhooks. Depending on the number of affected
+Pods, the mutating webhook server has a risk of timing out or causing
+delays in Pod processing. As a result, traffic won't get rerouted as
+quickly as you need.</p>
+<p>Consider situations like the preceding example when writing your
+webhooks. Exclude operations that are a result of Kubernetes responding
+to unavoidable incidents.</p>
+<h2 id="request-filtering">Request filtering</h2>
+<p>This section provides recommendations for filtering which requests
+trigger specific webhooks. In summary, these are as follows:</p>
+<ul>
+<li>Limit the webhook scope to avoid system components and read-only
+requests.</li>
+<li>Limit webhooks to specific namespaces.</li>
+<li>Use match conditions to perform fine-grained request filtering.</li>
+<li>Match all versions of an object.</li>
+</ul>
+<h3 id="webhook-limit-scope">Limit the scope of each webhook</h3>
+<p>Admission webhooks are only called when an API request matches the
+corresponding webhook configuration. Limit the scope of each webhook to
+reduce unnecessary calls to the webhook server. Consider the following
+scope limitations:</p>
+<ul>
+<li>Avoid matching objects in the <code>kube-system</code> namespace. If
+you run your own Pods in the <code>kube-system</code> namespace, use an
+<a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-objectselector"><code>objectSelector</code></a>
+to avoid mutating a critical workload.</li>
+<li>Don't mutate node leases, which exist as Lease objects in the
+<code>kube-node-lease</code> system namespace. Mutating node leases
+might result in failed node upgrades. Only apply validation controls to
+Lease objects in this namespace if you're confident that the controls
+won't put your cluster at risk.</li>
+<li>Don't match TokenReview, SubjectAccessReview, or other <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#excluded-virtual-resources">virtual
+authentication and authorization resources</a>. These are always
+read-only requests, and intercepting them might break your cluster.
+Starting with Kubernetes v1.37, admission webhooks are not called for
+these resources by default.</li>
+<li>Limit each webhook to a specific namespace by using a <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-namespaceselector"><code>namespaceSelector</code></a>.</li>
+</ul>
+<h3 id="filter-match-conditions">Filter for specific requests by using
+match conditions</h3>
+<p>Admission controllers support multiple fields that you can use to
+match requests that meet specific criteria. For example, you can use a
+<code>namespaceSelector</code> to filter for requests that target a
+specific namespace.</p>
+<p>For more fine-grained request filtering, use the
+<code>matchConditions</code> field in your webhook configuration. This
+field lets you write multiple CEL expressions that must evaluate to
+<code>true</code> for a request to trigger your admission webhook. Using
+<code>matchConditions</code> might significantly reduce the number of
+calls to your webhook server.</p>
+<p>For details, see <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-matchconditions">Matching
+requests: <code>matchConditions</code></a>.</p>
+<h3 id="match-all-versions">Match all versions of an API</h3>
+<p>By default, admission webhooks run on any API versions that affect a
+specified resource. The <code>matchPolicy</code> field in the webhook
+configuration controls this behavior. Specify a value of
+<code>Equivalent</code> in the <code>matchPolicy</code> field or omit
+the field to allow the webhook to run on any API version.</p>
+<p>For details, see <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-matchpolicy">Matching
+requests: <code>matchPolicy</code></a>.</p>
+<h2 id="mutation-scope-considerations">Mutation scope and field
+considerations</h2>
+<p>This section provides recommendations for the scope of mutations and
+any special considerations for object fields. In summary, these are as
+follows:</p>
+<ul>
+<li>Patch only the fields that you need to patch.</li>
+<li>Don't overwrite array values.</li>
+<li>Avoid side effects in mutations when possible.</li>
+<li>Avoid self-mutations.</li>
+<li>Fail open and validate the final state.</li>
+<li>Plan for future field updates in later versions.</li>
+<li>Prevent webhooks from self-triggering.</li>
+<li>Don't change immutable objects.</li>
+</ul>
+<h3 id="patch-required-fields">Patch only required fields</h3>
+<p>Admission webhook servers send HTTP responses to indicate what to do
+with a specific Kubernetes API request. This response is an
+AdmissionReview object. A mutating webhook can add specific fields to
+mutate before allowing admission by using the <code>patchType</code>
+field and the <code>patch</code> field in the response. Ensure that you
+only modify the fields that require a change.</p>
+<p>For example, consider a mutating webhook that's configured to ensure
+that <code>web-server</code> Deployments have at least three replicas.
+When a request to create a Deployment object matches your webhook
+configuration, the webhook should only update the value in the
+<code>spec.replicas</code> field.</p>
+<h3 id="dont-overwrite-arrays">Don't overwrite array values</h3>
+<p>Fields in Kubernetes object specifications might include arrays. Some
+arrays contain key:value pairs (like the <code>envVar</code> field in a
+container specification), while other arrays are unkeyed (like the
+<code>readinessGates</code> field in a Pod specification). The order of
+values in an array field might matter in some situations. For example,
+the order of arguments in the <code>args</code> field of a container
+specification might affect the container.</p>
+<p>Consider the following when modifying arrays:</p>
+<ul>
+<li>Whenever possible, use the <code>add</code> JSONPatch operation
+instead of <code>replace</code> to avoid accidentally replacing a
+required value.</li>
+<li>Treat arrays that don't use key:value pairs as sets.</li>
+<li>Ensure that the values in the field that you modify aren't required
+to be in a specific order.</li>
+<li>Don't overwrite existing key:value pairs unless absolutely
+necessary.</li>
+<li>Use caution when modifying label fields. An accidental modification
+might cause label selectors to break, resulting in unintended
+behavior.</li>
+</ul>
+<h3 id="avoid-side-effects">Avoid side effects</h3>
+<p>Ensure that your webhooks operate only on the content of the
+AdmissionReview that's sent to them, and do not make out-of-band
+changes. These additional changes, called <em>side effects</em>, might
+cause conflicts during admission if they aren't reconciled properly. The
+<code>.webhooks[].sideEffects</code> field should be set to
+<code>None</code> if a webhook doesn't have any side effect.</p>
+<p>If side effects are required during the admission evaluation, they
+must be suppressed when processing an AdmissionReview object with
+<code>dryRun</code> set to <code>true</code>, and the
+<code>.webhooks[].sideEffects</code> field should be set to
+<code>NoneOnDryRun</code>.</p>
+<p>For details, see <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#side-effects">Side
+effects</a>.</p>
+<h3 id="avoid-self-mutation">Avoid self-mutations</h3>
+<p>A webhook running inside the cluster might cause deadlocks for its
+own deployment if it is configured to intercept resources required to
+start its own Pods.</p>
+<p>For example, a mutating admission webhook is configured to admit
+<strong>create</strong> Pod requests only if a certain label is set in
+the Pod (such as <code>env: prod</code>). The webhook server runs in a
+Deployment that doesn't set the <code>env</code> label.</p>
+<p>When a node that runs the webhook server Pods becomes unhealthy, the
+webhook Deployment tries to reschedule the Pods to another node.
+However, the existing webhook server rejects the requests since the
+<code>env</code> label is unset. As a result, the migration cannot
+happen.</p>
+<p>Exclude the namespace where your webhook is running with a <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-namespaceselector"><code>namespaceSelector</code></a>.</p>
+<h3 id="avoid-dependency-loops">Avoid dependency loops</h3>
+<p>Dependency loops can occur in scenarios like the following:</p>
+<ul>
+<li>Two webhooks check each other's Pods. If both webhooks become
+unavailable at the same time, neither webhook can start.</li>
+<li>Your webhook intercepts cluster add-on components, such as
+networking plugins or storage plugins, that your webhook depends on. If
+both the webhook and the dependent add-on become unavailable, neither
+component can function.</li>
+</ul>
+<p>To avoid these dependency loops, try the following:</p>
+<ul>
+<li>Use <a
+href="../../reference/access-authn-authz/validating-admission-policy.html">ValidatingAdmissionPolicies</a>
+to avoid introducing dependencies.</li>
+<li>Prevent webhooks from validating or mutating other webhooks.
+Consider <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-namespaceselector">excluding
+specific namespaces</a> from triggering your webhook.</li>
+<li>Prevent your webhooks from acting on dependent add-ons by using an
+<a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#matching-requests-objectselector"><code>objectSelector</code></a>.</li>
+</ul>
+<h3 id="fail-open-validate-final-state">Fail open and validate the final
+state</h3>
+<p>Mutating admission webhooks support the <code>failurePolicy</code>
+configuration field. This field indicates whether the API server should
+admit or reject the request if the webhook fails. Webhook failures might
+occur because of timeouts or errors in the server logic.</p>
+<p>By default, admission webhooks set the <code>failurePolicy</code>
+field to Fail. The API server rejects a request if the webhook fails.
+However, rejecting requests by default might result in compliant
+requests being rejected during webhook downtime.</p>
+<p>Let your mutating webhooks "fail open" by setting the
+<code>failurePolicy</code> field to Ignore. Use a validating controller
+to check the state of requests to ensure that they comply with your
+policies.</p>
+<p>This approach has the following benefits:</p>
+<ul>
+<li>Mutating webhook downtime doesn't affect compliant resources from
+deploying.</li>
+<li>Policy enforcement occurs during validating admission control.</li>
+<li>Mutating webhooks don't interfere with other controllers in the
+cluster.</li>
+</ul>
+<h3 id="plan-future-field-updates">Plan for future updates to
+fields</h3>
+<p>In general, design your webhooks under the assumption that Kubernetes
+APIs might change in a later version. Don't write a server that takes
+the stability of an API for granted. For example, the release of sidecar
+containers in Kubernetes added a <code>restartPolicy</code> field to the
+Pod API.</p>
+<h3 id="prevent-webhook-self-trigger">Prevent your webhook from
+triggering itself</h3>
+<p>Mutating webhooks that respond to a broad range of API requests might
+unintentionally trigger themselves. For example, consider a webhook that
+responds to all requests in the cluster. If you configure the webhook to
+create Event objects for every mutation, it'll respond to its own Event
+object creation requests.</p>
+<p>To avoid this, consider setting a unique label in any resources that
+your webhook creates. Exclude this label from your webhook match
+conditions.</p>
+<h3 id="dont-change-immutable-objects">Don't change immutable
+objects</h3>
+<p>Some Kubernetes objects in the API server can't change. For example,
+when you deploy a <a class="glossary-term" href="../../reference/glossary.html#term-static-pod" title="Glossary: static-pod">static Pod</a>, the kubelet on the node
+creates a <a class="glossary-term" href="../../reference/glossary.html#term-mirror-pod" title="Glossary: mirror-pod">mirror
+Pod</a> in the API server to track the static Pod. However, changes
+to the mirror Pod don't propagate to the static Pod.</p>
+<p>Don't attempt to mutate these objects during admission. All mirror
+Pods have the <code>kubernetes.io/config.mirror</code> annotation. To
+exclude mirror Pods while reducing the security risk of ignoring an
+annotation, allow static Pods to only run in specific namespaces.</p>
+<h2 id="ordering-idempotence">Mutating webhook ordering and
+idempotence</h2>
+<p>This section provides recommendations for webhook order and designing
+idempotent webhooks. In summary, these are as follows:</p>
+<ul>
+<li>Don't rely on a specific order of execution.</li>
+<li>Validate mutations before admission.</li>
+<li>Check for mutations being overwritten by other controllers.</li>
+<li>Ensure that the set of mutating webhooks is idempotent, not just the
+individual webhooks.</li>
+</ul>
+<h3 id="dont-rely-webhook-order">Don't rely on mutating webhook
+invocation order</h3>
+<p>Mutating admission webhooks don't run in a consistent order. Various
+factors might change when a specific webhook is called. Don't rely on
+your webhook running at a specific point in the admission process. Other
+webhooks could still mutate your modified object.</p>
+<p>The following recommendations might help to minimize the risk of
+unintended changes:</p>
+<ul>
+<li><a href="#validate-mutations">Validate mutations before
+admission</a></li>
+<li>Use a reinvocation policy to observe changes to an object by other
+plugins and re-run the webhook as needed. For details, see <a
+href="../../reference/access-authn-authz/extensible-admission-controllers.html#reinvocation-policy">Reinvocation
+policy</a>.</li>
+</ul>
+<h3 id="ensure-mutating-webhook-idempotent">Ensure that the mutating
+webhooks in your cluster are idempotent</h3>
+<p>Every mutating admission webhook should be <em>idempotent</em>. The
+webhook should be able to run on an object that it already modified
+without making additional changes beyond the original change.</p>
+<p>Additionally, all of the mutating webhooks in your cluster should, as
+a collection, be idempotent. After the mutation phase of admission
+control ends, every individual mutating webhook should be able to run on
+an object without making additional changes to the object.</p>
+<p>Depending on your environment, ensuring idempotence at scale might be
+challenging. The following recommendations might help:</p>
+<ul>
+<li>Use validating admission controllers to verify the final state of
+critical workloads.</li>
+<li>Test your deployments in a staging cluster to see if any objects get
+modified multiple times by the same webhook.</li>
+<li>Ensure that the scope of each mutating webhook is specific and
+limited.</li>
+</ul>
+<p>The following examples show idempotent mutation logic:</p>
+<ol type="1">
+<li><p>For a <strong>create</strong> Pod request, set the field
+<code>.spec.securityContext.runAsNonRoot</code> of the Pod to
+true.</p></li>
+<li><p>For a <strong>create</strong> Pod request, if the field
+<code>.spec.containers[].resources.limits</code> of a container is not
+set, set default resource limits.</p></li>
+<li><p>For a <strong>create</strong> Pod request, inject a sidecar
+container with name <code>foo-sidecar</code> if no container with the
+name <code>foo-sidecar</code> already exists.</p></li>
+</ol>
+<p>In these cases, the webhook can be safely reinvoked, or admit an
+object that already has the fields set.</p>
+<p>The following examples show non-idempotent mutation logic:</p>
+<ol type="1">
+<li><p>For a <strong>create</strong> Pod request, inject a sidecar
+container with name <code>foo-sidecar</code> suffixed with the current
+timestamp (such as <code>foo-sidecar-19700101-000000</code>).</p>
+<p>Reinvoking the webhook can result in the same sidecar being injected
+multiple times to a Pod, each time with a different container name.
+Similarly, the webhook can inject duplicated containers if the sidecar
+already exists in a user-provided pod.</p></li>
+<li><p>For a <strong>create</strong>/<strong>update</strong> Pod
+request, reject if the Pod has label <code>env</code> set, otherwise add
+an <code>env: prod</code> label to the Pod.</p>
+<p>Reinvoking the webhook will result in the webhook failing on its own
+output.</p></li>
+<li><p>For a <strong>create</strong> Pod request, append a sidecar
+container named <code>foo-sidecar</code> without checking whether a
+<code>foo-sidecar</code> container exists.</p>
+<p>Reinvoking the webhook will result in duplicated containers in the
+Pod, which makes the request invalid and rejected by the API
+server.</p></li>
+</ol>
+<h2 id="mutation-testing-validation">Mutation testing and
+validation</h2>
+<p>This section provides recommendations for testing your mutating
+webhooks and validating mutated objects. In summary, these are as
+follows:</p>
+<ul>
+<li>Test webhooks in staging environments.</li>
+<li>Avoid mutations that violate validations.</li>
+<li>Test minor version upgrades for regressions and conflicts.</li>
+<li>Validate mutated objects before admission.</li>
+</ul>
+<h3 id="test-in-staging-environments">Test webhooks in staging
+environments</h3>
+<p>Robust testing should be a core part of your release cycle for new or
+updated webhooks. If possible, test any changes to your cluster webhooks
+in a staging environment that closely resembles your production
+clusters. At the very least, consider using a tool like <a
+href="https://minikube.sigs.k8s.io/docs/">minikube</a> or <a
+href="https://kind.sigs.k8s.io/">kind</a> to create a small test cluster
+for webhook changes.</p>
+<h3 id="ensure-mutations-dont-violate-validations">Ensure that mutations
+don't violate validations</h3>
+<p>Your mutating webhooks shouldn't break any of the validations that
+apply to an object before admission. For example, consider a mutating
+webhook that sets the default CPU request of a Pod to a specific value.
+If the CPU limit of that Pod is set to a lower value than the mutated
+request, the Pod fails admission.</p>
+<p>Test every mutating webhook against the validations that run in your
+cluster.</p>
+<h3 id="test-minor-version-upgrades">Test minor version upgrades to
+ensure consistent behavior</h3>
+<p>Before upgrading your production clusters to a new minor version,
+test your webhooks and workloads in a staging environment. Compare the
+results to ensure that your webhooks continue to function as expected
+after the upgrade.</p>
+<p>Additionally, use the following resources to stay informed about API
+changes:</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/releases/">Kubernetes release
+notes</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/blog/">Kubernetes blog</a></li>
+</ul>
+<h3 id="validate-mutations">Validate mutations before admission</h3>
+<p>Mutating webhooks run to completion before any validating webhooks
+run. There is no stable order in which mutations are applied to objects.
+As a result, your mutations could get overwritten by a mutating webhook
+that runs at a later time.</p>
+<p>Add a validating admission controller like a
+ValidatingAdmissionWebhook or a ValidatingAdmissionPolicy to your
+cluster to ensure that your mutations are still present. For example,
+consider a mutating webhook that inserts the
+<code>restartPolicy: Always</code> field to specific init containers to
+make them run as sidecar containers. You could run a validating webhook
+to ensure that those init containers retained the
+<code>restartPolicy: Always</code> configuration after all mutations
+were completed.</p>
+<p>For details, see the following resources:</p>
+<ul>
+<li><a
+href="../../reference/access-authn-authz/validating-admission-policy.html">Validating
+Admission Policy</a></li>
+<li><a
+href="../../reference/access-authn-authz/admission-controllers.html#validatingadmissionwebhook">ValidatingAdmissionWebhooks</a></li>
+</ul>
+<h2 id="mutating-webhook-deployment">Mutating webhook deployment</h2>
+<p>This section provides recommendations for deploying your mutating
+admission webhooks. In summary, these are as follows:</p>
+<ul>
+<li>Gradually roll out the webhook configuration and monitor for issues
+by namespace.</li>
+<li>Limit access to edit the webhook configuration resources.</li>
+<li>Limit access to the namespace that runs the webhook server, if the
+server is in-cluster.</li>
+</ul>
+<h3 id="install-enable-mutating-webhook">Install and enable a mutating
+webhook</h3>
+<p>When you're ready to deploy your mutating webhook to a cluster, use
+the following order of operations:</p>
+<ol type="1">
+<li>Install the webhook server and start it.</li>
+<li>Set the <code>failurePolicy</code> field in the
+MutatingWebhookConfiguration manifest to Ignore. This lets you avoid
+disruptions caused by misconfigured webhooks.</li>
+<li>Set the <code>namespaceSelector</code> field in the
+MutatingWebhookConfiguration manifest to a test namespace.</li>
+<li>Deploy the MutatingWebhookConfiguration to your cluster.</li>
+</ol>
+<p>Monitor the webhook in the test namespace to check for any issues,
+then roll the webhook out to other namespaces. If the webhook intercepts
+an API request that it wasn't meant to intercept, pause the rollout and
+adjust the scope of the webhook configuration.</p>
+<h3 id="limit-edit-access">Limit edit access to mutating webhooks</h3>
+<p>Mutating webhooks are powerful Kubernetes controllers. Use RBAC or
+another authorization mechanism to limit access to your webhook
+configurations and servers. For RBAC, ensure that the following access
+is only available to trusted entities:</p>
+<ul>
+<li>Verbs: <strong>create</strong>, <strong>update</strong>,
+<strong>patch</strong>, <strong>delete</strong>,
+<strong>deletecollection</strong></li>
+<li>API group: <code>admissionregistration.k8s.io/v1</code></li>
+<li>API kind: MutatingWebhookConfigurations</li>
+</ul>
+<p>If your mutating webhook server runs in the cluster, limit access to
+create or modify any resources in that namespace.</p>
+<h2 id="example-good-implementations">Examples of good
+implementations</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>This section links to third party projects that provide functionality
+required by Kubernetes. The Kubernetes project authors aren't
+responsible for these projects, which are listed alphabetically. To add
+a project to this list, read the
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content">content
+guide</a> before submitting a change.
+<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/contribute/style/content-guide/#third-party-content-disclaimer">More
+information.</a></p>
+</div>
+<p>The following projects are examples of "good" custom webhook server
+implementations. You can use them as a starting point when designing
+your own webhooks. Don't use these examples as-is; use them as a
+starting point and design your webhooks to run well in your specific
+environment.</p>
+<ul>
+<li><a
+href="https://github.com/cert-manager/cert-manager/tree/master/internal/webhook"><code>cert-manager</code></a></li>
+<li><a
+href="https://open-policy-agent.github.io/gatekeeper/website/docs/mutation">Gatekeeper
+Open Policy Agent (OPA)</a></li>
+</ul>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li><a href="../../reference/access-authn-authz/webhook.html">Use webhooks
+for authentication and authorization</a></li>
+<li><a
+href="../../reference/access-authn-authz/mutating-admission-policy.html">Learn
+about MutatingAdmissionPolicies</a></li>
+<li><a
+href="../../reference/access-authn-authz/validating-admission-policy.html">Learn
+about ValidatingAdmissionPolicies</a></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="observability.html"><span>Previous</span>Observability</a><a class="page-nav-link next" href="dra.html"><span>Next</span>Good practices for Dynamic Resource Allocation as a Cluster Admin</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#why-good-webhook-design-matters">Importance of good webhook design</a></li><li class="toc-l2"><a href="#identify-admission-webhooks">Identify whether you use admission webhooks</a></li><li class="toc-l2"><a href="#choose-admission-mechanism">Choose an admission control mechanism</a></li><li class="toc-l3"><a href="#no-crd-validation-defaulting">Use built-in validation and defaulting for CustomResourceDefinitions</a></li><li class="toc-l2"><a href="#performance-latency">Performance and latency</a></li><li class="toc-l3"><a href="#design-admission-webhooks-low-latency">Design admission webhooks for low latency</a></li><li class="toc-l3"><a href="#prevent-loops-competing-controllers">Prevent loops caused by competing controllers</a></li><li class="toc-l3"><a href="#small-timeout">Set a small timeout value</a></li><li class="toc-l3"><a href="#load-balancer-webhook">Use a load balancer to ensure webhook availability</a></li><li class="toc-l3"><a href="#ha-deployment">Use a high-availability deployment model</a></li><li class="toc-l2"><a href="#request-filtering">Request filtering</a></li><li class="toc-l3"><a href="#webhook-limit-scope">Limit the scope of each webhook</a></li><li class="toc-l3"><a href="#filter-match-conditions">Filter for specific requests by using match conditions</a></li><li class="toc-l3"><a href="#match-all-versions">Match all versions of an API</a></li><li class="toc-l2"><a href="#mutation-scope-considerations">Mutation scope and field considerations</a></li><li class="toc-l3"><a href="#patch-required-fields">Patch only required fields</a></li><li class="toc-l3"><a href="#dont-overwrite-arrays">Don&#x27;t overwrite array values</a></li><li class="toc-l3"><a href="#avoid-side-effects">Avoid side effects</a></li><li class="toc-l3"><a href="#avoid-self-mutation">Avoid self-mutations</a></li><li class="toc-l3"><a href="#avoid-dependency-loops">Avoid dependency loops</a></li><li class="toc-l3"><a href="#fail-open-validate-final-state">Fail open and validate the final state</a></li><li class="toc-l3"><a href="#plan-future-field-updates">Plan for future updates to fields</a></li><li class="toc-l3"><a href="#prevent-webhook-self-trigger">Prevent your webhook from triggering itself</a></li><li class="toc-l3"><a href="#dont-change-immutable-objects">Don&#x27;t change immutable objects</a></li><li class="toc-l2"><a href="#ordering-idempotence">Mutating webhook ordering and idempotence</a></li><li class="toc-l3"><a href="#dont-rely-webhook-order">Don&#x27;t rely on mutating webhook invocation order</a></li><li class="toc-l3"><a href="#ensure-mutating-webhook-idempotent">Ensure that the mutating webhooks in your cluster are idempotent</a></li><li class="toc-l2"><a href="#mutation-testing-validation">Mutation testing and validation</a></li><li class="toc-l3"><a href="#test-in-staging-environments">Test webhooks in staging environments</a></li><li class="toc-l3"><a href="#ensure-mutations-dont-violate-validations">Ensure that mutations don&#x27;t violate validations</a></li><li class="toc-l3"><a href="#test-minor-version-upgrades">Test minor version upgrades to ensure consistent behavior</a></li><li class="toc-l3"><a href="#validate-mutations">Validate mutations before admission</a></li><li class="toc-l2"><a href="#mutating-webhook-deployment">Mutating webhook deployment</a></li><li class="toc-l3"><a href="#install-enable-mutating-webhook">Install and enable a mutating webhook</a></li><li class="toc-l3"><a href="#limit-edit-access">Limit edit access to mutating webhooks</a></li><li class="toc-l2"><a href="#example-good-implementations">Examples of good implementations</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

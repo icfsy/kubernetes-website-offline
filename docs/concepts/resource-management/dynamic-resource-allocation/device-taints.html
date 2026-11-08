@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Device Taints and Tolerations · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="concepts/resource-management/dynamic-resource-allocation/device-taints" data-title="Device Taints and Tolerations" data-canonical="https://kubernetes.io/docs/concepts/resource-management/dynamic-resource-allocation/device-taints/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../concepts.html">Concepts</a><span>/</span><a href="../../resource-management.html">Resource Management</a><span>/</span><a href="../dynamic-resource-allocation.html">Dynamic Resource Allocation</a></nav></nav>
+        <header class="page-head">
+          <h1>Device Taints and Tolerations</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Concept</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/concepts/resource-management/dynamic-resource-allocation/device-taints/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page describes device taints and tolerations in DRA, which let
+drivers and admins keep Pods off specific devices, or evict Pods already
+using them.</p>
+<h2 id="device-taints-and-tolerations">Device taints and
+tolerations</h2>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.37; enabled by default
+(<code>DRADeviceTaints</code>)</p>
+</div>
+<p>Device taints are similar to node taints: a taint has a string key, a
+string value, and an effect. The effect is applied to the ResourceClaim
+which is using a tainted device and to all Pods referencing that
+ResourceClaim. The "NoSchedule" effect prevents scheduling those Pods.
+Tainted devices are ignored when trying to allocate a ResourceClaim
+because using them would prevent scheduling of Pods.</p>
+<p>The "NoExecute" effect implies "NoSchedule" and in addition causes
+eviction of all Pods which have been scheduled already. This eviction is
+implemented in the device taint eviction controller in
+kube-controller-manager by deleting affected Pods.</p>
+<p>The "None" effect is ignored by the scheduler and eviction
+controller. DRA drivers can use it to communicate exceptions to admins
+or other controllers, for example degraded health of a device. Admins
+can also use it to do dry-runs of pod eviction in DeviceTaintRules (more
+on that below).</p>
+<p>ResourceClaims can tolerate taints. If a taint is tolerated, its
+effect does not apply. An empty toleration matches all taints. A
+toleration can be limited to certain effects and/or match certain
+key/value pairs. A toleration can check that a certain key exists,
+regardless which value it has, or it can check for specific values of a
+key. For more information on this matching see the <a
+href="../../scheduling-eviction/taint-and-toleration.html#concepts">node
+taint concepts</a>.</p>
+<p>Eviction can be delayed by tolerating a taint for a certain duration.
+That delay starts at the time when a taint gets added to a device, which
+is recorded in a field of the taint.</p>
+<p>Taints apply as described above also to ResourceClaims allocating
+"all" devices on a node. All devices must be untainted or all of their
+taints must be tolerated. Allocating a device with admin access
+(described <a href="#">above</a>) is not exempt either. An
+admin using that mode must explicitly tolerate all taints to access
+tainted devices.</p>
+<p>You can add taints to devices in the following ways, by using the
+DeviceTaintRule API kind.</p>
+<h3 id="taints-set-by-the-driver">Taints set by the driver</h3>
+<p>A DRA driver can add taints to the device information that it
+publishes in ResourceSlices. Consult the documentation of a DRA driver
+to learn whether the driver uses taints and what their keys and values
+are.</p>
+<h3 id="taints-set-by-an-admin">Taints set by an admin</h3>
+<div class="admonition feature-state">
+<div class="admonition-title">
+<p>Feature state:</p>
+</div>
+<p>Stable since Kubernetes v1.37; enabled by default
+(<code>DRADeviceTaintRules</code>)</p>
+</div>
+<p>An admin or a control plane component can taint devices without
+having to tell the DRA driver to include taints in its device
+information in ResourceSlices. They do that by creating
+DeviceTaintRules. Each DeviceTaintRule adds one taint to devices which
+match the device selector. Without such a selector, no devices are
+tainted. This makes it harder to accidentally evict all pods using
+ResourceClaims when leaving out the selector by mistake.</p>
+<p>Devices can be selected by giving the name of a DeviceClass, driver,
+pool, and/or device. The DeviceClass selects all devices that are
+selected by the selectors in that DeviceClass. With just the driver
+name, an admin can taint all devices managed by that driver, for example
+while doing some kind of maintenance of that driver across the entire
+cluster. Adding a pool name can limit the taint to a single node, if the
+driver manages node-local devices.</p>
+<p>Finally, adding the device name can select one specific device. The
+device name and pool name can also be used alone, if desired. For
+example, drivers for node-local devices are encouraged to use the node
+name as their pool name. Then tainting with that pool name automatically
+taints all devices on a node.</p>
+<p>Drivers might use stable names like "gpu-0" that hide which specific
+device is currently assigned to that name. To support tainting a
+specific hardware instance, CEL selectors can be used in a
+DeviceTaintRule to match a vendor-specific unique ID attribute, if the
+driver supports one for its hardware.</p>
+<p>The taint applies as long as the DeviceTaintRule exists. It can be
+modified and removed at any time. Here is one example of a
+DeviceTaintRule for a fictional DRA driver:</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> resource.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> DeviceTaintRule</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="co"># The entire hardware installation for this</span></span>
+<span class="at">  </span><span class="co"># particular driver is broken.</span></span>
+<span class="at">  </span><span class="co"># Evict all pods and don&#39;t schedule new ones.</span></span>
+<span class="at">  </span><span class="fu">deviceSelector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">driver</span><span class="kw">:</span><span class="at"> dra.example.com</span></span>
+<span class="at">  </span><span class="fu">taint</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">key</span><span class="kw">:</span><span class="at"> dra.example.com/unhealthy</span></span>
+<span class="at">    </span><span class="fu">value</span><span class="kw">:</span><span class="at"> Broken</span></span>
+<span class="at">    </span><span class="fu">effect</span><span class="kw">:</span><span class="at"> NoExecute</span></span></code></pre></div>
+<p>The kube-apiserver automatically tracks when this taint was created
+by setting the <code>timeAdded</code> field in the <code>spec</code>.
+The toleration period starts at that time stamp. During updates which
+change the effect (see simulated eviction flow below), the
+kube-apiserver automatically updates the time stamp. Users can control
+the time stamp explicitly by setting the field when creating a
+DeviceTaintRule and by changing it to some different value when
+updating.</p>
+<p>The status contains a condition added by the eviction controller:</p>
+<pre><code>kubectl describe devicetaintrules</code></pre>
+<pre><code>Name:         example
+...
+Spec:
+  Device Selector:
+    Driver:  dra.example.com
+  Taint:
+    Effect:      NoExecute
+    Key:         dra.example.com/unhealthy
+    Time Added:  2025-11-05T18:15:37Z
+    Value:       Broken
+Status:
+  Conditions:
+    Last Transition Time:  2025-11-05T18:15:37Z
+    Message:               1 pod evicted since starting the controller.
+    Observed Generation:   1
+    Reason:                Completed
+    Status:                False
+    Type:                  EvictionInProgress
+Events:                    &lt;none&gt;</code></pre>
+<p>Pods get evicted by deleting them. Usually this happens very quickly,
+except when a toleration for the taint delays it for a certain period or
+when there are very many pods which need to be evicted. When it takes
+longer, the message provides information about the current status:</p>
+<pre><code>2 pods need to be evicted in 2 different namespaces. 1 pod evicted since starting the controller.</code></pre>
+<p>The condition can be used to check whether an eviction is currently
+active:</p>
+<pre><code>kubectl wait --for=condition=EvictionInProgress=false DeviceTaintRule/example</code></pre>
+<p>Beware of the potential race between scheduler and controller
+observing the new taint at different times, which can lead to pods still
+being scheduled at a time when the controller thinks that there are none
+which need to be evicted and thus sets this condition to
+<code>False</code>. In practice, this race is made very unlikely by
+updating the status only after an intentional delay of a few
+seconds.</p>
+<p>For <code>effect: None</code>, the message provides information about
+the number of affected devices, how many of those are allocated, and how
+many pods would be evicted if the effect was <code>NoExecute</code>.
+This can be used to do a dry-run before actually triggering
+eviction:</p>
+<ul>
+<li><p>Create a DeviceTaintRule with the desired selectors and
+<code>effect: None</code>.</p></li>
+<li><p>Review the message:</p>
+<pre><code>3 published devices selected. 1 allocated device selected.
+1 pod would be evicted in 1 namespace if the effect was NoExecute.
+This information will not be updated again. Recreate the DeviceTaintRule to trigger an update.</code></pre>
+<p>Published devices are those listed in ResourceSlices. Tainting them
+prevents allocation for new pods. Only allocated devices cause eviction
+of the pods using them.</p></li>
+<li><p>Edit the DeviceTaintRule and change the effect into
+<code>NoExecute</code>.</p></li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="dra-features.html"><span>Previous</span>DRA Features</a><a class="page-nav-link next" href="../pod-level-resource-managers.html"><span>Next</span>Pod-level resource managers</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#device-taints-and-tolerations">Device taints and tolerations</a></li><li class="toc-l3"><a href="#taints-set-by-the-driver">Taints set by the driver</a></li><li class="toc-l3"><a href="#taints-set-by-an-admin">Taints set by an admin</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

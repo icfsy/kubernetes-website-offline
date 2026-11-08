@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Troubleshooting Topology Management · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="tasks/debug/debug-cluster/topology" data-title="Troubleshooting Topology Management" data-canonical="https://kubernetes.io/docs/tasks/debug/debug-cluster/topology/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../tasks.html">Tasks</a><span>/</span><a href="../../debug.html">Monitoring, Logging, and Debugging</a><span>/</span><a href="../debug-cluster.html">Troubleshooting Clusters</a></nav></nav>
+        <header class="page-head">
+          <h1>Troubleshooting Topology Management</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tasks/debug/debug-cluster/topology/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>Kubernetes keeps many aspects of how pods execute on nodes abstracted
+from the user. This is by design. However, some workloads require
+stronger guarantees in terms of latency and/or performance in order to
+operate acceptably. The <code>kubelet</code> provides methods to enable
+more complex workload placement policies while keeping the abstraction
+free from explicit placement directives.</p>
+<p>You can manage topology within nodes. This means helping the kubelet
+to configure the host operating system so that Pods and containers are
+placed on the correct side of inner boundaries, such as <em>NUMA
+domains</em>. (NUMA is an abbreviation of <em>non-uniform memory
+access</em>, and refers to an idea that CPUs might be topologically
+closer to specific regions of memory, due to the physical layout of the
+hardware components and the way that these are connected).</p>
+<h2 id="sources-of-troubleshooting-information">Sources of
+troubleshooting information</h2>
+<p>You can use the following means to troubleshoot the reason why a pod
+could not be deployed or became rejected at a node, in the context of
+topology management:</p>
+<ul>
+<li><em>Pod status</em> - indicates topology affinity errors</li>
+<li><em>system logs</em> - include valuable information for debugging;
+for example, about generated hints</li>
+<li><em>kubelet state file</em> - the dump of internal state of the
+Memory Manager (including the <em>node map</em> and <em>memory
+maps</em>)</li>
+<li>You can use the <a href="#device-plugin-resource-api">device plugin
+resource API</a> to retrieve information about the memory reserved for
+containers</li>
+</ul>
+<h2 id="TopologyAffinityError">Troubleshoot
+<code>TopologyAffinityError</code></h2>
+<p>This error typically occurs in the following situations:</p>
+<ul>
+<li>a node has not enough resources available to satisfy the pod's
+request</li>
+<li>the pod's request is rejected due to particular Topology Manager
+policy constraints</li>
+</ul>
+<p>The error appears in the status of a pod:</p>
+<pre class="shell"><code>kubectl get pods</code></pre>
+<pre class="none"><code>NAME         READY   STATUS                  RESTARTS   AGE
+guaranteed   0/1     TopologyAffinityError   0          113s</code></pre>
+<p>Use <code>kubectl describe pod &lt;id&gt;</code> or
+<code>kubectl events</code> to obtain a detailed error message:</p>
+<pre class="none"><code>Warning  TopologyAffinityError  10m   kubelet, dell8  Resources cannot be allocated with Topology locality</code></pre>
+<h2 id="examine-system-logs">Examine system logs</h2>
+<p>Search system logs with respect to a particular pod.</p>
+<p>The set of hints generated by CPU Manager should be present in the
+logs. Also, the set of hints that Memory Manager generated for the pod
+can be found in the logs.</p>
+<p>Topology Manager merges these hints to calculate a single best hint.
+The best hint should also be present in the logs.</p>
+<p>The best hint indicates where to allocate all the resources. Topology
+Manager tests this hint against its current policy, and based on the
+verdict, it either admits the pod to the node or rejects it.</p>
+<p>Also, search the logs for occurrences associated with the Memory
+Manager; for example to find out information about <code>cgroups</code>
+and <code>cpuset.mems</code> updates.</p>
+<h2 id="examples">Examples</h2>
+<h3 id="examine-the-memory-manager-state-on-a-node">Examine the memory
+manager state on a node</h3>
+<p>Let us first deploy a sample <code>Guaranteed</code> pod whose
+specification is as follows:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Pod</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> guaranteed</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> guaranteed</span></span>
+<span class="at">    </span><span class="fu">image</span><span class="kw">:</span><span class="at"> consumer</span></span>
+<span class="at">    </span><span class="fu">imagePullPolicy</span><span class="kw">:</span><span class="at"> Never</span></span>
+<span class="at">    </span><span class="fu">resources</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">limits</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 150Gi</span></span>
+<span class="at">      </span><span class="fu">requests</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">cpu</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;2&quot;</span></span>
+<span class="at">        </span><span class="fu">memory</span><span class="kw">:</span><span class="at"> 150Gi</span></span>
+<span class="at">    </span><span class="fu">command</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="st">&quot;sleep&quot;</span><span class="kw">,</span><span class="st">&quot;infinity&quot;</span><span class="kw">]</span></span></code></pre></div>
+<p>Next, log into the node where it was deployed and examine the state
+file in <code>/var/lib/kubelet/memory_manager_state</code>:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="fu">{</span></span>
+   <span class="dt">&quot;policyName&quot;</span><span class="fu">:</span><span class="st">&quot;Static&quot;</span><span class="fu">,</span></span>
+   <span class="dt">&quot;machineState&quot;</span><span class="fu">:{</span></span>
+      <span class="dt">&quot;0&quot;</span><span class="fu">:{</span></span>
+         <span class="dt">&quot;numberOfAssignments&quot;</span><span class="fu">:</span><span class="dv">1</span><span class="fu">,</span></span>
+         <span class="dt">&quot;memoryMap&quot;</span><span class="fu">:{</span></span>
+            <span class="dt">&quot;hugepages-1Gi&quot;</span><span class="fu">:{</span></span>
+               <span class="dt">&quot;total&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;systemReserved&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;allocatable&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;reserved&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;free&quot;</span><span class="fu">:</span><span class="dv">0</span></span>
+            <span class="fu">},</span></span>
+            <span class="dt">&quot;memory&quot;</span><span class="fu">:{</span></span>
+               <span class="dt">&quot;total&quot;</span><span class="fu">:</span><span class="dv">134987354112</span><span class="fu">,</span></span>
+               <span class="dt">&quot;systemReserved&quot;</span><span class="fu">:</span><span class="dv">3221225472</span><span class="fu">,</span></span>
+               <span class="dt">&quot;allocatable&quot;</span><span class="fu">:</span><span class="dv">131766128640</span><span class="fu">,</span></span>
+               <span class="dt">&quot;reserved&quot;</span><span class="fu">:</span><span class="dv">131766128640</span><span class="fu">,</span></span>
+               <span class="dt">&quot;free&quot;</span><span class="fu">:</span><span class="dv">0</span></span>
+            <span class="fu">}</span></span>
+         <span class="fu">},</span></span>
+         <span class="dt">&quot;nodes&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
+            <span class="dv">0</span><span class="ot">,</span></span>
+            <span class="dv">1</span></span>
+         <span class="ot">]</span></span>
+      <span class="fu">},</span></span>
+      <span class="dt">&quot;1&quot;</span><span class="fu">:{</span></span>
+         <span class="dt">&quot;numberOfAssignments&quot;</span><span class="fu">:</span><span class="dv">1</span><span class="fu">,</span></span>
+         <span class="dt">&quot;memoryMap&quot;</span><span class="fu">:{</span></span>
+            <span class="dt">&quot;hugepages-1Gi&quot;</span><span class="fu">:{</span></span>
+               <span class="dt">&quot;total&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;systemReserved&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;allocatable&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;reserved&quot;</span><span class="fu">:</span><span class="dv">0</span><span class="fu">,</span></span>
+               <span class="dt">&quot;free&quot;</span><span class="fu">:</span><span class="dv">0</span></span>
+            <span class="fu">},</span></span>
+            <span class="dt">&quot;memory&quot;</span><span class="fu">:{</span></span>
+               <span class="dt">&quot;total&quot;</span><span class="fu">:</span><span class="dv">135286722560</span><span class="fu">,</span></span>
+               <span class="dt">&quot;systemReserved&quot;</span><span class="fu">:</span><span class="dv">2252341248</span><span class="fu">,</span></span>
+               <span class="dt">&quot;allocatable&quot;</span><span class="fu">:</span><span class="dv">133034381312</span><span class="fu">,</span></span>
+               <span class="dt">&quot;reserved&quot;</span><span class="fu">:</span><span class="dv">29295144960</span><span class="fu">,</span></span>
+               <span class="dt">&quot;free&quot;</span><span class="fu">:</span><span class="dv">103739236352</span></span>
+            <span class="fu">}</span></span>
+         <span class="fu">},</span></span>
+         <span class="dt">&quot;nodes&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
+            <span class="dv">0</span><span class="ot">,</span></span>
+            <span class="dv">1</span></span>
+         <span class="ot">]</span></span>
+      <span class="fu">}</span></span>
+   <span class="fu">},</span></span>
+   <span class="dt">&quot;entries&quot;</span><span class="fu">:{</span></span>
+      <span class="dt">&quot;fa9bdd38-6df9-4cf9-aa67-8c4814da37a8&quot;</span><span class="fu">:{</span></span>
+         <span class="dt">&quot;guaranteed&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
+            <span class="fu">{</span></span>
+               <span class="dt">&quot;numaAffinity&quot;</span><span class="fu">:</span><span class="ot">[</span></span>
+                  <span class="dv">0</span><span class="ot">,</span></span>
+                  <span class="dv">1</span></span>
+               <span class="ot">]</span><span class="fu">,</span></span>
+               <span class="dt">&quot;type&quot;</span><span class="fu">:</span><span class="st">&quot;memory&quot;</span><span class="fu">,</span></span>
+               <span class="dt">&quot;size&quot;</span><span class="fu">:</span><span class="dv">161061273600</span></span>
+            <span class="fu">}</span></span>
+         <span class="ot">]</span></span>
+      <span class="fu">}</span></span>
+   <span class="fu">},</span></span>
+   <span class="dt">&quot;checksum&quot;</span><span class="fu">:</span><span class="dv">4142013182</span></span>
+<span class="fu">}</span></span></code></pre></div>
+<p>It can be deduced from the state file that the pod was pinned to both
+NUMA nodes, i.e.:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode json"><code class="sourceCode json"><span class="st">&quot;numaAffinity&quot;</span><span class="er">:</span><span class="ot">[</span></span>
+   <span class="dv">0</span><span class="ot">,</span></span>
+   <span class="dv">1</span></span>
+<span class="ot">]</span><span class="er">,</span></span></code></pre></div>
+<p>Pinned term means that pod's memory consumption is constrained
+(through <code>cgroups</code> configuration) to these NUMA nodes.</p>
+<p>This automatically implies that Memory Manager instantiated a new
+group that comprises these two NUMA nodes, i.e. <code>0</code> and
+<code>1</code> indexed NUMA nodes.</p>
+<p>In order to analyse memory resources available in a group,the
+corresponding entries from NUMA nodes belonging to the group must be
+added up.</p>
+<p>For example, the total amount of free "conventional" memory in the
+group can be computed by adding up the free memory available at every
+NUMA node in the group, i.e., in the <code>"memory"</code> section of
+NUMA node <code>0</code> (<code>"free":0</code>) and NUMA node
+<code>1</code> (<code>"free":103739236352</code>). So, the total amount
+of free "conventional" memory in this group is equal to
+<code>0 + 103739236352</code> bytes.</p>
+<p>The line <code>"systemReserved":3221225472</code> indicates that the
+administrator of this node reserved <code>3221225472</code> bytes (i.e.
+<code>3Gi</code>) to serve kubelet and system processes at NUMA node
+<code>0</code>, by using <code>--reserved-memory</code> flag.</p>
+<h2 id="device-plugin-resource-api">Check the device plugin resource
+API</h2>
+<p>The kubelet provides a <code>PodResourceLister</code> gRPC service to
+enable discovery of resources and associated metadata. By using its <a
+href="../../../concepts/extend-kubernetes/compute-storage-net/device-plugins.html#grpc-endpoint-list">List
+gRPC endpoint</a>, information about reserved memory for each container
+can be retrieved, which is contained in protobuf
+<code>ContainerMemory</code> message.</p>
+<p>This information can be retrieved solely for pods in Guaranteed QoS
+class.</p>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="crictl.html"><span>Previous</span>Debugging Kubernetes nodes with crictl</a><a class="page-nav-link next" href="audit.html"><span>Next</span>Auditing</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#sources-of-troubleshooting-information">Sources of troubleshooting information</a></li><li class="toc-l2"><a href="#TopologyAffinityError">Troubleshoot TopologyAffinityError</a></li><li class="toc-l2"><a href="#examine-system-logs">Examine system logs</a></li><li class="toc-l2"><a href="#examples">Examples</a></li><li class="toc-l3"><a href="#examine-the-memory-manager-state-on-a-node">Examine the memory manager state on a node</a></li><li class="toc-l2"><a href="#device-plugin-resource-api">Check the device plugin resource API</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

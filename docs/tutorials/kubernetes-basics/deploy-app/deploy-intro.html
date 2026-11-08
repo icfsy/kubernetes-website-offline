@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Using kubectl to Create a Deployment · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../" data-key="tutorials/kubernetes-basics/deploy-app/deploy-intro" data-title="Using kubectl to Create a Deployment" data-canonical="https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../tutorials.html">Tutorials</a><span>/</span><a href="../../kubernetes-basics.html">Learn Kubernetes Basics</a><span>/</span><a href="../deploy-app.html">Deploy an App</a></nav></nav>
+        <header class="page-head">
+          <h1>Using kubectl to Create a Deployment</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Page</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/kubernetes-basics/deploy-app/deploy-intro/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <h2 id="objectives">Objectives</h2>
+<ul>
+<li>Learn about application Deployments.</li>
+<li>Deploy your first app on Kubernetes with kubectl.</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>The shell commands in this tutorial use POSIX shell syntax, which is
+supported by the default shells on most Linux and macOS systems (for
+example, bash, zsh, or sh). Windows users must use a POSIX-compatible
+shell such as <a
+href="https://learn.microsoft.com/en-us/windows/wsl/install">Windows
+Subsystem for Linux (WSL)</a> or <a
+href="https://gitforwindows.org/">Git Bash</a> to run the commands as
+written. Commands that use <code>export</code>, <code>$()</code>, and
+similar constructs are <strong>not</strong> compatible with PowerShell
+or the Windows Command Prompt.</p>
+<h2 id="kubernetes-deployments">Kubernetes Deployments</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><em>A Deployment is responsible for creating and updating instances
+of your application.</em></p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>This tutorial uses a container that requires the AMD64 architecture.
+If you are using minikube on a computer with a different CPU
+architecture, you could try using minikube with a driver that can
+emulate AMD64. For example, the Docker Desktop driver can do this.</p>
+</div>
+<p>Once you have a <a
+href="../create-cluster/cluster-intro.html">running
+Kubernetes cluster</a>, you can deploy your containerized applications
+on top of it. To do so, you create a Kubernetes
+<strong>Deployment</strong>. The Deployment instructs Kubernetes how to
+create and update instances of your application. Once you've created a
+Deployment, the Kubernetes control plane schedules the application
+instances included in that Deployment to run on individual Nodes in the
+cluster.</p>
+<p>Once the application instances are created, a Kubernetes Deployment
+controller continuously monitors those instances. If the Node hosting an
+instance goes down or is deleted, the Deployment controller replaces the
+instance with an instance on another Node in the cluster. <strong>This
+provides a self-healing mechanism to address machine failure or
+maintenance.</strong></p>
+<p>In a pre-orchestration world, installation scripts would often be
+used to start applications, but they did not allow recovery from machine
+failure. By both creating your application instances and keeping them
+running across Nodes, Kubernetes Deployments provide a fundamentally
+different approach to application management.</p>
+<h2 id="deploying-your-first-app-on-kubernetes">Deploying your first app
+on Kubernetes</h2>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p><em>Applications need to be packaged into one of the supported
+container formats in order to be deployed on Kubernetes.</em></p>
+</div>
+<figure class="figure diagram-medium">
+<p><img src="../../../../assets/content/en/docs/tutorials/kubernetes-basics/public/images/module_02_first_app-d3ab41c0.svg" alt="" /></p>
+</figure>
+<p>You can create and manage a Deployment by using the Kubernetes
+command line interface, <a href="../../../reference/kubectl.html">kubectl</a>.
+<code>kubectl</code> uses the Kubernetes API to interact with the
+cluster. In this module, you'll learn the most common
+<code>kubectl</code> commands needed to create Deployments that run your
+applications on a Kubernetes cluster.</p>
+<p>When you create a Deployment, you'll need to specify the container
+image for your application and the number of replicas that you want to
+run. You can change that information later by updating your Deployment;
+<a href="../scale/scale-intro.html">Module
+5</a> and <a
+href="../update/update-intro.html">Module
+6</a> of the bootcamp discuss how you can scale and update your
+Deployments.</p>
+<p>For your first Deployment, you'll use a hello-node application
+packaged in a Docker container that uses NGINX to echo back all the
+requests. (If you didn't already try creating a hello-node application
+and deploying it using a container, you can do that first by following
+the instructions from the <a
+href="../../hello-minikube.html">Hello Minikube
+tutorial</a>.)</p>
+<p>You will need to have installed kubectl as well. If you need to
+install it, visit <a href="../../../tasks/tools.html#kubectl">install
+tools</a>.</p>
+<p>Now that you know what Deployments are, let's deploy our first
+app!</p>
+<h3 id="kubectl-basics">kubectl basics</h3>
+<p>The common format of a kubectl command is:
+<code>kubectl action resource</code>.</p>
+<p>This performs the specified <em>action</em> (like
+<code>create</code>, <code>describe</code> or <code>delete</code>) on
+the specified <em>resource</em> (like <code>node</code> or
+<code>deployment</code>. You can use <code>--help</code> after the
+subcommand to get additional info about possible parameters (for
+example: <code>kubectl get nodes --help</code>).</p>
+<p>Check that kubectl is configured to talk to your cluster, by running
+the <code>kubectl version</code> command.</p>
+<p>Check that kubectl is installed and that you can see both the client
+and the server versions.</p>
+<p>To view the nodes in the cluster, run the
+<code>kubectl get nodes</code> command.</p>
+<p>You see the available nodes. Later, Kubernetes will choose where to
+deploy our application based on Node available resources.</p>
+<h3 id="deploy-an-app">Deploy an app</h3>
+<p>Let’s deploy our first app on Kubernetes with the
+<code>kubectl create deployment</code> command. We need to provide the
+deployment name and app image location (include the full repository url
+for images hosted outside Docker Hub).</p>
+<pre class="shell"><code>kubectl create deployment kubernetes-bootcamp --image=gcr.io/google-samples/kubernetes-bootcamp:v1</code></pre>
+<p>Great! You just deployed your first application by creating a
+deployment. This performed a few things for you:</p>
+<ul>
+<li>searched for a suitable node where an instance of the application
+could be run (we have only 1 available node)</li>
+<li>scheduled the application to run on that Node</li>
+<li>configured the cluster to reschedule the instance on a new Node when
+needed</li>
+</ul>
+<p>To list your deployments use the <code>kubectl get deployments</code>
+command:</p>
+<pre class="shell"><code>kubectl get deployments</code></pre>
+<p>We see that there is 1 deployment running a single instance of your
+app. The instance is running inside a container on your node.</p>
+<h3 id="view-the-app">View the app</h3>
+<p><a href="../../../concepts/workloads/pods.html">Pods</a> that are running
+inside Kubernetes are running on a private, isolated network. By default
+they are visible from other pods and services within the same Kubernetes
+cluster, but not outside that network. When we use <code>kubectl</code>,
+we're interacting through an API endpoint to communicate with our
+application.</p>
+<p>We will cover other options on how to expose your application outside
+the Kubernetes cluster later, in <a
+href="../expose.html">Module 4</a>. Also as
+a basic tutorial, we're not explaining what <code>Pods</code> are in any
+detail here, it will be covered in later topics.</p>
+<p>The <code>kubectl proxy</code> command can create a proxy that will
+forward communications into the cluster-wide, private network. The proxy
+can be terminated by pressing control-C and won't show any output while
+it's running.</p>
+<p><strong>You need to open a second terminal window to run the
+proxy.</strong></p>
+<pre class="shell"><code>kubectl proxy</code></pre>
+<p>We now have a connection between our host (the terminal) and the
+Kubernetes cluster. The proxy enables direct access to the API from
+these terminals.</p>
+<p>You can see all those APIs hosted through the proxy endpoint. For
+example, we can query the version directly through the API using the
+<code>curl</code> command:</p>
+<pre class="shell"><code>curl http://localhost:8001/version</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note</p>
+</div>
+<p>If port 8001 is not accessible, ensure that the
+<code>kubectl proxy</code> that you started above is running in the
+second terminal.</p>
+</div>
+<p>The API server will automatically create an endpoint for each pod,
+based on the pod name, that is also accessible through the proxy.</p>
+<p>First we need to get the Pod name, and we'll store it in the
+environment variable <code>POD_NAME</code>.</p>
+<pre class="shell"><code>export POD_NAME=$(kubectl get pods -o go-template --template &#39;{{range .items}}{{.metadata.name}}{{&quot;\n&quot;}}{{end}}&#39;)
+echo Name of the Pod: $POD_NAME</code></pre>
+<p>You can access the Pod through the proxied API, by running:</p>
+<pre class="shell"><code>curl http://localhost:8001/api/v1/namespaces/default/pods/$POD_NAME:8080/proxy/</code></pre>
+<p>In order for the new Deployment to be accessible without using the
+proxy, a Service is required which will be explained in <a
+href="../expose.html">Module 4</a>.</p>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Tutorial <a
+href="../explore/explore-intro.html">Viewing
+Pods and Nodes</a>.</li>
+<li>Learn more about <a
+href="../../../concepts/workloads/controllers/deployment.html">Deployments</a>.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../deploy-app.html"><span>Previous</span>Deploy an App</a><a class="page-nav-link next" href="../explore.html"><span>Next</span>Explore Your App</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#kubernetes-deployments">Kubernetes Deployments</a></li><li class="toc-l2"><a href="#deploying-your-first-app-on-kubernetes">Deploying your first app on Kubernetes</a></li><li class="toc-l3"><a href="#kubectl-basics">kubectl basics</a></li><li class="toc-l3"><a href="#deploy-an-app">Deploy an app</a></li><li class="toc-l3"><a href="#view-the-app">View the app</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../assets/nav.js"></script>
+<script src="../../../../assets/site.js"></script>
+</body>
+</html>

@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deploy a Release Using a Canary Deployment · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../" data-key="tutorials/stateless-application/canary-deployment" data-title="Deploy a Release Using a Canary Deployment" data-canonical="https://kubernetes.io/docs/tutorials/stateless-application/canary-deployment/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../tutorials.html">Tutorials</a><span>/</span><a href="../stateless-application.html">Stateless Applications</a></nav></nav>
+        <header class="page-head">
+          <h1>Deploy a Release Using a Canary Deployment</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Tutorial</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/tutorials/stateless-application/canary-deployment/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This tutorial walks you through deploying a canary release in
+Kubernetes. A canary deployment allows you to safely test a new
+application version with a small portion of production traffic before
+rolling it out completely. This approach helps minimize risk and enables
+rapid feedback from real users.</p>
+<p>For an overview of canary deployments, see <a
+href="../../concepts/workloads/management.html#canary-deployments">Canary
+deployments</a> in the Managing Workloads concept page.</p>
+<h2 id="objectives">Objectives</h2>
+<ul>
+<li>Deploy a stable version of an application</li>
+<li>Deploy a canary version alongside the stable version</li>
+<li>Route traffic to both versions using a Service</li>
+<li>Monitor the canary deployment</li>
+<li>Complete the rollout by scaling the canary and removing the stable
+version</li>
+</ul>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>You need to have a Kubernetes cluster, and the kubectl command-line
+tool must be configured to communicate with your cluster. It is
+recommended to run this tutorial on a cluster with at least two nodes
+that are not acting as control plane hosts. If you do not already have a
+cluster, you can create one by using <a
+href="https://minikube.sigs.k8s.io/docs/tutorials/multi_node/">minikube</a>
+or you can use one of these Kubernetes playgrounds:</p>
+<ul>
+<li><a
+href="https://labs.iximiuz.com/playgrounds?category=kubernetes&amp;filter=all">iximiuz
+Labs</a></li>
+<li><a
+href="https://killercoda.com/playgrounds/scenario/kubernetes">Killercoda</a></li>
+<li><a
+href="https://kodekloud.com/public-playgrounds">KodeKloud</a></li>
+</ul>
+<h2 id="understanding-canary-deployments">Understanding canary
+deployments</h2>
+<p>A canary deployment is a strategy where you deploy a new version of
+your application alongside the existing version. The new version
+(canary) receives a small percentage of traffic, allowing you to:</p>
+<ul>
+<li>Test the new version with real production traffic</li>
+<li>Monitor for errors, performance issues, or unexpected behavior</li>
+<li>Roll back quickly if issues are detected</li>
+<li>Gradually increase traffic to the new version if it performs
+well</li>
+</ul>
+<p>In this tutorial, you'll use the <code>track</code> label to
+differentiate between the stable and canary releases. The stable release
+uses <code>track: stable</code>, and the canary release uses
+<code>track: canary</code>. Both deployments share common labels
+(<code>app.kubernetes.io/name: rollout-demo</code>) that allow the
+Service to route traffic to both sets of Pods.</p>
+<p>You'll deploy the stable version with 3 replicas and the canary
+version with 1 replica. Since both versions share the same Service
+selector (<code>app.kubernetes.io/name: rollout-demo</code>), Kubernetes
+will load-balance traffic across all 4 pods. With this ratio,
+approximately 25% of traffic goes to the canary and 75% to the stable
+version.</p>
+<h2 id="deploying-the-stable-version">Deploying the stable version</h2>
+<p>First, deploy the stable version of your application:</p>
+<div class="code-sample">
+<p><code>application/canary/app-v1-deployment.yaml</code></p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-stable</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">    </span><span class="fu">track</span><span class="kw">:</span><span class="at"> stable</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">      </span><span class="fu">track</span><span class="kw">:</span><span class="at"> stable</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">        </span><span class="fu">track</span><span class="kw">:</span><span class="at"> stable</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:1.0</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> VERSION</span></span>
+<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;v1&quot;</span></span></code></pre></div>
+</div>
+<p>Apply the stable Deployment:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/canary/app-v1-deployment.yaml</code></pre>
+<p>Verify that the Deployment was created and the Pods are running:</p>
+<pre class="shell"><code>kubectl get deployments -l app.kubernetes.io/name=rollout-demo</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+rollout-demo-stable    3/3     3            3           10s</code></pre>
+<p>Check the Pods:</p>
+<pre class="shell"><code>kubectl get pods -l app.kubernetes.io/name=rollout-demo</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME                                  READY   STATUS    RESTARTS   AGE
+rollout-demo-stable-7d4b9b8c5d-abc12   1/1     Running   0          15s
+rollout-demo-stable-7d4b9b8c5d-def34   1/1     Running   0          15s
+rollout-demo-stable-7d4b9b8c5d-ghi56   1/1     Running   0          15s</code></pre>
+<h2 id="creating-a-service">Creating a service</h2>
+<p>Create a Service to expose your application. The Service selector
+uses the common label
+(<code>app.kubernetes.io/name: rollout-demo</code>) and omits the
+<code>track</code> label, which allows it to route traffic to both the
+stable and canary Pods:</p>
+<div class="code-sample">
+<p><code>application/canary/app-service.yaml</code></p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-service</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">type</span><span class="kw">:</span><span class="at"> ClusterIP</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+</div>
+<p>Apply the Service:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/canary/app-service.yaml</code></pre>
+<p>Verify the Service was created:</p>
+<pre class="shell"><code>kubectl get service rollout-demo-service</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME                  TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+rollout-demo-service   ClusterIP   10.96.123.45    &lt;none&gt;        80/TCP    5s</code></pre>
+<p>Test the Service by creating a temporary Pod and making a
+request:</p>
+<pre class="shell"><code>kubectl run curl-test --image=curlimages/curl:latest --rm -it --restart=Never -- curl http://rollout-demo-service</code></pre>
+<p>You should see responses from the stable Pods. Run this command
+multiple times to see different Pod hostnames, but all responses should
+show version v1.</p>
+<p>At this point, your application is in a steady state. In a real-world
+scenario, you would typically pause here and operate the stable version
+until you have a new version to deploy. The next steps demonstrate how
+to introduce a canary version.</p>
+<h2 id="deploying-the-canary-version">Deploying the canary version</h2>
+<p>To create a canary Deployment, you can copy the stable Deployment
+manifest and make a few changes:</p>
+<ul>
+<li>Change the <code>metadata.name</code> (for example, to
+<code>rollout-demo-canary</code>)</li>
+<li>Change the <code>track</code> label from <code>stable</code> to
+<code>canary</code> in both <code>metadata.labels</code> and
+<code>spec.selector.matchLabels</code>/<code>spec.template.metadata.labels</code></li>
+<li>Set a lower number of replicas (for example, 1)</li>
+<li>Update the container image to the new version</li>
+</ul>
+<p>The updated manifest should look like:</p>
+<div class="code-sample">
+<p><code>application/canary/app-v2-deployment.yaml</code></p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> apps/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Deployment</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-canary</span></span>
+<span class="at">  </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">    </span><span class="fu">track</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">replicas</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">matchLabels</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">      </span><span class="fu">track</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span class="at">  </span><span class="fu">template</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">labels</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">        </span><span class="fu">track</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span class="at">    </span><span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="fu">containers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">        </span><span class="fu">image</span><span class="kw">:</span><span class="at"> gcr.io/google-samples/hello-app:2.0</span></span>
+<span class="at">        </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">containerPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span class="at">        </span><span class="fu">env</span><span class="kw">:</span></span>
+<span class="at">        </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> VERSION</span></span>
+<span class="at">          </span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;v2&quot;</span></span></code></pre></div>
+</div>
+<p>You can use <code>kubectl</code> to apply your local manifest, or if
+you prefer you can use this checked example:</p>
+<pre class="shell"><code>kubectl apply -f https://k8s.io/examples/application/canary/app-v2-deployment.yaml</code></pre>
+<p>Verify both Deployments are running:</p>
+<pre class="shell"><code>kubectl get deployments -l app.kubernetes.io/name=rollout-demo</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME                  READY   UP-TO-DATE   AVAILABLE   AGE
+rollout-demo-stable    3/3     3            3           2m
+rollout-demo-canary    1/1     1            1           10s</code></pre>
+<p>Check all Pods:</p>
+<pre class="shell"><code>kubectl get pods -l app.kubernetes.io/name=rollout-demo -o wide</code></pre>
+<p>The output is similar to:</p>
+<pre><code>NAME                                  READY   STATUS    RESTARTS   AGE   IP           NODE
+rollout-demo-stable-7d4b9b8c5d-abc12   1/1     Running   0          2m    10.244.1.5   node1
+rollout-demo-stable-7d4b9b8c5d-def34   1/1     Running   0          2m    10.244.1.6   node1
+rollout-demo-stable-7d4b9b8c5d-ghi56   1/1     Running   0          2m    10.244.2.7   node2
+rollout-demo-canary-8e5c0d9f6a-xyz78   1/1     Running   0          15s   10.244.2.8   node2</code></pre>
+<p>Notice that you now have 4 Pods total: 3 stable Pods and 1 canary
+Pod.</p>
+<h2 id="testing-traffic-distribution">Testing traffic distribution</h2>
+<p>Since both Deployments use the same Service selector
+(<code>app.kubernetes.io/name: rollout-demo</code>), the Service routes
+traffic to all Pods. With 3 stable Pods and 1 canary Pod, approximately
+25% of requests go to the canary.</p>
+<p>Test the Service multiple times to see traffic distribution:</p>
+<pre class="shell"><code>kubectl run curl-test --image=docker.io/library/curlimages/curl:latest --rm -it --restart=Never -- \
+  sh -c &#39;for i in $(seq 1 10); do curl -s http://rollout-demo-service; echo; done&#39;</code></pre>
+<p>You should see responses from both stable and canary versions. The
+ratio may vary, but you should see some canary responses mixed with
+stable responses.</p>
+<p>Check the Service EndpointSlices to verify both versions are
+receiving traffic:</p>
+<pre class="shell"><code>kubectl get endpointslices -l kubernetes.io/service-name=rollout-demo-service</code></pre>
+<p>The output is similar to (one EndpointSlice per address family; the
+ENDPOINTS column is truncated by default):</p>
+<pre><code>NAME                          ADDRESSTYPE   PORTS   ENDPOINTS                              AGE
+rollout-demo-service-abc12    IPv4          8080    10.244.1.5,10.244.1.6,10.244.2.7 + 1 more...   3m</code></pre>
+<p>To see all endpoint addresses, use <code>-o yaml</code>.</p>
+<h2 id="monitoring-the-canary-deployment">Monitoring the canary
+deployment</h2>
+<p>Monitor your canary deployment for errors, performance issues, or
+unexpected behavior:</p>
+<p>Check Pod logs for the canary:</p>
+<pre class="shell"><code>kubectl logs -l app.kubernetes.io/name=rollout-demo,track=canary --tail=50</code></pre>
+<p>Monitor Pod status:</p>
+<pre class="shell"><code>kubectl get pods -l app.kubernetes.io/name=rollout-demo -w</code></pre>
+<p>Press Ctrl+C to stop watching.</p>
+<p>Check resource usage:</p>
+<pre class="shell"><code>kubectl top pods -l app.kubernetes.io/name=rollout-demo</code></pre>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>kubectl top</code> command requires the <a
+href="https://github.com/kubernetes-sigs/metrics-server">metrics-server</a>
+to be installed in your cluster. If it's not available, you can monitor
+using other methods like Prometheus or cloud provider monitoring
+tools.</p>
+</div>
+<h2 id="adjusting-traffic-distribution">Adjusting traffic
+distribution</h2>
+<p>If the canary is performing well, you can gradually increase traffic
+to it by scaling it up:</p>
+<p>Scale the canary to 2 replicas (now 40% of traffic):</p>
+<pre class="shell"><code>kubectl scale deployment/rollout-demo-canary --replicas=2</code></pre>
+<p>Verify the new Pod is running:</p>
+<pre class="shell"><code>kubectl get pods -l app.kubernetes.io/name=rollout-demo</code></pre>
+<p>Continue monitoring. If everything looks good, you can scale the
+canary further and scale down the stable version.</p>
+<h2 id="completing-the-rollout">Completing the rollout</h2>
+<p>If your monitoring instead uncovered issues with the canary, you
+would roll back instead. To practice for a problem scenario, you could
+skip ahead to <a href="#rolling-back-a-canary-deployment">Rolling back a
+canary deployment</a>.</p>
+<p>To complete the rollout with a single Deployment, first scale the
+stable Deployment back up so you do not lose capacity if the new image
+fails to pull. Then update the image and the <code>VERSION</code>
+environment variable to match the new version, wait for the rollout to
+complete, and remove the canary Deployment:</p>
+<pre class="shell"><code>kubectl scale deployment/rollout-demo-stable --replicas=3
+
+# Outside of this tutorial, you wouldn&#39;t set the
+# environment variable $VERSION.
+# However, your new application code might need
+# other configuration changes after an upgrade.
+kubectl set image deployment/rollout-demo-stable rollout-demo=gcr.io/google-samples/hello-app:2.0
+kubectl set env deployment/rollout-demo-stable VERSION=v2
+
+# Wait for the rollout to complete
+kubectl rollout status deployment/rollout-demo-stable
+
+kubectl delete deployment rollout-demo-canary</code></pre>
+<p>Because this has succeeded, you're now ready to move on to the <a
+href="#cleaning-up">cleanup</a> section. No need to follow the immediate
+next section about rolling back.</p>
+<p>Alternatively, you can read the rest of the page before you start
+cleaning up - there's a few more topics to cover.</p>
+<h2 id="rolling-back-a-canary-deployment">Rolling back a canary
+deployment</h2>
+<p>If you detect issues with the canary version, you can quickly roll
+back:</p>
+<p>Scale down the canary deployment:</p>
+<pre class="shell"><code>kubectl scale deployment/rollout-demo-canary --replicas=0</code></pre>
+<p>Scaling to zero preserves the canary Deployment so you can inspect
+its configuration while you investigate. Once you've finished, delete it
+with <code>kubectl delete deployment rollout-demo-canary</code>.</p>
+<p>Scale the stable version back up if needed:</p>
+<pre class="shell"><code>kubectl scale deployment/rollout-demo-stable --replicas=3</code></pre>
+<p>Investigate the issues with the canary before attempting another
+canary deployment.</p>
+<h2 id="splitting-traffic-using-httproute-optional">Splitting traffic
+using HTTPRoute (optional)</h2>
+<p>If you're using the <a
+href="https://gateway-api.sigs.k8s.io/">Gateway API</a>, you can use
+HTTPRoute to have more precise control over traffic splitting between
+the stable and canary versions. This approach allows you to specify
+exact percentages for traffic distribution rather than relying on
+replica counts.</p>
+<p>First, create separate Services for the stable and canary versions.
+This approach is also useful for debugging, even if you are not using
+Gateway API. By having separate Services, you can directly test or
+monitor each version independently.</p>
+<div class="sourceCode" id="cb29"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-stable-service</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">    </span><span class="fu">track</span><span class="kw">:</span><span class="at"> stable</span></span>
+<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span>
+<span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> Service</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-canary-service</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">selector</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">app.kubernetes.io/name</span><span class="kw">:</span><span class="at"> rollout-demo</span></span>
+<span class="at">    </span><span class="fu">track</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span class="at">  </span><span class="fu">ports</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">protocol</span><span class="kw">:</span><span class="at"> TCP</span></span>
+<span class="at">    </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">    </span><span class="fu">targetPort</span><span class="kw">:</span><span class="at"> </span><span class="dv">8080</span></span></code></pre></div>
+<p>Then create an HTTPRoute that splits traffic between the two
+Services:</p>
+<div class="sourceCode" id="cb30"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> HTTPRoute</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-route</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">parentRefs</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-gateway</span></span>
+<span class="at">  </span><span class="fu">hostnames</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="st">&quot;rollout-demo.example.com&quot;</span></span>
+<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">backendRefs</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-stable-service</span></span>
+<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">      </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">90</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-canary-service</span></span>
+<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">      </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<p>This configuration routes 90% of traffic to the stable Service and
+10% to the canary Service, regardless of the number of replicas.</p>
+<p>You can also use header-based routing to send specific traffic to the
+canary:</p>
+<div class="sourceCode" id="cb31"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> gateway.networking.k8s.io/v1</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> HTTPRoute</span></span>
+<span class="fu">metadata</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-route</span></span>
+<span class="fu">spec</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">parentRefs</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> example-gateway</span></span>
+<span class="at">  </span><span class="fu">hostnames</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="st">&quot;rollout-demo.example.com&quot;</span></span>
+<span class="at">  </span><span class="fu">rules</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="co"># Rule 1: Route traffic with canary header to canary service</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">matches</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">headers</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="fu">type</span><span class="kw">:</span><span class="at"> Exact</span></span>
+<span class="at">        </span><span class="fu">name</span><span class="kw">:</span><span class="at"> env</span></span>
+<span class="at">        </span><span class="fu">value</span><span class="kw">:</span><span class="at"> canary</span></span>
+<span class="at">    </span><span class="fu">backendRefs</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-canary-service</span></span>
+<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">  </span><span class="co"># Rule 2: Split remaining traffic 90/10</span></span>
+<span class="at">  </span><span class="kw">- </span><span class="fu">backendRefs</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-stable-service</span></span>
+<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">      </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">90</span></span>
+<span class="at">    </span><span class="kw">- </span><span class="fu">name</span><span class="kw">:</span><span class="at"> rollout-demo-canary-service</span></span>
+<span class="at">      </span><span class="fu">port</span><span class="kw">:</span><span class="at"> </span><span class="dv">80</span></span>
+<span class="at">      </span><span class="fu">weight</span><span class="kw">:</span><span class="at"> </span><span class="dv">10</span></span></code></pre></div>
+<p>This configuration sends all traffic with the
+<code>env: canary</code> header to the canary Service, while other
+traffic is split 90/10 between stable and canary.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The Gateway API requires a Gateway controller to be installed in your
+cluster. See the <a target="_blank" rel="noopener" href="https://gateway-api.sigs.k8s.io/">Gateway API
+documentation</a> for installation instructions and supported
+implementations.</p>
+</div>
+<h2 id="automating-canary-rollouts">Automating canary rollouts</h2>
+<p>In production environments, canary rollouts are typically managed by
+controllers or CI/CD systems that automate traffic shifting, monitoring,
+and promotion or rollback. Tools such as Flux, Argo Rollouts, GitLab,
+and many others can handle progressive delivery, analysis, and rollback
+for you. This reduces manual steps and helps ensure safe, repeatable
+deployments. For more information, see the documentation for your chosen
+deployment tool or controller.</p>
+<h2 id="cleaning-up">Cleaning up</h2>
+<p>Delete the resources created in this tutorial:</p>
+<pre class="shell"><code>kubectl delete deployment rollout-demo-stable rollout-demo-canary
+kubectl delete service rollout-demo-service</code></pre>
+<p>If you created separate Services for HTTPRoute, delete those as
+well:</p>
+<pre class="shell"><code>kubectl delete service rollout-demo-stable-service rollout-demo-canary-service
+kubectl delete httproute rollout-demo-route</code></pre>
+<h2 id="what-s-next">What's next</h2>
+<ul>
+<li>Learn more about <a
+href="../../concepts/workloads/management.html#canary-deployments">canary
+deployments</a> in the Managing Workloads concept page.</li>
+<li>Read about <a
+href="../../concepts/workloads/controllers/deployment.html">Deployments</a>
+and how they manage your application lifecycle.</li>
+<li>Read about <a
+href="../../concepts/services-networking/service.html">Services</a> and how
+they enable service discovery and load balancing.</li>
+<li>Explore the <a
+href="../../concepts/services-networking/gateway.html">Gateway API</a> for
+advanced traffic management capabilities.</li>
+<li>Consider using <a
+href="https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/">Horizontal
+Pod Autoscaling</a> to automatically adjust replica counts based on
+metrics.</li>
+</ul>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="../stateless-application.html"><span>Previous</span>Stateless Applications</a><a class="page-nav-link next" href="expose-external-ip-address.html"><span>Next</span>Exposing an External IP Address to Access an Application in a Cluster</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#objectives">Objectives</a></li><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l2"><a href="#understanding-canary-deployments">Understanding canary deployments</a></li><li class="toc-l2"><a href="#deploying-the-stable-version">Deploying the stable version</a></li><li class="toc-l2"><a href="#creating-a-service">Creating a service</a></li><li class="toc-l2"><a href="#deploying-the-canary-version">Deploying the canary version</a></li><li class="toc-l2"><a href="#testing-traffic-distribution">Testing traffic distribution</a></li><li class="toc-l2"><a href="#monitoring-the-canary-deployment">Monitoring the canary deployment</a></li><li class="toc-l2"><a href="#adjusting-traffic-distribution">Adjusting traffic distribution</a></li><li class="toc-l2"><a href="#completing-the-rollout">Completing the rollout</a></li><li class="toc-l2"><a href="#rolling-back-a-canary-deployment">Rolling back a canary deployment</a></li><li class="toc-l2"><a href="#splitting-traffic-using-httproute-optional">Splitting traffic using HTTPRoute (optional)</a></li><li class="toc-l2"><a href="#automating-canary-rollouts">Automating canary rollouts</a></li><li class="toc-l2"><a href="#cleaning-up">Cleaning up</a></li><li class="toc-l2"><a href="#what-s-next">What&#x27;s next</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../assets/nav.js"></script>
+<script src="../../../assets/site.js"></script>
+</body>
+</html>

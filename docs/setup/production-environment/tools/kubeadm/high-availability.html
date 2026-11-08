@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Creating Highly Available Clusters with kubeadm · Kubernetes documentation</title>
+<meta name="description" content="Kubernetes documentation — offline copy generated from the kubernetes/website repository.">
+<meta name="color-scheme" content="light dark">
+<link rel="stylesheet" href="../../../../../assets/site.css">
+<script>
+/* Apply stored preferences before the first paint (theme, text size, layout). */
+(function () {
+  var root = document.documentElement;
+  var prefix = 'k8sdocs:';
+  function read(key) { try { return localStorage.getItem(prefix + key); } catch (e) { return null; } }
+  var theme = read('theme') || 'auto';
+  if (theme === 'dark' || (theme === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    root.setAttribute('data-theme', 'dark');
+  } else if (theme === 'light') {
+    root.setAttribute('data-theme', 'light');
+  }
+  var fs = parseFloat(read('font-scale'));
+  if (fs >= 0.85 && fs <= 1.4) root.style.setProperty('--fs', String(fs));
+  var width = read('content-width');
+  if (width === 'wide') root.setAttribute('data-width', 'wide');
+  var nav = parseInt(read('nav-width'), 10);
+  if (nav > 0) root.style.setProperty('--nav-w', Math.min(780, Math.max(260, nav)) + 'px');
+  var collapsed = read('nav-collapsed');
+  if (collapsed) root.setAttribute('data-nav-saved', '1');
+})();
+</script>
+</head>
+<body data-prefix="../../../../../" data-key="setup/production-environment/tools/kubeadm/high-availability" data-title="Creating Highly Available Clusters with kubeadm" data-canonical="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/">
+<a class="skip-link" href="#k8s-main">Skip to content</a>
+
+<header class="topbar">
+  <button id="k8s-nav-toggle" class="icon-btn menu-btn" type="button" aria-label="Toggle navigation" aria-controls="k8s-sidebar" aria-expanded="false">
+    <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+  </button>
+  <a class="brand" href="../../../../../docs/home.html">
+    <span class="brand-mark">K</span>
+    <span class="brand-text"><strong>Kubernetes</strong><span class="brand-sep">/</span>docs</span>
+  </a>
+  <span class="topbar-spacer"></span>
+  <button id="k8s-search-open" class="search-btn" type="button" title="Search all documentation (Ctrl/Cmd+K)">
+    <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <span>Search</span><kbd>⌘K</kbd>
+  </button>
+  <div class="toolgroup" role="group" aria-label="Reading options">
+    <button id="k8s-font-down" class="icon-btn" type="button" title="Smaller text" aria-label="Smaller text">A−</button>
+    <button id="k8s-font-up" class="icon-btn" type="button" title="Larger text" aria-label="Larger text">A+</button>
+    <button id="k8s-width-toggle" class="icon-btn" type="button" title="Toggle wide layout" aria-label="Toggle wide layout">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M4 6v12M20 6v12M8 12h8m-2-2 2 2-2 2M10 12l-2 2 2 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-theme-toggle" class="icon-btn" type="button" title="Toggle dark mode" aria-label="Toggle dark mode">
+      <svg class="icon-moon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-bookmark-toggle" class="icon-btn" type="button" title="Bookmark this page (Alt+B)" aria-label="Bookmark this page" aria-pressed="false">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4-7 4V4.5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+    </button>
+    <button id="k8s-notes-toggle" class="icon-btn" type="button" title="Notes for this page (Alt+N)" aria-label="Notes for this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M5 4h9l5 5v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M8 11h8M8 15h5M14 4v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-copy-link" class="icon-btn" type="button" title="Copy link to this page" aria-label="Copy link to this page">
+      <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 13a4 4 0 0 0 5.7 0l2.3-2.3a4 4 0 1 0-5.7-5.7L11 6.3M14 11a4 4 0 0 0-5.7 0L6 13.3a4 4 0 1 0 5.7 5.7L13 17.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button id="k8s-help-open" class="icon-btn" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+  </div>
+  <span class="topbar-meta">v1.37 · offline</span>
+</header>
+
+<div class="app-shell">
+  <aside id="k8s-sidebar" class="sidebar" aria-label="Documentation navigation">
+    <div class="side-head">
+      <div class="side-title"><span>Kubernetes documentation</span><strong id="k8s-side-version">v1.37</strong></div>
+      <div class="side-search">
+        <svg class="search-icon" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="k8s-nav-filter" type="search" placeholder="Filter pages…  /" autocomplete="off" spellcheck="false" aria-label="Filter pages by title">
+        <kbd class="search-kbd">/</kbd>
+      </div>
+      <div class="side-actions">
+        <button id="k8s-expand-all" type="button" class="link-btn">Expand all</button>
+        <span class="dot-sep">·</span>
+        <button id="k8s-collapse-all" type="button" class="link-btn">Collapse all</button>
+        <span id="k8s-nav-status" class="nav-status"></span>
+        <button id="k8s-bookmark-panel-open" type="button" class="link-btn" title="Bookmarks">★</button>
+      </div>
+    </div>
+    <div id="k8s-nav-scroll" class="side-scroll">
+      <nav id="k8s-nav-tree" class="tree" aria-label="Documentation pages"></nav>
+      <div id="k8s-recent-block" class="recent-block" hidden>
+        <div class="recent-title">Recently viewed</div>
+        <ul id="k8s-recent-list" class="recent-list"></ul>
+      </div>
+    </div>
+    <div class="side-foot">
+      <div class="progress" title="Pages you have opened">
+        <span id="k8s-progress-label">Read 0 / 0</span>
+        <div class="progress-bar"><div id="k8s-progress-fill"></div></div>
+      </div>
+      <div class="side-foot-meta">@5dba1819e0 · 2026-11-08</div>
+    </div>
+  </aside>
+
+  <div id="k8s-resizer" class="resizer" role="separator" aria-orientation="vertical" aria-label="Resize navigation width" aria-valuemin="260" aria-valuemax="780" tabindex="0" title="Drag to resize · double-click to reset"></div>
+
+  <main id="k8s-main" class="main" tabindex="-1">
+    <div class="content">
+      <div class="content-main">
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="k8s-breadcrumb"><nav class="breadcrumb" aria-label="Breadcrumb"><a href="../../../../home.html">Kubernetes Documentation</a><span>/</span><a href="../../../../setup.html">Getting started</a><span>/</span><a href="../../../production-environment.html">Production environment</a><span>/</span><a href="../../tools.html">Installing Kubernetes with deployment tools</a><span>/</span><a href="../kubeadm.html">Bootstrapping clusters with kubeadm</a></nav></nav>
+        <header class="page-head">
+          <h1>Creating Highly Available Clusters with kubeadm</h1>
+          
+          <div class="page-meta">
+            <span class="doc-kind">Task</span>
+            <a class="doc-source" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/high-availability/" target="_blank" rel="noopener">View on kubernetes.io ↗</a>
+          </div>
+        </header>
+        <article class="doc-body" id="k8s-doc">
+          <p>This page explains two different approaches to setting up a highly
+available Kubernetes cluster using kubeadm:</p>
+<ul>
+<li>With stacked control plane nodes. This approach requires less
+infrastructure. The etcd members and control plane nodes are
+co-located.</li>
+<li>With an external etcd cluster. This approach requires more
+infrastructure. The control plane nodes and etcd members are
+separated.</li>
+</ul>
+<p>Before proceeding, you should carefully consider which approach best
+meets the needs of your applications and environment. <a
+href="ha-topology.html">Options
+for Highly Available topology</a> outlines the advantages and
+disadvantages of each.</p>
+<p>If you encounter issues with setting up the HA cluster, please report
+these in the kubeadm <a
+href="https://github.com/kubernetes/kubeadm/issues/new">issue
+tracker</a>.</p>
+<p>See also the <a
+href="../../../../tasks/administer-cluster/kubeadm/kubeadm-upgrade.html">upgrade
+documentation</a>.</p>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>This page does not address running your cluster on a cloud provider.
+In a cloud environment, neither approach documented here works with
+Service objects of type LoadBalancer, or with dynamic
+PersistentVolumes.</p>
+</div>
+<h2 id="before-you-begin">Before you begin</h2>
+<p>The prerequisites depend on which topology you have selected for your
+cluster's control plane:</p>
+<div class="tabset">
+<div class="tab-label">
+<p>Stacked etcd</p>
+</div>
+<p>You need:</p>
+<ul>
+<li>Three or more machines that meet <a
+href="install-kubeadm.html#before-you-begin">kubeadm's
+minimum requirements</a> for the control-plane nodes. Having an odd
+number of control plane nodes can help with leader selection in the case
+of machine or zone failure.
+<ul>
+<li>including a <a class="glossary-term" href="../../../../reference/glossary.html#term-container-runtime" title="Glossary: container-runtime">container runtime</a>, already set up
+and working</li>
+</ul></li>
+<li>Three or more machines that meet <a
+href="install-kubeadm.html#before-you-begin">kubeadm's
+minimum requirements</a> for the workers
+<ul>
+<li>including a container runtime, already set up and working</li>
+</ul></li>
+<li>Full network connectivity between all machines in the cluster
+(public or private network)</li>
+<li>Superuser privileges on all machines using <code>sudo</code>
+<ul>
+<li>You can use a different tool; this guide uses <code>sudo</code> in
+the examples.</li>
+</ul></li>
+<li>SSH access from one device to all nodes in the system</li>
+<li><code>kubeadm</code> and <code>kubelet</code> already installed on
+all machines.</li>
+</ul>
+<p><em>See <a
+href="ha-topology.html#stacked-etcd-topology">Stacked
+etcd topology</a> for context.</em></p>
+<div class="tab-label">
+<p>External etcd</p>
+</div>
+<p>You need:</p>
+<ul>
+<li>Three or more machines that meet <a
+href="install-kubeadm.html#before-you-begin">kubeadm's
+minimum requirements</a> for the control-plane nodes. Having an odd
+number of control plane nodes can help with leader selection in the case
+of machine or zone failure.
+<ul>
+<li>including a <a class="glossary-term" href="../../../../reference/glossary.html#term-container-runtime" title="Glossary: container-runtime">container runtime</a>, already set up
+and working</li>
+</ul></li>
+<li>Three or more machines that meet <a
+href="install-kubeadm.html#before-you-begin">kubeadm's
+minimum requirements</a> for the workers
+<ul>
+<li>including a container runtime, already set up and working</li>
+</ul></li>
+<li>Full network connectivity between all machines in the cluster
+(public or private network)</li>
+<li>Superuser privileges on all machines using <code>sudo</code>
+<ul>
+<li>You can use a different tool; this guide uses <code>sudo</code> in
+the examples.</li>
+</ul></li>
+<li>SSH access from one device to all nodes in the system</li>
+<li><code>kubeadm</code> and <code>kubelet</code> already installed on
+all machines.</li>
+</ul>
+<p>And you also need:</p>
+<ul>
+<li>Three or more additional machines, that will become etcd cluster
+members. Having an odd number of members in the etcd cluster is a
+requirement for achieving optimal voting quorum.
+<ul>
+<li>These machines again need to have <code>kubeadm</code> and
+<code>kubelet</code> installed.</li>
+<li>These machines also require a container runtime, that is already set
+up and working.</li>
+</ul></li>
+</ul>
+<p><em>See <a
+href="ha-topology.html#external-etcd-topology">External
+etcd topology</a> for context.</em></p>
+</div>
+<h3 id="container-images">Container images</h3>
+<p>Each host should have access read and fetch images from the
+Kubernetes container image registry, <code>registry.k8s.io</code>. If
+you want to deploy a highly-available cluster where the hosts do not
+have access to pull images, this is possible. You must ensure by some
+other means that the correct container images are already available on
+the relevant hosts.</p>
+<h3 id="kubectl">Command line interface</h3>
+<p>To manage Kubernetes once your cluster is set up, you should <a
+href="../../../../tasks/tools.html#kubectl">install kubectl</a> on your PC. It is
+also useful to install the <code>kubectl</code> tool on each control
+plane node, as this can be helpful for troubleshooting.</p>
+<h2 id="first-steps-for-both-methods">First steps for both methods</h2>
+<h3 id="create-load-balancer-for-kube-apiserver">Create load balancer
+for kube-apiserver</h3>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>There are many configurations for load balancers. The following
+example is only one option. Your cluster requirements may need a
+different configuration.</p>
+</div>
+<ol type="1">
+<li><p>Create a kube-apiserver load balancer with a name that resolves
+to DNS.</p>
+<ul>
+<li><p>In a cloud environment you should place your control plane nodes
+behind a TCP forwarding load balancer. This load balancer distributes
+traffic to all healthy control plane nodes in its target list. The
+health check for an apiserver is a TCP check on the port the
+kube-apiserver listens on (default value <code>:6443</code>).</p></li>
+<li><p>It is not recommended to use an IP address directly in a cloud
+environment.</p></li>
+<li><p>The load balancer must be able to communicate with all control
+plane nodes on the apiserver port. It must also allow incoming traffic
+on its listening port.</p></li>
+<li><p>Make sure the address of the load balancer always matches the
+address of kubeadm's <code>ControlPlaneEndpoint</code>.</p></li>
+<li><p>Read the <a
+href="https://git.k8s.io/kubeadm/docs/ha-considerations.md#options-for-software-load-balancing">Options
+for Software Load Balancing</a> guide for more details.</p></li>
+</ul></li>
+<li><p>Add the first control plane node to the load balancer, and test
+the connection:</p>
+<pre class="shell"><code>nc -zv -w 2 &lt;LOAD_BALANCER_IP&gt; &lt;PORT&gt;</code></pre>
+<p>A connection refused error is expected because the API server is not
+yet running. A timeout, however, means the load balancer cannot
+communicate with the control plane node. If a timeout occurs,
+reconfigure the load balancer to communicate with the control plane
+node.</p></li>
+<li><p>Add the remaining control plane nodes to the load balancer target
+group.</p></li>
+</ol>
+<h2 id="stacked-control-plane-and-etcd-nodes">Stacked control plane and
+etcd nodes</h2>
+<h3 id="steps-for-the-first-control-plane-node">Steps for the first
+control plane node</h3>
+<ol type="1">
+<li><p>Initialize the control plane:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm init <span class="at">--control-plane-endpoint</span> <span class="st">&quot;LOAD_BALANCER_DNS:LOAD_BALANCER_PORT&quot;</span> <span class="at">--upload-certs</span></span></code></pre></div>
+<ul>
+<li><p>You can use the <code>--kubernetes-version</code> flag to set the
+Kubernetes version to use. It is recommended that the versions of
+kubeadm, kubelet, kubectl and Kubernetes match.</p></li>
+<li><p>The <code>--control-plane-endpoint</code> flag should be set to
+the address or DNS and port of the load balancer.</p></li>
+<li><p>The <code>--upload-certs</code> flag is used to upload the
+certificates that should be shared across all the control-plane
+instances to the cluster. If instead, you prefer to copy certs across
+control-plane nodes manually or using automation tools, please remove
+this flag and refer to <a href="#manual-certs">Manual certificate
+distribution</a> section below.</p></li>
+</ul>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>kubeadm init</code> flags <code>--config</code> and
+<code>--certificate-key</code> cannot be mixed, therefore if you want to
+use the <a
+href="../../../../reference/config-api/kubeadm-config.v1beta4.html">kubeadm
+configuration</a> you must add the <code>certificateKey</code> field in
+the appropriate config locations (under <code>InitConfiguration</code>
+and <code>JoinConfiguration: controlPlane</code>).</p>
+</div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>Some CNI network plugins require additional configuration, for
+example specifying the pod IP CIDR, while others do not. See the <a
+href="create-cluster-kubeadm.html#pod-network">CNI
+network documentation</a>. To add a pod CIDR pass the flag
+<code>--pod-network-cidr</code>, or if you are using a kubeadm
+configuration file set the <code>podSubnet</code> field under the
+<code>networking</code> object of <code>ClusterConfiguration</code>.</p>
+</div>
+<p>The output looks similar to:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="ex">...</span></span>
+<span class="ex">You</span> can now join any number of control-plane node by running the following command on each as a root:</span>
+    <span class="ex">kubeadm</span> join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866 <span class="at">--control-plane</span> <span class="at">--certificate-key</span> f8902e114ef118304e561c3ecd4d0b543adc226b7a07f675f56564185ffe0c07</span>
+</span>
+<span class="ex">Please</span> note that the certificate-key gives access to cluster sensitive data, keep it secret!</span>
+<span class="ex">As</span> a safeguard, uploaded-certs will be deleted in two hours<span class="kw">;</span> <span class="ex">If</span> necessary, you can use kubeadm init phase upload-certs to reload certs afterward.</span>
+</span>
+<span class="ex">Then</span> you can join any number of worker nodes by running the following on each as root:</span>
+    <span class="ex">kubeadm</span> join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866</span></code></pre></div>
+<ul>
+<li><p>Copy this output to a text file. You will need it later to join
+control plane and worker nodes to the cluster.</p></li>
+<li><p>When <code>--upload-certs</code> is used with
+<code>kubeadm init</code>, the certificates of the primary control plane
+are encrypted and uploaded in the <code>kubeadm-certs</code>
+Secret.</p></li>
+<li><p>To re-upload the certificates and generate a new decryption key,
+use the following command on a control plane node that is already joined
+to the cluster:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm init phase upload-certs <span class="at">--upload-certs</span></span></code></pre></div></li>
+<li><p>You can also specify a custom <code>--certificate-key</code>
+during <code>init</code> that can later be used by <code>join</code>. To
+generate such a key you can use the following command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubeadm</span> certs certificate-key</span></code></pre></div></li>
+</ul>
+<p>The certificate key is a hex encoded string that is an AES key of
+size 32 bytes.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The <code>kubeadm-certs</code> Secret and the decryption key expire
+after two hours.</p>
+</div>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>As stated in the command output, the certificate key gives access to
+cluster sensitive data, keep it secret!</p>
+</div></li>
+<li><p>Apply the CNI plugin of your choice: <a
+href="create-cluster-kubeadm.html#pod-network">Follow
+these instructions</a> to install the CNI provider. Make sure the
+configuration corresponds to the Pod CIDR specified in the kubeadm
+configuration file (if applicable).</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>You must pick a network plugin that suits your use case and deploy it
+before you move on to next step. If you don't do this, you will not be
+able to launch your cluster properly.</p>
+</div></li>
+<li><p>Type the following and watch the pods of the control plane
+components get started:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="ex">kubectl</span> get pod <span class="at">-n</span> kube-system <span class="at">-w</span></span></code></pre></div></li>
+</ol>
+<h3 id="steps-for-the-rest-of-the-control-plane-nodes">Steps for the
+rest of the control plane nodes</h3>
+<p>For each additional control plane node you should:</p>
+<ol type="1">
+<li><p>Execute the join command that was previously given to you by the
+<code>kubeadm init</code> output on the first node. It should look
+something like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866 <span class="at">--control-plane</span> <span class="at">--certificate-key</span> f8902e114ef118304e561c3ecd4d0b543adc226b7a07f675f56564185ffe0c07</span></code></pre></div>
+<ul>
+<li>The <code>--control-plane</code> flag tells
+<code>kubeadm join</code> to create a new control plane.</li>
+<li>The <code>--certificate-key ...</code> will cause the control plane
+certificates to be downloaded from the <code>kubeadm-certs</code> Secret
+in the cluster and be decrypted using the given key.</li>
+</ul></li>
+</ol>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>As the cluster nodes are usually initialized sequentially, the
+CoreDNS Pods are likely to all run on the first control plane node. To
+provide higher availability, please rebalance the CoreDNS Pods with
+<code>kubectl -n kube-system rollout restart deployment coredns</code>
+after at least one new node is joined.</p>
+</div>
+<h2 id="external-etcd-nodes">External etcd nodes</h2>
+<p>Setting up a cluster with external etcd nodes is similar to the
+procedure used for stacked etcd with the exception that you should setup
+etcd first, and you should pass the etcd information in the kubeadm
+config file.</p>
+<h3 id="set-up-the-etcd-cluster">Set up the etcd cluster</h3>
+<ol type="1">
+<li><p>Follow these <a
+href="setup-ha-etcd-with-kubeadm.html">instructions</a>
+to set up the etcd cluster.</p></li>
+<li><p>Set up SSH as described <a
+href="#manual-certs">here</a>.</p></li>
+<li><p>Copy the following files from any etcd node in the cluster to the
+first control plane node:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode sh"><code class="sourceCode bash"><span class="bu">export</span> <span class="va">CONTROL_PLANE</span><span class="op">=</span><span class="st">&quot;ubuntu@10.0.0.7&quot;</span></span>
+<span class="fu">scp</span> /etc/kubernetes/pki/etcd/ca.crt <span class="st">&quot;</span><span class="va">${CONTROL_PLANE}</span><span class="st">&quot;</span>:</span>
+<span class="fu">scp</span> /etc/kubernetes/pki/apiserver-etcd-client.crt <span class="st">&quot;</span><span class="va">${CONTROL_PLANE}</span><span class="st">&quot;</span>:</span>
+<span class="fu">scp</span> /etc/kubernetes/pki/apiserver-etcd-client.key <span class="st">&quot;</span><span class="va">${CONTROL_PLANE}</span><span class="st">&quot;</span>:</span></code></pre></div>
+<ul>
+<li>Replace the value of <code>CONTROL_PLANE</code> with the
+<code>user@host</code> of the first control-plane node.</li>
+</ul></li>
+</ol>
+<h3 id="set-up-the-first-control-plane-node">Set up the first control
+plane node</h3>
+<ol type="1">
+<li><p>Create a file called <code>kubeadm-config.yaml</code> with the
+following contents:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode yaml"><code class="sourceCode yaml"><span class="pp">---</span></span>
+<span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> kubeadm.k8s.io/v1beta4</span></span>
+<span class="fu">kind</span><span class="kw">:</span><span class="at"> ClusterConfiguration</span></span>
+<span class="fu">kubernetesVersion</span><span class="kw">:</span><span class="at"> stable</span></span>
+<span class="fu">controlPlaneEndpoint</span><span class="kw">:</span><span class="at"> </span><span class="st">&quot;LOAD_BALANCER_DNS:LOAD_BALANCER_PORT&quot;</span><span class="at"> </span><span class="co"># change this (see below)</span></span>
+<span class="fu">etcd</span><span class="kw">:</span></span>
+<span class="at">  </span><span class="fu">external</span><span class="kw">:</span></span>
+<span class="at">    </span><span class="fu">endpoints</span><span class="kw">:</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">https://ETCD_0_IP:2379</span><span class="co"> # change ETCD_0_IP appropriately</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">https://ETCD_1_IP:2379</span><span class="co"> # change ETCD_1_IP appropriately</span></span>
+<span class="at">      </span><span class="kw">- </span><span class="at">https://ETCD_2_IP:2379</span><span class="co"> # change ETCD_2_IP appropriately</span></span>
+<span class="at">    </span><span class="fu">caFile</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki/etcd/ca.crt</span></span>
+<span class="at">    </span><span class="fu">certFile</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki/apiserver-etcd-client.crt</span></span>
+<span class="at">    </span><span class="fu">keyFile</span><span class="kw">:</span><span class="at"> /etc/kubernetes/pki/apiserver-etcd-client.key</span></span></code></pre></div>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>The difference between stacked etcd and external etcd here is that
+the external etcd setup requires a configuration file with the etcd
+endpoints under the <code>external</code> object for <code>etcd</code>.
+In the case of the stacked etcd topology, this is managed
+automatically.</p>
+</div>
+<ul>
+<li><p>Replace the following variables in the config template with the
+appropriate values for your cluster:</p>
+<ul>
+<li><code>LOAD_BALANCER_DNS</code></li>
+<li><code>LOAD_BALANCER_PORT</code></li>
+<li><code>ETCD_0_IP</code></li>
+<li><code>ETCD_1_IP</code></li>
+<li><code>ETCD_2_IP</code></li>
+</ul></li>
+</ul></li>
+</ol>
+<p>The following steps are similar to the stacked etcd setup:</p>
+<ol type="1">
+<li><p>Run
+<code>sudo kubeadm init --config kubeadm-config.yaml --upload-certs</code>
+on this node.</p></li>
+<li><p>Write the output join commands that are returned to a text file
+for later use.</p></li>
+<li><p>Apply the CNI plugin of your choice.</p>
+<div class="admonition note">
+<div class="admonition-title">
+<p>Note:</p>
+</div>
+<p>You must pick a network plugin that suits your use case and deploy it
+before you move on to next step. If you don't do this, you will not be
+able to launch your cluster properly.</p>
+</div></li>
+</ol>
+<h3 id="steps-for-the-rest-of-the-control-plane-nodes-1">Steps for the
+rest of the control plane nodes</h3>
+<p>The steps are the same as for the stacked etcd setup:</p>
+<ul>
+<li>Make sure the first control plane node is fully initialized.</li>
+<li>Join each control plane node with the join command you saved to a
+text file. It's recommended to join the control plane nodes one at a
+time.</li>
+<li>Don't forget that the decryption key from
+<code>--certificate-key</code> expires after two hours, by default.</li>
+</ul>
+<h2 id="common-tasks-after-bootstrapping-control-plane">Common tasks
+after bootstrapping control plane</h2>
+<h3 id="install-workers">Install workers</h3>
+<p>Worker nodes can be joined to the cluster with the command you stored
+previously as the output from the <code>kubeadm init</code> command:</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="fu">sudo</span> kubeadm join 192.168.0.200:6443 <span class="at">--token</span> 9vr73a.a8uxyaju799qwdjv <span class="at">--discovery-token-ca-cert-hash</span> sha256:7c2e69131a36ae2a042a339b33381c6d0d43887e2de83720eff5359e26aec866</span></code></pre></div>
+<h2 id="manual-certs">Manual certificate distribution</h2>
+<p>If you choose to not use <code>kubeadm init</code> with the
+<code>--upload-certs</code> flag this means that you are going to have
+to manually copy the certificates from the primary control plane node to
+the joining control plane nodes.</p>
+<p>There are many ways to do this. The following example uses
+<code>ssh</code> and <code>scp</code>:</p>
+<p>SSH is required if you want to control all nodes from a single
+machine.</p>
+<ol type="1">
+<li><p>Enable ssh-agent on your main device that has access to all other
+nodes in the system:</p>
+<pre class="shell"><code>eval $(ssh-agent)</code></pre></li>
+<li><p>Add your SSH identity to the session:</p>
+<pre class="shell"><code>ssh-add ~/.ssh/path_to_private_key</code></pre></li>
+<li><p>SSH between nodes to check that the connection is working
+correctly.</p>
+<ul>
+<li><p>When you SSH to any node, add the <code>-A</code> flag. This flag
+allows the node that you have logged into via SSH to access the SSH
+agent on your PC. Consider alternative methods if you do not fully trust
+the security of your user session on the node.</p>
+<pre class="shell"><code>ssh -A 10.0.0.7</code></pre></li>
+<li><p>When using sudo on any node, make sure to preserve the
+environment so SSH forwarding works:</p>
+<pre class="shell"><code>sudo -E -s</code></pre></li>
+</ul></li>
+<li><p>After configuring SSH on all the nodes you should run the
+following script on the first control plane node after running
+<code>kubeadm init</code>. This script will copy the certificates from
+the first control plane node to the other control plane nodes:</p>
+<p>In the following example, replace <code>CONTROL_PLANE_IPS</code> with
+the IP addresses of the other control plane nodes.</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span><span class="op">=</span>ubuntu <span class="co"># customizable</span></span>
+<span class="va">CONTROL_PLANE_IPS</span><span class="op">=</span><span class="st">&quot;10.0.0.7 10.0.0.8&quot;</span></span>
+<span class="cf">for</span> host <span class="kw">in</span> <span class="va">${CONTROL_PLANE_IPS}</span><span class="kw">;</span> <span class="cf">do</span></span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/ca.crt <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/ca.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/sa.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/sa.pub <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/front-proxy-ca.crt <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/front-proxy-ca.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:</span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/etcd/ca.crt <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:etcd-ca.crt</span>
+    <span class="co"># Skip the next line if you are using external etcd</span></span>
+    <span class="fu">scp</span> /etc/kubernetes/pki/etcd/ca.key <span class="st">&quot;</span><span class="va">${USER}</span><span class="st">&quot;</span>@<span class="va">$host</span>:etcd-ca.key</span>
+<span class="cf">done</span></span></code></pre></div>
+<div class="admonition caution">
+<div class="admonition-title">
+<p>Caution:</p>
+</div>
+<p>Copy only the certificates in the above list. kubeadm will take care
+of generating the rest of the certificates with the required SANs for
+the joining control-plane instances. If you copy all the certificates by
+mistake, the creation of additional nodes could fail due to a lack of
+required SANs.</p>
+</div></li>
+<li><p>Then on each joining control plane node you have to run the
+following script before running <code>kubeadm join</code>. This script
+will move the previously copied certificates from the home directory to
+<code>/etc/kubernetes/pki</code>:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode sh"><code class="sourceCode bash"><span class="va">USER</span><span class="op">=</span>ubuntu <span class="co"># customizable</span></span>
+<span class="fu">mkdir</span> <span class="at">-p</span> /etc/kubernetes/pki/etcd</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/ca.crt /etc/kubernetes/pki/</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/ca.key /etc/kubernetes/pki/</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/sa.pub /etc/kubernetes/pki/</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/sa.key /etc/kubernetes/pki/</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/front-proxy-ca.crt /etc/kubernetes/pki/</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/front-proxy-ca.key /etc/kubernetes/pki/</span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/etcd-ca.crt /etc/kubernetes/pki/etcd/ca.crt</span>
+<span class="co"># Skip the next line if you are using external etcd</span></span>
+<span class="fu">mv</span> /home/<span class="va">${USER}</span>/etcd-ca.key /etc/kubernetes/pki/etcd/ca.key</span></code></pre></div></li>
+</ol>
+
+        </article>
+        <nav class="page-nav" aria-label="Page navigation">
+          <a class="page-nav-link prev" href="ha-topology.html"><span>Previous</span>Options for Highly Available Topology</a><a class="page-nav-link next" href="setup-ha-etcd-with-kubeadm.html"><span>Next</span>Set up a High Availability etcd Cluster with kubeadm</a>
+        </nav>
+        <footer class="page-foot">
+          <p>Generated from the <a href="https://github.com/kubernetes/website" target="_blank" rel="noopener">kubernetes/website</a> repository (<code>5dba1819e0</code>) on 2026-11-08, Kubernetes v1.37.</p>
+          <p>The Kubernetes documentation is licensed <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> by The Kubernetes Authors. This offline copy is not published or endorsed by the Kubernetes project. Kubernetes is a trademark of The Linux Foundation.</p>
+        </footer>
+      </div>
+      <nav class="page-toc" aria-label="On this page"><div class="page-toc-title">On this page</div><ul><li class="toc-l2"><a href="#before-you-begin">Before you begin</a></li><li class="toc-l3"><a href="#container-images">Container images</a></li><li class="toc-l3"><a href="#kubectl">Command line interface</a></li><li class="toc-l2"><a href="#first-steps-for-both-methods">First steps for both methods</a></li><li class="toc-l3"><a href="#create-load-balancer-for-kube-apiserver">Create load balancer for kube-apiserver</a></li><li class="toc-l2"><a href="#stacked-control-plane-and-etcd-nodes">Stacked control plane and etcd nodes</a></li><li class="toc-l3"><a href="#steps-for-the-first-control-plane-node">Steps for the first control plane node</a></li><li class="toc-l3"><a href="#steps-for-the-rest-of-the-control-plane-nodes">Steps for the rest of the control plane nodes</a></li><li class="toc-l2"><a href="#external-etcd-nodes">External etcd nodes</a></li><li class="toc-l3"><a href="#set-up-the-etcd-cluster">Set up the etcd cluster</a></li><li class="toc-l3"><a href="#set-up-the-first-control-plane-node">Set up the first control plane node</a></li><li class="toc-l3"><a href="#steps-for-the-rest-of-the-control-plane-nodes-1">Steps for the rest of the control plane nodes</a></li><li class="toc-l2"><a href="#common-tasks-after-bootstrapping-control-plane">Common tasks after bootstrapping control plane</a></li><li class="toc-l3"><a href="#install-workers">Install workers</a></li><li class="toc-l2"><a href="#manual-certs">Manual certificate distribution</a></li></ul></nav>
+    </div>
+  </main>
+</div>
+
+<div id="k8s-backdrop" class="backdrop" hidden></div>
+<button id="k8s-back-top" class="back-top" type="button" title="Back to top" aria-label="Back to top">↑</button>
+
+<!-- search palette -->
+<div id="k8s-search-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Search documentation">
+  <div class="modal-panel search-panel">
+    <div class="search-field">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input id="k8s-search-input" type="search" placeholder="Search pages, flags and full text…" autocomplete="off" spellcheck="false" aria-label="Search documentation">
+      <button id="k8s-search-close" class="icon-btn" type="button" aria-label="Close search">✕</button>
+    </div>
+    <div class="search-status" id="k8s-search-status"></div>
+    <ul class="search-results" id="k8s-search-results" role="listbox" aria-label="Search results"></ul>
+    <div class="search-hint"><kbd>↑</kbd><kbd>↓</kbd> select · <kbd>Enter</kbd> open · <kbd>Esc</kbd> close</div>
+  </div>
+</div>
+
+<!-- notes -->
+<aside id="k8s-notes-panel" class="panel" hidden aria-label="Notes">
+  <div class="panel-head"><strong>My notes</strong><button id="k8s-notes-close" class="icon-btn" type="button" aria-label="Close notes">✕</button></div>
+  <div class="panel-body">
+    <textarea id="k8s-notes-text" placeholder="Private notes for this page (stored in this browser)…" spellcheck="false"></textarea>
+    <div class="panel-actions">
+      <button id="k8s-notes-export" type="button">Export all notes</button>
+      <button id="k8s-notes-clear" type="button">Clear this page</button>
+    </div>
+  </div>
+</aside>
+
+<!-- bookmarks -->
+<aside id="k8s-bookmarks-panel" class="panel" hidden aria-label="Bookmarks">
+  <div class="panel-head"><strong>Bookmarks</strong><button id="k8s-bookmarks-close" class="icon-btn" type="button" aria-label="Close bookmarks">✕</button></div>
+  <div class="panel-body">
+    <ul id="k8s-bookmarks-list" class="bookmark-list"></ul>
+  </div>
+</aside>
+
+<!-- help -->
+<div id="k8s-help-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+  <div class="modal-panel help-panel">
+    <div class="panel-head"><strong>Keyboard shortcuts</strong><button id="k8s-help-close" class="icon-btn" type="button" aria-label="Close help">✕</button></div>
+    <dl class="shortcut-list">
+      <dt><kbd>/</kbd></dt><dd>Filter pages in the sidebar</dd>
+      <dt><kbd>⌘K</kbd> / <kbd>Ctrl K</kbd></dt><dd>Search all documentation</dd>
+      <dt><kbd>[</kbd> / <kbd>]</kbd></dt><dd>Previous / next page</dd>
+      <dt><kbd>Alt B</kbd></dt><dd>Bookmark this page</dd>
+      <dt><kbd>Alt N</kbd></dt><dd>Notes for this page</dd>
+      <dt><kbd>Alt T</kbd></dt><dd>Toggle dark mode</dd>
+      <dt><kbd>Alt +</kbd> / <kbd>Alt −</kbd></dt><dd>Text size</dd>
+      <dt><kbd>Esc</kbd></dt><dd>Close panels and search</dd>
+      <dt><kbd>?</kbd></dt><dd>This help</dd>
+    </dl>
+  </div>
+</div>
+
+<div id="k8s-toast" class="toast" hidden></div>
+
+<script src="../../../../../assets/nav.js"></script>
+<script src="../../../../../assets/site.js"></script>
+</body>
+</html>
